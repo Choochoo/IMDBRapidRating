@@ -34,6 +34,8 @@ body {
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 240px),
     var(--bg);
   color: var(--text);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -70,23 +72,28 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-.topbar {
+.app-header {
   display: grid;
-  grid-template-columns: auto auto 1fr;
-  gap: 18px;
-  align-items: center;
-  min-height: 66px;
-  padding: 12px 18px;
+  gap: 10px;
+  padding: 12px 18px 10px;
   background: rgba(16, 20, 24, 0.92);
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(10px);
+}
+
+.header-main,
+.header-workspace {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 220px;
+  min-width: 190px;
   font-weight: 750;
 }
 
@@ -105,13 +112,17 @@ button:focus-visible {
 .stats {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  min-width: 0;
+  overflow: auto hidden;
 }
 
 .stat {
-  min-width: 74px;
-  padding: 6px 10px;
-  border-left: 1px solid var(--line);
+  min-width: 82px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .stat strong {
@@ -139,7 +150,15 @@ button:focus-visible {
   flex-wrap: wrap;
 }
 
-.badge {
+.status-strip {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.status-chip {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
@@ -153,50 +172,54 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.badge.live-ready {
+.status-chip.live-ready,
+.status-chip.metadata-ready {
   border-color: rgba(66, 189, 104, 0.44);
   background: rgba(66, 189, 104, 0.14);
   color: #91dfaa;
 }
 
-.badge.live-failed {
+.status-chip.live-failed {
   border-color: rgba(242, 107, 99, 0.45);
   background: rgba(242, 107, 99, 0.14);
   color: #ffaaa5;
 }
 
-.badge.live-missing {
+.status-chip.live-missing,
+.status-chip.metadata-missing {
   border-color: rgba(152, 165, 179, 0.35);
   background: rgba(152, 165, 179, 0.1);
   color: #c3ccd6;
 }
 
 .stage {
-  height: calc(100vh - 126px);
+  flex: 1;
+  height: auto;
   min-height: 460px;
   padding: 24px;
 }
 
 .failure-panel {
-  padding: 10px 18px 0;
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(242, 107, 99, 0.38);
+  border-radius: var(--radius);
+  background: rgba(242, 107, 99, 0.09);
+  padding: 10px 12px;
 }
 
 .failure-panel[hidden] {
   display: none;
 }
 
-.failure-panel > div {
-  max-width: 1760px;
-  margin: 0 auto;
-  border: 1px solid rgba(242, 107, 99, 0.38);
-  border-radius: var(--radius);
-  background: rgba(242, 107, 99, 0.1);
-  padding: 10px 12px;
+.failure-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
 }
 
-.failure-panel strong {
-  display: block;
-  margin-bottom: 6px;
+.failure-header strong {
   color: #ffb0ab;
   font-size: 13px;
 }
@@ -211,7 +234,7 @@ button:focus-visible {
 
 .failure-panel li {
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) auto minmax(220px, 2fr);
+  grid-template-columns: minmax(180px, 1fr) auto auto minmax(220px, 2fr);
   gap: 10px;
   align-items: baseline;
   color: #f0c6c3;
@@ -221,6 +244,13 @@ button:focus-visible {
 .failure-panel code {
   color: #ffd3d0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.failure-panel b {
+  color: #ffd3d0;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .failure-panel em {
@@ -233,9 +263,9 @@ button:focus-visible {
 
 .movie-strip {
   display: flex;
-  gap: 14px;
+  gap: 18px;
   height: 100%;
-  max-width: 1760px;
+  max-width: 1420px;
   margin: 0 auto;
 }
 
@@ -305,7 +335,10 @@ button:focus-visible {
 
 .poster {
   position: relative;
-  min-height: 44%;
+  flex: 0 0 auto;
+  width: 100%;
+  height: clamp(260px, 48vh, 420px);
+  min-height: 0;
   overflow: hidden;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -372,7 +405,7 @@ button:focus-visible {
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  padding: 16px;
+  padding: 18px;
 }
 
 .position {
@@ -386,25 +419,25 @@ button:focus-visible {
 
 .title {
   display: -webkit-box;
-  margin: auto 0 8px;
+  margin: 12px 0 10px;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  font-size: clamp(18px, 1.65vw, 28px);
+  -webkit-line-clamp: 2;
+  font-size: clamp(24px, 2vw, 34px);
   font-weight: 800;
   line-height: 1.05;
 }
 
 .synopsis {
   display: -webkit-box;
-  min-height: 54px;
+  min-height: 66px;
   margin: 0 0 12px;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   color: #c4cdd7;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .meta {
@@ -551,6 +584,10 @@ button:focus-visible {
   line-height: 1.5;
 }
 
+.cookie-card a {
+  color: #9ec8ff;
+}
+
 .cookie-card ol {
   margin: 12px 0;
   padding-left: 22px;
@@ -574,6 +611,22 @@ button:focus-visible {
   color: var(--text);
   font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   padding: 10px;
+}
+
+.setup-input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  color: var(--text);
+  font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: 0 10px;
+}
+
+.setup-input:focus {
+  border-color: var(--blue);
+  outline: none;
 }
 
 .cookie-card textarea:focus {
@@ -635,12 +688,18 @@ button:focus-visible {
     overflow: auto;
   }
 
-  .topbar {
-    grid-template-columns: 1fr;
+  .header-main,
+  .header-workspace {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .brand {
     min-width: 0;
+  }
+
+  .status-strip {
+    justify-content: flex-start;
   }
 
   .toolbar {
@@ -664,7 +723,7 @@ button:focus-visible {
 
   .movie-card {
     flex: 1 1 calc(33.333% - 10px);
-    min-height: 360px;
+    min-height: 520px;
   }
 
   .footer {
@@ -677,7 +736,7 @@ button:focus-visible {
 }
 
 @media (max-width: 720px) {
-  .topbar,
+  .app-header,
   .stage,
   .footer {
     padding-left: 12px;

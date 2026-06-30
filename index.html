@@ -4,64 +4,73 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>IMDb Rapid Rater</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./src/styles.css">
   </head>
   <body>
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-mark">RR</span>
-        <span>IMDb Rapid Rater</span>
-      </div>
-
-      <div class="stats" aria-label="rating progress">
-        <div class="stat">
-          <strong id="rated-count">0</strong>
-          <span>Rated</span>
+    <header class="app-header">
+      <div class="header-main">
+        <div class="brand">
+          <span class="brand-mark">RR</span>
+          <span>IMDb Rapid Rater</span>
         </div>
-        <div class="stat">
-          <strong id="skip-count">0</strong>
-          <span>Not seen</span>
-        </div>
-        <div class="stat">
-          <strong id="imported-count">0</strong>
-          <span>Imported</span>
-        </div>
-        <div class="stat">
-          <strong id="sent-count">0</strong>
-          <span>Sent</span>
-        </div>
-        <div class="stat">
-          <strong id="failed-count">0</strong>
-          <span>Failed</span>
-        </div>
-        <div class="stat">
-          <strong id="left-count">0</strong>
-          <span>Left</span>
+        <div class="status-strip" aria-label="system status">
+          <button type="button" class="status-chip live-missing" id="configure-cookie">IMDb checking</button>
+          <button type="button" class="status-chip metadata-missing" id="configure-tmdb">TMDB key needed</button>
+          <span class="status-chip" id="source-badge">Loading</span>
+          <span class="status-chip live-missing" id="live-badge">Live checking</span>
         </div>
       </div>
 
-      <div class="toolbar" aria-label="actions">
-        <span class="badge live-missing" id="live-badge">Live checking</span>
-        <span class="badge" id="source-badge">Loading</span>
-        <button type="button" id="configure-cookie">Set IMDb Cookie</button>
-        <button type="button" id="retry-failed">Retry unsent</button>
-        <button type="button" id="load-json">Load titles</button>
-        <button type="button" id="import-csv">Import IMDb CSV</button>
-        <button type="button" id="export-csv">Export CSV</button>
-        <button type="button" id="export-json">Export JSON</button>
-        <button type="button" id="reset">Reset</button>
+      <div class="header-workspace">
+        <div class="stats" aria-label="rating progress">
+          <div class="stat">
+            <strong id="rated-count">0</strong>
+            <span>Rated</span>
+          </div>
+          <div class="stat">
+            <strong id="skip-count">0</strong>
+            <span>Not seen</span>
+          </div>
+          <div class="stat">
+            <strong id="imported-count">0</strong>
+            <span>CSV</span>
+          </div>
+          <div class="stat">
+            <strong id="sent-count">0</strong>
+            <span>Sent</span>
+          </div>
+          <div class="stat">
+            <strong id="failed-count">0</strong>
+            <span>Failed</span>
+          </div>
+          <div class="stat">
+            <strong id="pool-status">Ready</strong>
+            <span>Pool</span>
+          </div>
+        </div>
+
+        <div class="toolbar" aria-label="actions">
+          <button type="button" id="retry-failed">Retry IMDb failures</button>
+          <button type="button" id="load-json">Import title JSON</button>
+          <button type="button" id="import-csv">Import IMDb CSV</button>
+          <button type="button" id="export-csv">Export CSV</button>
+          <button type="button" id="export-json">Export JSON</button>
+          <button type="button" id="reset">Reset</button>
+        </div>
       </div>
+
+      <section class="failure-panel" id="failure-panel" hidden>
+        <div class="failure-header">
+          <strong>IMDb write failures</strong>
+          <button type="button" id="failure-retry">Retry IMDb failures</button>
+        </div>
+        <ul id="failure-list"></ul>
+      </section>
 
       <input id="json-file" type="file" accept=".json,application/json" hidden>
       <input id="csv-file" type="file" accept=".csv,text/csv" hidden>
     </header>
-
-    <section class="failure-panel" id="failure-panel" hidden>
-      <div>
-        <strong>IMDb write failures</strong>
-        <ul id="failure-list"></ul>
-      </div>
-    </section>
 
     <main class="stage">
       <section class="movie-strip" id="movie-strip" aria-live="polite"></section>
@@ -91,7 +100,7 @@
 
     <div class="empty-state" id="empty-state" hidden>
       <div>
-        <h1>Queue complete</h1>
+        <h1>Movie pool exhausted</h1>
         <p id="empty-summary"></p>
         <div class="empty-actions">
           <button type="button" id="empty-export-csv">Export CSV</button>
@@ -120,6 +129,30 @@
         <div class="cookie-actions">
           <button type="button" id="cookie-save">Save Cookie</button>
           <button type="button" id="cookie-later">Skip for now</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="cookie-dialog" id="tmdb-dialog" role="dialog" aria-modal="true" aria-labelledby="tmdb-title" hidden>
+      <div class="cookie-card">
+        <div class="cookie-header">
+          <h1 id="tmdb-title">Add TMDB API Key</h1>
+          <button type="button" id="tmdb-close">Close</button>
+        </div>
+        <p>TMDB provides reliable posters and synopsis text. Rapid Rater saves the key locally to `.env.local` as `TMDB_API_KEY`.</p>
+        <ol>
+          <li>Create or sign into a TMDB account.</li>
+          <li>Open <a href="https://developer.themoviedb.org/reference/getting-started" target="_blank" rel="noreferrer">TMDB API Getting Started</a>.</li>
+          <li>Use the Credentials section to get an API key or read access token.</li>
+          <li>Copy the credential value.</li>
+          <li>Paste it here and save.</li>
+        </ol>
+        <label for="tmdb-key-input">TMDB API key</label>
+        <input class="setup-input" id="tmdb-key-input" autocomplete="off" spellcheck="false" placeholder="Paste TMDB API key or token">
+        <p class="cookie-error" id="tmdb-error" role="alert"></p>
+        <div class="cookie-actions">
+          <button type="button" id="tmdb-save">Save API Key</button>
+          <button type="button" id="tmdb-later">Skip for now</button>
         </div>
       </div>
     </section>

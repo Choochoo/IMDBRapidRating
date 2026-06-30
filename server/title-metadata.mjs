@@ -2,15 +2,17 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { GetImdbCookie } from "./env.mjs";
+import { GetImdbCookie, GetTmdbApiKey } from "./env.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CachePath = path.join(RootPath, "cache", "title-metadata.json");
+const TmdbApiUrl = "https://api.themoviedb.org/3";
+const TmdbImageUrl = "https://image.tmdb.org/t/p/w342";
 let CacheWriteTimer;
 const MetadataCache = LoadMetadataCache();
 
 export async function GetTitleMetadata(titleId) {
-  if (MetadataCache[titleId])
+  if (ShouldUseCachedMetadata(MetadataCache[titleId]))
     return Ok({ ok: true, ...MetadataCache[titleId] });
   const metadata = await LoadTitleMetadata(titleId);
   MetadataCache[titleId] = metadata;
@@ -19,14 +21,79 @@ export async function GetTitleMetadata(titleId) {
 }
 
 async function LoadTitleMetadata(titleId) {
+  const tmdb = await FetchTmdbMetadata(titleId).catch(() => null);
   const titlePage = await FetchTitlePageMetadata(titleId).catch(() => null);
   const suggestion = await FetchSuggestionMetadata(titleId).catch(() => null);
   return {
     titleId,
-    posterUrl: titlePage?.posterUrl || suggestion?.posterUrl || "",
-    synopsis: titlePage?.synopsis || "",
-    source: titlePage?.source || suggestion?.source || ""
+    posterUrl: tmdb?.posterUrl || titlePage?.posterUrl || suggestion?.posterUrl || "",
+    synopsis: tmdb?.synopsis || titlePage?.synopsis || "",
+    source: tmdb?.source || titlePage?.source || suggestion?.source || ""
   };
+}
+
+function ShouldUseCachedMetadata(metadata) {
+  if (!metadata)
+    return false;
+  if (metadata.synopsis && metadata.posterUrl)
+    return true;
+  return !GetTmdbApiKey();
+}
+
+async function FetchTmdbMetadata(titleId) {
+  const apiKey = GetTmdbApiKey();
+  if (!apiKey)
+    throw new Error("TMDB_API_KEY is not configured.");
+  const response = await fetch(BuildTmdbFindUrl(titleId, apiKey), { headers: BuildTmdbHeaders(apiKey) });
+  if (!response.ok)
+    throw new Error(`TMDB returned HTTP ${response.status}.`);
+  const payload = await response.json();
+  const item = FindTmdbResult(payload);
+  if (!item)
+    throw new Error("TMDB did not find this IMDb title.");
+  return BuildTmdbMetadata(item);
+}
+
+function BuildTmdbFindUrl(titleId, apiKey) {
+  const params = BuildTmdbFindParams(apiKey);
+  return `${TmdbApiUrl}/find/${titleId}?${params}`;
+}
+
+function BuildTmdbFindParams(apiKey) {
+  const params = new URLSearchParams({ external_source: "imdb_id", language: "en-US" });
+  if (!IsTmdbBearerToken(apiKey))
+    params.set("api_key", apiKey);
+  return params;
+}
+
+function BuildTmdbHeaders(apiKey) {
+  const headers = { "accept": "application/json" };
+  if (IsTmdbBearerToken(apiKey))
+    headers.authorization = `Bearer ${apiKey}`;
+  return headers;
+}
+
+function IsTmdbBearerToken(apiKey) {
+  return String(apiKey || "").includes(".");
+}
+
+function FindTmdbResult(payload) {
+  const movies = Array.isArray(payload?.movie_results) ? payload.movie_results : [];
+  const shows = Array.isArray(payload?.tv_results) ? payload.tv_results : [];
+  return movies[0] || shows[0] || null;
+}
+
+function BuildTmdbMetadata(item) {
+  return {
+    posterUrl: BuildTmdbPosterUrl(item.poster_path),
+    synopsis: CleanMetadataText(item.overview || ""),
+    source: "tmdb"
+  };
+}
+
+function BuildTmdbPosterUrl(posterPath) {
+  const cleanPath = String(posterPath || "").trim();
+  return cleanPath.startsWith("/") ? `${TmdbImageUrl}${cleanPath}` : "";
 }
 
 async function FetchTitlePageMetadata(titleId) {

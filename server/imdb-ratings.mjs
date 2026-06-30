@@ -1,4 +1,4 @@
-import { GetImdbCookie, HasImdbAuthCookie, IsDryRun } from "./env.mjs";
+import { GetImdbCookie, GetTmdbApiKey, HasImdbAuthCookie, IsDryRun } from "./env.mjs";
 
 const GraphqlUrl = "https://api.graphql.imdb.com/";
 const Mutation = "mutation UpdateTitleRating($rating: Int!, $titleId: ID!) { rateTitle(input: {rating: $rating, titleId: $titleId}) { rating { value __typename } __typename }}";
@@ -7,6 +7,7 @@ export function GetImdbStatus() {
   return {
     configured: HasImdbAuthCookie() || IsDryRun(),
     dryRun: IsDryRun(),
+    tmdbConfigured: Boolean(GetTmdbApiKey()),
     endpoint: "/api/rate",
     ratingScale: "1-10"
   };

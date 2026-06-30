@@ -17,6 +17,10 @@ export function GetImdbCookie() {
   return NormalizeCookieHeader(cookie);
 }
 
+export function GetTmdbApiKey() {
+  return NormalizeTmdbApiKey(EnvValue("TMDB_API_KEY"));
+}
+
 export function HasImdbAuthCookie() {
   return /(?:^|;\s*)at-main=/.test(GetImdbCookie());
 }
@@ -26,11 +30,18 @@ export async function SaveImdbCookie(rootPath, cookie) {
   const validationError = ValidateImdbCookie(normalizedCookie);
   if (validationError)
     return validationError;
-  const envPath = path.join(rootPath, ".env.local");
-  const content = BuildUpdatedEnvContent(ReadEnvContent(envPath), normalizedCookie);
-  await writeFile(envPath, content, "utf8");
+  await SaveEnvValue(rootPath, "IMDB_COOKIE", normalizedCookie);
   process.env.IMDB_COOKIE = normalizedCookie;
   return CookieSaveOk();
+}
+
+export async function SaveTmdbApiKey(rootPath, apiKey) {
+  const normalizedKey = NormalizeTmdbApiKey(apiKey);
+  if (!normalizedKey)
+    return TmdbSaveFail(422, "TMDB_KEY_MISSING", "Paste your TMDB API key.");
+  await SaveEnvValue(rootPath, "TMDB_API_KEY", normalizedKey);
+  process.env.TMDB_API_KEY = normalizedKey;
+  return TmdbSaveOk();
 }
 
 export function IsDryRun() {
@@ -74,14 +85,20 @@ function ReadEnvContent(envPath) {
   return existsSync(envPath) ? readFileSync(envPath, "utf8") : "";
 }
 
-function BuildUpdatedEnvContent(content, cookie) {
+async function SaveEnvValue(rootPath, key, value) {
+  const envPath = path.join(rootPath, ".env.local");
+  const content = BuildUpdatedEnvContent(ReadEnvContent(envPath), key, value);
+  await writeFile(envPath, content, "utf8");
+}
+
+function BuildUpdatedEnvContent(content, key, value) {
   const lines = content ? content.split(/\r?\n/) : BuildDefaultEnvLines();
-  const updated = ReplaceEnvLine(lines, "IMDB_COOKIE", `IMDB_COOKIE=${cookie}`);
+  const updated = ReplaceEnvLine(lines, key, `${key}=${value}`);
   return `${EnsureDryRunLine(updated).join("\n").replace(/\n+$/u, "")}\n`;
 }
 
 function BuildDefaultEnvLines() {
-  return ["# Local IMDb Rapid Rater settings.", "IMDB_COOKIE=", "IMDB_DRY_RUN=false"];
+  return ["# Local IMDb Rapid Rater settings.", "IMDB_COOKIE=", "IMDB_DRY_RUN=false", "TMDB_API_KEY="];
 }
 
 function ReplaceEnvLine(lines, key, replacement) {
@@ -110,8 +127,26 @@ function CookieSaveFail(status, code, error) {
   };
 }
 
+function TmdbSaveOk() {
+  return {
+    status: 200,
+    payload: { ok: true, tmdbConfigured: Boolean(GetTmdbApiKey()) }
+  };
+}
+
+function TmdbSaveFail(status, code, error) {
+  return {
+    status,
+    payload: { ok: false, code, error }
+  };
+}
+
 function NormalizeCookieHeader(value) {
   return StripWrappingQuotes(value.trim()).replace(/^cookie\s*:\s*/i, "").replace(/[\r\n]+/g, " ");
+}
+
+function NormalizeTmdbApiKey(value) {
+  return StripWrappingQuotes(String(value || "").trim()).replace(/^authorization:\s*/i, "").replace(/^bearer\s+/i, "");
 }
 
 function StripWrappingQuotes(value) {

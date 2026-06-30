@@ -6,9 +6,9 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 
 ## What It Does
 
-- Shows six movie cards at a time.
+- Shows three large movie cards at a time.
 - Loads real movie IDs from IMDb's non-commercial datasets.
-- Enriches visible cards with poster and synopsis metadata.
+- Enriches visible cards with poster and synopsis metadata from TMDB when configured.
 - Imports your IMDb ratings CSV so already-rated titles are removed from the queue.
 - Saves that ratings CSV locally and auto-loads it on future launches.
 - Saves local progress in browser storage.
@@ -48,15 +48,17 @@ Port `5199` is the default.
 
 ## Import Existing IMDb Ratings
 
-1. Go to IMDb in your browser.
-2. Open your profile ratings page.
-3. Use IMDb's ratings export option to download the CSV.
+1. Sign into IMDb in your browser.
+2. Open [IMDb exports](https://www.imdb.com/exports).
+3. Download your ratings CSV.
 4. In Rapid Rater, click **Import IMDb CSV**.
 5. Select the exported CSV.
 
 The app reads the `Const` column, stores those IDs as `imported`, and removes them from the active queue so you do not rate duplicates.
 
 The imported CSV is also saved locally as `data/imdb-ratings.csv`. On future launches, Rapid Rater auto-loads that file before you start rating. When a live IMDb write succeeds from the app, that same CSV is updated so the local duplicate filter stays current with this app's IMDb writes.
+
+Rating actions only update `data/imdb-ratings.csv` after IMDb confirms the rating write. Failed writes and dry-run writes do not update the saved CSV. If IMDb succeeds but the local CSV update fails, the app shows that as a CSV-sync failure instead of retrying the IMDb write again.
 
 IMDb does not provide a public CSV upload/import API. If you rate movies directly on IMDb outside this app, export your IMDb ratings CSV again and import the fresh file here.
 
@@ -122,6 +124,28 @@ Or set this in `.env.local`:
 IMDB_DRY_RUN=true
 ```
 
+## Enable Posters And Synopsis
+
+IMDb page metadata is inconsistent for this use case. For reliable posters and synopsis text, click **Set TMDB Key** in the app header and paste a TMDB API key. The local server writes it to `.env.local`.
+
+You can also add it manually:
+
+```env
+TMDB_API_KEY=<paste your TMDB API key here>
+```
+
+Get a v3 API key or read access token from the credentials section on [TMDB API Getting Started](https://developer.themoviedb.org/reference/getting-started), then restart the app:
+
+```powershell
+npm start
+```
+
+Rapid Rater looks up each title by its IMDb ID through TMDB, then caches the returned poster and overview in `cache/title-metadata.json`. If you added the key after already running the app, old cached entries without a synopsis are refreshed automatically.
+
+## Retry Failed IMDb Writes
+
+The header shows **Retry IMDb failures** when ratings failed before IMDb accepted them. That retry does not include local CSV-sync failures where IMDb already saved the rating.
+
 ## Generate Movie Data
 
 Rapid Rater does not include dummy movie data. Generate the real local movie queue before first run:
@@ -142,13 +166,15 @@ Default output:
 - Feature films only.
 - Non-adult titles only.
 - At least 2,500 IMDb votes.
-- Up to 12,000 titles.
+- No artificial title cap.
 
 Custom generation:
 
 ```powershell
-node scripts/build-movie-pool.mjs --limit=25000 --minVotes=500 --minYear=1950
+node scripts/build-movie-pool.mjs --minVotes=500 --minYear=1950
 ```
+
+Use `--limit=25000` only if you intentionally want a smaller local movie pool.
 
 Refresh cached IMDb TSV files:
 
@@ -187,3 +213,5 @@ These are covered by `.gitignore`.
 ## Attribution
 
 Information courtesy of IMDb (https://www.imdb.com). Used with permission.
+
+This product uses the TMDB API but is not endorsed or certified by TMDB.

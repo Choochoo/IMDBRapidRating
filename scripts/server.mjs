@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { HandleRequest } from "../server/routes.mjs";
-import { HasImdbAuthCookie, IsDryRun, LoadLocalEnv } from "../server/env.mjs";
+import { GetTmdbApiKey, HasImdbAuthCookie, IsDryRun, LoadLocalEnv } from "../server/env.mjs";
 import { SendText } from "../server/http.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -36,6 +36,7 @@ function WriteStartupMessage() {
   console.log(`IMDb Rapid Rater running at http://localhost:${Port}`);
   console.log(`Serving ${RootPath}`);
   console.log(`IMDb live write-back: ${liveStatus}`);
+  console.log(`TMDB metadata: ${GetTmdbApiKey() ? "configured" : "not configured"}`);
 }
 
 function ReadPort() {

@@ -10,6 +10,7 @@ export class RapidRaterApp {
     this.SubmitInFlight = false;
     this.SubmitQueue = [];
     this.SubmitQueuedIds = new Set();
+    this.SubmitActiveIds = new Set();
     this.MetadataInFlight = new Set();
     document.documentElement.style.setProperty("--anim", `${Config.animationMs}ms`);
   }
@@ -45,7 +46,7 @@ export class RapidRaterApp {
       imported: this.Element("imported-count"),
       sent: this.Element("sent-count"),
       failed: this.Element("failed-count"),
-      left: this.Element("left-count")
+      poolStatus: this.Element("pool-status")
     };
   }
 
@@ -54,6 +55,7 @@ export class RapidRaterApp {
       sourceBadge: this.Element("source-badge"),
       liveBadge: this.Element("live-badge"),
       retryFailed: this.Element("retry-failed"),
+      failureRetry: this.Element("failure-retry"),
       failurePanel: this.Element("failure-panel"),
       failureList: this.Element("failure-list"),
       toast: this.Element("toast")
@@ -76,6 +78,13 @@ export class RapidRaterApp {
 
   BuildCookieElements() {
     return {
+      ...this.BuildImdbSetupElements(),
+      ...this.BuildTmdbSetupElements()
+    };
+  }
+
+  BuildImdbSetupElements() {
+    return {
       configureCookie: this.Element("configure-cookie"),
       cookieDialog: this.Element("cookie-dialog"),
       cookieInput: this.Element("imdb-cookie-input"),
@@ -83,6 +92,18 @@ export class RapidRaterApp {
       cookieSave: this.Element("cookie-save"),
       cookieClose: this.Element("cookie-close"),
       cookieLater: this.Element("cookie-later")
+    };
+  }
+
+  BuildTmdbSetupElements() {
+    return {
+      configureTmdb: this.Element("configure-tmdb"),
+      tmdbDialog: this.Element("tmdb-dialog"),
+      tmdbInput: this.Element("tmdb-key-input"),
+      tmdbError: this.Element("tmdb-error"),
+      tmdbSave: this.Element("tmdb-save"),
+      tmdbClose: this.Element("tmdb-close"),
+      tmdbLater: this.Element("tmdb-later")
     };
   }
 
@@ -107,6 +128,7 @@ export class RapidRaterApp {
       checked: false,
       configured: false,
       dryRun: false,
+      tmdbConfigured: false,
       submitting: false,
       lastError: ""
     };
@@ -132,7 +154,8 @@ export class RapidRaterApp {
     this.Element("empty-reset").addEventListener("click", () => this.ResetAll());
     this.Element("empty-export-csv").addEventListener("click", () => this.ExportCsv());
     this.Element("empty-export-json").addEventListener("click", () => this.ExportJson());
-    this.Elements.retryFailed.addEventListener("click", () => this.RetryUnsent());
+    this.Elements.retryFailed.addEventListener("click", () => this.RetryImdbFailures());
+    this.Elements.failureRetry.addEventListener("click", () => this.RetryImdbFailures());
   }
 
   BindCookieEvents() {
@@ -140,6 +163,10 @@ export class RapidRaterApp {
     this.Elements.cookieClose.addEventListener("click", () => this.HideCookieDialog());
     this.Elements.cookieLater.addEventListener("click", () => this.HideCookieDialog());
     this.Elements.cookieSave.addEventListener("click", () => this.SaveCookieFromDialog().catch((error) => this.ShowCookieError(error.message)));
+    this.Elements.configureTmdb.addEventListener("click", () => this.ShowTmdbDialog());
+    this.Elements.tmdbClose.addEventListener("click", () => this.HideTmdbDialog());
+    this.Elements.tmdbLater.addEventListener("click", () => this.HideTmdbDialog());
+    this.Elements.tmdbSave.addEventListener("click", () => this.SaveTmdbKeyFromDialog().catch((error) => this.ShowTmdbError(error.message)));
   }
 
   BindFileEvents() {
@@ -148,7 +175,7 @@ export class RapidRaterApp {
   }
 
   HandleKeyDown(event) {
-    if (!this.Elements.cookieDialog.hidden)
+    if (this.IsDialogOpen())
       return;
     if (event.target && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName))
       return;
@@ -157,6 +184,10 @@ export class RapidRaterApp {
     if (this.HandleControlKey(event))
       return;
     this.HandleRatingKey(event);
+  }
+
+  IsDialogOpen() {
+    return !this.Elements.cookieDialog.hidden || !this.Elements.tmdbDialog.hidden;
   }
 
   HandleControlKey(event) {
@@ -220,6 +251,7 @@ export class RapidRaterApp {
       checked: true,
       configured: Boolean(status.configured),
       dryRun: Boolean(status.dryRun),
+      tmdbConfigured: Boolean(status.tmdbConfigured),
       submitting: false,
       lastError: status.lastError || ""
     };
@@ -436,13 +468,17 @@ export class RapidRaterApp {
     this.Elements.imported.textContent = FormatCount(counts.imported);
     this.Elements.sent.textContent = FormatCount(counts.sent);
     this.Elements.failed.textContent = FormatCount(counts.failed);
-    this.Elements.left.textContent = FormatCount(this.State.queue.length);
+    this.UpdatePoolStatus();
     this.UpdateLiveBadge(counts);
     this.UpdateFailurePanel();
   }
 
+  UpdatePoolStatus() {
+    this.Elements.poolStatus.textContent = this.State.queue.length ? "Ready" : "Empty";
+  }
+
   CountRatings() {
-    const counts = { rated: 0, skipped: 0, imported: 0, sent: 0, failed: 0, pending: 0, retryable: 0 };
+    const counts = { rated: 0, skipped: 0, imported: 0, sent: 0, failed: 0, pending: 0, retryableImdb: 0 };
     for (const item of Object.values(this.State.ratings))
       this.CountRatingItem(counts, item);
     return counts;
@@ -465,22 +501,22 @@ export class RapidRaterApp {
       counts.failed++;
     if (item.submitStatus === "pending")
       counts.pending++;
-    if (this.IsRetryableSubmit(item))
-      counts.retryable++;
+    if (this.IsRetryableImdbSubmit(item))
+      counts.retryableImdb++;
   }
 
   UpdateLiveBadge(counts) {
-    this.UpdateCookieButton();
-    this.Elements.retryFailed.disabled = !this.State.live.configured || counts.retryable === 0;
+    this.UpdateSettingsButtons();
+    this.UpdateRetryButtons(counts);
     if (!this.State.live.checked)
-      return this.SetLiveBadge("badge live-missing", "Live checking");
+      return this.SetLiveBadge("status-chip live-missing", "Live checking");
     if (!this.State.live.configured)
-      return this.SetLiveBadge("badge live-missing", "Live needs cookie");
+      return this.SetLiveBadge("status-chip live-missing", "Live needs cookie");
     if (counts.failed > 0)
-      return this.SetLiveBadge("badge live-failed", `Live ${FormatCount(counts.failed)} failed`);
+      return this.SetLiveBadge("status-chip live-failed", `Live ${FormatCount(counts.failed)} failed`);
     if (counts.pending > 0 || this.State.live.submitting)
-      return this.SetLiveBadge("badge live-ready", `Live ${FormatCount(counts.pending)} pending`);
-    this.SetLiveBadge("badge live-ready", this.State.live.dryRun ? "Live dry run" : "Live ready");
+      return this.SetLiveBadge("status-chip live-ready", `Live ${FormatCount(counts.pending)} pending`);
+    this.SetLiveBadge("status-chip live-ready", this.State.live.dryRun ? "Live dry run" : "Live ready");
   }
 
   SetLiveBadge(className, text) {
@@ -488,8 +524,27 @@ export class RapidRaterApp {
     this.Elements.liveBadge.textContent = text;
   }
 
+  UpdateSettingsButtons() {
+    this.UpdateCookieButton();
+    this.UpdateTmdbButton();
+  }
+
   UpdateCookieButton() {
-    this.Elements.configureCookie.textContent = this.State.live.configured ? "Update IMDb Cookie" : "Set IMDb Cookie";
+    const configured = this.State.live.configured;
+    this.Elements.configureCookie.className = configured ? "status-chip live-ready" : "status-chip live-missing";
+    this.Elements.configureCookie.textContent = configured ? "IMDb connected" : "Set IMDb Cookie";
+  }
+
+  UpdateTmdbButton() {
+    const configured = this.State.live.tmdbConfigured;
+    this.Elements.configureTmdb.className = configured ? "status-chip metadata-ready" : "status-chip metadata-missing";
+    this.Elements.configureTmdb.textContent = configured ? "TMDB ready" : "Set TMDB Key";
+  }
+
+  UpdateRetryButtons(counts) {
+    const disabled = !this.State.live.configured || counts.retryableImdb === 0;
+    this.Elements.retryFailed.disabled = disabled;
+    this.Elements.failureRetry.disabled = disabled;
   }
 
   UpdateFailurePanel() {
@@ -506,7 +561,13 @@ export class RapidRaterApp {
   }
 
   RenderFailure(record) {
-    return `<li><span>${EscapeHtml(record.title || record.ttId)}</span><code>${EscapeHtml(record.ttId)}</code><em>${EscapeHtml(record.submitError || "No error detail returned.")}</em></li>`;
+    const title = EscapeHtml(record.title || record.ttId);
+    const error = EscapeHtml(record.submitError || "No error detail returned.");
+    return `<li><span>${title}</span><code>${EscapeHtml(record.ttId)}</code><b>${this.FailureKind(record)}</b><em>${error}</em></li>`;
+  }
+
+  FailureKind(record) {
+    return this.IsCsvSyncFailure(record) ? "CSV sync" : "IMDb retry";
   }
 
   MarkActive(rating, status) {
@@ -575,13 +636,14 @@ export class RapidRaterApp {
   EnqueueLiveSubmit(ttId) {
     const record = this.State.ratings[ttId];
     if (!this.CanSubmitLive(record))
-      return;
+      return false;
     record.submitStatus = "pending";
     record.submitError = "";
-    this.QueueSubmitId(ttId);
+    const queued = this.QueueSubmitId(ttId);
     this.SaveLocalState();
     this.UpdateStats();
     this.PumpSubmitQueue();
+    return queued;
   }
 
   CanSubmitLive(record) {
@@ -594,10 +656,11 @@ export class RapidRaterApp {
   }
 
   QueueSubmitId(ttId) {
-    if (this.SubmitQueuedIds.has(ttId))
-      return;
+    if (this.SubmitQueuedIds.has(ttId) || this.SubmitActiveIds.has(ttId))
+      return false;
     this.SubmitQueue.push(ttId);
     this.SubmitQueuedIds.add(ttId);
+    return true;
   }
 
   async PumpSubmitQueue() {
@@ -618,12 +681,14 @@ export class RapidRaterApp {
 
   async SubmitRatingRecord(record) {
     this.SetSubmitInFlight(true);
+    this.SubmitActiveIds.add(record.ttId);
     try {
       const result = await this.PostLiveRating(record);
       this.MarkSubmitSuccess(record.ttId, result.rating ?? record.rating);
     } catch (error) {
       this.MarkSubmitFailure(record.ttId, error.message || "IMDb submit failed.");
     }
+    this.SubmitActiveIds.delete(record.ttId);
     this.ScheduleNextSubmit();
   }
 
@@ -634,7 +699,17 @@ export class RapidRaterApp {
   }
 
   async PostLiveRating(record) {
-    return await this.PostJson(Config.rateUrl, { titleId: record.ttId, rating: record.rating }, "Local IMDb proxy failed.");
+    return await this.PostJson(Config.rateUrl, this.BuildRateRequest(record), "Local IMDb proxy failed.");
+  }
+
+  BuildRateRequest(record) {
+    return {
+      titleId: record.ttId,
+      rating: record.rating,
+      title: record.title || "",
+      year: record.year || "",
+      at: record.at || new Date().toISOString()
+    };
   }
 
   MarkSubmitSuccess(ttId, rating) {
@@ -643,7 +718,6 @@ export class RapidRaterApp {
       return;
     Object.assign(current, { submitStatus: "submitted", submitError: "", submittedAt: new Date().toISOString(), imdbEchoRating: rating });
     this.SaveLocalState();
-    this.SyncRatingsCsvRecord(current);
   }
 
   MarkSubmitFailure(ttId, error) {
@@ -654,22 +728,6 @@ export class RapidRaterApp {
     this.SaveLocalState();
   }
 
-  SyncRatingsCsvRecord(record) {
-    if (this.State.live.dryRun)
-      return;
-    this.PostJson(Config.ratingsCsvRatingUrl, this.BuildRatingsCsvRecord(record), "Rating CSV sync failed.").catch(() => null);
-  }
-
-  BuildRatingsCsvRecord(record) {
-    return {
-      ttId: record.ttId,
-      rating: record.rating,
-      title: record.title || "",
-      year: record.year || "",
-      at: record.at || record.submittedAt || new Date().toISOString()
-    };
-  }
-
   ScheduleNextSubmit() {
     window.setTimeout(() => {
       this.SetSubmitInFlight(false);
@@ -677,24 +735,22 @@ export class RapidRaterApp {
     }, Config.submitDelayMs);
   }
 
-  RetryUnsent() {
+  RetryImdbFailures() {
     if (!this.State.live.configured)
       return this.ShowToast("<strong>Live needs cookie</strong>");
-    const queued = this.QueueRetryableSubmits();
-    this.ShowToast(`Queued <strong>${FormatCount(queued)}</strong> IMDb writes`);
+    const queued = this.QueueRetryableImdbSubmits();
+    this.ShowToast(`Queued <strong>${FormatCount(queued)}</strong> IMDb retries`);
     this.SaveLocalState();
     this.UpdateStats();
   }
 
-  QueueRetryableSubmits() {
+  QueueRetryableImdbSubmits() {
     let queued = 0;
     for (const record of Object.values(this.State.ratings)) {
-      if (!this.IsRetryableSubmit(record))
+      if (!this.IsRetryableImdbSubmit(record))
         continue;
-      record.submitStatus = "pending";
-      record.submitError = "";
-      this.EnqueueLiveSubmit(record.ttId);
-      queued++;
+      if (this.EnqueueLiveSubmit(record.ttId))
+        queued++;
     }
     return queued;
   }
@@ -717,6 +773,18 @@ export class RapidRaterApp {
     this.Elements.cookieDialog.hidden = true;
   }
 
+  ShowTmdbDialog() {
+    this.ShowTmdbError("");
+    this.Elements.tmdbDialog.hidden = false;
+    window.setTimeout(() => this.Elements.tmdbInput.focus(), 0);
+  }
+
+  HideTmdbDialog() {
+    this.Elements.tmdbInput.value = "";
+    this.ShowTmdbError("");
+    this.Elements.tmdbDialog.hidden = true;
+  }
+
   async SaveCookieFromDialog() {
     const cookie = this.Elements.cookieInput.value.trim();
     if (!cookie)
@@ -730,6 +798,19 @@ export class RapidRaterApp {
     return await this.PostJson(Config.cookieUrl, { cookie }, "Cookie save failed.");
   }
 
+  async SaveTmdbKeyFromDialog() {
+    const apiKey = this.Elements.tmdbInput.value.trim();
+    if (!apiKey)
+      return this.ShowTmdbError("Paste your TMDB API key.");
+    this.SetTmdbSaving(true);
+    await this.PostTmdbKey(apiKey).finally(() => this.SetTmdbSaving(false));
+    await this.ApplySavedTmdbKey();
+  }
+
+  async PostTmdbKey(apiKey) {
+    return await this.PostJson(Config.tmdbKeyUrl, { apiKey }, "TMDB API key save failed.");
+  }
+
   async PostJson(url, body, message) {
     const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const payload = await response.json().catch(() => null);
@@ -741,7 +822,7 @@ export class RapidRaterApp {
   async ApplySavedCookie() {
     await this.RefreshLiveStatus();
     this.HideCookieDialog();
-    const queued = this.QueueRetryableSubmits();
+    const queued = this.QueueRetryableImdbSubmits();
     this.ShowCookieSavedToast(queued);
   }
 
@@ -751,23 +832,50 @@ export class RapidRaterApp {
     this.ShowToast("Cookie saved. <strong>Live ready</strong>");
   }
 
+  async ApplySavedTmdbKey() {
+    await this.RefreshLiveStatus();
+    this.HideTmdbDialog();
+    this.RefreshVisibleMetadata();
+    this.ShowToast("TMDB key saved. <strong>Metadata ready</strong>");
+  }
+
+  RefreshVisibleMetadata() {
+    for (const movie of this.State.queue.slice(0, Config.visibleCount))
+      delete this.State.metadata[movie.ttId];
+    if (this.State.queue.length)
+      this.RenderVisibleCards();
+  }
+
   SetCookieSaving(value) {
     this.Elements.cookieSave.disabled = value;
     this.Elements.cookieSave.textContent = value ? "Saving..." : "Save Cookie";
+  }
+
+  SetTmdbSaving(value) {
+    this.Elements.tmdbSave.disabled = value;
+    this.Elements.tmdbSave.textContent = value ? "Saving..." : "Save API Key";
   }
 
   ShowCookieError(message) {
     this.Elements.cookieError.textContent = message || "";
   }
 
-  IsRetryableSubmit(record) {
+  ShowTmdbError(message) {
+    this.Elements.tmdbError.textContent = message || "";
+  }
+
+  IsRetryableImdbSubmit(record) {
     if (!record)
       return false;
     const isRated = record.status === "rated";
     const isInteger = Number.isInteger(record.rating);
     const isInRange = record.rating >= 1 && record.rating <= 10;
     const isRetryableStatus = ["failed", "notConfigured", "pending"].includes(record.submitStatus);
-    return isRated && isInteger && isInRange && isRetryableStatus;
+    return isRated && isInteger && isInRange && isRetryableStatus && !this.IsCsvSyncFailure(record);
+  }
+
+  IsCsvSyncFailure(record) {
+    return String(record?.submitError || "").startsWith("IMDb saved, but local ratings CSV did not update");
   }
 
   Undo() {
@@ -801,7 +909,7 @@ export class RapidRaterApp {
   ShowComplete() {
     const counts = this.CountRatings();
     this.Elements.strip.innerHTML = "";
-    this.Elements.emptySummary.textContent = `${FormatCount(counts.rated)} rated, ${FormatCount(counts.skipped)} not seen, ${FormatCount(counts.imported)} imported.`;
+    this.Elements.emptySummary.textContent = `${FormatCount(counts.rated)} rated, ${FormatCount(counts.skipped)} not seen, ${FormatCount(counts.imported)} from CSV.`;
     this.Elements.empty.hidden = false;
   }
 
@@ -960,7 +1068,7 @@ export class RapidRaterApp {
 
   DescribeSource(raw, label) {
     const count = this.NormalizeMovieList(raw).length;
-    return raw?.generatedAt ? `${FormatCount(count)} real titles` : `${FormatCount(count)} ${label}`;
+    return raw?.generatedAt ? "Movie pool ready" : `${FormatCount(count)} ${label}`;
   }
 
   ToneFromId(ttId) {

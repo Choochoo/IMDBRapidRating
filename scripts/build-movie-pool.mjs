@@ -26,7 +26,7 @@ const Ratings = await ReadRatings(path.join(CacheDir, Files.ratings));
 console.log(`Kept ${Ratings.size.toLocaleString()} rated titles.`);
 console.log("Reading title basics and filtering feature films...");
 const Movies = await ReadBasics(path.join(CacheDir, Files.basics), Ratings);
-const OutputMovies = SortMovies(Movies).slice(0, Options.limit);
+const OutputMovies = ApplyLimit(SortMovies(Movies));
 const OutputPath = path.join(DataDir, "movies.json");
 await writeFile(OutputPath, `${JSON.stringify(BuildPayload(OutputMovies), null, 2)}\n`, "utf8");
 console.log(`Wrote ${OutputMovies.length.toLocaleString()} movies to ${OutputPath}`);
@@ -157,7 +157,7 @@ function MakeHeaderMap(columns) {
 function ReadOptions() {
   const args = ReadArgs();
   return {
-    limit: ReadNumber(args, "limit", 12000),
+    limit: ReadOptionalNumber(args, "limit"),
     minVotes: ReadNumber(args, "minVotes", 2500),
     minYear: ReadNumber(args, "minYear", 1900),
     maxYear: ReadNumber(args, "maxYear", new Date().getFullYear() + 1),
@@ -181,6 +181,12 @@ function ReadNumber(args, name, defaultValue) {
   return Math.floor(value);
 }
 
+function ReadOptionalNumber(args, name) {
+  if (!args.has(name))
+    return null;
+  return ReadNumber(args, name, 0);
+}
+
 function ParseNullableInt(value) {
   const clean = CleanValue(value);
   if (!clean)
@@ -197,6 +203,10 @@ function CleanValue(value) {
 
 function SortMovies(movies) {
   return movies.sort((left, right) => CompareMovies(left, right));
+}
+
+function ApplyLimit(movies) {
+  return Options.limit === null ? movies : movies.slice(0, Options.limit);
 }
 
 function CompareMovies(left, right) {
