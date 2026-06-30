@@ -14,6 +14,10 @@
           <span class="brand-mark">RR</span>
           <span>IMDb Rapid Rater</span>
         </div>
+        <nav class="view-tabs" aria-label="app views">
+          <button type="button" class="view-tab active" id="tab-rater">Rapid Rater</button>
+          <button type="button" class="view-tab" id="tab-ai">AI Recommendations</button>
+        </nav>
         <div class="status-strip" aria-label="system status">
           <button type="button" class="status-chip live-missing" id="configure-cookie">IMDb checking</button>
           <button type="button" class="status-chip metadata-missing" id="configure-tmdb">TMDB key needed</button>
@@ -72,26 +76,62 @@
       <input id="csv-file" type="file" accept=".csv,text/csv" hidden>
     </header>
 
-    <main class="stage">
+    <main class="stage" id="rater-view">
       <section class="movie-strip" id="movie-strip" aria-live="polite"></section>
     </main>
 
-    <footer class="footer">
-      <div class="keybar" aria-label="keyboard ratings">
-        <span class="key">0</span>
-        <span class="key">1</span>
-        <span class="key">2</span>
-        <span class="key">3</span>
-        <span class="key">4</span>
-        <span class="key">5</span>
-        <span class="key">6</span>
-        <span class="key">7</span>
-        <span class="key">8</span>
-        <span class="key">9</span>
-        <span class="divider"></span>
-        <span class="key">`</span>
-        <span class="divider"></span>
-        <span class="key wide">Backspace</span>
+    <section class="recommendation-view" id="recommendation-view" hidden>
+      <div class="recommendation-shell">
+        <header class="recommendation-header">
+          <div>
+            <h1>AI Recommendations</h1>
+            <p>Uses only title, year, genres, and your rating from the saved IMDb CSV.</p>
+          </div>
+          <div class="recommendation-actions">
+            <button type="button" id="configure-ai">Set OpenAI Key</button>
+            <button type="button" id="generate-recommendations">Generate picks</button>
+          </div>
+        </header>
+        <div class="recommendation-status" id="recommendation-status">Import your IMDb CSV, then generate recommendations.</div>
+        <div class="model-panel">
+          <div class="model-copy">
+            <strong id="ai-model-status">Model: checking</strong>
+            <span id="ai-model-detail">Auto-selects two versions behind the newest eligible GPT model.</span>
+          </div>
+          <div class="model-controls">
+            <label class="visually-hidden" for="ai-model-select">Model</label>
+            <select id="ai-model-select">
+              <option value="">Auto</option>
+            </select>
+            <button type="button" id="refresh-ai-models">Refresh</button>
+          </div>
+        </div>
+        <div class="recommendation-grid" id="recommendation-grid"></div>
+      </div>
+    </section>
+
+    <footer class="footer" id="rating-footer">
+      <div class="shortcut-panel">
+        <div class="shortcut-copy">
+          <strong>Keyboard shortcuts</strong>
+          <span>1-9 rate IMDb, 0 = 10/10. ` = not seen, Backspace = undo.</span>
+        </div>
+        <div class="keybar" aria-label="keyboard ratings">
+          <span class="key" data-shortcut="rate-0">0</span>
+          <span class="key" data-shortcut="rate-1">1</span>
+          <span class="key" data-shortcut="rate-2">2</span>
+          <span class="key" data-shortcut="rate-3">3</span>
+          <span class="key" data-shortcut="rate-4">4</span>
+          <span class="key" data-shortcut="rate-5">5</span>
+          <span class="key" data-shortcut="rate-6">6</span>
+          <span class="key" data-shortcut="rate-7">7</span>
+          <span class="key" data-shortcut="rate-8">8</span>
+          <span class="key" data-shortcut="rate-9">9</span>
+          <span class="divider"></span>
+          <span class="key" data-shortcut="skip">`</span>
+          <span class="divider"></span>
+          <span class="key wide" data-shortcut="undo">Backspace</span>
+        </div>
       </div>
       <p>Information courtesy of IMDb (https://www.imdb.com). Used with permission.</p>
     </footer>
@@ -153,6 +193,28 @@
         <div class="cookie-actions">
           <button type="button" id="tmdb-save">Save API Key</button>
           <button type="button" id="tmdb-later">Skip for now</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="cookie-dialog" id="ai-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-title" hidden>
+      <div class="cookie-card">
+        <div class="cookie-header">
+          <h1 id="ai-title">Add OpenAI API Key</h1>
+          <button type="button" id="ai-close">Close</button>
+        </div>
+        <p>AI recommendations need an OpenAI API key. Rapid Rater saves it locally to `.env.local` as `OPENAI_API_KEY`.</p>
+        <ol>
+          <li>Create or sign into an OpenAI account.</li>
+          <li>Open the OpenAI API dashboard and create an API key.</li>
+          <li>Paste the key here and save.</li>
+        </ol>
+        <label for="ai-key-input">OpenAI API key</label>
+        <input class="setup-input" id="ai-key-input" autocomplete="off" spellcheck="false" placeholder="Paste OpenAI API key">
+        <p class="cookie-error" id="ai-error" role="alert"></p>
+        <div class="cookie-actions">
+          <button type="button" id="ai-save">Save API Key</button>
+          <button type="button" id="ai-later">Skip for now</button>
         </div>
       </div>
     </section>

@@ -22,7 +22,8 @@ export async function ServeStaticFile(url, response, rootPath) {
     SendText(response, 403, "Forbidden");
     return;
   }
-  if (!existsSync(filePath) || !(await stat(filePath)).isFile()) {
+  const isExistingFile = existsSync(filePath) && (await stat(filePath)).isFile();
+  if (!isExistingFile) {
     SendText(response, 404, "Not found");
     return;
   }

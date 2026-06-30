@@ -1,7 +1,8 @@
 import { GetImdbCookie, GetTmdbApiKey, HasImdbAuthCookie, IsDryRun } from "./env.mjs";
 
 const GraphqlUrl = "https://api.graphql.imdb.com/";
-const Mutation = "mutation UpdateTitleRating($rating: Int!, $titleId: ID!) { rateTitle(input: {rating: $rating, titleId: $titleId}) { rating { value __typename } __typename }}";
+const Mutation = "mutation UpdateTitleRating($rating: Int!, $titleId: ID!) { " +
+  "rateTitle(input: {rating: $rating, titleId: $titleId}) { rating { value __typename } __typename }}";
 
 export function GetImdbStatus() {
   return {
@@ -29,7 +30,8 @@ function BuildRatingRequest(titleId, rating) {
   const normalizedRating = Number(rating);
   if (!/^tt\d+$/.test(normalizedTitleId))
     return { error: Fail(400, "INVALID_TITLE_ID", "titleId must look like tt0111161.") };
-  if (!Number.isInteger(normalizedRating) || normalizedRating < 1 || normalizedRating > 10)
+  const isValidRating = Number.isInteger(normalizedRating) && normalizedRating >= 1 && normalizedRating <= 10;
+  if (!isValidRating)
     return { error: Fail(422, "INVALID_RATING", "IMDb only accepts ratings from 1 to 10.") };
   return { titleId: normalizedTitleId, rating: normalizedRating, error: null };
 }
@@ -44,7 +46,7 @@ function BuildDryRunPayload(request) {
 }
 
 async function PostRatingToImdb(titleId, rating) {
-  const response = await fetch(GraphqlUrl, { method: "POST", headers: BuildHeaders(titleId), body: JSON.stringify(BuildBody(titleId, rating)) });
+  const response = await fetch(GraphqlUrl, BuildRatingFetchOptions(titleId, rating));
   const payload = ParseMaybeJson(await response.text());
   const error = BuildImdbError(response, payload);
   if (error)
@@ -53,6 +55,14 @@ async function PostRatingToImdb(titleId, rating) {
   if (writtenRating !== rating)
     return Fail(502, "IMDB_UNEXPECTED_RESPONSE", "IMDb did not echo the requested rating.");
   return Ok({ ok: true, titleId, rating: writtenRating });
+}
+
+function BuildRatingFetchOptions(titleId, rating) {
+  return {
+    method: "POST",
+    headers: BuildHeaders(titleId),
+    body: JSON.stringify(BuildBody(titleId, rating))
+  };
 }
 
 function BuildHeaders(titleId) {
@@ -79,7 +89,8 @@ function BuildImdbError(response, payload) {
     return Fail(429, "IMDB_RATE_LIMITED", "IMDb rate limited the request. Slow down and retry later.");
   if (!response.ok)
     return Fail(response.status, "IMDB_HTTP_ERROR", `IMDb returned HTTP ${response.status}.`);
-  if (Array.isArray(payload?.errors) && payload.errors.length)
+  const hasGraphqlErrors = Array.isArray(payload?.errors) && payload.errors.length;
+  if (hasGraphqlErrors)
     return BuildGraphqlError(payload.errors);
   return null;
 }

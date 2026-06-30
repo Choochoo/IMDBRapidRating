@@ -11,6 +11,7 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 - Enriches visible cards with poster and synopsis metadata from TMDB when configured.
 - Imports your IMDb ratings CSV so already-rated titles are removed from the queue.
 - Saves that ratings CSV locally and auto-loads it on future launches.
+- Generates AI movie recommendations from a minimized ratings profile.
 - Saves local progress in browser storage.
 - Writes ratings `1` through `9` back to IMDb when live mode is configured.
 - Updates the saved ratings CSV after successful live IMDb writes.
@@ -146,6 +147,35 @@ Rapid Rater looks up each title by its IMDb ID through TMDB, then caches the ret
 
 The header shows **Retry IMDb failures** when ratings failed before IMDb accepted them. That retry does not include local CSV-sync failures where IMDb already saved the rating.
 
+## AI Recommendations
+
+Open the **AI Recommendations** tab to generate movie picks from your saved IMDb ratings CSV. This feature sends only these fields to OpenAI:
+
+- Movie title
+- Release year
+- Genres
+- Your rating
+
+No IMDb cookie, TMDB key, `tt` IDs, submit history, or raw CSV file is sent.
+
+Click **Set OpenAI Key** in the tab and paste an API key. Rapid Rater saves it locally to `.env.local`:
+
+```env
+OPENAI_API_KEY=<paste your OpenAI API key here>
+OPENAI_MODEL=
+OPENAI_MODEL_LAG=2
+```
+
+The server reads `data/imdb-ratings.csv`, joins genres from `data/movies.json` when possible, keeps only the four recommendation fields, and sends an optimized profile to the OpenAI Responses API. The returned recommendations include title, year, genres, and a structured explanation of why the pick fits your rated movies.
+
+By default, Rapid Rater calls OpenAI's Models API, filters available GPT text models, sorts them newest first, and selects the model at `OPENAI_MODEL_LAG`. The default lag is `2`, which means two places behind the newest eligible model.
+
+Use the model dropdown in the AI Recommendations tab to choose a specific model. Choosing **Auto** clears `OPENAI_MODEL` and returns to lag-based selection. Choosing a model saves it locally:
+
+```env
+OPENAI_MODEL=<selected model id>
+```
+
 ## Generate Movie Data
 
 Rapid Rater does not include dummy movie data. Generate the real local movie queue before first run:
@@ -188,7 +218,14 @@ node scripts/build-movie-pool.mjs --refresh
 index.html                 App shell
 src/styles.css             UI styling
 src/app.js                 Browser entrypoint
-src/app/                   Browser app modules
+src/app/rapid-rater-app.js Browser app coordinator
+src/app/elements.js        DOM element lookup
+src/app/state.js           Initial app state builders
+src/app/movies.js          Movie data normalization
+src/app/rendering.js       Card and failure rendering
+src/app/rating-records.js  Rating, retry, CSV helpers
+src/app/stats.js           Rating counters and summaries
+src/app/util.js            Shared browser utilities
 server/                    Local API and IMDb proxy modules
 shared/                    Browser/server shared helpers
 scripts/server.mjs         Local server entrypoint

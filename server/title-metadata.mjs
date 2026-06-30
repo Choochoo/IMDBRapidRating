@@ -110,7 +110,7 @@ async function FetchTitlePageMetadata(titleId) {
 }
 
 async function FetchSuggestionMetadata(titleId) {
-  const response = await fetch(`https://v3.sg.media-imdb.com/suggestion/t/${titleId}.json`, { headers: { "accept": "application/json", "user-agent": "Mozilla/5.0" } });
+  const response = await fetch(BuildSuggestionUrl(titleId), { headers: BuildSuggestionHeaders() });
   if (!response.ok)
     throw new Error(`IMDb suggestion endpoint returned HTTP ${response.status}.`);
   const payload = await response.json();
@@ -119,6 +119,17 @@ async function FetchSuggestionMetadata(titleId) {
     posterUrl: NormalizeImageUrl(item?.i?.imageUrl || ""),
     synopsis: "",
     source: "imdb-suggestion"
+  };
+}
+
+function BuildSuggestionUrl(titleId) {
+  return `https://v3.sg.media-imdb.com/suggestion/t/${titleId}.json`;
+}
+
+function BuildSuggestionHeaders() {
+  return {
+    "accept": "application/json",
+    "user-agent": "Mozilla/5.0"
   };
 }
 
@@ -174,7 +185,12 @@ function CleanMetadataText(value) {
 }
 
 function DecodeHtmlEntities(value) {
-  return String(value || "").replace(/&quot;/g, "\"").replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+  return String(value || "")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 }
 
 function LoadMetadataCache() {

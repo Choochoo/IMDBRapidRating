@@ -23,13 +23,20 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
+  height: 100%;
   min-height: 100%;
 }
 
 body {
   margin: 0;
+  height: 100dvh;
+  min-height: 100dvh;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 240px),
     var(--bg);
@@ -72,7 +79,17 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .app-header {
+  flex: 0 0 auto;
   display: grid;
   gap: 10px;
   padding: 12px 18px 10px;
@@ -107,6 +124,22 @@ button:focus-visible {
   color: #17120a;
   font-size: 12px;
   letter-spacing: 0.04em;
+}
+
+.view-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.view-tab {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.view-tab.active {
+  border-color: rgba(224, 173, 71, 0.55);
+  background: var(--accent-soft);
+  color: #f7d58e;
 }
 
 .stats {
@@ -193,10 +226,140 @@ button:focus-visible {
 }
 
 .stage {
-  flex: 1;
-  height: auto;
-  min-height: 460px;
+  flex: 1 1 0;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
   padding: 24px;
+}
+
+.recommendation-view {
+  flex: 1 1 0;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+}
+
+.recommendation-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.recommendation-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.recommendation-header h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+}
+
+.recommendation-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.recommendation-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.recommendation-status {
+  min-height: 24px;
+  max-width: 980px;
+  margin-bottom: 14px;
+  color: #c4cdd7;
+  line-height: 1.45;
+}
+
+.model-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 430px);
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.model-copy strong,
+.model-copy span {
+  display: block;
+}
+
+.model-copy span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.model-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.model-controls select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #101821;
+  color: var(--text);
+  padding: 0 10px;
+}
+
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.recommendation-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0)),
+    var(--surface);
+  padding: 16px;
+}
+
+.recommendation-card h2 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.recommendation-card h3 {
+  margin: 18px 0 7px;
+  color: #f4cf86;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recommendation-card p {
+  margin: 10px 0 0;
+  color: #c4cdd7;
+  line-height: 1.45;
+}
+
+.recommendation-evidence {
+  display: grid;
+  gap: 7px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #c4cdd7;
 }
 
 .failure-panel {
@@ -263,8 +426,10 @@ button:focus-visible {
 
 .movie-strip {
   display: flex;
+  flex: 1 1 auto;
   gap: 18px;
   height: 100%;
+  min-height: 0;
   max-width: 1420px;
   margin: 0 auto;
 }
@@ -273,6 +438,7 @@ button:focus-visible {
   position: relative;
   display: flex;
   flex: 1 1 0;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   flex-direction: column;
@@ -285,15 +451,11 @@ button:focus-visible {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   opacity: 0.68;
   transition:
-    opacity 120ms ease,
-    border-color 120ms ease,
-    box-shadow 120ms ease,
-    transform 120ms ease,
-    flex-basis var(--anim) ease,
-    flex-grow var(--anim) ease,
-    max-width var(--anim) ease,
-    padding var(--anim) ease,
-    margin var(--anim) ease;
+    opacity var(--anim) ease,
+    border-color var(--anim) ease,
+    box-shadow var(--anim) ease,
+    filter var(--anim) ease,
+    transform var(--anim) ease;
   max-width: 100%;
 }
 
@@ -305,45 +467,37 @@ button:focus-visible {
 }
 
 .movie-card.leaving {
-  flex: 0 0 0;
-  max-width: 0;
-  padding-left: 0;
-  padding-right: 0;
-  margin-right: -14px;
+  filter: blur(1px);
   opacity: 0;
-  transform: translateY(-24px) scale(0.96);
+  pointer-events: none;
+  transform: translateY(6px) scale(0.985);
 }
 
 .movie-card.leaving.skip {
-  transform: translateY(24px) scale(0.96);
+  transform: translateY(8px) scale(0.985);
 }
 
-.movie-card.entering {
-  animation: enter var(--anim) ease both;
-}
-
-@keyframes enter {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-  to {
-    opacity: 0.68;
-    transform: translateY(0) scale(1);
-  }
+.movie-strip.rating .movie-card:not(.leaving) {
+  opacity: 0.62;
 }
 
 .poster {
   position: relative;
-  flex: 0 0 auto;
+  flex: 0 0 clamp(360px, 68%, 700px);
   width: 100%;
-  height: clamp(260px, 48vh, 420px);
+  height: auto;
   min-height: 0;
   overflow: hidden;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background:
     linear-gradient(135deg, rgba(var(--tone), 0.58), rgba(255, 255, 255, 0.06)),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 16px);
+  transition: flex-basis 180ms ease;
+}
+
+.movie-card.active .poster {
+  flex-basis: clamp(280px, 48%, 560px);
+  animation: ActivePosterLift 180ms ease;
 }
 
 .poster.has-image {
@@ -408,6 +562,11 @@ button:focus-visible {
   padding: 18px;
 }
 
+.movie-card.active .movie-body {
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
 .position {
   display: flex;
   justify-content: space-between;
@@ -430,14 +589,25 @@ button:focus-visible {
 
 .synopsis {
   display: -webkit-box;
-  min-height: 66px;
+  min-height: 84px;
   margin: 0 0 12px;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   color: #c4cdd7;
   font-size: 14px;
   line-height: 1.45;
+}
+
+.movie-card.active .synopsis {
+  display: block;
+  min-height: 0;
+  overflow: visible;
+  -webkit-box-orient: initial;
+  -webkit-line-clamp: unset;
+  color: #dce5ee;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 .meta {
@@ -462,7 +632,18 @@ button:focus-visible {
   white-space: nowrap;
 }
 
+@keyframes ActivePosterLift {
+  from {
+    flex-basis: clamp(360px, 68%, 700px);
+  }
+
+  to {
+    flex-basis: clamp(280px, 48%, 560px);
+  }
+}
+
 .footer {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 18px;
@@ -471,6 +652,29 @@ button:focus-visible {
   padding: 10px 18px 14px;
   border-top: 1px solid var(--line);
   color: var(--muted);
+}
+
+.shortcut-panel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.shortcut-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 210px;
+}
+
+.shortcut-copy strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.shortcut-copy span {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .footer p {
@@ -498,11 +702,23 @@ button:focus-visible {
   color: var(--text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
+  transition:
+    border-color var(--anim) ease,
+    background var(--anim) ease,
+    color var(--anim) ease,
+    transform var(--anim) ease;
 }
 
 .key.wide {
   width: auto;
   padding: 0 9px;
+}
+
+.key.pressed {
+  border-color: rgba(224, 173, 71, 0.85);
+  background: rgba(224, 173, 71, 0.22);
+  color: #ffe2a2;
+  transform: translateY(-2px);
 }
 
 .divider {
@@ -685,7 +901,7 @@ button:focus-visible {
 
 @media (max-width: 1180px) {
   body {
-    overflow: auto;
+    overflow: hidden;
   }
 
   .header-main,
@@ -706,8 +922,19 @@ button:focus-visible {
     justify-content: flex-start;
   }
 
+  .recommendation-header {
+    flex-direction: column;
+  }
+
+  .recommendation-actions {
+    justify-content: flex-start;
+  }
+
+  .model-panel {
+    grid-template-columns: 1fr;
+  }
+
   .stage {
-    height: auto;
     min-height: 0;
   }
 
@@ -718,16 +945,23 @@ button:focus-visible {
 
   .movie-strip {
     flex-wrap: wrap;
-    min-height: 740px;
   }
 
   .movie-card {
     flex: 1 1 calc(33.333% - 10px);
-    min-height: 520px;
+  }
+
+  .recommendation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .footer {
     grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .shortcut-panel {
+    flex-wrap: wrap;
   }
 
   .footer p {
@@ -738,6 +972,7 @@ button:focus-visible {
 @media (max-width: 720px) {
   .app-header,
   .stage,
+  .recommendation-view,
   .footer {
     padding-left: 12px;
     padding-right: 12px;
@@ -753,7 +988,11 @@ button:focus-visible {
   }
 
   .movie-strip {
-    min-height: 860px;
+    align-content: stretch;
+  }
+
+  .shortcut-copy {
+    min-width: 0;
   }
 
   .movie-card {
@@ -766,5 +1005,16 @@ button:focus-visible {
 
   .title {
     font-size: 20px;
+  }
+
+  .view-tabs,
+  .recommendation-actions,
+  .model-controls {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .recommendation-grid {
+    grid-template-columns: 1fr;
   }
 }

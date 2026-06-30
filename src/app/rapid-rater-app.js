@@ -1,11 +1,31 @@
 import { Config } from "./config.js";
-import { CleanText, EscapeHtml, FormatCount, NormalizeGenres, Shuffle, ToNumber } from "./util.js";
-import { ParseCsv, ToCsvRow } from "../../shared/csv.js";
+import { BuildElements } from "./elements.js";
+import { DescribeSource, MakeSignature, NormalizeMovieList } from "./movies.js";
+import {
+  BuildCsvText,
+  BuildRateRequest,
+  BuildRatingRecord,
+  CanSubmitLive,
+  ImportImdbCsv,
+  IsRetryableImdbSubmit,
+  SortedRatingRecords
+} from "./rating-records.js";
+import {
+  RenderCard,
+  RenderFailure,
+  RenderModelOptions,
+  RenderRecommendationCard,
+  UpdatePoster,
+  UpdateSynopsis
+} from "./rendering.js";
+import { BuildCheckedAiState, BuildCheckedLiveState, BuildState, BuildStoragePayload } from "./state.js";
+import { BuildCompleteSummary, CountRatings } from "./stats.js";
+import { EscapeHtml, FormatCount, Shuffle } from "./util.js";
 
 export class RapidRaterApp {
   constructor() {
-    this.Elements = this.BuildElements();
-    this.State = this.BuildState();
+    this.Elements = BuildElements();
+    this.State = BuildState();
     this.ToastTimer = 0;
     this.SubmitInFlight = false;
     this.SubmitQueue = [];
@@ -22,116 +42,11 @@ export class RapidRaterApp {
 
   async Initialize() {
     await this.RefreshLiveStatus();
+    await this.RefreshAiStatus();
     const data = await this.LoadMovieData();
     this.ApplyMovieData(data, data.sourceLabel);
     await this.LoadSavedRatingsCsv();
     this.PromptForMissingCookie();
-  }
-
-  BuildElements() {
-    return {
-      strip: this.Element("movie-strip"),
-      ...this.BuildCounterElements(),
-      ...this.BuildStatusElements(),
-      ...this.BuildEmptyElements(),
-      ...this.BuildFileElements(),
-      ...this.BuildCookieElements()
-    };
-  }
-
-  BuildCounterElements() {
-    return {
-      rated: this.Element("rated-count"),
-      skipped: this.Element("skip-count"),
-      imported: this.Element("imported-count"),
-      sent: this.Element("sent-count"),
-      failed: this.Element("failed-count"),
-      poolStatus: this.Element("pool-status")
-    };
-  }
-
-  BuildStatusElements() {
-    return {
-      sourceBadge: this.Element("source-badge"),
-      liveBadge: this.Element("live-badge"),
-      retryFailed: this.Element("retry-failed"),
-      failureRetry: this.Element("failure-retry"),
-      failurePanel: this.Element("failure-panel"),
-      failureList: this.Element("failure-list"),
-      toast: this.Element("toast")
-    };
-  }
-
-  BuildEmptyElements() {
-    return {
-      empty: this.Element("empty-state"),
-      emptySummary: this.Element("empty-summary")
-    };
-  }
-
-  BuildFileElements() {
-    return {
-      jsonFile: this.Element("json-file"),
-      csvFile: this.Element("csv-file")
-    };
-  }
-
-  BuildCookieElements() {
-    return {
-      ...this.BuildImdbSetupElements(),
-      ...this.BuildTmdbSetupElements()
-    };
-  }
-
-  BuildImdbSetupElements() {
-    return {
-      configureCookie: this.Element("configure-cookie"),
-      cookieDialog: this.Element("cookie-dialog"),
-      cookieInput: this.Element("imdb-cookie-input"),
-      cookieError: this.Element("cookie-error"),
-      cookieSave: this.Element("cookie-save"),
-      cookieClose: this.Element("cookie-close"),
-      cookieLater: this.Element("cookie-later")
-    };
-  }
-
-  BuildTmdbSetupElements() {
-    return {
-      configureTmdb: this.Element("configure-tmdb"),
-      tmdbDialog: this.Element("tmdb-dialog"),
-      tmdbInput: this.Element("tmdb-key-input"),
-      tmdbError: this.Element("tmdb-error"),
-      tmdbSave: this.Element("tmdb-save"),
-      tmdbClose: this.Element("tmdb-close"),
-      tmdbLater: this.Element("tmdb-later")
-    };
-  }
-
-  BuildState() {
-    return {
-      movies: [],
-      movieById: new Map(),
-      queue: [],
-      ratings: {},
-      history: [],
-      sourceLabel: "",
-      signature: "",
-      metadata: {},
-      live: this.BuildLiveState(),
-      locked: false,
-      savedQueueIds: null
-    };
-  }
-
-  BuildLiveState() {
-    return {
-      checked: false,
-      configured: false,
-      dryRun: false,
-      tmdbConfigured: false,
-      submitting: false,
-      lastError: ""
-    };
   }
 
   Element(id) {
@@ -139,10 +54,17 @@ export class RapidRaterApp {
   }
 
   BindEvents() {
+    this.BindViewEvents();
     this.BindToolbarEvents();
     this.BindCookieEvents();
+    this.BindAiEvents();
     this.BindFileEvents();
     window.addEventListener("keydown", (event) => this.HandleKeyDown(event));
+  }
+
+  BindViewEvents() {
+    this.Elements.tabRater.addEventListener("click", () => this.ShowView("rater"));
+    this.Elements.tabAi.addEventListener("click", () => this.ShowView("ai"));
   }
 
   BindToolbarEvents() {
@@ -169,15 +91,54 @@ export class RapidRaterApp {
     this.Elements.tmdbSave.addEventListener("click", () => this.SaveTmdbKeyFromDialog().catch((error) => this.ShowTmdbError(error.message)));
   }
 
+  BindAiEvents() {
+    this.Elements.configureAi.addEventListener("click", () => this.ShowAiDialog());
+    this.Elements.aiClose.addEventListener("click", () => this.HideAiDialog());
+    this.Elements.aiLater.addEventListener("click", () => this.HideAiDialog());
+    this.Elements.aiSave.addEventListener("click", () => this.HandleAiSaveClick());
+    this.Elements.generateRecommendations.addEventListener("click", () => this.HandleRecommendationClick());
+    this.Elements.refreshAiModels.addEventListener("click", () => this.HandleModelRefreshClick());
+    this.Elements.aiModelSelect.addEventListener("change", () => this.HandleModelSelectChange());
+  }
+
+  HandleAiSaveClick() {
+    this.SaveAiKeyFromDialog().catch((error) => this.ShowAiError(error.message));
+  }
+
+  HandleRecommendationClick() {
+    this.GenerateRecommendations().catch((error) => this.ShowRecommendationError(error.message));
+  }
+
+  HandleModelRefreshClick() {
+    this.RefreshAiModels().catch((error) => this.ShowRecommendationError(error.message));
+  }
+
+  HandleModelSelectChange() {
+    this.SaveSelectedAiModel().catch((error) => this.ShowRecommendationError(error.message));
+  }
+
   BindFileEvents() {
     this.Elements.jsonFile.addEventListener("change", (event) => this.HandleJsonFile(event));
     this.Elements.csvFile.addEventListener("change", (event) => this.HandleCsvFile(event));
   }
 
+  ShowView(view) {
+    this.State.activeView = view;
+    this.Elements.raterView.hidden = view !== "rater";
+    this.Elements.recommendationView.hidden = view !== "ai";
+    this.Elements.ratingFooter.hidden = view !== "rater";
+    this.Elements.tabRater.classList.toggle("active", view === "rater");
+    this.Elements.tabAi.classList.toggle("active", view === "ai");
+    if (view === "ai")
+      this.UpdateRecommendationStatus();
+  }
+
   HandleKeyDown(event) {
+    if (this.State.activeView !== "rater")
+      return;
     if (this.IsDialogOpen())
       return;
-    if (event.target && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName))
+    if (this.IsFormControlTarget(event.target))
       return;
     if (event.altKey || event.ctrlKey || event.metaKey)
       return;
@@ -187,18 +148,34 @@ export class RapidRaterApp {
   }
 
   IsDialogOpen() {
-    return !this.Elements.cookieDialog.hidden || !this.Elements.tmdbDialog.hidden;
+    return this.ReadSetupDialogs().some((dialog) => !dialog.hidden);
+  }
+
+  ReadSetupDialogs() {
+    return [
+      this.Elements.cookieDialog,
+      this.Elements.tmdbDialog,
+      this.Elements.aiDialog
+    ];
+  }
+
+  IsFormControlTarget(target) {
+    if (!target)
+      return false;
+    return /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(target.tagName);
   }
 
   HandleControlKey(event) {
     if (event.key === "Backspace" || event.key === "Delete") {
       event.preventDefault();
+      this.FlashShortcutKey(event.key);
       this.Undo();
       return true;
     }
     if (event.key !== Config.skipKey)
       return false;
     event.preventDefault();
+    this.FlashShortcutKey(event.key);
     this.MarkActive(null, "notSeen");
     return true;
   }
@@ -207,12 +184,32 @@ export class RapidRaterApp {
     if (!Object.hasOwn(Config.ratingKeys, event.key))
       return;
     event.preventDefault();
+    this.FlashShortcutKey(event.key);
     this.MarkActive(Config.ratingKeys[event.key], "rated");
+  }
+
+  FlashShortcutKey(key) {
+    const id = this.ShortcutIdForKey(key);
+    const element = this.Elements.ratingFooter.querySelector(`[data-shortcut="${id}"]`);
+    if (!element)
+      return;
+    element.classList.remove("pressed");
+    void element.offsetWidth;
+    element.classList.add("pressed");
+    window.setTimeout(() => element.classList.remove("pressed"), 180);
+  }
+
+  ShortcutIdForKey(key) {
+    if (key === "Backspace" || key === "Delete")
+      return "undo";
+    if (key === Config.skipKey)
+      return "skip";
+    return `rate-${key}`;
   }
 
   async LoadMovieData() {
     const data = await this.FetchJson(Config.dataUrl).catch((error) => this.ThrowMovieDataError(error));
-    return { ...data, sourceLabel: this.DescribeSource(data, "movies.json") };
+    return { ...data, sourceLabel: DescribeSource(data, "movies.json") };
   }
 
   ThrowMovieDataError(error) {
@@ -232,7 +229,7 @@ export class RapidRaterApp {
       return;
     if (!response.ok)
       return;
-    const count = this.ImportImdbCsv(await response.text());
+    const count = ImportImdbCsv(await response.text(), this.State.ratings, this.State.movieById);
     if (!count)
       return;
     this.RebuildQueue();
@@ -242,64 +239,30 @@ export class RapidRaterApp {
 
   async RefreshLiveStatus() {
     const status = await this.FetchJson(Config.liveStatusUrl).catch((error) => ({ configured: false, dryRun: false, lastError: error.message }));
-    this.State.live = this.BuildCheckedLiveState(status);
+    this.State.live = BuildCheckedLiveState(status);
     this.UpdateStats();
   }
 
-  BuildCheckedLiveState(status) {
-    return {
-      checked: true,
-      configured: Boolean(status.configured),
-      dryRun: Boolean(status.dryRun),
-      tmdbConfigured: Boolean(status.tmdbConfigured),
-      submitting: false,
-      lastError: status.lastError || ""
-    };
+  async RefreshAiStatus() {
+    const status = await this.FetchJson(Config.aiStatusUrl).catch(() => ({ configured: false, model: "" }));
+    this.State.ai = BuildCheckedAiState(status);
+    this.UpdateAiControls();
+    if (this.State.ai.configured)
+      await this.RefreshAiModels().catch(() => null);
   }
 
   ApplyMovieData(raw, sourceLabel) {
-    const movies = this.NormalizeMovieList(raw);
+    const movies = NormalizeMovieList(raw);
     if (!movies.length)
       throw new Error("No valid tt-style movie IDs were found.");
     this.State.movies = movies;
     this.State.movieById = new Map(movies.map((movie) => [movie.ttId, movie]));
-    this.State.sourceLabel = sourceLabel || this.DescribeSource(raw, "custom data");
-    this.State.signature = this.MakeSignature(movies);
+    this.State.sourceLabel = sourceLabel || DescribeSource(raw, "custom data");
+    this.State.signature = MakeSignature(movies);
     this.RestoreLocalState();
     this.RebuildQueue();
     this.SaveLocalState();
     this.Render();
-  }
-
-  NormalizeMovieList(raw) {
-    const list = Array.isArray(raw) ? raw : raw.movies;
-    if (!Array.isArray(list))
-      return [];
-    const seen = new Set();
-    return list.map((item) => this.NormalizeMovie(item, seen)).filter(Boolean);
-  }
-
-  NormalizeMovie(item, seen) {
-    const ttId = String(item.ttId || item.tconst || item.const || item.id || "").trim();
-    if (!/^tt\d+$/.test(ttId) || seen.has(ttId))
-      return null;
-    const title = CleanText(item.title || item.primaryTitle || item.Title || "");
-    if (!title)
-      return null;
-    seen.add(ttId);
-    return this.BuildMovieItem(item, ttId, title);
-  }
-
-  BuildMovieItem(item, ttId, title) {
-    return {
-      ttId,
-      title,
-      year: ToNumber(item.year || item.startYear || item.Year),
-      runtimeMinutes: ToNumber(item.runtimeMinutes || item.runtime),
-      genres: NormalizeGenres(item.genres),
-      imdbRating: ToNumber(item.imdbRating || item.averageRating),
-      numVotes: ToNumber(item.numVotes || item.votes)
-    };
   }
 
   RestoreLocalState() {
@@ -318,21 +281,12 @@ export class RapidRaterApp {
   }
 
   SaveLocalState() {
-    const payload = this.BuildStoragePayload();
+    const payload = BuildStoragePayload(this.State);
     try {
       localStorage.setItem(Config.storageKey, JSON.stringify(payload));
     } catch {
       return;
     }
-  }
-
-  BuildStoragePayload() {
-    return {
-      signature: this.State.signature,
-      ratings: this.State.ratings,
-      history: this.State.history.slice(-200),
-      queueIds: this.State.queue.map((movie) => movie.ttId)
-    };
   }
 
   RebuildQueue() {
@@ -346,11 +300,17 @@ export class RapidRaterApp {
   BuildSavedQueue(activeIds, queuedIds) {
     if (!this.State.savedQueueIds)
       return [];
-    return this.State.savedQueueIds.map((ttId) => this.State.movieById.get(ttId)).filter((movie) => this.CanRestoreQueuedMovie(movie, activeIds, queuedIds));
+    return this.State.savedQueueIds
+      .map((ttId) => this.State.movieById.get(ttId))
+      .filter((movie) => this.CanRestoreQueuedMovie(movie, activeIds, queuedIds));
   }
 
   CanRestoreQueuedMovie(movie, activeIds, queuedIds) {
-    if (!movie || activeIds.has(movie.ttId) || queuedIds.has(movie.ttId))
+    if (!movie)
+      return false;
+    const isAlreadyActive = activeIds.has(movie.ttId);
+    const isAlreadyQueued = queuedIds.has(movie.ttId);
+    if (isAlreadyActive || isAlreadyQueued)
       return false;
     queuedIds.add(movie.ttId);
     return true;
@@ -369,41 +329,14 @@ export class RapidRaterApp {
   RenderVisibleCards() {
     const visible = this.State.queue.slice(0, Config.visibleCount);
     this.Elements.empty.hidden = true;
-    this.Elements.strip.innerHTML = visible.map((movie, index) => this.RenderCard(movie, index)).join("");
-    requestAnimationFrame(() => this.Elements.strip.lastElementChild?.classList.add("entering"));
+    this.Elements.strip.classList.remove("rating");
+    this.Elements.strip.innerHTML = visible.map((movie, index) => this.BuildCardHtml(movie, index)).join("");
     this.EnrichVisibleMovies(visible);
   }
 
-  RenderCard(movie, index) {
+  BuildCardHtml(movie, index) {
     const metadata = this.State.metadata[movie.ttId] || {};
-    const tone = this.ToneFromId(movie.ttId);
-    const className = index === 0 ? "movie-card active" : "movie-card";
-    return `<article class="${className}" data-ttid="${EscapeHtml(movie.ttId)}" style="--tone: ${tone};">${this.RenderPoster(movie, metadata)}${this.RenderCardBody(movie, index, metadata)}</article>`;
-  }
-
-  RenderCardBody(movie, index, metadata) {
-    const synopsis = EscapeHtml(metadata.synopsis || "Loading synopsis...");
-    return `<div class="movie-body">${this.RenderPosition(movie, index)}<h2 class="title">${EscapeHtml(movie.title)}</h2><p class="synopsis">${synopsis}</p><div class="meta">${this.RenderMeta(movie)}</div></div>`;
-  }
-
-  RenderPosition(movie, index) {
-    const position = `${index + 1} / ${Math.min(Config.visibleCount, this.State.queue.length)}`;
-    return `<div class="position"><span>${position}</span><span>${EscapeHtml(movie.ttId)}</span></div>`;
-  }
-
-  RenderPoster(movie, metadata) {
-    const year = EscapeHtml(movie.year || "");
-    if (!metadata.posterUrl)
-      return `<div class="poster" data-year="${year}"></div>`;
-    return `<div class="poster has-image" data-year="${year}"><img class="poster-image" src="${EscapeHtml(metadata.posterUrl)}" alt=""></div>`;
-  }
-
-  RenderMeta(movie) {
-    const rating = movie.imdbRating ? `<span class="pill">${EscapeHtml(movie.imdbRating.toFixed(1))} IMDb</span>` : "";
-    const votes = movie.numVotes ? `<span class="pill">${FormatCount(movie.numVotes)} votes</span>` : "";
-    const runtime = movie.runtimeMinutes ? `<span class="pill">${movie.runtimeMinutes} min</span>` : "";
-    const genres = movie.genres.slice(0, 3).map((genre) => `<span class="pill">${EscapeHtml(genre)}</span>`).join("");
-    return `${rating}${votes}${runtime}${genres}`;
+    return RenderCard(movie, index, metadata, this.State.queue.length);
   }
 
   EnrichVisibleMovies(movies) {
@@ -416,7 +349,13 @@ export class RapidRaterApp {
 
   QueueMetadataRequest(ttId) {
     this.MetadataInFlight.add(ttId);
-    this.FetchTitleMetadata(ttId).then((metadata) => this.ApplyTitleMetadata(ttId, metadata)).catch(() => this.ApplyTitleMetadata(ttId, this.BuildMissingMetadata())).finally(() => this.MetadataInFlight.delete(ttId));
+    this.FetchAndApplyMetadata(ttId);
+  }
+
+  async FetchAndApplyMetadata(ttId) {
+    const metadata = await this.FetchTitleMetadata(ttId).catch(() => this.BuildMissingMetadata());
+    this.ApplyTitleMetadata(ttId, metadata);
+    this.MetadataInFlight.delete(ttId);
   }
 
   BuildMissingMetadata() {
@@ -443,26 +382,12 @@ export class RapidRaterApp {
     const card = this.Elements.strip.querySelector(`[data-ttid="${ttId}"]`);
     if (!card)
       return;
-    this.UpdatePoster(card, metadata);
-    this.UpdateSynopsis(card, metadata);
-  }
-
-  UpdatePoster(card, metadata) {
-    const poster = card.querySelector(".poster");
-    if (!poster || !metadata.posterUrl)
-      return;
-    poster.classList.add("has-image");
-    poster.innerHTML = `<img class="poster-image" src="${EscapeHtml(metadata.posterUrl)}" alt="">`;
-  }
-
-  UpdateSynopsis(card, metadata) {
-    const synopsis = card.querySelector(".synopsis");
-    if (synopsis)
-      synopsis.textContent = metadata.synopsis || "Synopsis unavailable.";
+    UpdatePoster(card, metadata);
+    UpdateSynopsis(card, metadata);
   }
 
   UpdateStats() {
-    const counts = this.CountRatings();
+    const counts = CountRatings(this.State.ratings);
     this.Elements.rated.textContent = FormatCount(counts.rated);
     this.Elements.skipped.textContent = FormatCount(counts.skipped);
     this.Elements.imported.textContent = FormatCount(counts.imported);
@@ -475,34 +400,6 @@ export class RapidRaterApp {
 
   UpdatePoolStatus() {
     this.Elements.poolStatus.textContent = this.State.queue.length ? "Ready" : "Empty";
-  }
-
-  CountRatings() {
-    const counts = { rated: 0, skipped: 0, imported: 0, sent: 0, failed: 0, pending: 0, retryableImdb: 0 };
-    for (const item of Object.values(this.State.ratings))
-      this.CountRatingItem(counts, item);
-    return counts;
-  }
-
-  CountRatingItem(counts, item) {
-    if (item.status === "rated")
-      counts.rated++;
-    if (item.status === "notSeen")
-      counts.skipped++;
-    if (item.status === "imported")
-      counts.imported++;
-    this.CountSubmitStatus(counts, item);
-  }
-
-  CountSubmitStatus(counts, item) {
-    if (item.submitStatus === "submitted")
-      counts.sent++;
-    if (item.submitStatus === "failed")
-      counts.failed++;
-    if (item.submitStatus === "pending")
-      counts.pending++;
-    if (this.IsRetryableImdbSubmit(item))
-      counts.retryableImdb++;
   }
 
   UpdateLiveBadge(counts) {
@@ -547,6 +444,44 @@ export class RapidRaterApp {
     this.Elements.failureRetry.disabled = disabled;
   }
 
+  UpdateAiControls() {
+    this.Elements.configureAi.textContent = this.State.ai.configured ? "OpenAI connected" : "Set OpenAI Key";
+    this.SetAiControlsDisabled(this.State.ai.loading);
+    this.UpdateModelFeed();
+    this.UpdateRecommendationStatus();
+  }
+
+  UpdateRecommendationStatus() {
+    if (!this.State.ai.configured)
+      return this.SetRecommendationStatus("Add an OpenAI API key to generate recommendations.");
+    this.SetRecommendationStatus(`Ready with ${this.ReadAiModelLabel()}.`);
+  }
+
+  SetRecommendationStatus(message) {
+    this.Elements.recommendationStatus.textContent = message;
+  }
+
+  ReadAiModelLabel() {
+    return this.State.ai.selectedModel || this.State.ai.model || "auto model";
+  }
+
+  UpdateModelFeed() {
+    this.Elements.aiModelStatus.textContent = `Model: ${this.ReadAiModelLabel()}`;
+    this.Elements.aiModelDetail.textContent = this.BuildModelDetailText();
+    this.UpdateModelSelect();
+  }
+
+  BuildModelDetailText() {
+    if (this.State.ai.model)
+      return "Manual OPENAI_MODEL override is active.";
+    return `Auto-selecting ${FormatCount(this.State.ai.modelLag)} versions behind newest eligible GPT model.`;
+  }
+
+  UpdateModelSelect() {
+    this.Elements.aiModelSelect.innerHTML = RenderModelOptions(this.State.ai);
+    this.Elements.aiModelSelect.value = this.State.ai.model || "";
+  }
+
   UpdateFailurePanel() {
     const ratings = Object.values(this.State.ratings);
     const failed = ratings.filter((record) => record.submitStatus === "failed");
@@ -557,17 +492,7 @@ export class RapidRaterApp {
       return;
     }
     this.Elements.failurePanel.hidden = false;
-    this.Elements.failureList.innerHTML = failures.map((record) => this.RenderFailure(record)).join("");
-  }
-
-  RenderFailure(record) {
-    const title = EscapeHtml(record.title || record.ttId);
-    const error = EscapeHtml(record.submitError || "No error detail returned.");
-    return `<li><span>${title}</span><code>${EscapeHtml(record.ttId)}</code><b>${this.FailureKind(record)}</b><em>${error}</em></li>`;
-  }
-
-  FailureKind(record) {
-    return this.IsCsvSyncFailure(record) ? "CSV sync" : "IMDb retry";
+    this.Elements.failureList.innerHTML = failures.map(RenderFailure).join("");
   }
 
   MarkActive(rating, status) {
@@ -583,47 +508,30 @@ export class RapidRaterApp {
 
   SaveRating(movie, rating, status) {
     const previous = this.State.ratings[movie.ttId] || null;
-    this.State.ratings[movie.ttId] = this.BuildRatingRecord(movie, rating, status);
+    this.State.ratings[movie.ttId] = BuildRatingRecord(movie, rating, status, this.State.live.configured);
     this.State.history.push({ ttId: movie.ttId, previous });
     if (status === "rated")
       this.EnqueueLiveSubmit(movie.ttId);
-  }
-
-  BuildRatingRecord(movie, rating, status) {
-    return {
-      status,
-      rating,
-      title: movie.title,
-      year: movie.year || "",
-      ttId: movie.ttId,
-      at: new Date().toISOString(),
-      ...this.InitialSubmitState(status, rating)
-    };
-  }
-
-  InitialSubmitState(status, rating) {
-    if (status !== "rated")
-      return { submitStatus: "skipped", submitError: "", submittedAt: "" };
-    if (!Number.isInteger(rating) || rating < 1 || rating > 10)
-      return { submitStatus: "localOnly", submitError: "IMDb only accepts ratings from 1 to 10.", submittedAt: "" };
-    if (!this.State.live.configured)
-      return { submitStatus: "notConfigured", submitError: "Live IMDb cookie is not configured.", submittedAt: "" };
-    return { submitStatus: "pending", submitError: "", submittedAt: "" };
   }
 
   AnimateActiveCard(status) {
     const card = this.Elements.strip.firstElementChild;
     if (!card)
       return;
+    this.Elements.strip.classList.add("rating");
     card.classList.remove("active");
     card.classList.add("leaving", status === "notSeen" ? "skip" : "rated");
   }
 
   ShowRatingToast(movie, rating, status) {
-    if (status === "rated" && rating === 0)
-      return this.ShowToast(`${EscapeHtml(movie.title)} <strong>0 local only</strong>`);
-    const message = status === "rated" ? `${EscapeHtml(movie.title)} <strong>${rating}</strong>` : `${EscapeHtml(movie.title)} <strong>not seen</strong>`;
+    const message = this.BuildRatingToastMessage(movie, rating, status);
     this.ShowToast(message);
+  }
+
+  BuildRatingToastMessage(movie, rating, status) {
+    if (status === "rated")
+      return `${EscapeHtml(movie.title)} <strong>${rating}</strong>`;
+    return `${EscapeHtml(movie.title)} <strong>not seen</strong>`;
   }
 
   AdvanceQueue() {
@@ -635,7 +543,7 @@ export class RapidRaterApp {
 
   EnqueueLiveSubmit(ttId) {
     const record = this.State.ratings[ttId];
-    if (!this.CanSubmitLive(record))
+    if (!CanSubmitLive(record, this.State.live.configured))
       return false;
     record.submitStatus = "pending";
     record.submitError = "";
@@ -646,17 +554,10 @@ export class RapidRaterApp {
     return queued;
   }
 
-  CanSubmitLive(record) {
-    if (!record)
-      return false;
-    const isRated = record.status === "rated";
-    const isInteger = Number.isInteger(record.rating);
-    const isInRange = record.rating >= 1 && record.rating <= 10;
-    return isRated && this.State.live.configured && isInteger && isInRange;
-  }
-
   QueueSubmitId(ttId) {
-    if (this.SubmitQueuedIds.has(ttId) || this.SubmitActiveIds.has(ttId))
+    const isQueued = this.SubmitQueuedIds.has(ttId);
+    const isSubmitting = this.SubmitActiveIds.has(ttId);
+    if (isQueued || isSubmitting)
       return false;
     this.SubmitQueue.push(ttId);
     this.SubmitQueuedIds.add(ttId);
@@ -668,7 +569,7 @@ export class RapidRaterApp {
       return;
     const ttId = this.PopSubmitId();
     const record = this.State.ratings[ttId];
-    if (!this.CanSubmitLive(record))
+    if (!CanSubmitLive(record, this.State.live.configured))
       return this.PumpSubmitQueue();
     await this.SubmitRatingRecord(record);
   }
@@ -699,17 +600,7 @@ export class RapidRaterApp {
   }
 
   async PostLiveRating(record) {
-    return await this.PostJson(Config.rateUrl, this.BuildRateRequest(record), "Local IMDb proxy failed.");
-  }
-
-  BuildRateRequest(record) {
-    return {
-      titleId: record.ttId,
-      rating: record.rating,
-      title: record.title || "",
-      year: record.year || "",
-      at: record.at || new Date().toISOString()
-    };
+    return await this.PostJson(Config.rateUrl, BuildRateRequest(record), "Local IMDb proxy failed.");
   }
 
   MarkSubmitSuccess(ttId, rating) {
@@ -747,7 +638,7 @@ export class RapidRaterApp {
   QueueRetryableImdbSubmits() {
     let queued = 0;
     for (const record of Object.values(this.State.ratings)) {
-      if (!this.IsRetryableImdbSubmit(record))
+      if (!IsRetryableImdbSubmit(record))
         continue;
       if (this.EnqueueLiveSubmit(record.ttId))
         queued++;
@@ -785,6 +676,18 @@ export class RapidRaterApp {
     this.Elements.tmdbDialog.hidden = true;
   }
 
+  ShowAiDialog() {
+    this.ShowAiError("");
+    this.Elements.aiDialog.hidden = false;
+    window.setTimeout(() => this.Elements.aiInput.focus(), 0);
+  }
+
+  HideAiDialog() {
+    this.Elements.aiInput.value = "";
+    this.ShowAiError("");
+    this.Elements.aiDialog.hidden = true;
+  }
+
   async SaveCookieFromDialog() {
     const cookie = this.Elements.cookieInput.value.trim();
     if (!cookie)
@@ -809,6 +712,30 @@ export class RapidRaterApp {
 
   async PostTmdbKey(apiKey) {
     return await this.PostJson(Config.tmdbKeyUrl, { apiKey }, "TMDB API key save failed.");
+  }
+
+  async SaveAiKeyFromDialog() {
+    const apiKey = this.Elements.aiInput.value.trim();
+    if (!apiKey)
+      return this.ShowAiError("Paste your OpenAI API key.");
+    this.SetAiSaving(true);
+    await this.PostAiKey(apiKey).finally(() => this.SetAiSaving(false));
+    await this.ApplySavedAiKey();
+  }
+
+  async PostAiKey(apiKey) {
+    return await this.PostJson(Config.aiKeyUrl, { apiKey }, "OpenAI API key save failed.");
+  }
+
+  async SaveSelectedAiModel() {
+    const model = this.Elements.aiModelSelect.value.trim();
+    this.SetAiModelSaving(true);
+    await this.PostAiModel(model).finally(() => this.SetAiModelSaving(false));
+    await this.ApplySavedAiModel(model);
+  }
+
+  async PostAiModel(model) {
+    return await this.PostJson(Config.aiModelUrl, { model }, "OpenAI model save failed.");
   }
 
   async PostJson(url, body, message) {
@@ -839,6 +766,18 @@ export class RapidRaterApp {
     this.ShowToast("TMDB key saved. <strong>Metadata ready</strong>");
   }
 
+  async ApplySavedAiKey() {
+    await this.RefreshAiStatus();
+    this.HideAiDialog();
+    this.ShowToast("OpenAI key saved. <strong>Recommendations ready</strong>");
+  }
+
+  async ApplySavedAiModel(model) {
+    this.State.ai.model = model;
+    await this.RefreshAiModels().catch(() => null);
+    this.ShowToast(`OpenAI model set to <strong>${EscapeHtml(model || "auto")}</strong>`);
+  }
+
   RefreshVisibleMetadata() {
     for (const movie of this.State.queue.slice(0, Config.visibleCount))
       delete this.State.metadata[movie.ttId];
@@ -856,6 +795,24 @@ export class RapidRaterApp {
     this.Elements.tmdbSave.textContent = value ? "Saving..." : "Save API Key";
   }
 
+  SetAiSaving(value) {
+    this.Elements.aiSave.disabled = value;
+    this.Elements.aiSave.textContent = value ? "Saving..." : "Save API Key";
+  }
+
+  SetAiControlsDisabled(value) {
+    const disabled = value || !this.State.ai.configured;
+    this.Elements.generateRecommendations.disabled = disabled;
+    this.Elements.refreshAiModels.disabled = disabled;
+    this.Elements.aiModelSelect.disabled = disabled;
+  }
+
+  SetAiModelSaving(value) {
+    this.State.ai.loading = value;
+    this.SetAiControlsDisabled(value);
+    this.SetRecommendationStatus(value ? "Saving model selection..." : "");
+  }
+
   ShowCookieError(message) {
     this.Elements.cookieError.textContent = message || "";
   }
@@ -864,18 +821,53 @@ export class RapidRaterApp {
     this.Elements.tmdbError.textContent = message || "";
   }
 
-  IsRetryableImdbSubmit(record) {
-    if (!record)
-      return false;
-    const isRated = record.status === "rated";
-    const isInteger = Number.isInteger(record.rating);
-    const isInRange = record.rating >= 1 && record.rating <= 10;
-    const isRetryableStatus = ["failed", "notConfigured", "pending"].includes(record.submitStatus);
-    return isRated && isInteger && isInRange && isRetryableStatus && !this.IsCsvSyncFailure(record);
+  ShowAiError(message) {
+    this.Elements.aiError.textContent = message || "";
   }
 
-  IsCsvSyncFailure(record) {
-    return String(record?.submitError || "").startsWith("IMDb saved, but local ratings CSV did not update");
+  async GenerateRecommendations() {
+    if (!this.State.ai.configured)
+      return this.ShowAiDialog();
+    this.SetAiLoading(true);
+    const payload = await this.RequestRecommendations().finally(() => this.SetAiLoading(false));
+    this.RenderRecommendations(payload);
+  }
+
+  async RequestRecommendations() {
+    return await this.PostJson(Config.recommendationsUrl, { count: 12 }, "AI recommendation request failed.");
+  }
+
+  async RefreshAiModels() {
+    if (!this.State.ai.configured)
+      return;
+    const payload = await this.FetchJson(Config.aiModelsUrl);
+    this.ApplyAiModelFeed(payload);
+  }
+
+  ApplyAiModelFeed(payload) {
+    this.State.ai.model = payload.explicitModel || "";
+    this.State.ai.selectedModel = payload.selectedModel || "";
+    this.State.ai.models = Array.isArray(payload.models) ? payload.models : [];
+    this.State.ai.modelLag = Number(payload.modelLag) || this.State.ai.modelLag;
+    this.UpdateAiControls();
+  }
+
+  SetAiLoading(value) {
+    this.State.ai.loading = value;
+    this.SetAiControlsDisabled(value);
+    this.Elements.generateRecommendations.textContent = value ? "Generating..." : "Generate picks";
+    this.SetRecommendationStatus(value ? "Reading your saved IMDb ratings..." : "");
+  }
+
+  RenderRecommendations(payload) {
+    this.SetRecommendationStatus(payload.summary || "Recommendations ready.");
+    const items = Array.isArray(payload.recommendations) ? payload.recommendations : [];
+    this.Elements.recommendationGrid.innerHTML = items.map(RenderRecommendationCard).join("");
+  }
+
+  ShowRecommendationError(message) {
+    this.SetAiLoading(false);
+    this.SetRecommendationStatus(message || "Could not generate recommendations.");
   }
 
   Undo() {
@@ -887,7 +879,13 @@ export class RapidRaterApp {
       return;
     const touchedImdb = this.MayHaveTouchedImdb(last.ttId);
     this.RestoreHistoryItem(last, movie);
-    this.ShowToast(touchedImdb ? "Restored local card; <strong>IMDb may already be updated</strong>" : `Restored <strong>${EscapeHtml(movie.title)}</strong>`);
+    this.ShowToast(this.BuildUndoToastMessage(touchedImdb, movie));
+  }
+
+  BuildUndoToastMessage(touchedImdb, movie) {
+    if (touchedImdb)
+      return "Restored local card; <strong>IMDb may already be updated</strong>";
+    return `Restored <strong>${EscapeHtml(movie.title)}</strong>`;
   }
 
   MayHaveTouchedImdb(ttId) {
@@ -900,16 +898,17 @@ export class RapidRaterApp {
       this.State.ratings[last.ttId] = last.previous;
     else
       delete this.State.ratings[last.ttId];
-    if (!this.State.queue.some((queued) => queued.ttId === movie.ttId))
+    const isAlreadyQueued = this.State.queue.some((queued) => queued.ttId === movie.ttId);
+    if (!isAlreadyQueued)
       this.State.queue.unshift(movie);
     this.SaveLocalState();
     this.Render();
   }
 
   ShowComplete() {
-    const counts = this.CountRatings();
+    const counts = CountRatings(this.State.ratings);
     this.Elements.strip.innerHTML = "";
-    this.Elements.emptySummary.textContent = `${FormatCount(counts.rated)} rated, ${FormatCount(counts.skipped)} not seen, ${FormatCount(counts.imported)} from CSV.`;
+    this.Elements.emptySummary.textContent = BuildCompleteSummary(counts);
     this.Elements.empty.hidden = false;
   }
 
@@ -938,7 +937,7 @@ export class RapidRaterApp {
     if (!file)
       return;
     const text = await file.text();
-    const count = this.ImportImdbCsv(text);
+    const count = ImportImdbCsv(text, this.State.ratings, this.State.movieById);
     await this.SaveRatingsCsvText(text);
     this.RebuildQueue();
     this.SaveLocalState();
@@ -960,83 +959,14 @@ export class RapidRaterApp {
     return file;
   }
 
-  ImportImdbCsv(text) {
-    const rows = ParseCsv(text);
-    if (rows.length < 2)
-      return 0;
-    const indexes = this.ReadCsvIndexes(rows[0]);
-    if (indexes.constIndex < 0)
-      throw new Error("The CSV does not include a Const column.");
-    return this.ImportCsvRows(rows.slice(1), indexes);
-  }
-
-  ReadCsvIndexes(headers) {
-    const normalized = headers.map((header) => header.trim().toLowerCase());
-    return {
-      constIndex: normalized.indexOf("const"),
-      ratingIndex: normalized.indexOf("your rating"),
-      titleIndex: normalized.indexOf("title"),
-      yearIndex: normalized.indexOf("year"),
-      dateIndex: normalized.indexOf("date rated")
-    };
-  }
-
-  ImportCsvRows(rows, indexes) {
-    let imported = 0;
-    for (const row of rows) {
-      if (this.ImportCsvRow(row, indexes))
-        imported++;
-    }
-    return imported;
-  }
-
-  ImportCsvRow(row, indexes) {
-    const ttId = (row[indexes.constIndex] || "").trim();
-    if (!/^tt\d+$/.test(ttId))
-      return false;
-    if (this.ShouldKeepExistingRating(ttId))
-      return false;
-    const known = this.State.movieById.get(ttId);
-    this.State.ratings[ttId] = this.BuildImportedRating(ttId, row, indexes, known);
-    return true;
-  }
-
-  ShouldKeepExistingRating(ttId) {
-    const existing = this.State.ratings[ttId];
-    return existing?.status === "rated";
-  }
-
-  BuildImportedRating(ttId, row, indexes, known) {
-    return {
-      status: "imported",
-      rating: indexes.ratingIndex >= 0 ? ToNumber(row[indexes.ratingIndex]) : null,
-      title: known?.title || row[indexes.titleIndex] || "",
-      year: known?.year || ToNumber(row[indexes.yearIndex]) || "",
-      ttId,
-      at: row[indexes.dateIndex] || new Date().toISOString(),
-      submitStatus: "imported",
-      submitError: "",
-      submittedAt: ""
-    };
-  }
-
   ExportCsv() {
-    const rows = [["Const", "Title", "Year", "Rating", "Status", "Submit Status", "Submit Error", "Submitted At", "Date Rated"]];
-    for (const record of this.SortedRatingRecords())
-      rows.push(this.ExportCsvRecord(record));
-    this.Download("imdb-rapid-rater-export.csv", rows.map(ToCsvRow).join("\n"), "text/csv;charset=utf-8");
-  }
-
-  ExportCsvRecord(record) {
-    return [record.ttId, record.title || "", record.year || "", record.rating ?? "", record.status, record.submitStatus || "", record.submitError || "", record.submittedAt || "", record.at || ""];
+    const csv = BuildCsvText(this.State.ratings);
+    this.Download("imdb-rapid-rater-export.csv", csv, "text/csv;charset=utf-8");
   }
 
   ExportJson() {
-    this.Download("imdb-rapid-rater-export.json", JSON.stringify(this.SortedRatingRecords(), null, 2), "application/json;charset=utf-8");
-  }
-
-  SortedRatingRecords() {
-    return Object.values(this.State.ratings).sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")));
+    const records = SortedRatingRecords(this.State.ratings);
+    this.Download("imdb-rapid-rater-export.json", JSON.stringify(records, null, 2), "application/json;charset=utf-8");
   }
 
   Download(fileName, content, type) {
@@ -1062,18 +992,4 @@ export class RapidRaterApp {
     this.ToastTimer = window.setTimeout(() => this.Elements.toast.classList.remove("show"), 900);
   }
 
-  MakeSignature(movies) {
-    return `${movies[0]?.ttId || ""}:${movies.length}:${movies[movies.length - 1]?.ttId || ""}`;
-  }
-
-  DescribeSource(raw, label) {
-    const count = this.NormalizeMovieList(raw).length;
-    return raw?.generatedAt ? "Movie pool ready" : `${FormatCount(count)} ${label}`;
-  }
-
-  ToneFromId(ttId) {
-    const palettes = ["224, 173, 71", "96, 167, 137", "108, 145, 210", "203, 104, 99", "176, 138, 201", "209, 126, 75"];
-    const hash = Array.from(ttId).reduce((total, char) => (total * 31 + char.charCodeAt(0)) % 360, 0);
-    return palettes[hash % palettes.length];
-  }
 }

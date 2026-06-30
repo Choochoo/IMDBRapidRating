@@ -135,7 +135,8 @@ function BuildRatingRecord(record) {
   const rating = Number(record?.rating);
   if (!/^tt\d+$/.test(ttId))
     return { error: Fail(400, "INVALID_TITLE_ID", "ttId must look like tt0111161.") };
-  if (!Number.isInteger(rating) || rating < 1 || rating > 10)
+  const isValidRating = Number.isInteger(rating) && rating >= 1 && rating <= 10;
+  if (!isValidRating)
     return { error: Fail(422, "INVALID_RATING", "IMDb CSV sync only accepts ratings from 1 to 10.") };
   return BuildValidRatingRecord(record, ttId, rating);
 }

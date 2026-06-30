@@ -1,6 +1,8 @@
+import { GenerateAiRecommendations, GetAiStatus } from "./ai-recommendations.mjs";
+import { GetOpenAiModels } from "./openai-models.mjs";
 import { GetImdbStatus, SubmitImdbRating } from "./imdb-ratings.mjs";
 import { GetTitleMetadata } from "./title-metadata.mjs";
-import { SaveImdbCookie, SaveTmdbApiKey } from "./env.mjs";
+import { SaveImdbCookie, SaveOpenAiApiKey, SaveOpenAiModel, SaveTmdbApiKey } from "./env.mjs";
 import { RatingsCsvMaxBytes, ReadSavedRatingsCsv, SaveRatingsCsv, UpsertRatingsCsvRating } from "./ratings-csv.mjs";
 import { ReadJsonBody, ReadTextBody, SendContent, SendJson } from "./http.mjs";
 import { ServeStaticFile } from "./static-files.mjs";
@@ -20,6 +22,8 @@ async function HandleApiRoute(url, request, response, rootPath) {
   if (await HandleCookieRoute(url, request, response, rootPath))
     return true;
   if (await HandleTmdbKeyRoute(url, request, response, rootPath))
+    return true;
+  if (await HandleAiRoute(url, request, response, rootPath))
     return true;
   if (await HandleRatingsCsvRoute(url, request, response, rootPath))
     return true;
@@ -52,6 +56,54 @@ async function HandleTmdbKeyRoute(url, request, response, rootPath) {
   if (url.pathname !== "/api/tmdb/key" || request.method !== "POST")
     return false;
   await HandleTmdbKeySave(request, response, rootPath);
+  return true;
+}
+
+async function HandleAiRoute(url, request, response, rootPath) {
+  if (HandleAiStatusRoute(url, request, response))
+    return true;
+  if (await HandleAiKeyRoute(url, request, response, rootPath))
+    return true;
+  if (await HandleAiModelSaveRoute(url, request, response, rootPath))
+    return true;
+  if (await HandleAiModelsRoute(url, request, response))
+    return true;
+  return await HandleAiRecommendationsRoute(url, request, response, rootPath);
+}
+
+function HandleAiStatusRoute(url, request, response) {
+  if (url.pathname !== "/api/ai/status" || request.method !== "GET")
+    return false;
+  SendJson(response, 200, { ok: true, ...GetAiStatus() });
+  return true;
+}
+
+async function HandleAiKeyRoute(url, request, response, rootPath) {
+  if (url.pathname !== "/api/ai/key" || request.method !== "POST")
+    return false;
+  await HandleAiKeySave(request, response, rootPath);
+  return true;
+}
+
+async function HandleAiModelSaveRoute(url, request, response, rootPath) {
+  if (url.pathname !== "/api/ai/model" || request.method !== "POST")
+    return false;
+  await HandleAiModelSave(request, response, rootPath);
+  return true;
+}
+
+async function HandleAiModelsRoute(url, request, response) {
+  if (url.pathname !== "/api/ai/models" || request.method !== "GET")
+    return false;
+  const result = await GetOpenAiModels();
+  SendJson(response, result.status, result.payload);
+  return true;
+}
+
+async function HandleAiRecommendationsRoute(url, request, response, rootPath) {
+  if (url.pathname !== "/api/ai/recommendations" || request.method !== "POST")
+    return false;
+  await HandleAiRecommendations(request, response, rootPath);
   return true;
 }
 
@@ -136,6 +188,30 @@ async function HandleTmdbKeySave(request, response, rootPath) {
   SendJson(response, result.status, result.payload);
 }
 
+async function HandleAiKeySave(request, response, rootPath) {
+  const body = await ReadJsonRequest(request, response);
+  if (!body)
+    return;
+  const result = await SaveOpenAiApiKey(rootPath, body.apiKey);
+  SendJson(response, result.status, result.payload);
+}
+
+async function HandleAiModelSave(request, response, rootPath) {
+  const body = await ReadJsonRequest(request, response);
+  if (!body)
+    return;
+  const result = await SaveOpenAiModel(rootPath, body.model);
+  SendJson(response, result.status, result.payload);
+}
+
+async function HandleAiRecommendations(request, response, rootPath) {
+  const body = await ReadJsonRequest(request, response);
+  if (!body)
+    return;
+  const result = await GenerateAiRecommendations(rootPath, body);
+  SendJson(response, result.status, result.payload);
+}
+
 function HandleRatingsCsvRead(response, rootPath) {
   const result = ReadSavedRatingsCsv(rootPath);
   if (!result.payload.ok) {
@@ -156,17 +232,16 @@ async function HandleRatingsCsvSave(request, response, rootPath) {
 }
 
 async function ReadJsonRequest(request, response) {
-  try {
-    return await ReadJsonBody(request);
-  } catch (error) {
-    SendJson(response, error.statusCode || 400, BuildInvalidRequestPayload(error));
-    return null;
-  }
+  return await ReadRequestBody(response, () => ReadJsonBody(request));
 }
 
 async function ReadCsvRequest(request, response) {
+  return await ReadRequestBody(response, () => ReadTextBody(request, RatingsCsvMaxBytes));
+}
+
+async function ReadRequestBody(response, readBody) {
   try {
-    return await ReadTextBody(request, RatingsCsvMaxBytes);
+    return await readBody();
   } catch (error) {
     SendJson(response, error.statusCode || 400, BuildInvalidRequestPayload(error));
     return null;

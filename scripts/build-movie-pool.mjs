@@ -33,7 +33,8 @@ console.log(`Wrote ${OutputMovies.length.toLocaleString()} movies to ${OutputPat
 
 async function DownloadDataset(fileName) {
   const outputPath = path.join(CacheDir, fileName);
-  if (existsSync(outputPath) && !Options.refresh) {
+  const shouldUseCache = existsSync(outputPath) && !Options.refresh;
+  if (shouldUseCache) {
     console.log(`Using cached ${fileName}`);
     return;
   }
@@ -75,7 +76,9 @@ function ReadRatingRow(columns, header) {
   const tconst = columns[header.tconst];
   const averageRating = Number(columns[header.averageRating]);
   const numVotes = Number(columns[header.numVotes]);
-  if (!tconst || !Number.isFinite(averageRating) || !Number.isFinite(numVotes))
+  const hasValidRating = Number.isFinite(averageRating);
+  const hasValidVoteCount = Number.isFinite(numVotes);
+  if (!tconst || !hasValidRating || !hasValidVoteCount)
     return null;
   if (numVotes < Options.minVotes)
     return null;
@@ -121,8 +124,13 @@ function IsMovieRow(columns, header, rating) {
 function BuildMovie(columns, header, rating, tconst) {
   const startYear = ParseNullableInt(columns[header.startYear]);
   const title = CleanValue(columns[header.primaryTitle]);
-  if (!IsValidYear(startYear) || !title)
+  const hasValidYear = IsValidYear(startYear);
+  if (!hasValidYear || !title)
     return null;
+  return BuildMoviePayload(columns, header, rating, tconst, startYear, title);
+}
+
+function BuildMoviePayload(columns, header, rating, tconst, startYear, title) {
   return {
     ttId: tconst,
     title,
@@ -176,7 +184,8 @@ function ReadArgs() {
 
 function ReadNumber(args, name, defaultValue) {
   const value = Number(args.get(name) ?? defaultValue);
-  if (!Number.isFinite(value) || value < 0)
+  const isValidValue = Number.isFinite(value) && value >= 0;
+  if (!isValidValue)
     throw new Error(`Invalid --${name}`);
   return Math.floor(value);
 }

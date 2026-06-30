@@ -21,6 +21,22 @@ export function GetTmdbApiKey() {
   return NormalizeTmdbApiKey(EnvValue("TMDB_API_KEY"));
 }
 
+export function GetOpenAiApiKey() {
+  return NormalizeOpenAiApiKey(EnvValue("OPENAI_API_KEY") || EnvValue("AI_API_KEY"));
+}
+
+export function GetOpenAiModel() {
+  return EnvValue("OPENAI_MODEL");
+}
+
+export function GetOpenAiModelLag() {
+  const value = Number(EnvValue("OPENAI_MODEL_LAG") || 2);
+  const isValidValue = Number.isFinite(value) && value >= 0;
+  if (!isValidValue)
+    return 2;
+  return Math.floor(value);
+}
+
 export function HasImdbAuthCookie() {
   return /(?:^|;\s*)at-main=/.test(GetImdbCookie());
 }
@@ -42,6 +58,25 @@ export async function SaveTmdbApiKey(rootPath, apiKey) {
   await SaveEnvValue(rootPath, "TMDB_API_KEY", normalizedKey);
   process.env.TMDB_API_KEY = normalizedKey;
   return TmdbSaveOk();
+}
+
+export async function SaveOpenAiApiKey(rootPath, apiKey) {
+  const normalizedKey = NormalizeOpenAiApiKey(apiKey);
+  if (!normalizedKey)
+    return OpenAiSaveFail(422, "OPENAI_KEY_MISSING", "Paste your OpenAI API key.");
+  await SaveEnvValue(rootPath, "OPENAI_API_KEY", normalizedKey);
+  process.env.OPENAI_API_KEY = normalizedKey;
+  return OpenAiSaveOk();
+}
+
+export async function SaveOpenAiModel(rootPath, model) {
+  const normalizedModel = NormalizeOpenAiModel(model);
+  const validationError = ValidateOpenAiModel(normalizedModel);
+  if (validationError)
+    return validationError;
+  await SaveEnvValue(rootPath, "OPENAI_MODEL", normalizedModel);
+  process.env.OPENAI_MODEL = normalizedModel;
+  return OpenAiSaveOk();
 }
 
 export function IsDryRun() {
@@ -77,8 +112,20 @@ function ValidateImdbCookie(cookie) {
   if (!cookie)
     return CookieSaveFail(422, "COOKIE_MISSING", "Paste the full Cookie request-header value from a signed-in IMDb page.");
   if (!/(?:^|;\s*)at-main=/.test(cookie))
-    return CookieSaveFail(422, "COOKIE_NOT_SIGNED_IN", "That cookie does not include at-main. Copy the full Cookie header while signed into IMDb.");
+    return CookieSaveFail(422, "COOKIE_NOT_SIGNED_IN", BuildCookieMissingAuthMessage());
   return null;
+}
+
+function ValidateOpenAiModel(model) {
+  if (!model)
+    return null;
+  if (/^[A-Za-z0-9._:-]+$/.test(model))
+    return null;
+  return OpenAiSaveFail(422, "OPENAI_MODEL_INVALID", "Choose a model from the list.");
+}
+
+function BuildCookieMissingAuthMessage() {
+  return "That cookie does not include at-main. Copy the full Cookie header while signed into IMDb.";
 }
 
 function ReadEnvContent(envPath) {
@@ -98,7 +145,15 @@ function BuildUpdatedEnvContent(content, key, value) {
 }
 
 function BuildDefaultEnvLines() {
-  return ["# Local IMDb Rapid Rater settings.", "IMDB_COOKIE=", "IMDB_DRY_RUN=false", "TMDB_API_KEY="];
+  return [
+    "# Local IMDb Rapid Rater settings.",
+    "IMDB_COOKIE=",
+    "IMDB_DRY_RUN=false",
+    "TMDB_API_KEY=",
+    "OPENAI_API_KEY=",
+    "OPENAI_MODEL=",
+    "OPENAI_MODEL_LAG=2"
+  ];
 }
 
 function ReplaceEnvLine(lines, key, replacement) {
@@ -141,11 +196,37 @@ function TmdbSaveFail(status, code, error) {
   };
 }
 
+function OpenAiSaveOk() {
+  return {
+    status: 200,
+    payload: { ok: true, configured: Boolean(GetOpenAiApiKey()), model: GetOpenAiModel(), modelLag: GetOpenAiModelLag() }
+  };
+}
+
+function OpenAiSaveFail(status, code, error) {
+  return {
+    status,
+    payload: { ok: false, code, error }
+  };
+}
+
 function NormalizeCookieHeader(value) {
   return StripWrappingQuotes(value.trim()).replace(/^cookie\s*:\s*/i, "").replace(/[\r\n]+/g, " ");
 }
 
 function NormalizeTmdbApiKey(value) {
+  return NormalizeBearerTokenValue(value);
+}
+
+function NormalizeOpenAiApiKey(value) {
+  return NormalizeBearerTokenValue(value);
+}
+
+function NormalizeOpenAiModel(value) {
+  return StripWrappingQuotes(String(value || "").trim());
+}
+
+function NormalizeBearerTokenValue(value) {
   return StripWrappingQuotes(String(value || "").trim()).replace(/^authorization:\s*/i, "").replace(/^bearer\s+/i, "");
 }
 
