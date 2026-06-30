@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IMDb Rapid Rater</title>
+    <link rel="stylesheet" href="./src/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">RR</span>
+        <span>IMDb Rapid Rater</span>
+      </div>
+
+      <div class="stats" aria-label="rating progress">
+        <div class="stat">
+          <strong id="rated-count">0</strong>
+          <span>Rated</span>
+        </div>
+        <div class="stat">
+          <strong id="skip-count">0</strong>
+          <span>Not seen</span>
+        </div>
+        <div class="stat">
+          <strong id="imported-count">0</strong>
+          <span>Imported</span>
+        </div>
+        <div class="stat">
+          <strong id="sent-count">0</strong>
+          <span>Sent</span>
+        </div>
+        <div class="stat">
+          <strong id="failed-count">0</strong>
+          <span>Failed</span>
+        </div>
+        <div class="stat">
+          <strong id="left-count">0</strong>
+          <span>Left</span>
+        </div>
+      </div>
+
+      <div class="toolbar" aria-label="actions">
+        <span class="badge live-missing" id="live-badge">Live checking</span>
+        <span class="badge" id="source-badge">Loading</span>
+        <button type="button" id="configure-cookie">Set IMDb Cookie</button>
+        <button type="button" id="retry-failed">Retry unsent</button>
+        <button type="button" id="load-json">Load titles</button>
+        <button type="button" id="import-csv">Import IMDb CSV</button>
+        <button type="button" id="export-csv">Export CSV</button>
+        <button type="button" id="export-json">Export JSON</button>
+        <button type="button" id="reset">Reset</button>
+      </div>
+
+      <input id="json-file" type="file" accept=".json,application/json" hidden>
+      <input id="csv-file" type="file" accept=".csv,text/csv" hidden>
+    </header>
+
+    <section class="failure-panel" id="failure-panel" hidden>
+      <div>
+        <strong>IMDb write failures</strong>
+        <ul id="failure-list"></ul>
+      </div>
+    </section>
+
+    <main class="stage">
+      <section class="movie-strip" id="movie-strip" aria-live="polite"></section>
+    </main>
+
+    <footer class="footer">
+      <div class="keybar" aria-label="keyboard ratings">
+        <span class="key">0</span>
+        <span class="key">1</span>
+        <span class="key">2</span>
+        <span class="key">3</span>
+        <span class="key">4</span>
+        <span class="key">5</span>
+        <span class="key">6</span>
+        <span class="key">7</span>
+        <span class="key">8</span>
+        <span class="key">9</span>
+        <span class="divider"></span>
+        <span class="key">`</span>
+        <span class="divider"></span>
+        <span class="key wide">Backspace</span>
+      </div>
+      <p>Information courtesy of IMDb (https://www.imdb.com). Used with permission.</p>
+    </footer>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <div class="empty-state" id="empty-state" hidden>
+      <div>
+        <h1>Queue complete</h1>
+        <p id="empty-summary"></p>
+        <div class="empty-actions">
+          <button type="button" id="empty-export-csv">Export CSV</button>
+          <button type="button" id="empty-export-json">Export JSON</button>
+          <button type="button" id="empty-reset">Start over</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="cookie-dialog" id="cookie-dialog" role="dialog" aria-modal="true" aria-labelledby="cookie-title" hidden>
+      <div class="cookie-card">
+        <div class="cookie-header">
+          <h1 id="cookie-title">Add IMDb Cookie</h1>
+          <button type="button" id="cookie-close">Close</button>
+        </div>
+        <p>Live IMDb write-back needs your signed-in Cookie request-header value. Rapid Rater saves it locally to `.env.local` as `IMDB_COOKIE`.</p>
+        <ol>
+          <li>Sign into IMDb in Chrome.</li>
+          <li>Open DevTools, then the Network tab.</li>
+          <li>Refresh IMDb and click the main `www.imdb.com` request.</li>
+          <li>Open Headers, find Request Headers, then copy the full value after `Cookie:`.</li>
+        </ol>
+        <label for="imdb-cookie-input">Cookie request header</label>
+        <textarea id="imdb-cookie-input" autocomplete="off" spellcheck="false" placeholder="Cookie: paste the full request-header value here"></textarea>
+        <p class="cookie-error" id="cookie-error" role="alert"></p>
+        <div class="cookie-actions">
+          <button type="button" id="cookie-save">Save Cookie</button>
+          <button type="button" id="cookie-later">Skip for now</button>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

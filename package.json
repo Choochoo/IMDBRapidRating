@@ -1,0 +1,14 @@
+{
+  "name": "imdb-rapid-rater",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/server.mjs",
+    "build:data": "node scripts/build-movie-pool.mjs --limit=12000 --minVotes=2500",
+    "check": "node --check scripts/server.mjs && node --check scripts/build-movie-pool.mjs && node --check server/routes.mjs && node --check server/imdb-ratings.mjs && node --check server/title-metadata.mjs && node --check server/ratings-csv.mjs && node --check server/env.mjs && node --check server/http.mjs && node --check server/static-files.mjs && node --check shared/csv.js && node --check src/app.js && node --check src/app/rapid-rater-app.js && node --check src/app/config.js && node --check src/app/util.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
