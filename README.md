@@ -13,9 +13,9 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 - Saves that ratings CSV locally and auto-loads it on future launches.
 - Generates AI movie recommendations from a minimized ratings profile.
 - Saves local progress in browser storage.
-- Writes ratings `1` through `9` back to IMDb when live mode is configured.
+- Writes ratings `1` through `10` back to IMDb when live mode is configured.
 - Updates the saved ratings CSV after successful live IMDb writes.
-- Keeps `0` ratings local-only because IMDb ratings are `1` through `10`.
+- Maps the `0` key to an IMDb `10/10` rating.
 - Exports local progress as CSV or JSON, including live-submit status.
 
 ## Requirements
@@ -40,12 +40,26 @@ http://localhost:5199
 
 Port `5199` is the default.
 
+## Local User Data
+
+Rapid Rater keeps each person's account-specific data on their own computer, outside the project folder:
+
+- Windows: `%APPDATA%\IMDb Rapid Rater`
+- macOS: `~/Library/Application Support/IMDb Rapid Rater`
+- Linux: `${XDG_DATA_HOME:-~/.local/share}/imdb-rapid-rater`
+
+The folder contains saved settings, the imported IMDb ratings CSV, and the poster/synopsis metadata cache. Browser queue progress is still stored in that person's browser profile with `localStorage`.
+
+On first run after upgrading, existing repo-local `.env.local`, `data/imdb-ratings.csv`, and `cache/title-metadata.json` files are copied into the user-data folder when the new destination file does not already exist.
+
+Set `IMDB_RAPID_RATER_HOME` before `npm start` if you need to override the user-data folder.
+
 ## Keyboard
 
 - `1` through `9`: rate the active title and submit to IMDb when live mode is ready.
-- `0`: record a local zero rating only.
+- `0`: rate the active title `10/10`.
 - `` ` ``: mark the title as not seen.
-- `Backspace` or `Delete`: undo the last local action.
+- `Backspace` or `Delete`: undo the last action.
 
 ## Import Existing IMDb Ratings
 
@@ -57,23 +71,21 @@ Port `5199` is the default.
 
 The app reads the `Const` column, stores those IDs as `imported`, and removes them from the active queue so you do not rate duplicates.
 
-The imported CSV is also saved locally as `data/imdb-ratings.csv`. On future launches, Rapid Rater auto-loads that file before you start rating. When a live IMDb write succeeds from the app, that same CSV is updated so the local duplicate filter stays current with this app's IMDb writes.
+The imported CSV is also saved locally as `ratings/imdb-ratings.csv` inside your user-data folder. On future launches, Rapid Rater auto-loads that file before you start rating. When a live IMDb write succeeds from the app, that same CSV is updated so the local duplicate filter stays current with this app's IMDb writes.
 
-Rating actions only update `data/imdb-ratings.csv` after IMDb confirms the rating write. Failed writes and dry-run writes do not update the saved CSV. If IMDb succeeds but the local CSV update fails, the app shows that as a CSV-sync failure instead of retrying the IMDb write again.
+Uploading a fresh IMDb CSV resyncs CSV-owned entries. Rapid Rater removes old `imported` records that are no longer in the new CSV, adds or refreshes records that are in the new CSV, and preserves local app records such as `rated` and `notSeen`. That keeps IMDb ratings in sync without making you redo movies you already marked not seen.
+
+Rating actions only update the saved user-data CSV after IMDb confirms the rating write. Failed writes and dry-run writes do not update the saved CSV. If IMDb succeeds but the local CSV update fails, the app shows that as a CSV-sync failure instead of retrying the IMDb write again.
+
+Undo behaves the same way. If a rating was already submitted to IMDb, `Backspace` or `Delete` first removes that IMDb rating, then removes the title from the saved user-data CSV, then restores the card locally. If the title had a previous IMDb-synced rating, undo restores that previous rating instead. If IMDb rejects the undo, local state is left unchanged so the app does not drift out of sync.
 
 IMDb does not provide a public CSV upload/import API. If you rate movies directly on IMDb outside this app, export your IMDb ratings CSV again and import the fresh file here.
 
 ## Enable IMDb Write-Back
 
-If `IMDB_COOKIE` is missing, Rapid Rater opens an in-app setup prompt. Paste the full IMDb `Cookie:` request-header value there and click **Save Cookie**. The local server writes it to `.env.local` for you.
+If `IMDB_COOKIE` is missing, Rapid Rater opens an in-app setup prompt. Paste the full IMDb `Cookie:` request-header value there and click **Save Cookie**. The local server writes it to `settings.env` inside your user-data folder.
 
-You can also create `.env.local` manually from the example:
-
-```powershell
-Copy-Item .env.local.example .env.local
-```
-
-Put one value in `IMDB_COOKIE`:
+You can also set `IMDB_COOKIE` in your shell before starting the server:
 
 ```env
 IMDB_COOKIE=<paste the full Cookie request-header value here>
@@ -102,7 +114,7 @@ Do not paste your cookie into chat, issues, commits, logs, screenshots, or pull 
 7. In **Request Headers**, find `Cookie:`.
 8. Copy the full value after `Cookie:` and paste it into `IMDB_COOKIE`.
 
-After saving `.env.local`, restart the app:
+After changing shell environment variables, restart the app:
 
 ```powershell
 npm start
@@ -119,7 +131,7 @@ $env:IMDB_DRY_RUN = "true"
 npm start
 ```
 
-Or set this in `.env.local`:
+Or set this in `settings.env` inside your user-data folder:
 
 ```env
 IMDB_DRY_RUN=true
@@ -127,7 +139,7 @@ IMDB_DRY_RUN=true
 
 ## Enable Posters And Synopsis
 
-IMDb page metadata is inconsistent for this use case. For reliable posters and synopsis text, click **Set TMDB Key** in the app header and paste a TMDB API key. The local server writes it to `.env.local`.
+IMDb page metadata is inconsistent for this use case. For reliable posters and synopsis text, click **Set TMDB Key** in the app header and paste a TMDB API key. The local server writes it to `settings.env` inside your user-data folder.
 
 You can also add it manually:
 
@@ -141,7 +153,7 @@ Get a v3 API key or read access token from the credentials section on [TMDB API 
 npm start
 ```
 
-Rapid Rater looks up each title by its IMDb ID through TMDB, then caches the returned poster and overview in `cache/title-metadata.json`. If you added the key after already running the app, old cached entries without a synopsis are refreshed automatically.
+Rapid Rater looks up each title by its IMDb ID through TMDB, then caches the returned poster and overview in `cache/title-metadata.json` inside your user-data folder. If you added the key after already running the app, old cached entries without a synopsis are refreshed automatically.
 
 ## Retry Failed IMDb Writes
 
@@ -158,7 +170,7 @@ Open the **AI Recommendations** tab to generate movie picks from your saved IMDb
 
 No IMDb cookie, TMDB key, `tt` IDs, submit history, or raw CSV file is sent.
 
-Click **Set OpenAI Key** in the tab and paste an API key. Rapid Rater saves it locally to `.env.local`:
+Click **Set OpenAI Key** in the tab and paste an API key. Rapid Rater saves it locally to `settings.env` inside your user-data folder:
 
 ```env
 OPENAI_API_KEY=<paste your OpenAI API key here>
@@ -166,7 +178,9 @@ OPENAI_MODEL=
 OPENAI_MODEL_LAG=2
 ```
 
-The server reads `data/imdb-ratings.csv`, joins genres from `data/movies.json` when possible, keeps only the four recommendation fields, and sends an optimized profile to the OpenAI Responses API. The returned recommendations include title, year, genres, and a structured explanation of why the pick fits your rated movies.
+The server reads the saved user-data ratings CSV, joins genres from `data/movies.json` when possible, keeps only the four recommendation fields, and sends an optimized profile to the OpenAI Responses API. The returned recommendations include title, year, genres, and a structured explanation of why the pick fits your rated movies.
+
+Recommendations are matched back to `data/movies.json` by title and year. When a match is found, the card includes rating buttons; rating one writes through the same IMDb proxy and local CSV sync path, then removes that recommendation from the screen.
 
 By default, Rapid Rater calls OpenAI's Models API, filters available GPT text models, sorts them newest first, and selects the model at `OPENAI_MODEL_LAG`. The default lag is `2`, which means two places behind the newest eligible model.
 
@@ -230,9 +244,8 @@ server/                    Local API and IMDb proxy modules
 shared/                    Browser/server shared helpers
 scripts/server.mjs         Local server entrypoint
 scripts/build-movie-pool.mjs  IMDb dataset builder
-data/imdb-ratings.csv      Personal saved ratings CSV, ignored
 data/movies.json           Generated local queue, ignored
-cache/                     Downloaded TSV and metadata cache, ignored
+cache/                     Downloaded IMDb TSV cache, ignored
 ```
 
 ## Public Repo Notes
@@ -240,6 +253,7 @@ cache/                     Downloaded TSV and metadata cache, ignored
 Do not commit:
 
 - `.env.local`
+- `settings.env`
 - `cache/`
 - `data/imdb-ratings.csv`
 - `data/movies.json`

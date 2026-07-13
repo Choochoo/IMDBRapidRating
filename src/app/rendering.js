@@ -43,10 +43,11 @@ export function RenderModelOptions(aiState) {
 
 export function RenderRecommendationCard(item) {
   const title = EscapeHtml(item.title || "Untitled");
-  const year = item.year ? ` <span>${EscapeHtml(item.year)}</span>` : "";
+  const year = RenderRecommendationYear(item);
   const heading = `<h2>${title}${year}</h2>`;
   const genres = RenderRecommendationGenres(item);
-  return `<article class="recommendation-card">${heading}${genres}${RenderRecommendationWhy(item)}</article>`;
+  const body = `${heading}${genres}${RenderRecommendationWhy(item)}${RenderRecommendationRating(item)}`;
+  return `<article class="recommendation-card"${RenderRecommendationData(item)}>${body}</article>`;
 }
 
 export function ToneFromId(ttId) {
@@ -108,6 +109,32 @@ function RenderRecommendationGenres(item) {
   const genres = Array.isArray(item.genres) ? item.genres : [];
   const pills = genres.slice(0, 4).map((genre) => RenderGenrePill(genre)).join("");
   return `<div class="meta">${pills}</div>`;
+}
+
+function RenderRecommendationRating(item) {
+  if (!item.ttId)
+    return `<div class="recommendation-rating unavailable">No IMDb match for app rating.</div>`;
+  return `<div class="recommendation-rating"><strong>Already seen?</strong>${RenderRatingButtons()}</div>`;
+}
+
+function RenderRatingButtons() {
+  const buttons = Array.from({ length: 10 }, (_, index) => RenderRatingButton(index + 1)).join("");
+  return `<div class="recommendation-rate-buttons">${buttons}</div>`;
+}
+
+function RenderRatingButton(rating) {
+  return `<button type="button" data-recommendation-rating="${rating}">${rating}</button>`;
+}
+
+function RenderRecommendationYear(item) {
+  return item.year ? ` <span>${EscapeHtml(item.year)}</span>` : "";
+}
+
+function RenderRecommendationData(item) {
+  const title = EscapeHtml(item.title || "");
+  const year = EscapeHtml(item.year || "");
+  const ttId = EscapeHtml(item.ttId || "");
+  return ` data-ttid="${ttId}" data-title="${title}" data-year="${year}"`;
 }
 
 function RenderRecommendationWhy(item) {

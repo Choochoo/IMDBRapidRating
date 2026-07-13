@@ -23,7 +23,10 @@ export async function GenerateAiRecommendations(rootPath, options = {}) {
   const profile = BuildPreferenceProfile(rootPath);
   if (!profile.payload.ok)
     return profile;
-  return await RequestOpenAiRecommendations(profile.payload.profile, options);
+  const result = await RequestOpenAiRecommendations(profile.payload.profile, options);
+  if (!result.payload.ok)
+    return result;
+  return Ok(EnrichRecommendationPayload(rootPath, result.payload));
 }
 
 function BuildPreferenceProfile(rootPath) {
@@ -38,11 +41,15 @@ function BuildPreferenceProfile(rootPath) {
 }
 
 function ReadMovieLookup(rootPath) {
+  return new Map(ReadMovieList(rootPath).map((movie) => [movie.ttId, movie]));
+}
+
+function ReadMovieList(rootPath) {
   const filePath = path.join(rootPath, "data", "movies.json");
   if (!existsSync(filePath))
-    return new Map();
+    return [];
   const payload = JSON.parse(readFileSync(filePath, "utf8"));
-  return new Map((payload.movies || []).map((movie) => [movie.ttId, movie]));
+  return Array.isArray(payload.movies) ? payload.movies : [];
 }
 
 function BuildRatedMovies(csv, movies) {
@@ -203,6 +210,42 @@ function RecommendationWhyProperties() {
 function ParseRecommendationPayload(payload) {
   const text = ExtractResponseText(payload);
   return JSON.parse(text);
+}
+
+function EnrichRecommendationPayload(rootPath, payload) {
+  const movies = ReadMovieList(rootPath);
+  const recommendations = ReadRecommendations(payload);
+  return { ...payload, recommendations: recommendations.map((item) => EnrichRecommendation(item, movies)) };
+}
+
+function ReadRecommendations(payload) {
+  return Array.isArray(payload.recommendations) ? payload.recommendations : [];
+}
+
+function EnrichRecommendation(item, movies) {
+  const movie = FindRecommendationMovie(item, movies);
+  if (!movie)
+    return { ...item, ttId: "" };
+  return { ...item, ttId: movie.ttId, title: movie.title || item.title, year: movie.year || item.year };
+}
+
+function FindRecommendationMovie(item, movies) {
+  const title = NormalizeMatchTitle(item.title);
+  const year = Number(item.year) || null;
+  return movies.find((movie) => IsRecommendationMovie(movie, title, year)) || null;
+}
+
+function IsRecommendationMovie(movie, title, year) {
+  const titleMatches = NormalizeMatchTitle(movie.title) === title;
+  if (!titleMatches)
+    return false;
+  if (!year || !movie.year)
+    return true;
+  return Number(movie.year) === year;
+}
+
+function NormalizeMatchTitle(value) {
+  return CleanText(value).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 function ExtractResponseText(payload) {

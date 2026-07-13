@@ -326,6 +326,8 @@ button:focus-visible {
 }
 
 .recommendation-card {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background:
@@ -360,6 +362,47 @@ button:focus-visible {
   margin: 8px 0 0;
   padding-left: 18px;
   color: #c4cdd7;
+}
+
+.recommendation-rating {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.recommendation-rating strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.recommendation-rating.unavailable {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.recommendation-rate-buttons {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.recommendation-rate-buttons button {
+  min-height: 30px;
+  padding: 0;
+  font-size: 12px;
+}
+
+.recommendation-card.saving {
+  opacity: 0.62;
+}
+
+.recommendation-card.rated {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity var(--anim) ease,
+    transform var(--anim) ease;
 }
 
 .failure-panel {

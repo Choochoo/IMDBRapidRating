@@ -18,8 +18,10 @@ import {
   UpdatePoster,
   UpdateSynopsis
 } from "./rendering.js";
+import { BindRecommendationRatings } from "./recommendation-ratings.js";
 import { BuildCheckedAiState, BuildCheckedLiveState, BuildState, BuildStoragePayload } from "./state.js";
 import { BuildCompleteSummary, CountRatings } from "./stats.js";
+import { UndoRating } from "./undo-rating.js";
 import { EscapeHtml, FormatCount, Shuffle } from "./util.js";
 
 export class RapidRaterApp {
@@ -99,6 +101,7 @@ export class RapidRaterApp {
     this.Elements.generateRecommendations.addEventListener("click", () => this.HandleRecommendationClick());
     this.Elements.refreshAiModels.addEventListener("click", () => this.HandleModelRefreshClick());
     this.Elements.aiModelSelect.addEventListener("change", () => this.HandleModelSelectChange());
+    BindRecommendationRatings(this);
   }
 
   HandleAiSaveClick() {
@@ -169,7 +172,7 @@ export class RapidRaterApp {
     if (event.key === "Backspace" || event.key === "Delete") {
       event.preventDefault();
       this.FlashShortcutKey(event.key);
-      this.Undo();
+      this.Undo().catch((error) => this.ShowToast(EscapeHtml(error.message || "Undo failed.")));
       return true;
     }
     if (event.key !== Config.skipKey)
@@ -229,8 +232,8 @@ export class RapidRaterApp {
       return;
     if (!response.ok)
       return;
-    const count = ImportImdbCsv(await response.text(), this.State.ratings, this.State.movieById);
-    if (!count)
+    const result = ImportImdbCsv(await response.text(), this.State.ratings, this.State.movieById);
+    if (!result.changed)
       return;
     this.RebuildQueue();
     this.SaveLocalState();
@@ -870,27 +873,8 @@ export class RapidRaterApp {
     this.SetRecommendationStatus(message || "Could not generate recommendations.");
   }
 
-  Undo() {
-    if (this.State.locked || !this.State.history.length)
-      return;
-    const last = this.State.history.pop();
-    const movie = this.State.movieById.get(last.ttId);
-    if (!movie)
-      return;
-    const touchedImdb = this.MayHaveTouchedImdb(last.ttId);
-    this.RestoreHistoryItem(last, movie);
-    this.ShowToast(this.BuildUndoToastMessage(touchedImdb, movie));
-  }
-
-  BuildUndoToastMessage(touchedImdb, movie) {
-    if (touchedImdb)
-      return "Restored local card; <strong>IMDb may already be updated</strong>";
-    return `Restored <strong>${EscapeHtml(movie.title)}</strong>`;
-  }
-
-  MayHaveTouchedImdb(ttId) {
-    const current = this.State.ratings[ttId];
-    return current?.submitStatus === "submitted" || current?.submitStatus === "pending";
+  async Undo() {
+    await UndoRating(this);
   }
 
   RestoreHistoryItem(last, movie) {
@@ -937,12 +921,21 @@ export class RapidRaterApp {
     if (!file)
       return;
     const text = await file.text();
-    const count = ImportImdbCsv(text, this.State.ratings, this.State.movieById);
     await this.SaveRatingsCsvText(text);
+    const result = ImportImdbCsv(text, this.State.ratings, this.State.movieById);
     this.RebuildQueue();
     this.SaveLocalState();
     this.Render();
-    this.ShowToast(`Imported and saved <strong>${FormatCount(count)}</strong> IMDb ratings`);
+    this.ShowToast(this.BuildCsvSyncToast(result));
+  }
+
+  BuildCsvSyncToast(result) {
+    const count = FormatCount(result.count);
+    const applied = FormatCount(result.applied);
+    const removed = FormatCount(result.removed);
+    if (result.removed > 0)
+      return `Synced and saved <strong>${count}</strong> IMDb ratings. Added/refreshed <strong>${applied}</strong>, removed stale <strong>${removed}</strong>.`;
+    return `Synced and saved <strong>${count}</strong> IMDb ratings`;
   }
 
   async SaveRatingsCsvText(text) {

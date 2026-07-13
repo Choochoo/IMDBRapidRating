@@ -1,11 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { GetImdbCookie, GetTmdbApiKey } from "./env.mjs";
+import { BuildUserDataPath, EnsureUserDataParent, MigrateLegacyFile } from "./user-data.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const CachePath = path.join(RootPath, "cache", "title-metadata.json");
+const CachePath = BuildTitleMetadataCachePath();
 const TmdbApiUrl = "https://api.themoviedb.org/3";
 const TmdbImageUrl = "https://image.tmdb.org/t/p/w342";
 let CacheWriteTimer;
@@ -210,8 +211,14 @@ function ScheduleCacheWrite() {
 }
 
 async function WriteMetadataCache() {
-  await mkdir(path.dirname(CachePath), { recursive: true });
+  EnsureUserDataParent(CachePath);
   await writeFile(CachePath, `${JSON.stringify(MetadataCache, null, 2)}\n`, "utf8");
+}
+
+function BuildTitleMetadataCachePath() {
+  const cachePath = BuildUserDataPath("cache", "title-metadata.json");
+  MigrateLegacyFile(path.join(RootPath, "cache", "title-metadata.json"), cachePath);
+  return cachePath;
 }
 
 function Ok(payload) {
