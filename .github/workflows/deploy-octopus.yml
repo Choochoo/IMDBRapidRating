@@ -1,0 +1,142 @@
+name: Deploy IMDb Rapid Rating via Octopus
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: imdb-rapid-rating-deploy
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22'
+  OCTOPUS_PROJECT: 'IMDBRapidRating'
+  OCTOPUS_SPACE: 'Default'
+  PACKAGE_ID: 'IMDBRapidRating'
+
+jobs:
+  build:
+    runs-on: self-hosted
+    name: Build IMDb Rapid Rating
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache IMDb source datasets
+        uses: actions/cache@v4
+        with:
+          path: cache/*.tsv.gz
+          key: imdb-source-datasets-v1
+
+      - name: Validate application
+        run: npm run check
+        shell: powershell
+
+      - name: Generate movie dataset
+        run: npm run build:data
+        shell: powershell
+
+      - name: Stage deployment package
+        shell: powershell
+        run: |
+          $staging = Join-Path $env:RUNNER_TEMP 'imdb-rapid-rating-package'
+          if (Test-Path $staging) {
+            Remove-Item $staging -Recurse -Force
+          }
+          New-Item -Path $staging -ItemType Directory -Force | Out-Null
+
+          foreach ($file in (git ls-files)) {
+            $destination = Join-Path $staging $file
+            New-Item -Path (Split-Path $destination -Parent) -ItemType Directory -Force | Out-Null
+            Copy-Item -LiteralPath $file -Destination $destination -Force
+          }
+
+          New-Item -Path (Join-Path $staging 'data') -ItemType Directory -Force | Out-Null
+          Copy-Item -LiteralPath 'data\movies.json' -Destination (Join-Path $staging 'data\movies.json') -Force
+
+          if (-not (Test-Path (Join-Path $staging 'scripts\server.mjs'))) {
+            throw 'Package staging failed: scripts/server.mjs is missing.'
+          }
+          if (-not (Test-Path (Join-Path $staging 'data\movies.json'))) {
+            throw 'Package staging failed: data/movies.json is missing.'
+          }
+
+          "STAGING_PATH=$staging" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: imdb-rapid-rating-package
+          path: ${{ runner.temp }}/imdb-rapid-rating-package
+          retention-days: 2
+
+  deploy:
+    runs-on: self-hosted
+    name: Deploy through Octopus
+    needs: build
+
+    steps:
+      - name: Download deployment artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: imdb-rapid-rating-package
+          path: deploy-package
+
+      - name: Verify Octopus CLI
+        shell: powershell
+        run: |
+          $octoPath = 'C:\Program Files\Octopus CLI\octo.exe'
+          if (-not (Test-Path $octoPath)) {
+            throw "Octopus CLI not found at $octoPath"
+          }
+          (Split-Path $octoPath -Parent) | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & $octoPath version
+
+      - name: Package build output
+        shell: powershell
+        run: |
+          $version = "1.0.${{ github.run_number }}"
+          $package = "${{ env.PACKAGE_ID }}.$version.zip"
+          Compress-Archive -Path 'deploy-package\*' -DestinationPath $package -Force
+          "PACKAGE_PATH=$package" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "PACKAGE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Created $package ($((Get-Item $package).Length) bytes)"
+
+      - name: Push package to Octopus
+        shell: powershell
+        run: |
+          octo push `
+            --package "${{ env.PACKAGE_PATH }}" `
+            --server "${{ secrets.OCTOPUS_SERVER_URL }}" `
+            --apiKey "${{ secrets.OCTOPUS_API_KEY }}" `
+            --space "${{ env.OCTOPUS_SPACE }}" `
+            --replace-existing
+
+      - name: Create and deploy release
+        shell: powershell
+        run: |
+          octo create-release `
+            --project "${{ env.OCTOPUS_PROJECT }}" `
+            --version "${{ env.PACKAGE_VERSION }}" `
+            --packageVersion "${{ env.PACKAGE_VERSION }}" `
+            --server "${{ secrets.OCTOPUS_SERVER_URL }}" `
+            --apiKey "${{ secrets.OCTOPUS_API_KEY }}" `
+            --space "${{ env.OCTOPUS_SPACE }}" `
+            --deployTo 'Production' `
+            --progress `
+            --ignoreexisting
+
+      - name: Deployment summary
+        shell: powershell
+        run: |
+          Write-Host 'IMDb Rapid Rating deployment complete.' -ForegroundColor Green
+          Write-Host "Version: ${{ env.PACKAGE_VERSION }}"
+          Write-Host 'Path: C:\inetpub\wwwroot\IMDBRapidRating'
+          Write-Host 'URL: http://192.168.1.45'

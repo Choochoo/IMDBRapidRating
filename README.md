@@ -24,6 +24,20 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 - A signed-in IMDb account if you want live write-back.
 - PowerShell examples below assume Windows.
 
+## Automated Deployment
+
+Pushes to `main` run `.github/workflows/deploy-octopus.yml` on the self-hosted GitHub runner. The workflow validates the Node application, generates `data/movies.json`, packages the application, pushes it to the Octopus built-in feed, and deploys the `IMDBRapidRating` project to Production.
+
+The Octopus project deploys to `C:\inetpub\wwwroot\IMDBRapidRating`, preserves `.env.local`, `data/imdb-ratings.csv`, and `cache/title-metadata.json`, and runs the Node server through the `IMDB Rapid Rating Server` startup task on port `5199`.
+
+One-time setup:
+
+```powershell
+.\scripts\setup-octopus-project.ps1 -ApiKey "<Octopus API key>"
+```
+
+The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories.
+
 ## Run
 
 ```powershell
