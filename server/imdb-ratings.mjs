@@ -1,8 +1,10 @@
 import { GetImdbCookie, GetTmdbApiKey, HasImdbAuthCookie, IsDryRun } from "./env.mjs";
 
 const GraphqlUrl = "https://api.graphql.imdb.com/";
-const Mutation = "mutation UpdateTitleRating($rating: Int!, $titleId: ID!) { " +
+const RateMutation = "mutation UpdateTitleRating($rating: Int!, $titleId: ID!) { " +
   "rateTitle(input: {rating: $rating, titleId: $titleId}) { rating { value __typename } __typename }}";
+const DeleteMutation = "mutation DeleteTitleRating($titleId: ID!) { " +
+  "deleteTitleRating(input: {titleId: $titleId}) { __typename }}";
 
 export function GetImdbStatus() {
   return {
@@ -21,19 +23,37 @@ export async function SubmitImdbRating(titleId, rating) {
   if (IsDryRun())
     return Ok(BuildDryRunPayload(request));
   if (!HasImdbAuthCookie())
-    return Fail(503, "IMDB_COOKIE_MISSING", "Set IMDB_COOKIE in .env.local or the shell before starting the server.");
+    return Fail(503, "IMDB_COOKIE_MISSING", "Save your IMDb cookie in the app or set IMDB_COOKIE before starting the server.");
   return await PostRatingToImdb(request.titleId, request.rating);
 }
 
+export async function DeleteImdbRating(titleId) {
+  const request = BuildTitleRequest(titleId);
+  if (request.error)
+    return request.error;
+  if (IsDryRun())
+    return Ok(BuildDryRunDeletePayload(request));
+  if (!HasImdbAuthCookie())
+    return Fail(503, "IMDB_COOKIE_MISSING", "Set IMDB_COOKIE before deleting IMDb ratings.");
+  return await DeleteRatingFromImdb(request.titleId);
+}
+
 function BuildRatingRequest(titleId, rating) {
-  const normalizedTitleId = String(titleId || "").trim();
+  const request = BuildTitleRequest(titleId);
+  if (request.error)
+    return request;
   const normalizedRating = Number(rating);
-  if (!/^tt\d+$/.test(normalizedTitleId))
-    return { error: Fail(400, "INVALID_TITLE_ID", "titleId must look like tt0111161.") };
   const isValidRating = Number.isInteger(normalizedRating) && normalizedRating >= 1 && normalizedRating <= 10;
   if (!isValidRating)
     return { error: Fail(422, "INVALID_RATING", "IMDb only accepts ratings from 1 to 10.") };
-  return { titleId: normalizedTitleId, rating: normalizedRating, error: null };
+  return { ...request, rating: normalizedRating };
+}
+
+function BuildTitleRequest(titleId) {
+  const normalizedTitleId = String(titleId || "").trim();
+  if (!/^tt\d+$/.test(normalizedTitleId))
+    return { error: Fail(400, "INVALID_TITLE_ID", "titleId must look like tt0111161.") };
+  return { titleId: normalizedTitleId, error: null };
 }
 
 function BuildDryRunPayload(request) {
@@ -42,6 +62,15 @@ function BuildDryRunPayload(request) {
     dryRun: true,
     titleId: request.titleId,
     rating: request.rating
+  };
+}
+
+function BuildDryRunDeletePayload(request) {
+  return {
+    ok: true,
+    dryRun: true,
+    deleted: true,
+    titleId: request.titleId
   };
 }
 
@@ -57,11 +86,28 @@ async function PostRatingToImdb(titleId, rating) {
   return Ok({ ok: true, titleId, rating: writtenRating });
 }
 
+async function DeleteRatingFromImdb(titleId) {
+  const response = await fetch(GraphqlUrl, BuildDeleteFetchOptions(titleId));
+  const payload = ParseMaybeJson(await response.text());
+  const error = BuildImdbError(response, payload);
+  if (error)
+    return error;
+  return Ok({ ok: true, titleId, deleted: true });
+}
+
 function BuildRatingFetchOptions(titleId, rating) {
   return {
     method: "POST",
     headers: BuildHeaders(titleId),
-    body: JSON.stringify(BuildBody(titleId, rating))
+    body: JSON.stringify(BuildRateBody(titleId, rating))
+  };
+}
+
+function BuildDeleteFetchOptions(titleId) {
+  return {
+    method: "POST",
+    headers: BuildHeaders(titleId),
+    body: JSON.stringify(BuildDeleteBody(titleId))
   };
 }
 
@@ -76,11 +122,19 @@ function BuildHeaders(titleId) {
   };
 }
 
-function BuildBody(titleId, rating) {
+function BuildRateBody(titleId, rating) {
   return {
     operationName: "UpdateTitleRating",
-    query: Mutation,
+    query: RateMutation,
     variables: { rating, titleId }
+  };
+}
+
+function BuildDeleteBody(titleId) {
+  return {
+    operationName: "DeleteTitleRating",
+    query: DeleteMutation,
+    variables: { titleId }
   };
 }
 

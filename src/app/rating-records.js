@@ -52,12 +52,12 @@ export function BuildRateRequest(record) {
 
 export function ImportImdbCsv(text, ratings, movieById) {
   const rows = ParseCsv(text);
-  if (rows.length < 2)
-    return 0;
+  if (!rows.length)
+    return BuildImportResult(0, 0, 0, false);
   const indexes = ReadCsvIndexes(rows[0]);
   if (indexes.constIndex < 0)
     throw new Error("The CSV does not include a Const column.");
-  return ImportCsvRows(rows.slice(1), indexes, ratings, movieById);
+  return SyncCsvRows(rows.slice(1), indexes, ratings, movieById);
 }
 
 export function BuildCsvText(records) {
@@ -90,27 +90,58 @@ function ReadCsvIndexes(headers) {
   };
 }
 
-function ImportCsvRows(rows, indexes, ratings, movieById) {
-  let imported = 0;
-  for (const row of rows) {
-    if (ImportCsvRow(row, indexes, ratings, movieById))
-      imported++;
-  }
-  return imported;
+function SyncCsvRows(rows, indexes, ratings, movieById) {
+  const nextImported = BuildImportedRatings(rows, indexes, movieById);
+  const removed = RemoveStaleImportedRatings(ratings, nextImported);
+  const applied = ApplyImportedRatings(ratings, nextImported);
+  return BuildImportResult(nextImported.size, applied, removed, Boolean(applied || removed));
 }
 
-function ImportCsvRow(row, indexes, ratings, movieById) {
+function BuildImportedRatings(rows, indexes, movieById) {
+  const nextImported = new Map();
+  for (const row of rows) {
+    const imported = BuildImportedRatingFromRow(row, indexes, movieById);
+    if (imported)
+      nextImported.set(imported.ttId, imported);
+  }
+  return nextImported;
+}
+
+function BuildImportedRatingFromRow(row, indexes, movieById) {
   const ttId = (row[indexes.constIndex] || "").trim();
   if (!/^tt\d+$/.test(ttId))
-    return false;
-  if (ShouldKeepExistingRating(ratings, ttId))
-    return false;
-  ratings[ttId] = BuildImportedRating(ttId, row, indexes, movieById.get(ttId));
-  return true;
+    return null;
+  return BuildImportedRating(ttId, row, indexes, movieById.get(ttId));
+}
+
+function RemoveStaleImportedRatings(ratings, nextImported) {
+  let removed = 0;
+  for (const [ttId, record] of Object.entries(ratings)) {
+    if (record?.status !== "imported" || nextImported.has(ttId))
+      continue;
+    delete ratings[ttId];
+    removed++;
+  }
+  return removed;
+}
+
+function ApplyImportedRatings(ratings, nextImported) {
+  let applied = 0;
+  for (const [ttId, imported] of nextImported) {
+    if (ShouldKeepExistingRating(ratings, ttId))
+      continue;
+    ratings[ttId] = imported;
+    applied++;
+  }
+  return applied;
 }
 
 function ShouldKeepExistingRating(ratings, ttId) {
   return ratings[ttId]?.status === "rated";
+}
+
+function BuildImportResult(count, applied, removed, changed) {
+  return { count, applied, removed, changed };
 }
 
 function BuildImportedRating(ttId, row, indexes, known) {

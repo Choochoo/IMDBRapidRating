@@ -1,6 +1,7 @@
 cache/
 *.log
 .env.local
+settings.env
 data/imdb-ratings.csv
 data/movies.json
 imdb-rapid-rater-export*.csv

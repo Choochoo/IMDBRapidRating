@@ -1,9 +1,15 @@
 import { GenerateAiRecommendations, GetAiStatus } from "./ai-recommendations.mjs";
 import { GetOpenAiModels } from "./openai-models.mjs";
-import { GetImdbStatus, SubmitImdbRating } from "./imdb-ratings.mjs";
+import { DeleteImdbRating, GetImdbStatus, SubmitImdbRating } from "./imdb-ratings.mjs";
 import { GetTitleMetadata } from "./title-metadata.mjs";
 import { SaveImdbCookie, SaveOpenAiApiKey, SaveOpenAiModel, SaveTmdbApiKey } from "./env.mjs";
-import { RatingsCsvMaxBytes, ReadSavedRatingsCsv, SaveRatingsCsv, UpsertRatingsCsvRating } from "./ratings-csv.mjs";
+import {
+  RatingsCsvMaxBytes,
+  ReadSavedRatingsCsv,
+  RemoveRatingsCsvRating,
+  SaveRatingsCsv,
+  UpsertRatingsCsvRating
+} from "./ratings-csv.mjs";
 import { ReadJsonBody, ReadTextBody, SendContent, SendJson } from "./http.mjs";
 import { ServeStaticFile } from "./static-files.mjs";
 
@@ -39,10 +45,17 @@ function HandleStatusRoute(url, request, response) {
 }
 
 async function HandleRateRoute(url, request, response, rootPath) {
-  if (url.pathname !== "/api/rate" || request.method !== "POST")
+  if (url.pathname !== "/api/rate")
     return false;
-  await HandleRate(request, response, rootPath);
-  return true;
+  if (request.method === "POST") {
+    await HandleRate(request, response, rootPath);
+    return true;
+  }
+  if (request.method === "DELETE") {
+    await HandleRateDelete(request, response, rootPath);
+    return true;
+  }
+  return false;
 }
 
 async function HandleCookieRoute(url, request, response, rootPath) {
@@ -126,6 +139,15 @@ async function HandleRate(request, response, rootPath) {
   SendJson(response, syncedResult.status, syncedResult.payload);
 }
 
+async function HandleRateDelete(request, response, rootPath) {
+  const body = await ReadJsonRequest(request, response);
+  if (!body)
+    return;
+  const result = await DeleteImdbRating(body.titleId);
+  const syncedResult = await SyncCsvAfterDelete(rootPath, body, result);
+  SendJson(response, syncedResult.status, syncedResult.payload);
+}
+
 async function SyncCsvAfterSubmit(rootPath, body, result) {
   if (!ShouldSyncCsvAfterSubmit(result))
     return result;
@@ -147,6 +169,27 @@ function ShouldSyncCsvAfterSubmit(result) {
   return result.payload?.ok && !result.payload?.dryRun;
 }
 
+async function SyncCsvAfterDelete(rootPath, body, result) {
+  if (!ShouldSyncCsvAfterDelete(result))
+    return result;
+  try {
+    return await TrySyncCsvAfterDelete(rootPath, body, result);
+  } catch (error) {
+    return BuildCsvDeleteSyncFailure(error.message || "Unknown CSV sync error.");
+  }
+}
+
+async function TrySyncCsvAfterDelete(rootPath, body, result) {
+  const csvResult = await RemoveRatingsCsvRating(rootPath, body.titleId);
+  if (!csvResult.payload.ok)
+    return BuildCsvDeleteSyncFailure(csvResult.payload.error);
+  return result;
+}
+
+function ShouldSyncCsvAfterDelete(result) {
+  return result.payload?.ok && !result.payload?.dryRun;
+}
+
 function BuildCsvRatingRecord(body, payload) {
   return {
     ttId: payload.titleId,
@@ -154,6 +197,21 @@ function BuildCsvRatingRecord(body, payload) {
     title: body.title || "",
     year: body.year || "",
     at: body.at || new Date().toISOString()
+  };
+}
+
+function BuildCsvDeleteSyncFailure(error) {
+  return {
+    status: 502,
+    payload: BuildCsvDeleteSyncFailurePayload(error)
+  };
+}
+
+function BuildCsvDeleteSyncFailurePayload(error) {
+  return {
+    ok: false,
+    code: "RATING_CSV_DELETE_SYNC_FAILED",
+    error: `IMDb rating was removed, but local ratings CSV did not update: ${error}`
   };
 }
 

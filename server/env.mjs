@@ -1,13 +1,24 @@
 import { existsSync, readFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
+import { BuildUserDataPath, EnsureUserDataParent, GetUserDataRoot, MigrateLegacyFile } from "./user-data.mjs";
+
+const SettingsEnvFile = "settings.env";
 
 export function LoadLocalEnv(rootPath) {
-  const envPath = path.join(rootPath, ".env.local");
+  const envPath = BuildSettingsEnvPath(rootPath);
   if (!existsSync(envPath))
     return;
   for (const line of readFileSync(envPath, "utf8").split(/\r?\n/))
     LoadEnvLine(line);
+}
+
+export function GetSettingsPath() {
+  return BuildSettingsEnvPath();
+}
+
+export function GetSettingsDirectory() {
+  return GetUserDataRoot();
 }
 
 export function GetImdbCookie() {
@@ -133,9 +144,17 @@ function ReadEnvContent(envPath) {
 }
 
 async function SaveEnvValue(rootPath, key, value) {
-  const envPath = path.join(rootPath, ".env.local");
+  const envPath = BuildSettingsEnvPath(rootPath);
   const content = BuildUpdatedEnvContent(ReadEnvContent(envPath), key, value);
+  EnsureUserDataParent(envPath);
   await writeFile(envPath, content, "utf8");
+}
+
+function BuildSettingsEnvPath(rootPath) {
+  const envPath = BuildUserDataPath(SettingsEnvFile);
+  if (rootPath)
+    MigrateLegacyFile(path.join(rootPath, ".env.local"), envPath);
+  return envPath;
 }
 
 function BuildUpdatedEnvContent(content, key, value) {
