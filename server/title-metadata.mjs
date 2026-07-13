@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { GetImdbCookie, GetTmdbApiKey } from "./env.mjs";
 import { BuildUserDataPath, EnsureUserDataParent, MigrateLegacyFile } from "./user-data.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -12,17 +11,17 @@ const TmdbImageUrl = "https://image.tmdb.org/t/p/w342";
 let CacheWriteTimer;
 const MetadataCache = LoadMetadataCache();
 
-export async function GetTitleMetadata(titleId) {
-  if (ShouldUseCachedMetadata(MetadataCache[titleId]))
+export async function GetTitleMetadata(titleId, options = {}) {
+  if (ShouldUseCachedMetadata(MetadataCache[titleId], options))
     return Ok({ ok: true, ...MetadataCache[titleId] });
-  const metadata = await LoadTitleMetadata(titleId);
+  const metadata = await LoadTitleMetadata(titleId, options);
   MetadataCache[titleId] = metadata;
   ScheduleCacheWrite();
   return Ok({ ok: true, ...metadata });
 }
 
-async function LoadTitleMetadata(titleId) {
-  const tmdb = await FetchTmdbMetadata(titleId).catch(() => null);
+async function LoadTitleMetadata(titleId, options) {
+  const tmdb = await FetchTmdbMetadata(titleId, options).catch(() => null);
   const titlePage = await FetchTitlePageMetadata(titleId).catch(() => null);
   const suggestion = await FetchSuggestionMetadata(titleId).catch(() => null);
   return {
@@ -33,16 +32,16 @@ async function LoadTitleMetadata(titleId) {
   };
 }
 
-function ShouldUseCachedMetadata(metadata) {
+function ShouldUseCachedMetadata(metadata, options) {
   if (!metadata)
     return false;
   if (metadata.synopsis && metadata.posterUrl)
     return true;
-  return !GetTmdbApiKey();
+  return !ReadTmdbApiKey(options);
 }
 
-async function FetchTmdbMetadata(titleId) {
-  const apiKey = GetTmdbApiKey();
+async function FetchTmdbMetadata(titleId, options) {
+  const apiKey = ReadTmdbApiKey(options);
   if (!apiKey)
     throw new Error("TMDB_API_KEY is not configured.");
   const response = await fetch(BuildTmdbFindUrl(titleId, apiKey), { headers: BuildTmdbHeaders(apiKey) });
@@ -72,6 +71,10 @@ function BuildTmdbHeaders(apiKey) {
   if (IsTmdbBearerToken(apiKey))
     headers.authorization = `Bearer ${apiKey}`;
   return headers;
+}
+
+function ReadTmdbApiKey(options) {
+  return String(options?.tmdbApiKey || "").trim();
 }
 
 function IsTmdbBearerToken(apiKey) {
@@ -138,7 +141,6 @@ function BuildTitleHeaders() {
   return {
     "accept": "text/html,application/xhtml+xml",
     "accept-language": "en-US,en;q=0.9",
-    "cookie": GetImdbCookie(),
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36"
   };
 }

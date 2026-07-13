@@ -1,5 +1,4 @@
 import { Config } from "./config.js";
-import { BuildRateRequest } from "./rating-records.js";
 import { EscapeHtml } from "./util.js";
 
 export async function UndoRating(app) {
@@ -54,15 +53,15 @@ async function TryUndoLiveRating(app, last, current) {
 
 async function UndoLiveRating(app, last, current) {
   if (!app.State.live.configured)
-    return PromptForCookie(app);
+    return PromptForImdbSignIn(app);
   if (ShouldRestorePreviousLive(last.previous))
     return await RestorePreviousLiveRating(app, last.previous);
-  return await DeleteLiveRating(current.ttId);
+  return await DeleteLiveRating(app, current.ttId);
 }
 
-function PromptForCookie(app) {
-  app.ShowToast("<strong>IMDb cookie required</strong> to remove a submitted rating.");
-  app.ShowCookieDialog();
+function PromptForImdbSignIn(app) {
+  app.ShowToast("<strong>IMDb sign-in required</strong> to remove a submitted rating.");
+  app.RequireImdbSignIn();
   return false;
 }
 
@@ -75,23 +74,23 @@ function ShouldRestorePreviousLive(previous) {
 }
 
 async function RestorePreviousLiveRating(app, previous) {
-  await app.PostJson(Config.rateUrl, BuildRateRequest(previous), "IMDb undo restore failed.");
+  await app.PostJson(Config.rateUrl, app.BuildLiveRateRequest(previous), "IMDb undo restore failed.");
   return true;
 }
 
-async function DeleteLiveRating(ttId) {
-  const response = await fetch(Config.rateUrl, BuildDeleteOptions(ttId));
+async function DeleteLiveRating(app, ttId) {
+  const response = await fetch(Config.rateUrl, BuildDeleteOptions(app, ttId));
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload?.ok)
     throw new Error(payload?.error || `IMDb undo delete failed HTTP ${response.status}.`);
   return true;
 }
 
-function BuildDeleteOptions(ttId) {
+function BuildDeleteOptions(app, ttId) {
   return {
     method: "DELETE",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ titleId: ttId })
+    body: JSON.stringify({ titleId: ttId, cookie: app.Settings.imdbCookie })
   };
 }
 

@@ -21,7 +21,7 @@ function ReadRatingButton(target) {
 
 async function RateRecommendation(app, button) {
   if (!app.State.live.configured)
-    return app.ShowCookieDialog();
+    return app.RequireImdbSignIn();
   const card = button.closest(".recommendation-card");
   if (!card)
     return;
@@ -29,7 +29,7 @@ async function RateRecommendation(app, button) {
 }
 
 async function SaveRecommendationRating(app, card, button) {
-  const request = BuildRateRequest(card, button);
+  const request = app.BuildLiveRateRequest(BuildRateRequest(card, button));
   SetCardSaving(card, true);
   const payload = await app.PostJson(Config.rateUrl, request, "AI recommendation rating failed.")
     .finally(() => SetCardSaving(card, false));

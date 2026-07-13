@@ -2,13 +2,13 @@ import { Config } from "./config.js";
 import { BuildElements } from "./elements.js";
 import { DescribeSource, MakeSignature, NormalizeMovieList } from "./movies.js";
 import {
+  BuildAiPreferenceProfile,
   BuildCsvText,
   BuildRateRequest,
   BuildRatingRecord,
   CanSubmitLive,
   ImportImdbCsv,
-  IsRetryableImdbSubmit,
-  SortedRatingRecords
+  IsRetryableImdbSubmit
 } from "./rating-records.js";
 import {
   RenderCard,
@@ -18,7 +18,14 @@ import {
   UpdatePoster,
   UpdateSynopsis
 } from "./rendering.js";
+import { HasImdbCookie, ReadBrowserSettings } from "./browser-settings.js";
 import { BindRecommendationRatings } from "./recommendation-ratings.js";
+import {
+  SaveAiKeyFromDialog,
+  SaveImdbConnectionFromDialog,
+  SaveSelectedAiModel,
+  SaveTmdbKeyFromDialog
+} from "./settings-workflows.js";
 import { BuildCheckedAiState, BuildCheckedLiveState, BuildState, BuildStoragePayload } from "./state.js";
 import { BuildCompleteSummary, CountRatings } from "./stats.js";
 import { UndoRating } from "./undo-rating.js";
@@ -27,6 +34,7 @@ import { EscapeHtml, FormatCount, Shuffle } from "./util.js";
 export class RapidRaterApp {
   constructor() {
     this.Elements = BuildElements();
+    this.Settings = ReadBrowserSettings();
     this.State = BuildState();
     this.ToastTimer = 0;
     this.SubmitInFlight = false;
@@ -48,7 +56,7 @@ export class RapidRaterApp {
     const data = await this.LoadMovieData();
     this.ApplyMovieData(data, data.sourceLabel);
     await this.LoadSavedRatingsCsv();
-    this.PromptForMissingCookie();
+    this.RequireImdbSignIn();
   }
 
   Element(id) {
@@ -58,7 +66,7 @@ export class RapidRaterApp {
   BindEvents() {
     this.BindViewEvents();
     this.BindToolbarEvents();
-    this.BindCookieEvents();
+    this.BindSetupEvents();
     this.BindAiEvents();
     this.BindFileEvents();
     window.addEventListener("keydown", (event) => this.HandleKeyDown(event));
@@ -82,15 +90,13 @@ export class RapidRaterApp {
     this.Elements.failureRetry.addEventListener("click", () => this.RetryImdbFailures());
   }
 
-  BindCookieEvents() {
-    this.Elements.configureCookie.addEventListener("click", () => this.ShowCookieDialog());
-    this.Elements.cookieClose.addEventListener("click", () => this.HideCookieDialog());
-    this.Elements.cookieLater.addEventListener("click", () => this.HideCookieDialog());
-    this.Elements.cookieSave.addEventListener("click", () => this.SaveCookieFromDialog().catch((error) => this.ShowCookieError(error.message)));
+  BindSetupEvents() {
+    this.Elements.configureImdb.addEventListener("click", () => this.ShowImdbDialog());
+    this.Elements.imdbSave.addEventListener("click", () => SaveImdbConnectionFromDialog(this).catch((error) => this.ShowImdbError(error.message)));
     this.Elements.configureTmdb.addEventListener("click", () => this.ShowTmdbDialog());
     this.Elements.tmdbClose.addEventListener("click", () => this.HideTmdbDialog());
     this.Elements.tmdbLater.addEventListener("click", () => this.HideTmdbDialog());
-    this.Elements.tmdbSave.addEventListener("click", () => this.SaveTmdbKeyFromDialog().catch((error) => this.ShowTmdbError(error.message)));
+    this.Elements.tmdbSave.addEventListener("click", () => SaveTmdbKeyFromDialog(this).catch((error) => this.ShowTmdbError(error.message)));
   }
 
   BindAiEvents() {
@@ -105,7 +111,7 @@ export class RapidRaterApp {
   }
 
   HandleAiSaveClick() {
-    this.SaveAiKeyFromDialog().catch((error) => this.ShowAiError(error.message));
+    SaveAiKeyFromDialog(this).catch((error) => this.ShowAiError(error.message));
   }
 
   HandleRecommendationClick() {
@@ -117,7 +123,7 @@ export class RapidRaterApp {
   }
 
   HandleModelSelectChange() {
-    this.SaveSelectedAiModel().catch((error) => this.ShowRecommendationError(error.message));
+    SaveSelectedAiModel(this).catch((error) => this.ShowRecommendationError(error.message));
   }
 
   BindFileEvents() {
@@ -156,7 +162,7 @@ export class RapidRaterApp {
 
   ReadSetupDialogs() {
     return [
-      this.Elements.cookieDialog,
+      this.Elements.imdbDialog,
       this.Elements.tmdbDialog,
       this.Elements.aiDialog
     ];
@@ -219,20 +225,18 @@ export class RapidRaterApp {
     throw new Error(`Real movie data is missing. Run npm run build:data, then restart the app. ${error.message}`);
   }
 
-  async FetchJson(url) {
-    const response = await fetch(url, { cache: "no-store" });
+  async FetchJson(url, options = {}) {
+    const response = await fetch(url, { ...options, cache: "no-store" });
     if (!response.ok)
       throw new Error(`${url} returned HTTP ${response.status}`);
     return response.json();
   }
 
   async LoadSavedRatingsCsv() {
-    const response = await fetch(Config.ratingsCsvUrl, { cache: "no-store" }).catch(() => null);
-    if (!response || response.status === 404)
+    const text = localStorage.getItem(Config.storageKey + ":ratings-csv") || "";
+    if (!text)
       return;
-    if (!response.ok)
-      return;
-    const result = ImportImdbCsv(await response.text(), this.State.ratings, this.State.movieById);
+    const result = ImportImdbCsv(text, this.State.ratings, this.State.movieById);
     if (!result.changed)
       return;
     this.RebuildQueue();
@@ -241,17 +245,28 @@ export class RapidRaterApp {
   }
 
   async RefreshLiveStatus() {
-    const status = await this.FetchJson(Config.liveStatusUrl).catch((error) => ({ configured: false, dryRun: false, lastError: error.message }));
-    this.State.live = BuildCheckedLiveState(status);
+    const status = await this.FetchJson(Config.liveStatusUrl).catch((error) => ({ dryRun: false, lastError: error.message }));
+    this.State.live = BuildCheckedLiveState({
+      ...status,
+      configured: HasImdbCookie(this.Settings.imdbCookie),
+      tmdbConfigured: Boolean(this.Settings.tmdbApiKey)
+    });
     this.UpdateStats();
   }
 
   async RefreshAiStatus() {
-    const status = await this.FetchJson(Config.aiStatusUrl).catch(() => ({ configured: false, model: "" }));
-    this.State.ai = BuildCheckedAiState(status);
+    this.State.ai = BuildCheckedAiState(this.BuildBrowserAiStatus());
     this.UpdateAiControls();
     if (this.State.ai.configured)
       await this.RefreshAiModels().catch(() => null);
+  }
+
+  BuildBrowserAiStatus() {
+    return {
+      configured: Boolean(this.Settings.openAiApiKey),
+      model: this.Settings.openAiModel,
+      modelLag: this.Settings.openAiModelLag
+    };
   }
 
   ApplyMovieData(raw, sourceLabel) {
@@ -370,7 +385,7 @@ export class RapidRaterApp {
   }
 
   async FetchTitleMetadata(ttId) {
-    const payload = await this.FetchJson(`${Config.titleMetadataUrl}${ttId}`);
+    const payload = await this.FetchJson(`${Config.titleMetadataUrl}${ttId}`, this.BuildMetadataFetchOptions());
     if (!payload.ok)
       throw new Error(payload.error || "Metadata request failed.");
     return {
@@ -378,6 +393,12 @@ export class RapidRaterApp {
       synopsis: payload.synopsis || "Synopsis unavailable.",
       source: payload.source || ""
     };
+  }
+
+  BuildMetadataFetchOptions() {
+    if (!this.Settings.tmdbApiKey)
+      return {};
+    return { headers: { "x-tmdb-api-key": this.Settings.tmdbApiKey } };
   }
 
   ApplyTitleMetadata(ttId, metadata) {
@@ -411,7 +432,7 @@ export class RapidRaterApp {
     if (!this.State.live.checked)
       return this.SetLiveBadge("status-chip live-missing", "Live checking");
     if (!this.State.live.configured)
-      return this.SetLiveBadge("status-chip live-missing", "Live needs cookie");
+      return this.SetLiveBadge("status-chip live-missing", "IMDb connection required");
     if (counts.failed > 0)
       return this.SetLiveBadge("status-chip live-failed", `Live ${FormatCount(counts.failed)} failed`);
     if (counts.pending > 0 || this.State.live.submitting)
@@ -425,14 +446,14 @@ export class RapidRaterApp {
   }
 
   UpdateSettingsButtons() {
-    this.UpdateCookieButton();
+    this.UpdateImdbButton();
     this.UpdateTmdbButton();
   }
 
-  UpdateCookieButton() {
+  UpdateImdbButton() {
     const configured = this.State.live.configured;
-    this.Elements.configureCookie.className = configured ? "status-chip live-ready" : "status-chip live-missing";
-    this.Elements.configureCookie.textContent = configured ? "IMDb connected" : "Set IMDb Cookie";
+    this.Elements.configureImdb.className = configured ? "status-chip live-ready" : "status-chip live-missing";
+    this.Elements.configureImdb.textContent = configured ? "IMDb connected" : "Connect IMDb";
   }
 
   UpdateTmdbButton() {
@@ -527,14 +548,8 @@ export class RapidRaterApp {
   }
 
   ShowRatingToast(movie, rating, status) {
-    const message = this.BuildRatingToastMessage(movie, rating, status);
-    this.ShowToast(message);
-  }
-
-  BuildRatingToastMessage(movie, rating, status) {
-    if (status === "rated")
-      return `${EscapeHtml(movie.title)} <strong>${rating}</strong>`;
-    return `${EscapeHtml(movie.title)} <strong>not seen</strong>`;
+    const value = status === "rated" ? rating : "not seen";
+    this.ShowToast(`${EscapeHtml(movie.title)} <strong>${value}</strong>`);
   }
 
   AdvanceQueue() {
@@ -591,6 +606,8 @@ export class RapidRaterApp {
       this.MarkSubmitSuccess(record.ttId, result.rating ?? record.rating);
     } catch (error) {
       this.MarkSubmitFailure(record.ttId, error.message || "IMDb submit failed.");
+      if (/cookie|sign.?in|auth/i.test(error.message || ""))
+        this.RequireImdbSignIn();
     }
     this.SubmitActiveIds.delete(record.ttId);
     this.ScheduleNextSubmit();
@@ -603,7 +620,14 @@ export class RapidRaterApp {
   }
 
   async PostLiveRating(record) {
-    return await this.PostJson(Config.rateUrl, BuildRateRequest(record), "Local IMDb proxy failed.");
+    return await this.PostJson(Config.rateUrl, this.BuildLiveRateRequest(record), "IMDb write failed.");
+  }
+
+  BuildLiveRateRequest(record) {
+    return {
+      ...BuildRateRequest(record),
+      cookie: this.Settings.imdbCookie
+    };
   }
 
   MarkSubmitSuccess(ttId, rating) {
@@ -631,7 +655,7 @@ export class RapidRaterApp {
 
   RetryImdbFailures() {
     if (!this.State.live.configured)
-      return this.ShowToast("<strong>Live needs cookie</strong>");
+      return this.RequireImdbSignIn();
     const queued = this.QueueRetryableImdbSubmits();
     this.ShowToast(`Queued <strong>${FormatCount(queued)}</strong> IMDb retries`);
     this.SaveLocalState();
@@ -649,22 +673,24 @@ export class RapidRaterApp {
     return queued;
   }
 
-  PromptForMissingCookie() {
-    if (this.State.live.configured || this.State.live.dryRun)
+  RequireImdbSignIn() {
+    if (this.State.live.configured)
       return;
-    this.ShowCookieDialog();
+    this.ShowImdbDialog();
   }
 
-  ShowCookieDialog() {
-    this.ShowCookieError("");
-    this.Elements.cookieDialog.hidden = false;
-    window.setTimeout(() => this.Elements.cookieInput.focus(), 0);
+  ShowImdbDialog() {
+    this.ShowImdbError("");
+    this.Elements.imdbDialog.hidden = false;
+    window.setTimeout(() => this.Elements.imdbInput.focus(), 0);
   }
 
-  HideCookieDialog() {
-    this.Elements.cookieInput.value = "";
-    this.ShowCookieError("");
-    this.Elements.cookieDialog.hidden = true;
+  HideImdbDialog() {
+    if (!this.State.live.configured)
+      return;
+    this.Elements.imdbInput.value = "";
+    this.ShowImdbError("");
+    this.Elements.imdbDialog.hidden = true;
   }
 
   ShowTmdbDialog() {
@@ -691,94 +717,12 @@ export class RapidRaterApp {
     this.Elements.aiDialog.hidden = true;
   }
 
-  async SaveCookieFromDialog() {
-    const cookie = this.Elements.cookieInput.value.trim();
-    if (!cookie)
-      return this.ShowCookieError("Paste the full Cookie request-header value from IMDb.");
-    this.SetCookieSaving(true);
-    await this.PostCookie(cookie).finally(() => this.SetCookieSaving(false));
-    await this.ApplySavedCookie();
-  }
-
-  async PostCookie(cookie) {
-    return await this.PostJson(Config.cookieUrl, { cookie }, "Cookie save failed.");
-  }
-
-  async SaveTmdbKeyFromDialog() {
-    const apiKey = this.Elements.tmdbInput.value.trim();
-    if (!apiKey)
-      return this.ShowTmdbError("Paste your TMDB API key.");
-    this.SetTmdbSaving(true);
-    await this.PostTmdbKey(apiKey).finally(() => this.SetTmdbSaving(false));
-    await this.ApplySavedTmdbKey();
-  }
-
-  async PostTmdbKey(apiKey) {
-    return await this.PostJson(Config.tmdbKeyUrl, { apiKey }, "TMDB API key save failed.");
-  }
-
-  async SaveAiKeyFromDialog() {
-    const apiKey = this.Elements.aiInput.value.trim();
-    if (!apiKey)
-      return this.ShowAiError("Paste your OpenAI API key.");
-    this.SetAiSaving(true);
-    await this.PostAiKey(apiKey).finally(() => this.SetAiSaving(false));
-    await this.ApplySavedAiKey();
-  }
-
-  async PostAiKey(apiKey) {
-    return await this.PostJson(Config.aiKeyUrl, { apiKey }, "OpenAI API key save failed.");
-  }
-
-  async SaveSelectedAiModel() {
-    const model = this.Elements.aiModelSelect.value.trim();
-    this.SetAiModelSaving(true);
-    await this.PostAiModel(model).finally(() => this.SetAiModelSaving(false));
-    await this.ApplySavedAiModel(model);
-  }
-
-  async PostAiModel(model) {
-    return await this.PostJson(Config.aiModelUrl, { model }, "OpenAI model save failed.");
-  }
-
   async PostJson(url, body, message) {
     const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const payload = await response.json().catch(() => null);
     if (!response.ok || !payload?.ok)
       throw new Error(payload?.error || `${message} HTTP ${response.status}.`);
     return payload;
-  }
-
-  async ApplySavedCookie() {
-    await this.RefreshLiveStatus();
-    this.HideCookieDialog();
-    const queued = this.QueueRetryableImdbSubmits();
-    this.ShowCookieSavedToast(queued);
-  }
-
-  ShowCookieSavedToast(queued) {
-    if (queued > 0)
-      return this.ShowToast(`Cookie saved. Queued <strong>${FormatCount(queued)}</strong> IMDb writes`);
-    this.ShowToast("Cookie saved. <strong>Live ready</strong>");
-  }
-
-  async ApplySavedTmdbKey() {
-    await this.RefreshLiveStatus();
-    this.HideTmdbDialog();
-    this.RefreshVisibleMetadata();
-    this.ShowToast("TMDB key saved. <strong>Metadata ready</strong>");
-  }
-
-  async ApplySavedAiKey() {
-    await this.RefreshAiStatus();
-    this.HideAiDialog();
-    this.ShowToast("OpenAI key saved. <strong>Recommendations ready</strong>");
-  }
-
-  async ApplySavedAiModel(model) {
-    this.State.ai.model = model;
-    await this.RefreshAiModels().catch(() => null);
-    this.ShowToast(`OpenAI model set to <strong>${EscapeHtml(model || "auto")}</strong>`);
   }
 
   RefreshVisibleMetadata() {
@@ -788,9 +732,9 @@ export class RapidRaterApp {
       this.RenderVisibleCards();
   }
 
-  SetCookieSaving(value) {
-    this.Elements.cookieSave.disabled = value;
-    this.Elements.cookieSave.textContent = value ? "Saving..." : "Save Cookie";
+  SetImdbSaving(value) {
+    this.Elements.imdbSave.disabled = value;
+    this.Elements.imdbSave.textContent = value ? "Connecting..." : "Connect IMDb";
   }
 
   SetTmdbSaving(value) {
@@ -816,8 +760,8 @@ export class RapidRaterApp {
     this.SetRecommendationStatus(value ? "Saving model selection..." : "");
   }
 
-  ShowCookieError(message) {
-    this.Elements.cookieError.textContent = message || "";
+  ShowImdbError(message) {
+    this.Elements.imdbError.textContent = message || "";
   }
 
   ShowTmdbError(message) {
@@ -837,14 +781,34 @@ export class RapidRaterApp {
   }
 
   async RequestRecommendations() {
-    return await this.PostJson(Config.recommendationsUrl, { count: 12 }, "AI recommendation request failed.");
+    return await this.PostJson(Config.recommendationsUrl, this.BuildRecommendationRequest(), "AI recommendation request failed.");
+  }
+
+  BuildRecommendationRequest() {
+    return {
+      count: 12,
+      apiKey: this.Settings.openAiApiKey,
+      model: this.State.ai.model,
+      modelLag: this.State.ai.modelLag,
+      profile: BuildAiPreferenceProfile(this.State.ratings, this.State.movieById)
+    };
   }
 
   async RefreshAiModels() {
     if (!this.State.ai.configured)
       return;
-    const payload = await this.FetchJson(Config.aiModelsUrl);
+    const payload = await this.FetchJson(Config.aiModelsUrl, this.BuildAiModelsFetchOptions());
     this.ApplyAiModelFeed(payload);
+  }
+
+  BuildAiModelsFetchOptions() {
+    return {
+      headers: {
+        "x-openai-api-key": this.Settings.openAiApiKey,
+        "x-openai-model": this.Settings.openAiModel,
+        "x-openai-model-lag": String(this.Settings.openAiModelLag)
+      }
+    };
   }
 
   ApplyAiModelFeed(payload) {
@@ -912,8 +876,64 @@ export class RapidRaterApp {
     if (!file)
       return;
     const parsed = JSON.parse(await file.text());
+    if (this.IsRatingSave(parsed))
+      return this.ImportRatingSave(parsed, file.name);
     this.ApplyMovieData(parsed, file.name);
     this.ShowToast(`Loaded <strong>${FormatCount(this.State.movies.length)}</strong> titles`);
+  }
+
+  IsRatingSave(parsed) {
+    if (parsed?.format === "imdb-rapid-rater-save" || parsed?.ratings || parsed?.state?.ratings)
+      return true;
+    return Array.isArray(parsed) && parsed.some((item) => this.IsRatingRecord(item));
+  }
+
+  ImportRatingSave(parsed, fileName) {
+    const source = this.ReadRatingSaveSource(parsed);
+    const ratings = this.NormalizeSavedRatings(source.ratings);
+    if (!Object.keys(ratings).length)
+      throw new Error("The selected JSON file does not contain any Rapid Rater records.");
+    this.ApplyImportedRatingSave(source, ratings);
+    const counts = CountRatings(ratings);
+    this.ShowToast(`Restored <strong>${FormatCount(Object.keys(ratings).length)}</strong> records from ${EscapeHtml(fileName)}, including <strong>${FormatCount(counts.skipped)}</strong> not seen`);
+  }
+
+  ReadRatingSaveSource(parsed) {
+    if (Array.isArray(parsed))
+      return { ratings: parsed, history: [], queueIds: null, signature: "", merge: true };
+    const state = parsed.state || parsed;
+    return {
+      ratings: state.ratings || {},
+      history: Array.isArray(state.history) ? state.history : [],
+      queueIds: Array.isArray(state.queueIds) ? state.queueIds : null,
+      signature: String(state.signature || ""),
+      merge: false
+    };
+  }
+
+  NormalizeSavedRatings(value) {
+    const records = Array.isArray(value) ? value : Object.values(value || {});
+    const normalized = {};
+    for (const record of records) {
+      if (!this.IsRatingRecord(record))
+        continue;
+      normalized[record.ttId] = { ...record, ttId: String(record.ttId).trim() };
+    }
+    return normalized;
+  }
+
+  IsRatingRecord(record) {
+    const validStatus = ["rated", "imported", "notSeen"].includes(record?.status);
+    return validStatus && /^tt\d+$/.test(String(record?.ttId || "").trim());
+  }
+
+  ApplyImportedRatingSave(source, ratings) {
+    this.State.ratings = source.merge ? { ...this.State.ratings, ...ratings } : ratings;
+    this.State.history = source.merge ? this.State.history : source.history.slice(-200);
+    this.State.savedQueueIds = source.signature === this.State.signature ? source.queueIds : null;
+    this.RebuildQueue();
+    this.SaveLocalState();
+    this.Render();
   }
 
   async HandleCsvFile(event) {
@@ -939,11 +959,8 @@ export class RapidRaterApp {
   }
 
   async SaveRatingsCsvText(text) {
-    const response = await fetch(Config.ratingsCsvUrl, { method: "PUT", headers: { "content-type": "text/csv;charset=utf-8" }, body: text });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok || !payload?.ok)
-      throw new Error(payload?.error || `IMDb CSV save returned HTTP ${response.status}.`);
-    return payload;
+    localStorage.setItem(Config.storageKey + ":ratings-csv", text);
+    return { ok: true };
   }
 
   TakeSelectedFile(event) {
@@ -958,8 +975,13 @@ export class RapidRaterApp {
   }
 
   ExportJson() {
-    const records = SortedRatingRecords(this.State.ratings);
-    this.Download("imdb-rapid-rater-export.json", JSON.stringify(records, null, 2), "application/json;charset=utf-8");
+    const save = {
+      format: "imdb-rapid-rater-save",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      state: BuildStoragePayload(this.State)
+    };
+    this.Download("imdb-rapid-rater-save.json", JSON.stringify(save, null, 2), "application/json;charset=utf-8");
   }
 
   Download(fileName, content, type) {

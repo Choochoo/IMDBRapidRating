@@ -19,7 +19,7 @@
           <button type="button" class="view-tab" id="tab-ai">AI Recommendations</button>
         </nav>
         <div class="status-strip" aria-label="system status">
-          <button type="button" class="status-chip live-missing" id="configure-cookie">IMDb checking</button>
+          <button type="button" class="status-chip live-missing" id="configure-imdb">IMDb checking</button>
           <button type="button" class="status-chip metadata-missing" id="configure-tmdb">TMDB key needed</button>
           <span class="status-chip" id="source-badge">Loading</span>
           <span class="status-chip live-missing" id="live-badge">Live checking</span>
@@ -56,7 +56,7 @@
 
         <div class="toolbar" aria-label="actions">
           <button type="button" id="retry-failed">Retry IMDb failures</button>
-          <button type="button" id="load-json">Import title JSON</button>
+          <button type="button" id="load-json">Import save / title JSON</button>
           <button type="button" id="import-csv">Import IMDb CSV</button>
           <button type="button" id="export-csv">Export CSV</button>
           <button type="button" id="export-json">Export JSON</button>
@@ -150,25 +150,22 @@
       </div>
     </div>
 
-    <section class="cookie-dialog" id="cookie-dialog" role="dialog" aria-modal="true" aria-labelledby="cookie-title" hidden>
+    <section class="cookie-dialog" id="imdb-dialog" role="dialog" aria-modal="true" aria-labelledby="imdb-title" hidden>
       <div class="cookie-card">
         <div class="cookie-header">
-          <h1 id="cookie-title">Add IMDb Cookie</h1>
-          <button type="button" id="cookie-close">Close</button>
+          <h1 id="imdb-title">Connect IMDb</h1>
         </div>
-        <p>Live IMDb write-back needs your signed-in Cookie request-header value. Rapid Rater saves it in this computer's user data folder.</p>
+        <p>IMDb must be connected before rating. Rapid Rater stores this connection only in this browser, so every visitor has an independent IMDb account and movie history.</p>
         <ol>
-          <li>Sign into IMDb in Chrome.</li>
-          <li>Open DevTools, then the Network tab.</li>
-          <li>Refresh IMDb and click the main `www.imdb.com` request.</li>
-          <li>Open Headers, find Request Headers, then copy the full value after `Cookie:`.</li>
+          <li><a href="https://www.imdb.com/registration/signin/" target="_blank" rel="noopener noreferrer">Sign in on IMDb</a> in this browser.</li>
+          <li>On IMDb, open DevTools, select Network, and refresh the page.</li>
+          <li>Select the main <code>www.imdb.com</code> request and copy the complete <code>Cookie</code> request-header value.</li>
         </ol>
-        <label for="imdb-cookie-input">Cookie request header</label>
-        <textarea id="imdb-cookie-input" autocomplete="off" spellcheck="false" placeholder="Cookie: paste the full request-header value here"></textarea>
-        <p class="cookie-error" id="cookie-error" role="alert"></p>
+        <label for="imdb-cookie-input">IMDb connection value</label>
+        <textarea id="imdb-cookie-input" autocomplete="off" spellcheck="false" placeholder="Paste the complete Cookie request-header value"></textarea>
+        <p class="cookie-error" id="imdb-error" role="alert"></p>
         <div class="cookie-actions">
-          <button type="button" id="cookie-save">Save Cookie</button>
-          <button type="button" id="cookie-later">Skip for now</button>
+          <button type="button" id="imdb-save">Connect IMDb</button>
         </div>
       </div>
     </section>

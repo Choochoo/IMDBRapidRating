@@ -1,26 +1,23 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { GetOpenAiApiKey, GetOpenAiModel, GetOpenAiModelLag } from "./env.mjs";
 import { ResolveOpenAiModel } from "./openai-models.mjs";
-import { ReadSavedRatingsCsv } from "./ratings-csv.mjs";
-import { ParseCsv } from "../shared/csv.js";
 
 const OpenAiResponsesUrl = "https://api.openai.com/v1/responses";
 const MaxPreferenceItems = 500;
 
 export function GetAiStatus() {
   return {
-    configured: Boolean(GetOpenAiApiKey()),
-    model: GetOpenAiModel(),
-    modelLag: GetOpenAiModelLag(),
+    configured: false,
+    model: "",
+    modelLag: 2,
     endpoint: "/api/ai/recommendations"
   };
 }
 
 export async function GenerateAiRecommendations(rootPath, options = {}) {
-  if (!GetOpenAiApiKey())
+  if (!ReadOpenAiApiKey(options))
     return Fail(422, "OPENAI_KEY_MISSING", "OpenAI API key is not configured.");
-  const profile = BuildPreferenceProfile(rootPath);
+  const profile = BuildPreferenceProfile(options);
   if (!profile.payload.ok)
     return profile;
   const result = await RequestOpenAiRecommendations(profile.payload.profile, options);
@@ -29,67 +26,17 @@ export async function GenerateAiRecommendations(rootPath, options = {}) {
   return Ok(EnrichRecommendationPayload(rootPath, result.payload));
 }
 
-function BuildPreferenceProfile(rootPath) {
-  const csvResult = ReadSavedRatingsCsv(rootPath);
-  if (!csvResult.payload.ok)
-    return csvResult;
-  const movies = ReadMovieLookup(rootPath);
-  const ratings = BuildRatedMovies(csvResult.payload.csv, movies);
+function BuildPreferenceProfile(options) {
+  const profile = NormalizeProfile(options.profile);
+  const ratings = Array.isArray(profile.ratings) ? profile.ratings : [];
   if (ratings.length < 5)
     return Fail(422, "NOT_ENOUGH_RATINGS", "Import at least five rated IMDb rows before asking for recommendations.");
   return Ok({ profile: BuildProfile(ratings) });
 }
 
-function ReadMovieLookup(rootPath) {
-  return new Map(ReadMovieList(rootPath).map((movie) => [movie.ttId, movie]));
-}
-
-function ReadMovieList(rootPath) {
-  const filePath = path.join(rootPath, "data", "movies.json");
-  if (!existsSync(filePath))
-    return [];
-  const payload = JSON.parse(readFileSync(filePath, "utf8"));
-  return Array.isArray(payload.movies) ? payload.movies : [];
-}
-
-function BuildRatedMovies(csv, movies) {
-  const rows = ParseCsv(csv);
-  const indexes = BuildCsvIndexes(rows[0] || []);
-  return rows.slice(1).map((row) => BuildRatedMovie(row, indexes, movies)).filter(Boolean);
-}
-
-function BuildCsvIndexes(headers) {
-  const normalized = headers.map((header) => header.trim().toLowerCase());
-  return {
-    constIndex: normalized.indexOf("const"),
-    ratingIndex: normalized.indexOf("your rating"),
-    titleIndex: normalized.indexOf("title"),
-    yearIndex: normalized.indexOf("year"),
-    genreIndex: normalized.indexOf("genres")
-  };
-}
-
-function BuildRatedMovie(row, indexes, movies) {
-  const rating = Number(row[indexes.ratingIndex]);
-  const isValidRating = Number.isInteger(rating) && rating >= 1 && rating <= 10;
-  if (!isValidRating)
-    return null;
-  const known = movies.get(row[indexes.constIndex]);
-  return BuildAiMovie(row, indexes, known, rating);
-}
-
-function BuildAiMovie(row, indexes, known, rating) {
-  return {
-    title: CleanText(known?.title || row[indexes.titleIndex]),
-    year: known?.year || Number(row[indexes.yearIndex]) || null,
-    genres: ReadGenres(known?.genres || row[indexes.genreIndex]),
-    rating
-  };
-}
-
 function BuildProfile(ratings) {
   return {
-    ratings: OptimizeRatings(ratings),
+    ratings: OptimizeRatings(ratings.map(NormalizeRating).filter(Boolean)),
     ratingScale: "1-10",
     fieldsSent: ["title", "year", "genres", "rating"]
   };
@@ -100,7 +47,7 @@ function OptimizeRatings(ratings) {
 }
 
 async function RequestOpenAiRecommendations(profile, options) {
-  const model = await ResolveOpenAiModel();
+  const model = await ResolveOpenAiModel(options);
   const response = await fetch(OpenAiResponsesUrl, BuildOpenAiRequest(profile, options, model));
   const payload = await response.json().catch(() => null);
   if (!response.ok)
@@ -111,14 +58,14 @@ async function RequestOpenAiRecommendations(profile, options) {
 function BuildOpenAiRequest(profile, options, model) {
   return {
     method: "POST",
-    headers: BuildOpenAiHeaders(),
+    headers: BuildOpenAiHeaders(options),
     body: JSON.stringify(BuildOpenAiBody(profile, options, model))
   };
 }
 
-function BuildOpenAiHeaders() {
+function BuildOpenAiHeaders(options) {
   return {
-    "authorization": `Bearer ${GetOpenAiApiKey()}`,
+    "authorization": `Bearer ${ReadOpenAiApiKey(options)}`,
     "content-type": "application/json"
   };
 }
@@ -218,6 +165,14 @@ function EnrichRecommendationPayload(rootPath, payload) {
   return { ...payload, recommendations: recommendations.map((item) => EnrichRecommendation(item, movies)) };
 }
 
+function ReadMovieList(rootPath) {
+  const filePath = path.join(rootPath, "data", "movies.json");
+  if (!existsSync(filePath))
+    return [];
+  const payload = JSON.parse(readFileSync(filePath, "utf8"));
+  return Array.isArray(payload.movies) ? payload.movies : [];
+}
+
 function ReadRecommendations(payload) {
   return Array.isArray(payload.recommendations) ? payload.recommendations : [];
 }
@@ -261,10 +216,34 @@ function ReadOpenAiError(payload, status) {
   return payload?.error?.message || `OpenAI returned HTTP ${status}.`;
 }
 
+function NormalizeProfile(profile) {
+  return profile && typeof profile === "object" ? profile : {};
+}
+
+function NormalizeRating(item) {
+  const rating = Number(item?.rating);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 10)
+    return null;
+  return {
+    title: CleanText(item.title),
+    year: Number(item.year) || null,
+    genres: ReadGenres(item.genres),
+    rating
+  };
+}
+
 function ReadGenres(value) {
   if (Array.isArray(value))
     return value.filter(Boolean).map(CleanText).filter(Boolean);
   return CleanText(value).split(",").map(CleanText).filter(Boolean);
+}
+
+function ReadOpenAiApiKey(options) {
+  return NormalizeBearerValue(options?.apiKey);
+}
+
+function NormalizeBearerValue(value) {
+  return String(value || "").trim().replace(/^authorization:\s*/i, "").replace(/^bearer\s+/i, "");
 }
 
 function CleanText(value) {

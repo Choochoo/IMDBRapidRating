@@ -67,13 +67,11 @@ function BuildCookieElements() {
 
 function BuildImdbSetupElements() {
   return {
-    configureCookie: Element("configure-cookie"),
-    cookieDialog: Element("cookie-dialog"),
-    cookieInput: Element("imdb-cookie-input"),
-    cookieError: Element("cookie-error"),
-    cookieSave: Element("cookie-save"),
-    cookieClose: Element("cookie-close"),
-    cookieLater: Element("cookie-later")
+    configureImdb: Element("configure-imdb"),
+    imdbDialog: Element("imdb-dialog"),
+    imdbInput: Element("imdb-cookie-input"),
+    imdbError: Element("imdb-error"),
+    imdbSave: Element("imdb-save")
   };
 }
 

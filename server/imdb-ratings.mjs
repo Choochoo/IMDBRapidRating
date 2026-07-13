@@ -1,4 +1,4 @@
-import { GetImdbCookie, GetTmdbApiKey, HasImdbAuthCookie, IsDryRun } from "./env.mjs";
+import { IsDryRun } from "./env.mjs";
 
 const GraphqlUrl = "https://api.graphql.imdb.com/";
 const RateMutation = "mutation UpdateTitleRating($rating: Int!, $titleId: ID!) { " +
@@ -8,34 +8,36 @@ const DeleteMutation = "mutation DeleteTitleRating($titleId: ID!) { " +
 
 export function GetImdbStatus() {
   return {
-    configured: HasImdbAuthCookie() || IsDryRun(),
+    configured: IsDryRun(),
     dryRun: IsDryRun(),
-    tmdbConfigured: Boolean(GetTmdbApiKey()),
+    tmdbConfigured: false,
     endpoint: "/api/rate",
     ratingScale: "1-10"
   };
 }
 
-export async function SubmitImdbRating(titleId, rating) {
+export async function SubmitImdbRating(titleId, rating, cookie) {
   const request = BuildRatingRequest(titleId, rating);
   if (request.error)
     return request.error;
   if (IsDryRun())
     return Ok(BuildDryRunPayload(request));
-  if (!HasImdbAuthCookie())
-    return Fail(503, "IMDB_COOKIE_MISSING", "Save your IMDb cookie in the app or set IMDB_COOKIE before starting the server.");
-  return await PostRatingToImdb(request.titleId, request.rating);
+  const authCookie = NormalizeCookie(cookie);
+  if (!HasImdbAuthCookie(authCookie))
+    return Fail(503, "IMDB_COOKIE_MISSING", "This browser needs a signed-in IMDb cookie.");
+  return await PostRatingToImdb(request.titleId, request.rating, authCookie);
 }
 
-export async function DeleteImdbRating(titleId) {
+export async function DeleteImdbRating(titleId, cookie) {
   const request = BuildTitleRequest(titleId);
   if (request.error)
     return request.error;
   if (IsDryRun())
     return Ok(BuildDryRunDeletePayload(request));
-  if (!HasImdbAuthCookie())
-    return Fail(503, "IMDB_COOKIE_MISSING", "Set IMDB_COOKIE before deleting IMDb ratings.");
-  return await DeleteRatingFromImdb(request.titleId);
+  const authCookie = NormalizeCookie(cookie);
+  if (!HasImdbAuthCookie(authCookie))
+    return Fail(503, "IMDB_COOKIE_MISSING", "This browser needs a signed-in IMDb cookie.");
+  return await DeleteRatingFromImdb(request.titleId, authCookie);
 }
 
 function BuildRatingRequest(titleId, rating) {
@@ -74,8 +76,8 @@ function BuildDryRunDeletePayload(request) {
   };
 }
 
-async function PostRatingToImdb(titleId, rating) {
-  const response = await fetch(GraphqlUrl, BuildRatingFetchOptions(titleId, rating));
+async function PostRatingToImdb(titleId, rating, cookie) {
+  const response = await fetch(GraphqlUrl, BuildRatingFetchOptions(titleId, rating, cookie));
   const payload = ParseMaybeJson(await response.text());
   const error = BuildImdbError(response, payload);
   if (error)
@@ -86,8 +88,8 @@ async function PostRatingToImdb(titleId, rating) {
   return Ok({ ok: true, titleId, rating: writtenRating });
 }
 
-async function DeleteRatingFromImdb(titleId) {
-  const response = await fetch(GraphqlUrl, BuildDeleteFetchOptions(titleId));
+async function DeleteRatingFromImdb(titleId, cookie) {
+  const response = await fetch(GraphqlUrl, BuildDeleteFetchOptions(titleId, cookie));
   const payload = ParseMaybeJson(await response.text());
   const error = BuildImdbError(response, payload);
   if (error)
@@ -95,27 +97,27 @@ async function DeleteRatingFromImdb(titleId) {
   return Ok({ ok: true, titleId, deleted: true });
 }
 
-function BuildRatingFetchOptions(titleId, rating) {
+function BuildRatingFetchOptions(titleId, rating, cookie) {
   return {
     method: "POST",
-    headers: BuildHeaders(titleId),
+    headers: BuildHeaders(titleId, cookie),
     body: JSON.stringify(BuildRateBody(titleId, rating))
   };
 }
 
-function BuildDeleteFetchOptions(titleId) {
+function BuildDeleteFetchOptions(titleId, cookie) {
   return {
     method: "POST",
-    headers: BuildHeaders(titleId),
+    headers: BuildHeaders(titleId, cookie),
     body: JSON.stringify(BuildDeleteBody(titleId))
   };
 }
 
-function BuildHeaders(titleId) {
+function BuildHeaders(titleId, cookie) {
   return {
     "accept": "application/graphql+json, application/json",
     "content-type": "application/json",
-    "cookie": GetImdbCookie(),
+    "cookie": cookie,
     "origin": "https://www.imdb.com",
     "referer": `https://www.imdb.com/title/${titleId}/`,
     "user-agent": "Mozilla/5.0 IMDb Rapid Rater local proxy"
@@ -177,4 +179,12 @@ function ParseMaybeJson(text) {
   } catch {
     return null;
   }
+}
+
+function NormalizeCookie(value) {
+  return String(value || "").trim().replace(/^cookie\s*:\s*/i, "").replace(/[\r\n]+/g, " ");
+}
+
+function HasImdbAuthCookie(cookie) {
+  return /(?:^|;\s*)at-main=/.test(cookie);
 }

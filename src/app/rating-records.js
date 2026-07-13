@@ -19,7 +19,7 @@ export function InitialSubmitState(status, rating, liveConfigured) {
   if (!IsValidImdbRating(rating))
     return { submitStatus: "localOnly", submitError: "IMDb only accepts ratings from 1 to 10.", submittedAt: "" };
   if (!liveConfigured)
-    return { submitStatus: "notConfigured", submitError: "Live IMDb cookie is not configured.", submittedAt: "" };
+    return { submitStatus: "notConfigured", submitError: "IMDb sign-in is required in this browser.", submittedAt: "" };
   return { submitStatus: "pending", submitError: "", submittedAt: "" };
 }
 
@@ -50,6 +50,14 @@ export function BuildRateRequest(record) {
   };
 }
 
+export function BuildAiPreferenceProfile(records, movieById) {
+  return {
+    ratings: BuildAiRatings(records, movieById),
+    ratingScale: "1-10",
+    fieldsSent: ["title", "year", "genres", "rating"]
+  };
+}
+
 export function ImportImdbCsv(text, ratings, movieById) {
   const rows = ParseCsv(text);
   if (!rows.length)
@@ -72,7 +80,11 @@ export function SortedRatingRecords(records) {
 }
 
 function IsValidRatedRecord(record) {
-  return record.status === "rated" && IsValidImdbRating(record.rating);
+  return IsRatedLikeRecord(record) && IsValidImdbRating(record.rating);
+}
+
+function IsRatedLikeRecord(record) {
+  return record.status === "rated" || record.status === "imported";
 }
 
 function IsValidImdbRating(rating) {
@@ -178,4 +190,20 @@ function ExportCsvRecord(record) {
 
 function CompareRatingRecords(left, right) {
   return String(left.at || "").localeCompare(String(right.at || ""));
+}
+
+function BuildAiRatings(records, movieById) {
+  return SortedRatingRecords(records).map((record) => BuildAiRating(record, movieById)).filter(Boolean);
+}
+
+function BuildAiRating(record, movieById) {
+  if (!IsValidRatedRecord(record))
+    return null;
+  const movie = movieById.get(record.ttId) || {};
+  return {
+    title: record.title || movie.title || "",
+    year: record.year || movie.year || null,
+    genres: movie.genres || [],
+    rating: record.rating
+  };
 }
