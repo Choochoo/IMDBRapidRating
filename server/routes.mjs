@@ -107,7 +107,7 @@ async function HandleAiModelsRoute(url, request, response) {
 async function HandleAiRecommendationsRoute(url, request, response, rootPath) {
   if (url.pathname !== "/api/ai/recommendations" || request.method !== "POST")
     return false;
-  const body = await ReadJsonRequest(request, response);
+  const body = await ReadJsonRequest(request, response, Number.POSITIVE_INFINITY);
   if (!body)
     return true;
   const result = await GenerateAiRecommendations(rootPath, body);
@@ -123,8 +123,8 @@ function ReadRequestApiOptions(request) {
   };
 }
 
-async function ReadJsonRequest(request, response) {
-  return await ReadRequestBody(response, () => ReadJsonBody(request));
+async function ReadJsonRequest(request, response, maxBytes) {
+  return await ReadRequestBody(response, () => ReadJsonBody(request, maxBytes));
 }
 
 async function ReadRequestBody(response, readBody) {

@@ -3,7 +3,6 @@ import path from "node:path";
 import { ResolveOpenAiModel } from "./openai-models.mjs";
 
 const OpenAiResponsesUrl = "https://api.openai.com/v1/responses";
-const MaxPreferenceItems = 500;
 
 export function GetAiStatus() {
   return {
@@ -43,7 +42,7 @@ function BuildProfile(ratings) {
 }
 
 function OptimizeRatings(ratings) {
-  return ratings.sort((left, right) => right.rating - left.rating).slice(0, MaxPreferenceItems);
+  return ratings.sort((left, right) => right.rating - left.rating);
 }
 
 async function RequestOpenAiRecommendations(profile, options) {

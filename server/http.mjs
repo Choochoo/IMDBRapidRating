@@ -13,8 +13,8 @@ export function SendJson(response, status, payload) {
   response.end(JSON.stringify(payload));
 }
 
-export async function ReadJsonBody(request) {
-  const body = await ReadTextBody(request, 16 * 1024);
+export async function ReadJsonBody(request, maxBytes = 16 * 1024) {
+  const body = await ReadTextBody(request, maxBytes);
   return ParseJsonBody(body);
 }
 
