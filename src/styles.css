@@ -268,11 +268,14 @@ button:focus-visible {
   height: 100%;
   min-height: 0;
   overflow: auto;
-  padding: 24px;
+  padding: 32px 24px 56px;
+  background:
+    radial-gradient(circle at 84% 2%, rgba(224, 173, 71, 0.09), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 300px);
 }
 
 .recommendation-shell {
-  max-width: 1180px;
+  max-width: 1320px;
   margin: 0 auto;
 }
 
@@ -281,17 +284,38 @@ button:focus-visible {
   justify-content: space-between;
   gap: 18px;
   align-items: flex-start;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
+  padding: 26px;
+  border: 1px solid rgba(224, 173, 71, 0.22);
+  border-radius: 16px;
+  background:
+    linear-gradient(110deg, rgba(224, 173, 71, 0.1), rgba(126, 182, 255, 0.035) 58%, transparent),
+    var(--surface-soft);
 }
 
 .recommendation-header h1 {
-  margin: 0 0 6px;
-  font-size: 28px;
+  margin: 5px 0 9px;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1;
+  letter-spacing: -0.035em;
 }
 
 .recommendation-header p {
   margin: 0;
   color: var(--muted);
+  line-height: 1.5;
+}
+
+.recommendation-heading-copy {
+  max-width: 760px;
+}
+
+.recommendation-kicker {
+  color: #f4cf86;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .recommendation-actions {
@@ -299,12 +323,21 @@ button:focus-visible {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  padding-top: 6px;
+}
+
+#generate-recommendations {
+  min-height: 42px;
+  border-color: rgba(224, 173, 71, 0.7);
+  background: var(--accent);
+  color: #17120a;
+  font-weight: 800;
 }
 
 .recommendation-status {
   min-height: 24px;
   max-width: 980px;
-  margin-bottom: 14px;
+  margin: 0 4px 14px;
   color: #c4cdd7;
   line-height: 1.45;
 }
@@ -314,11 +347,43 @@ button:focus-visible {
   grid-template-columns: minmax(0, 1fr) minmax(320px, 430px);
   gap: 14px;
   align-items: center;
-  margin-bottom: 16px;
-  padding: 12px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.035);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.recommendation-loading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(224, 173, 71, 0.28);
+  border-radius: 12px;
+  background: rgba(224, 173, 71, 0.075);
+}
+
+.recommendation-loading strong,
+.recommendation-loading span {
+  display: block;
+}
+
+.recommendation-loading div > span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.recommendation-spinner {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: 3px solid rgba(224, 173, 71, 0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: RecommendationSpin 850ms linear infinite;
 }
 
 .model-copy strong,
@@ -351,7 +416,7 @@ button:focus-visible {
 .recommendation-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 18px;
 }
 
 .recommendation-card {
@@ -359,10 +424,20 @@ button:focus-visible {
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0)),
     var(--surface);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.17);
+  animation: RecommendationReveal 420ms both;
+  animation-delay: calc(var(--card-index, 0) * 55ms);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.recommendation-card:not(.recommendation-skeleton):hover {
+  border-color: rgba(224, 173, 71, 0.42);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.28);
+  transform: translateY(-4px);
 }
 
 .recommendation-card-body {
@@ -378,7 +453,7 @@ button:focus-visible {
   aspect-ratio: 2 / 3;
   overflow: hidden;
   background:
-    linear-gradient(145deg, rgba(224, 173, 71, 0.34), rgba(108, 145, 210, 0.12)),
+    linear-gradient(145deg, rgba(var(--tone, 224, 173, 71), 0.4), rgba(108, 145, 210, 0.12)),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 16px),
     #111820;
 }
@@ -388,10 +463,21 @@ button:focus-visible {
   position: absolute;
   right: 14px;
   bottom: 12px;
+  z-index: 2;
   color: rgba(255, 255, 255, 0.88);
   font-size: 28px;
   font-weight: 800;
   line-height: 1;
+}
+
+.recommendation-poster::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  height: 42%;
+  background: linear-gradient(transparent, rgba(8, 11, 14, 0.74));
+  pointer-events: none;
 }
 
 .recommendation-poster.has-image {
@@ -406,12 +492,39 @@ button:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 400ms ease;
+}
+
+.recommendation-card:hover .recommendation-poster img {
+  transform: scale(1.025);
+}
+
+.recommendation-card-kicker {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 11px;
+  color: #e9c477;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.recommendation-card-kicker span:last-child {
+  color: var(--muted);
 }
 
 .recommendation-card h2 {
   margin: 0 0 8px;
   font-size: 19px;
   line-height: 1.15;
+}
+
+.recommendation-card h2 span {
+  color: var(--muted);
+  font-size: 0.72em;
+  font-weight: 650;
 }
 
 .recommendation-card h3 {
@@ -492,6 +605,73 @@ button:focus-visible {
   transition:
     opacity var(--anim) ease,
     transform var(--anim) ease;
+}
+
+.recommendation-skeleton {
+  pointer-events: none;
+  animation: RecommendationReveal 320ms both;
+  animation-delay: calc(var(--card-index, 0) * 45ms);
+}
+
+.recommendation-skeleton .recommendation-poster::before,
+.recommendation-skeleton .recommendation-poster::after {
+  display: none;
+}
+
+.skeleton-block,
+.skeleton-line,
+.skeleton-pills span {
+  background: linear-gradient(100deg, #202832 20%, #303a45 42%, #202832 64%);
+  background-size: 220% 100%;
+  animation: RecommendationShimmer 1.45s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 12px;
+  margin: 9px 0;
+  border-radius: 999px;
+}
+
+.skeleton-kicker { width: 34%; height: 8px; margin-bottom: 18px; }
+.skeleton-title { width: 82%; height: 22px; }
+.skeleton-label { width: 28%; height: 9px; margin-top: 25px; }
+.skeleton-short { width: 62%; }
+.skeleton-pills { display: flex; gap: 6px; margin: 14px 0 6px; }
+.skeleton-pills span { width: 54px; height: 24px; border-radius: 999px; }
+
+.recommendation-empty {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+  padding: 32px;
+  border: 1px dashed rgba(224, 173, 71, 0.35);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.025);
+  text-align: center;
+}
+
+.recommendation-empty > span {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 28px;
+}
+
+.recommendation-empty h2 { margin: 16px 0 0; }
+.recommendation-empty p { max-width: 480px; margin: 8px 0 0; color: var(--muted); line-height: 1.5; }
+.recommendation-error { border-color: rgba(242, 107, 99, 0.4); }
+.recommendation-error > span { background: rgba(242, 107, 99, 0.13); color: #ffaaa5; }
+
+@keyframes RecommendationSpin { to { transform: rotate(360deg); } }
+@keyframes RecommendationShimmer { to { background-position-x: -220%; } }
+@keyframes RecommendationReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .failure-panel {

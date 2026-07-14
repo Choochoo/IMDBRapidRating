@@ -97,16 +97,17 @@
     <section class="recommendation-view" id="recommendation-view" hidden>
       <div class="recommendation-shell">
         <header class="recommendation-header">
-          <div>
+          <div class="recommendation-heading-copy">
+            <span class="recommendation-kicker">Curated for your taste</span>
             <h1>AI Recommendations</h1>
-            <p>Uses title, year, genres, your rating, and movies you marked “Don't recommend again.”</p>
+            <p>Fresh picks shaped by your ratings, favorite genres, and movies you would rather skip.</p>
           </div>
           <div class="recommendation-actions">
             <button type="button" id="configure-ai">Set OpenAI Key</button>
             <button type="button" id="generate-recommendations">Generate picks</button>
           </div>
         </header>
-        <div class="recommendation-status" id="recommendation-status">Import your IMDb CSV, then generate recommendations.</div>
+        <div class="recommendation-status" id="recommendation-status" role="status">Import your IMDb CSV, then generate recommendations.</div>
         <div class="model-panel">
           <div class="model-copy">
             <strong id="ai-model-status">Model: checking</strong>
@@ -119,6 +120,10 @@
             </select>
             <button type="button" id="refresh-ai-models">Refresh</button>
           </div>
+        </div>
+        <div class="recommendation-loading" id="recommendation-loading" role="status" aria-live="polite" hidden>
+          <span class="recommendation-spinner" aria-hidden="true"></span>
+          <div><strong>Building your watchlist</strong><span id="recommendation-loading-copy">Reading the signals in your ratings...</span></div>
         </div>
         <div class="recommendation-grid" id="recommendation-grid"></div>
       </div>

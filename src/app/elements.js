@@ -161,6 +161,8 @@ function BuildRecommendationElements() {
   return {
     generateRecommendations: Element("generate-recommendations"),
     recommendationStatus: Element("recommendation-status"),
+    recommendationLoading: Element("recommendation-loading"),
+    recommendationLoadingCopy: Element("recommendation-loading-copy"),
     recommendationGrid: Element("recommendation-grid")
   };
 }

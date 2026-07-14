@@ -15,6 +15,8 @@ import {
   RenderFailure,
   RenderModelOptions,
   RenderRecommendationCard,
+  RenderRecommendationEmpty,
+  RenderRecommendationSkeletons,
   UpdatePoster,
   UpdateRecommendationPoster,
   UpdateSynopsis
@@ -39,6 +41,15 @@ import { BuildCompleteSummary, CountRatings } from "./stats.js";
 import { UndoRating } from "./undo-rating.js";
 import { EscapeHtml, FormatCount, Shuffle } from "./util.js";
 
+const RecommendationCount = 8;
+const RecommendationLoadingMessages = [
+  "Reading the signals in your ratings...",
+  "Finding patterns across genres and eras...",
+  "Comparing stories, directors, and hidden gems...",
+  "Narrowing the list to your strongest matches...",
+  "Giving the final picks a last look..."
+];
+
 export class RapidRaterApp {
   constructor() {
     this.Elements = BuildElements();
@@ -54,6 +65,8 @@ export class RapidRaterApp {
     this.SyncPromise = Promise.resolve();
     this.Initialized = false;
     this.ToastTimer = 0;
+    this.AiLoadingTimer = 0;
+    this.AiLoadingMessageIndex = 0;
     this.SubmitInFlight = false;
     this.SubmitQueue = [];
     this.SubmitQueuedIds = new Set();
@@ -1012,7 +1025,7 @@ export class RapidRaterApp {
 
   BuildRecommendationRequest() {
     return {
-      count: 12,
+      count: RecommendationCount,
       profile: BuildAiPreferenceProfile(this.State.ratings, this.State.movieById, this.State.recommendationExclusions)
     };
   }
@@ -1080,20 +1093,44 @@ export class RapidRaterApp {
   SetAiLoading(value) {
     this.State.ai.loading = value;
     this.SetAiControlsDisabled(value);
-    this.Elements.generateRecommendations.textContent = value ? "Generating..." : "Generate picks";
-    this.SetRecommendationStatus(value ? "Reading your saved IMDb ratings..." : "");
+    this.Elements.generateRecommendations.textContent = value ? "Finding movies..." : "Generate picks";
+    this.Elements.recommendationLoading.hidden = !value;
+    window.clearInterval(this.AiLoadingTimer);
+    if (!value) {
+      this.AiLoadingTimer = 0;
+      return;
+    }
+    this.AiLoadingMessageIndex = 0;
+    this.UpdateAiLoadingMessage();
+    this.Elements.recommendationGrid.classList.add("is-loading");
+    this.Elements.recommendationGrid.setAttribute("aria-busy", "true");
+    this.Elements.recommendationGrid.innerHTML = RenderRecommendationSkeletons(RecommendationCount);
+    this.SetRecommendationStatus("Your personalized cinema lineup is being prepared.");
+    this.AiLoadingTimer = window.setInterval(() => {
+      this.AiLoadingMessageIndex = (this.AiLoadingMessageIndex + 1) % RecommendationLoadingMessages.length;
+      this.UpdateAiLoadingMessage();
+    }, 1800);
+  }
+
+  UpdateAiLoadingMessage() {
+    this.Elements.recommendationLoadingCopy.textContent = RecommendationLoadingMessages[this.AiLoadingMessageIndex];
   }
 
   RenderRecommendations(payload) {
     this.SetRecommendationStatus(payload.summary || "Recommendations ready.");
     const items = Array.isArray(payload.recommendations) ? payload.recommendations : [];
-    this.Elements.recommendationGrid.innerHTML = items.map(RenderRecommendationCard).join("");
+    this.Elements.recommendationGrid.classList.remove("is-loading");
+    this.Elements.recommendationGrid.setAttribute("aria-busy", "false");
+    this.Elements.recommendationGrid.innerHTML = items.length ? items.map(RenderRecommendationCard).join("") : RenderRecommendationEmpty();
     for (const item of items)
       this.EnrichTitleMetadata(item.ttId);
   }
 
   ShowRecommendationError(message) {
     this.SetAiLoading(false);
+    this.Elements.recommendationGrid.classList.remove("is-loading");
+    this.Elements.recommendationGrid.setAttribute("aria-busy", "false");
+    this.Elements.recommendationGrid.innerHTML = `<div class="recommendation-empty recommendation-error"><span aria-hidden="true">!</span><h2>We couldn't finish that lineup</h2><p>Nothing was changed. Check the message above and try again.</p></div>`;
     this.SetRecommendationStatus(message || "Could not generate recommendations.");
   }
 

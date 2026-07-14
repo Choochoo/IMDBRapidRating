@@ -49,14 +49,35 @@ export function RenderModelOptions(aiState) {
   return options.join("");
 }
 
-export function RenderRecommendationCard(item) {
+export function RenderRecommendationCard(item, index = 0) {
   const title = EscapeHtml(item.title || "Untitled");
   const year = RenderRecommendationYear(item);
   const heading = `<h2>${title}${year}</h2>`;
   const genres = RenderRecommendationGenres(item);
-  const body = `${heading}${genres}${RenderRecommendationWhy(item)}${RenderRecommendationActions(item)}`;
+  const eyebrow = `<div class="recommendation-card-kicker"><span>Pick ${String(index + 1).padStart(2, "0")}</span><span>Matched to you</span></div>`;
+  const body = `${eyebrow}${heading}${genres}${RenderRecommendationWhy(item)}${RenderRecommendationActions(item)}`;
   const content = `<div class="recommendation-card-body">${body}</div>`;
-  return `<article class="recommendation-card"${RenderRecommendationData(item)}>${RenderRecommendationPoster(item)}${content}</article>`;
+  const tone = ToneFromId(item.ttId || item.title || String(index));
+  return `<article class="recommendation-card" style="--card-index:${index};--tone:${tone}"${RenderRecommendationData(item)}>${RenderRecommendationPoster(item)}${content}</article>`;
+}
+
+export function RenderRecommendationSkeletons(count = 8) {
+  return Array.from({ length: count }, (_, index) => `
+    <article class="recommendation-card recommendation-skeleton" aria-hidden="true" style="--card-index:${index}">
+      <div class="recommendation-poster skeleton-block"></div>
+      <div class="recommendation-card-body">
+        <div class="skeleton-line skeleton-kicker"></div>
+        <div class="skeleton-line skeleton-title"></div>
+        <div class="skeleton-pills"><span></span><span></span><span></span></div>
+        <div class="skeleton-line skeleton-label"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line skeleton-short"></div>
+      </div>
+    </article>`).join("");
+}
+
+export function RenderRecommendationEmpty() {
+  return `<div class="recommendation-empty"><span aria-hidden="true">&#9734;</span><h2>No picks came back this time</h2><p>Try generating again, or add more ratings so the model has a clearer signal.</p></div>`;
 }
 
 export function ToneFromId(ttId) {
