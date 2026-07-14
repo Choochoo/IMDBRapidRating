@@ -1,0 +1,37 @@
+import assert from "node:assert/strict";
+import { randomBytes } from "node:crypto";
+import test from "node:test";
+import { ReadDatabaseSchema, ReadPostgresConfig } from "../server/db/config.mjs";
+import { DecryptSecret, EncryptSecret, SafeTokenEquals } from "../server/security/secrets.mjs";
+
+test("encrypted account secrets round-trip and are bound to account and type", () => {
+  process.env.DATA_ENCRYPTION_KEY = randomBytes(32).toString("base64");
+  const encrypted = EncryptSecret("sensitive-value", "user-1", "imdb");
+  assert.notEqual(encrypted.ciphertext, "sensitive-value");
+  assert.equal(DecryptSecret(encrypted, "user-1", "imdb"), "sensitive-value");
+  assert.throws(() => DecryptSecret(encrypted, "user-2", "imdb"));
+});
+
+test("constant-time token helper rejects empty and different tokens", () => {
+  assert.equal(SafeTokenEquals("same", "same"), true);
+  assert.equal(SafeTokenEquals("same", "other"), false);
+  assert.equal(SafeTokenEquals("", ""), false);
+});
+
+test("Npgsql-style connection strings are supported without exposing credentials", () => {
+  process.env.POSTGRES_CONNECTION_STRING = "Host=db.internal;Port=5432;Database=rapid;Username=app;Password=secret";
+  delete process.env.DATABASE_URL;
+  const config = ReadPostgresConfig();
+  assert.equal(config.host, "db.internal");
+  assert.equal(config.database, "rapid");
+  assert.equal(config.user, "app");
+  assert.equal(config.password, "secret");
+});
+
+test("database schema names are strictly validated", () => {
+  process.env.RAPID_RATER_DB_SCHEMA = "imdb_rapid_rater";
+  assert.equal(ReadDatabaseSchema(), "imdb_rapid_rater");
+  process.env.RAPID_RATER_DB_SCHEMA = "public; drop schema public";
+  assert.throws(() => ReadDatabaseSchema());
+  delete process.env.RAPID_RATER_DB_SCHEMA;
+});

@@ -79,19 +79,8 @@ async function RestorePreviousLiveRating(app, previous) {
 }
 
 async function DeleteLiveRating(app, ttId) {
-  const response = await fetch(Config.rateUrl, BuildDeleteOptions(app, ttId));
-  const payload = await response.json().catch(() => null);
-  if (!response.ok || !payload?.ok)
-    throw new Error(payload?.error || `IMDb undo delete failed HTTP ${response.status}.`);
+  await app.RequestJson(Config.rateUrl, "DELETE", { titleId: ttId });
   return true;
-}
-
-function BuildDeleteOptions(app, ttId) {
-  return {
-    method: "DELETE",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ titleId: ttId, cookie: app.Settings.imdbCookie })
-  };
 }
 
 function RestoreUndo(app, last, movie, message) {

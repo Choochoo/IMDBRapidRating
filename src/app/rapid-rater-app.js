@@ -19,7 +19,14 @@ import {
   UpdateRecommendationPoster,
   UpdateSynopsis
 } from "./rendering.js";
-import { HasImdbCookie, ReadBrowserSettings } from "./browser-settings.js";
+import {
+  ApplyAccountSettings,
+  ClearLegacyBrowserData,
+  HasLegacyBrowserData,
+  ReadBrowserSettings,
+  ReadLegacyRatingsCsv,
+  ReadLegacyState
+} from "./browser-settings.js";
 import { BindRecommendationRatings } from "./recommendation-ratings.js";
 import {
   SaveAiKeyFromDialog,
@@ -36,7 +43,16 @@ export class RapidRaterApp {
   constructor() {
     this.Elements = BuildElements();
     this.Settings = ReadBrowserSettings();
+    this.LegacySettings = { ...this.Settings };
     this.State = BuildState();
+    this.AccountPayload = {};
+    this.RatingsCsvText = "";
+    this.AccountRevision = 0;
+    this.CsrfToken = "";
+    this.User = null;
+    this.SyncTimer = 0;
+    this.SyncPromise = Promise.resolve();
+    this.Initialized = false;
     this.ToastTimer = 0;
     this.SubmitInFlight = false;
     this.SubmitQueue = [];
@@ -48,10 +64,15 @@ export class RapidRaterApp {
 
   Start() {
     this.BindEvents();
-    this.Initialize().catch((error) => this.ShowStartupError(error));
+    this.BeginSession().catch((error) => this.ShowStartupError(error));
   }
 
   async Initialize() {
+    if (this.Initialized)
+      return;
+    this.Initialized = true;
+    await this.LoadAccountState();
+    await this.OfferLegacyMigration();
     await this.RefreshLiveStatus();
     await this.RefreshAiStatus();
     const data = await this.LoadMovieData();
@@ -70,6 +91,8 @@ export class RapidRaterApp {
     this.BindSetupEvents();
     this.BindAiEvents();
     this.BindFileEvents();
+    this.BindAccountEvents();
+    this.BindMobileEvents();
     window.addEventListener("keydown", (event) => this.HandleKeyDown(event));
   }
 
@@ -92,10 +115,12 @@ export class RapidRaterApp {
   BindSetupEvents() {
     this.Elements.configureImdb.addEventListener("click", () => this.ShowImdbDialog());
     this.Elements.imdbSave.addEventListener("click", () => SaveImdbConnectionFromDialog(this).catch((error) => this.ShowImdbError(error.message)));
+    this.Elements.imdbDelete.addEventListener("click", () => this.DeleteAccountSecret("imdb"));
     this.Elements.configureTmdb.addEventListener("click", () => this.ShowTmdbDialog());
     this.Elements.tmdbClose.addEventListener("click", () => this.HideTmdbDialog());
     this.Elements.tmdbLater.addEventListener("click", () => this.HideTmdbDialog());
     this.Elements.tmdbSave.addEventListener("click", () => SaveTmdbKeyFromDialog(this).catch((error) => this.ShowTmdbError(error.message)));
+    this.Elements.tmdbDelete.addEventListener("click", () => this.DeleteAccountSecret("tmdb"));
   }
 
   BindAiEvents() {
@@ -103,6 +128,7 @@ export class RapidRaterApp {
     this.Elements.aiClose.addEventListener("click", () => this.HideAiDialog());
     this.Elements.aiLater.addEventListener("click", () => this.HideAiDialog());
     this.Elements.aiSave.addEventListener("click", () => this.HandleAiSaveClick());
+    this.Elements.aiDelete.addEventListener("click", () => this.DeleteAccountSecret("openai"));
     this.Elements.generateRecommendations.addEventListener("click", () => this.HandleRecommendationClick());
     this.Elements.refreshAiModels.addEventListener("click", () => this.HandleModelRefreshClick());
     this.Elements.aiModelSelect.addEventListener("change", () => this.HandleModelSelectChange());
@@ -128,6 +154,70 @@ export class RapidRaterApp {
   BindFileEvents() {
     this.Elements.jsonFile.addEventListener("change", (event) => this.HandleJsonFile(event));
     this.Elements.csvFile.addEventListener("change", (event) => this.HandleCsvFile(event));
+  }
+
+  BindAccountEvents() {
+    this.Elements.loginForm.addEventListener("submit", (event) => this.HandleLogin(event));
+    this.Elements.signOut.addEventListener("click", () => this.SignOut());
+  }
+
+  BindMobileEvents() {
+    this.Elements.mobileRatingBar.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-touch-rating]");
+      if (button)
+        this.MarkActive(Number(button.dataset.touchRating), "rated");
+    });
+    this.Elements.touchNotSeen.addEventListener("click", () => this.MarkActive(null, "notSeen"));
+    this.Elements.touchUndo.addEventListener("click", () => this.Undo());
+  }
+
+  async BeginSession() {
+    const session = await this.FetchJson("./api/auth/session");
+    this.CsrfToken = session.csrfToken || "";
+    if (!session.authenticated)
+      return this.ShowAuthDialog();
+    this.SetSignedInUser(session.user);
+    await this.Initialize();
+  }
+
+  async HandleLogin(event) {
+    event.preventDefault();
+    this.Elements.loginError.textContent = "";
+    this.Elements.loginSubmit.disabled = true;
+    try {
+      const payload = await this.RequestJson("./api/auth/login", "POST", {
+        username: this.Elements.loginUsername.value,
+        password: this.Elements.loginPassword.value
+      });
+      this.CsrfToken = payload.csrfToken;
+      this.SetSignedInUser(payload.user);
+      this.Elements.authDialog.hidden = true;
+      this.Elements.loginPassword.value = "";
+      await this.Initialize();
+    } catch (error) {
+      this.Elements.loginError.textContent = error.message;
+    } finally {
+      this.Elements.loginSubmit.disabled = false;
+    }
+  }
+
+  ShowAuthDialog() {
+    this.Elements.authDialog.hidden = false;
+    this.Elements.signOut.hidden = true;
+    window.setTimeout(() => this.Elements.loginUsername.focus(), 0);
+  }
+
+  SetSignedInUser(user) {
+    this.User = user;
+    this.Elements.accountBadge.textContent = user?.displayName || user?.username || "Signed in";
+    this.Elements.signOut.hidden = false;
+    this.Elements.authDialog.hidden = true;
+  }
+
+  async SignOut() {
+    await this.FlushStateSync().catch(() => null);
+    await this.RequestJson("./api/auth/logout", "POST", {});
+    window.location.reload();
   }
 
   ShowView(view) {
@@ -226,13 +316,64 @@ export class RapidRaterApp {
 
   async FetchJson(url, options = {}) {
     const response = await fetch(url, { ...options, cache: "no-store" });
+    const payload = await response.json().catch(() => null);
     if (!response.ok)
-      throw new Error(`${url} returned HTTP ${response.status}`);
-    return response.json();
+      throw new Error(payload?.error || `${url} returned HTTP ${response.status}`);
+    return payload;
+  }
+
+  async RequestJson(url, method, body) {
+    const response = await fetch(url, {
+      method,
+      cache: "no-store",
+      headers: { "content-type": "application/json", "x-csrf-token": this.CsrfToken },
+      body: JSON.stringify(body)
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || !payload?.ok)
+      throw Object.assign(new Error(payload?.error || `${url} returned HTTP ${response.status}`), { status: response.status, payload });
+    return payload;
+  }
+
+  async LoadAccountState() {
+    const account = await this.FetchJson("./api/account/state");
+    ApplyAccountSettings(this.Settings, account.settings);
+    this.AccountPayload = account.payload || {};
+    this.RatingsCsvText = account.ratingsCsv || "";
+    this.AccountRevision = Number(account.revision) || 0;
+  }
+
+  async OfferLegacyMigration() {
+    if (!HasLegacyBrowserData(this.LegacySettings))
+      return;
+    const hasAccountData = Object.keys(this.AccountPayload?.ratings || {}).length > 0 || this.AccountRevision > 0;
+    if (hasAccountData)
+      return ClearLegacyBrowserData();
+    const count = Object.keys(ReadLegacyState().ratings || {}).length;
+    this.Elements.migrationSummary.textContent = `${count.toLocaleString()} saved rating records were found in this browser.`;
+    const shouldImport = await new Promise((resolve) => {
+      this.Elements.migrationDialog.hidden = false;
+      this.Elements.migrationImport.onclick = () => resolve(true);
+      this.Elements.migrationSkip.onclick = () => resolve(false);
+    });
+    this.Elements.migrationDialog.hidden = true;
+    if (!shouldImport)
+      return ClearLegacyBrowserData();
+    this.AccountPayload = ReadLegacyState();
+    this.RatingsCsvText = ReadLegacyRatingsCsv();
+    for (const [type, value] of [["imdb", this.LegacySettings.imdbCookie], ["tmdb", this.LegacySettings.tmdbApiKey], ["openai", this.LegacySettings.openAiApiKey]]) {
+      if (value)
+        await this.SaveAccountSecret(type, value);
+    }
+    if (this.LegacySettings.openAiModel)
+      await this.SaveAccountPreferences(this.LegacySettings.openAiModel);
+    await this.FlushStateSync();
+    ClearLegacyBrowserData();
+    this.ShowToast("This browser's save is now stored in your account.");
   }
 
   async LoadSavedRatingsCsv() {
-    const text = localStorage.getItem(Config.storageKey + ":ratings-csv") || "";
+    const text = this.RatingsCsvText;
     if (!text)
       return;
     const result = ImportImdbCsv(text, this.State.ratings, this.State.movieById);
@@ -246,26 +387,17 @@ export class RapidRaterApp {
   async RefreshLiveStatus() {
     const status = await this.FetchJson(Config.liveStatusUrl).catch((error) => ({ dryRun: false, lastError: error.message }));
     this.State.live = BuildCheckedLiveState({
-      ...status,
-      configured: HasImdbCookie(this.Settings.imdbCookie),
-      tmdbConfigured: Boolean(this.Settings.tmdbApiKey)
+      ...status
     });
     this.UpdateStats();
   }
 
   async RefreshAiStatus() {
-    this.State.ai = BuildCheckedAiState(this.BuildBrowserAiStatus());
+    const status = await this.FetchJson(Config.aiStatusUrl);
+    this.State.ai = BuildCheckedAiState(status);
     this.UpdateAiControls();
     if (this.State.ai.configured)
       await this.RefreshAiModels().catch(() => null);
-  }
-
-  BuildBrowserAiStatus() {
-    return {
-      configured: Boolean(this.Settings.openAiApiKey),
-      model: this.Settings.openAiModel,
-      modelLag: this.Settings.openAiModelLag
-    };
   }
 
   ApplyMovieData(raw, sourceLabel) {
@@ -291,20 +423,28 @@ export class RapidRaterApp {
   }
 
   ReadStoredState() {
-    try {
-      return JSON.parse(localStorage.getItem(Config.storageKey) || "{}") || {};
-    } catch {
-      return {};
-    }
+    return this.AccountPayload || {};
   }
 
   SaveLocalState() {
-    const payload = BuildStoragePayload(this.State);
-    try {
-      localStorage.setItem(Config.storageKey, JSON.stringify(payload));
-    } catch {
-      return;
-    }
+    this.AccountPayload = BuildStoragePayload(this.State);
+    window.clearTimeout(this.SyncTimer);
+    this.SyncTimer = window.setTimeout(() => this.FlushStateSync().catch((error) => this.ShowToast(EscapeHtml(error.message))), 300);
+  }
+
+  async FlushStateSync() {
+    window.clearTimeout(this.SyncTimer);
+    this.SyncPromise = this.SyncPromise.catch(() => null).then(() => this.PerformStateSync());
+    return await this.SyncPromise;
+  }
+
+  async PerformStateSync() {
+    const result = await this.RequestJson("./api/account/state", "PUT", {
+      payload: this.AccountPayload || BuildStoragePayload(this.State),
+      ratingsCsv: this.RatingsCsvText || "",
+      revision: this.AccountRevision
+    });
+    this.AccountRevision = Number(result.revision);
   }
 
   RebuildQueue() {
@@ -402,9 +542,7 @@ export class RapidRaterApp {
   }
 
   BuildMetadataFetchOptions() {
-    if (!this.Settings.tmdbApiKey)
-      return {};
-    return { headers: { "x-tmdb-api-key": this.Settings.tmdbApiKey } };
+    return {};
   }
 
   ApplyTitleMetadata(ttId, metadata) {
@@ -632,10 +770,7 @@ export class RapidRaterApp {
   }
 
   BuildLiveRateRequest(record) {
-    return {
-      ...BuildRateRequest(record),
-      cookie: this.Settings.imdbCookie
-    };
+    return BuildRateRequest(record);
   }
 
   MarkSubmitSuccess(ttId, rating) {
@@ -726,11 +861,42 @@ export class RapidRaterApp {
   }
 
   async PostJson(url, body, message) {
-    const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok || !payload?.ok)
-      throw new Error(payload?.error || `${message} HTTP ${response.status}.`);
-    return payload;
+    try {
+      return await this.RequestJson(url, "POST", body);
+    } catch (error) {
+      throw new Error(error.message || message);
+    }
+  }
+
+  async SaveAccountSecret(type, value) {
+    await this.RequestJson(`./api/account/secrets/${type}`, "PUT", { value });
+    const setting = type === "imdb" ? "imdbConfigured" : type === "tmdb" ? "tmdbConfigured" : "openAiConfigured";
+    this.Settings[setting] = true;
+  }
+
+  async DeleteAccountSecret(type) {
+    await this.RequestJson(`./api/account/secrets/${type}`, "DELETE", {});
+    if (type === "imdb") {
+      this.Elements.imdbDialog.hidden = true;
+      await this.RefreshLiveStatus();
+    } else if (type === "tmdb") {
+      this.Elements.tmdbDialog.hidden = true;
+      await this.RefreshLiveStatus();
+      this.RefreshVisibleMetadata();
+    } else {
+      this.Elements.aiDialog.hidden = true;
+      await this.RefreshAiStatus();
+    }
+    this.ShowToast("The saved credential was removed from your account.");
+  }
+
+  async SaveAccountPreferences(model) {
+    const payload = await this.RequestJson("./api/account/preferences", "PUT", {
+      openAiModel: model,
+      openAiModelLag: Number(this.Settings.openAiModelLag) || 2
+    });
+    this.Settings.openAiModel = payload.openAiModel;
+    this.Settings.openAiModelLag = payload.openAiModelLag;
   }
 
   RefreshVisibleMetadata() {
@@ -804,9 +970,6 @@ export class RapidRaterApp {
   BuildRecommendationRequest() {
     return {
       count: 12,
-      apiKey: this.Settings.openAiApiKey,
-      model: this.State.ai.model,
-      modelLag: this.State.ai.modelLag,
       profile: BuildAiPreferenceProfile(this.State.ratings, this.State.movieById, this.State.recommendationExclusions)
     };
   }
@@ -860,13 +1023,7 @@ export class RapidRaterApp {
   }
 
   BuildAiModelsFetchOptions() {
-    return {
-      headers: {
-        "x-openai-api-key": this.Settings.openAiApiKey,
-        "x-openai-model": this.Settings.openAiModel,
-        "x-openai-model-lag": String(this.Settings.openAiModelLag)
-      }
-    };
+    return {};
   }
 
   ApplyAiModelFeed(payload) {
@@ -1012,7 +1169,8 @@ export class RapidRaterApp {
   }
 
   async SaveRatingsCsvText(text) {
-    localStorage.setItem(Config.storageKey + ":ratings-csv", text);
+    this.RatingsCsvText = text;
+    this.SaveLocalState();
     return { ok: true };
   }
 

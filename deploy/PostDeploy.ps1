@@ -9,6 +9,7 @@ Write-Host "Configuring IMDb Rapid Rating deployment..." -ForegroundColor Cyan
 
 New-Item -Path (Join-Path $InstallDir "data") -ItemType Directory -Force | Out-Null
 New-Item -Path (Join-Path $InstallDir "cache") -ItemType Directory -Force | Out-Null
+New-Item -Path (Join-Path $InstallDir ".runtime") -ItemType Directory -Force | Out-Null
 
 $preservedFiles = @(
     ".env.local",
@@ -35,6 +36,51 @@ if (-not $nodePath) {
     $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
 }
 
+$npmPath = Join-Path (Split-Path $nodePath -Parent) "npm.cmd"
+if (-not (Test-Path -LiteralPath $npmPath)) {
+    $npmPath = (Get-Command npm.cmd -ErrorAction Stop).Source
+}
+
+$runtimeSettingsPath = Join-Path $InstallDir ".runtime\settings.env"
+$requiredVariables = @{
+    "POSTGRES_CONNECTION_STRING" = "RapidRater.PostgresConnectionString"
+    "SESSION_SECRET"             = "RapidRater.SessionSecret"
+    "DATA_ENCRYPTION_KEY"        = "RapidRater.DataEncryptionKey"
+    "APP_ORIGIN"                 = "RapidRater.AppOrigin"
+}
+$settingsLines = @("RAPID_RATER_DB_SCHEMA=imdb_rapid_rater", "TRUST_PROXY_HOPS=1", "IMDB_DRY_RUN=false")
+foreach ($entry in $requiredVariables.GetEnumerator()) {
+    $value = $null
+    if ($null -ne $OctopusParameters -and $OctopusParameters.ContainsKey($entry.Value)) {
+        $value = [string]$OctopusParameters[$entry.Value]
+    }
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        if (-not (Test-Path -LiteralPath $runtimeSettingsPath)) {
+            throw "Required sensitive Octopus variable '$($entry.Value)' is not configured."
+        }
+        $settingsLines = $null
+        break
+    }
+    $settingsLines += "$($entry.Key)=$value"
+}
+if ($null -ne $settingsLines) {
+    $settingsLines | Set-Content -LiteralPath $runtimeSettingsPath -Encoding UTF8
+}
+icacls $runtimeSettingsPath /inheritance:r /grant:r "SYSTEM:F" "Administrators:F" /Q | Out-Null
+
+Write-Host "Installing production dependencies..."
+& $npmPath ci --omit=dev --no-audit --no-fund --prefix $InstallDir
+if ($LASTEXITCODE -ne 0) { throw "npm ci failed." }
+
+Write-Host "Applying PostgreSQL migrations..."
+Push-Location $InstallDir
+try {
+    & $nodePath "scripts/migrate.mjs"
+    if ($LASTEXITCODE -ne 0) { throw "Database migration failed." }
+} finally {
+    Pop-Location
+}
+
 $action = New-ScheduledTaskAction `
     -Execute $nodePath `
     -Argument "scripts/server.mjs" `
@@ -57,7 +103,7 @@ Register-ScheduledTask `
 
 Start-ScheduledTask -TaskName $TaskName
 
-$healthUrl = "http://127.0.0.1:$Port/api/imdb/status"
+$healthUrl = "http://127.0.0.1:$Port/health"
 $healthy = $false
 for ($attempt = 1; $attempt -le 20; $attempt++) {
     Start-Sleep -Seconds 1

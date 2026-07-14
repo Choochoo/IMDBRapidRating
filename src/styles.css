@@ -911,6 +911,30 @@ button:focus-visible {
   padding: 20px;
 }
 
+.auth-dialog {
+  z-index: 20;
+}
+
+.auth-card {
+  width: min(460px, 100%);
+}
+
+.account-ready {
+  border-color: rgba(66, 189, 104, 0.44);
+  color: #91dfaa;
+}
+
+.migration-summary {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.mobile-rating-bar {
+  display: none;
+}
+
 .cookie-header {
   display: flex;
   align-items: center;
@@ -1102,6 +1126,13 @@ button:focus-visible {
 }
 
 @media (max-width: 720px) {
+  body {
+    height: auto;
+    min-height: 100dvh;
+    overflow: auto;
+    padding-bottom: calc(148px + env(safe-area-inset-bottom));
+  }
+
   .app-header,
   .stage,
   .recommendation-view,
@@ -1120,7 +1151,8 @@ button:focus-visible {
   }
 
   .movie-strip {
-    align-content: stretch;
+    display: block;
+    height: auto;
   }
 
   .shortcut-copy {
@@ -1128,7 +1160,21 @@ button:focus-visible {
   }
 
   .movie-card {
-    flex-basis: calc(50% - 7px);
+    display: none;
+    height: auto;
+    min-height: calc(100dvh - 300px);
+  }
+
+  .movie-card.active {
+    display: flex;
+    transform: none;
+  }
+
+  .poster,
+  .movie-card.active .poster {
+    flex-basis: auto;
+    aspect-ratio: 2 / 3;
+    max-height: 56dvh;
   }
 
   .movie-body {
@@ -1148,5 +1194,73 @@ button:focus-visible {
 
   .recommendation-grid {
     grid-template-columns: 1fr;
+  }
+
+  .footer {
+    display: none;
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .toolbar button,
+  .view-tab,
+  .cookie-actions button {
+    min-height: 44px;
+  }
+
+  .mobile-rating-bar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 7;
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: rgba(16, 20, 24, 0.97);
+    box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(12px);
+  }
+
+  .mobile-rating-buttons {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .mobile-rating-buttons button,
+  .mobile-secondary-actions button {
+    min-height: 44px;
+    padding: 0;
+    font-weight: 750;
+  }
+
+  .mobile-secondary-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .cookie-dialog {
+    align-items: end;
+    padding: 0;
+  }
+
+  .cookie-card {
+    max-height: 100dvh;
+    overflow: auto;
+    border-radius: 14px 14px 0 0;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -3,6 +3,7 @@ node_modules/
 *.log
 .env.local
 settings.env
+.runtime/
 data/imdb-ratings.csv
 data/movies.json
 imdb-rapid-rater-export*.csv

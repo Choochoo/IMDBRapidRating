@@ -2,59 +2,63 @@ import { Config } from "./config.js";
 
 export function ReadBrowserSettings() {
   try {
-    return NormalizeSettings(JSON.parse(localStorage.getItem(Config.settingsKey) || "{}"));
+    return NormalizeLegacySettings(JSON.parse(localStorage.getItem(Config.settingsKey) || "{}"));
   } catch {
-    return NormalizeSettings({});
+    return NormalizeLegacySettings({});
   }
 }
 
-export function SaveBrowserSettings(settings) {
-  localStorage.setItem(Config.settingsKey, JSON.stringify(NormalizeSettings(settings)));
+export function ApplyAccountSettings(settings, remote) {
+  Object.assign(settings, {
+    imdbConfigured: Boolean(remote?.imdbConfigured),
+    tmdbConfigured: Boolean(remote?.tmdbConfigured),
+    openAiConfigured: Boolean(remote?.openAiConfigured),
+    openAiModel: String(remote?.openAiModel || ""),
+    openAiModelLag: Number(remote?.openAiModelLag) || 2
+  });
+  delete settings.imdbCookie;
+  delete settings.tmdbApiKey;
+  delete settings.openAiApiKey;
+  return settings;
 }
 
-export function SaveImdbCookie(settings, cookie) {
-  const normalized = NormalizeCookie(cookie);
-  if (!HasImdbCookie(normalized))
+export function ClearLegacyBrowserData() {
+  localStorage.removeItem(Config.settingsKey);
+  localStorage.removeItem(Config.storageKey);
+  localStorage.removeItem(Config.storageKey + ":ratings-csv");
+}
+
+export function HasLegacyBrowserData(settings = ReadBrowserSettings()) {
+  const state = localStorage.getItem(Config.storageKey);
+  const csv = localStorage.getItem(Config.storageKey + ":ratings-csv");
+  return Boolean(state || csv || settings.imdbCookie || settings.tmdbApiKey || settings.openAiApiKey);
+}
+
+export function ReadLegacyState() {
+  try {
+    return JSON.parse(localStorage.getItem(Config.storageKey) || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+
+export function ReadLegacyRatingsCsv() {
+  return localStorage.getItem(Config.storageKey + ":ratings-csv") || "";
+}
+
+export function ValidateImdbCookie(value) {
+  const normalized = NormalizeCookie(value);
+  if (!/(?:^|;\s*)at-main=/.test(normalized))
     return { ok: false, error: "The IMDb connection is not signed in. Copy the full Cookie header containing at-main." };
-  return SaveSetting(settings, "imdbCookie", normalized);
+  return { ok: true, value: normalized };
 }
 
-export function SaveTmdbKey(settings, apiKey) {
-  const normalized = NormalizeBearerValue(apiKey);
-  if (!normalized)
-    return { ok: false, error: "Paste your TMDB API key." };
-  return SaveSetting(settings, "tmdbApiKey", normalized);
+export function ValidateApiKey(value, label) {
+  const normalized = NormalizeBearerValue(value);
+  return normalized ? { ok: true, value: normalized } : { ok: false, error: `Paste your ${label} API key.` };
 }
 
-export function SaveOpenAiKey(settings, apiKey) {
-  const normalized = NormalizeBearerValue(apiKey);
-  if (!normalized)
-    return { ok: false, error: "Paste your OpenAI API key." };
-  return SaveSetting(settings, "openAiApiKey", normalized);
-}
-
-export function SaveOpenAiModel(settings, model) {
-  return SaveSetting(settings, "openAiModel", String(model || "").trim());
-}
-
-export function HasImdbCookie(cookie) {
-  return /(?:^|;\s*)at-main=/.test(cookie || "");
-}
-
-export function NormalizeCookie(value) {
-  return StripQuotes(String(value || "").trim())
-    .replace(/^cookie\s*:\s*/i, "")
-    .replace(/[\r\n]+/g, " ");
-}
-
-function SaveSetting(settings, key, value) {
-  const next = NormalizeSettings({ ...settings, [key]: value });
-  SaveBrowserSettings(next);
-  Object.assign(settings, next);
-  return { ok: true };
-}
-
-function NormalizeSettings(settings) {
+function NormalizeLegacySettings(settings) {
   return {
     imdbCookie: NormalizeCookie(settings?.imdbCookie || ""),
     tmdbApiKey: NormalizeBearerValue(settings?.tmdbApiKey || ""),
@@ -64,16 +68,15 @@ function NormalizeSettings(settings) {
   };
 }
 
+function NormalizeCookie(value) {
+  return StripQuotes(String(value || "").trim()).replace(/^cookie\s*:\s*/i, "").replace(/[\r\n]+/g, " ");
+}
+
 function NormalizeBearerValue(value) {
-  return StripQuotes(String(value || "").trim())
-    .replace(/^authorization:\s*/i, "")
-    .replace(/^bearer\s+/i, "");
+  return StripQuotes(String(value || "").trim()).replace(/^authorization:\s*/i, "").replace(/^bearer\s+/i, "");
 }
 
 function StripQuotes(value) {
-  const hasDoubleQuotes = value.startsWith("\"") && value.endsWith("\"");
-  const hasSingleQuotes = value.startsWith("'") && value.endsWith("'");
-  if (hasDoubleQuotes || hasSingleQuotes)
-    return value.slice(1, -1);
-  return value;
+  const quoted = (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+  return quoted ? value.slice(1, -1) : value;
 }

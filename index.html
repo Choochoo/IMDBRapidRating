@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>IMDb Rapid Rater</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./vendor/bootstrap.min.css">
     <link rel="stylesheet" href="./src/styles.css">
   </head>
   <body>
@@ -19,6 +20,8 @@
           <button type="button" class="view-tab" id="tab-ai">AI Recommendations</button>
         </nav>
         <div class="status-strip" aria-label="system status">
+          <span class="status-chip account-ready" id="account-badge">Signed out</span>
+          <button type="button" class="status-chip" id="sign-out" hidden>Sign out</button>
           <button type="button" class="status-chip live-missing" id="configure-imdb">IMDb checking</button>
           <button type="button" class="status-chip metadata-missing" id="configure-tmdb">TMDB key needed</button>
           <span class="status-chip" id="source-badge">Loading</span>
@@ -121,7 +124,7 @@
       </div>
     </section>
 
-    <footer class="footer" id="rating-footer">
+    <footer class="footer d-none d-md-grid" id="rating-footer">
       <div class="shortcut-panel">
         <div class="shortcut-copy">
           <strong>Keyboard shortcuts</strong>
@@ -147,6 +150,20 @@
       <p>Information courtesy of IMDb (https://www.imdb.com). Used with permission.</p>
     </footer>
 
+    <nav class="mobile-rating-bar d-md-none" id="mobile-rating-bar" aria-label="Touch rating controls">
+      <div class="mobile-rating-buttons">
+        <button type="button" data-touch-rating="1">1</button><button type="button" data-touch-rating="2">2</button>
+        <button type="button" data-touch-rating="3">3</button><button type="button" data-touch-rating="4">4</button>
+        <button type="button" data-touch-rating="5">5</button><button type="button" data-touch-rating="6">6</button>
+        <button type="button" data-touch-rating="7">7</button><button type="button" data-touch-rating="8">8</button>
+        <button type="button" data-touch-rating="9">9</button><button type="button" data-touch-rating="10">10</button>
+      </div>
+      <div class="mobile-secondary-actions">
+        <button type="button" id="touch-not-seen">Not seen</button>
+        <button type="button" id="touch-undo">Undo</button>
+      </div>
+    </nav>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <div class="empty-state" id="empty-state" hidden>
@@ -166,12 +183,37 @@
       </div>
     </div>
 
+    <section class="cookie-dialog auth-dialog" id="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <form class="cookie-card auth-card shadow-lg" id="login-form">
+        <div class="cookie-header"><h1 id="auth-title">Sign in to Rapid Rater</h1></div>
+        <p>Your ratings, queue, preferences, and encrypted service connections will follow this account between computers.</p>
+        <label for="login-username">Username</label>
+        <input class="setup-input" id="login-username" autocomplete="username" required>
+        <label for="login-password">Password</label>
+        <input class="setup-input" id="login-password" type="password" autocomplete="current-password" minlength="12" required>
+        <p class="cookie-error" id="login-error" role="alert"></p>
+        <div class="cookie-actions"><button type="submit" id="login-submit">Sign in</button></div>
+      </form>
+    </section>
+
+    <section class="cookie-dialog" id="migration-dialog" role="dialog" aria-modal="true" aria-labelledby="migration-title" hidden>
+      <div class="cookie-card">
+        <div class="cookie-header"><h1 id="migration-title">Move this browser's save?</h1></div>
+        <p>Rapid Rater found ratings or settings saved in this browser. Move them into your account so they are available on your other computers.</p>
+        <p class="migration-summary" id="migration-summary"></p>
+        <div class="cookie-actions">
+          <button type="button" id="migration-skip">Start with account data</button>
+          <button type="button" class="backup-action" id="migration-import">Move into my account</button>
+        </div>
+      </div>
+    </section>
+
     <section class="cookie-dialog" id="imdb-dialog" role="dialog" aria-modal="true" aria-labelledby="imdb-title" hidden>
       <div class="cookie-card">
         <div class="cookie-header">
           <h1 id="imdb-title">Connect IMDb</h1>
         </div>
-        <p>IMDb must be connected before rating. Rapid Rater stores this connection only in this browser, so every visitor has an independent IMDb account and movie history.</p>
+        <p>IMDb must be connected before rating. Rapid Rater encrypts this connection in your account and uses it only on the server when you submit or undo a rating.</p>
         <ol>
           <li><a href="https://www.imdb.com/registration/signin/" target="_blank" rel="noopener noreferrer">Sign in on IMDb</a> in this browser.</li>
           <li>On IMDb, open DevTools, select Network, and refresh the page.</li>
@@ -181,6 +223,7 @@
         <textarea id="imdb-cookie-input" autocomplete="off" spellcheck="false" placeholder="Paste the complete Cookie request-header value"></textarea>
         <p class="cookie-error" id="imdb-error" role="alert"></p>
         <div class="cookie-actions">
+          <button type="button" id="imdb-delete">Disconnect</button>
           <button type="button" id="imdb-save">Connect IMDb</button>
         </div>
       </div>
@@ -192,7 +235,7 @@
           <h1 id="tmdb-title">Add TMDB API Key</h1>
           <button type="button" id="tmdb-close">Close</button>
         </div>
-        <p>TMDB provides reliable posters and synopsis text. Rapid Rater saves the key in this computer's user data folder.</p>
+        <p>TMDB provides reliable posters and synopsis text. Rapid Rater encrypts the key in your account so it works on your other computers.</p>
         <ol>
           <li>Create or sign into a TMDB account.</li>
           <li>Open <a href="https://developer.themoviedb.org/reference/getting-started" target="_blank" rel="noreferrer">TMDB API Getting Started</a>.</li>
@@ -204,6 +247,7 @@
         <input class="setup-input" id="tmdb-key-input" autocomplete="off" spellcheck="false" placeholder="Paste TMDB API key or token">
         <p class="cookie-error" id="tmdb-error" role="alert"></p>
         <div class="cookie-actions">
+          <button type="button" id="tmdb-delete">Remove key</button>
           <button type="button" id="tmdb-save">Save API Key</button>
           <button type="button" id="tmdb-later">Skip for now</button>
         </div>
@@ -216,7 +260,7 @@
           <h1 id="ai-title">Add OpenAI API Key</h1>
           <button type="button" id="ai-close">Close</button>
         </div>
-        <p>AI recommendations need an OpenAI API key. Rapid Rater saves it in this computer's user data folder.</p>
+        <p>AI recommendations need an OpenAI API key. Rapid Rater encrypts the key in your account and never returns it to browser JavaScript.</p>
         <ol>
           <li>Create or sign into an OpenAI account.</li>
           <li>Open the OpenAI API dashboard and create an API key.</li>
@@ -226,6 +270,7 @@
         <input class="setup-input" id="ai-key-input" autocomplete="off" spellcheck="false" placeholder="Paste OpenAI API key">
         <p class="cookie-error" id="ai-error" role="alert"></p>
         <div class="cookie-actions">
+          <button type="button" id="ai-delete">Remove key</button>
           <button type="button" id="ai-save">Save API Key</button>
           <button type="button" id="ai-later">Skip for now</button>
         </div>

@@ -5,10 +5,29 @@
   "type": "module",
   "scripts": {
     "start": "node scripts/server.mjs",
+    "db:migrate": "node scripts/migrate.mjs",
+    "user:create": "node scripts/create-user.mjs",
+    "key:generate": "node scripts/generate-key.mjs",
     "build:data": "node scripts/build-movie-pool.mjs --minVotes=2500",
-    "check": "node --check scripts/server.mjs && node --check scripts/build-movie-pool.mjs && node --check server/routes.mjs && node --check server/ai-recommendations.mjs && node --check server/openai-models.mjs && node --check server/imdb-ratings.mjs && node --check server/title-metadata.mjs && node --check server/ratings-csv.mjs && node --check server/env.mjs && node --check server/user-data.mjs && node --check server/http.mjs && node --check server/static-files.mjs && node --check shared/csv.js && node --check src/app.js && node --check src/app/rapid-rater-app.js && node --check src/app/elements.js && node --check src/app/state.js && node --check src/app/movies.js && node --check src/app/rendering.js && node --check src/app/browser-settings.js && node --check src/app/settings-workflows.js && node --check src/app/recommendation-ratings.js && node --check src/app/undo-rating.js && node --check src/app/rating-records.js && node --check src/app/stats.js && node --check src/app/config.js && node --check src/app/util.js"
+    "check": "node scripts/check-syntax.mjs",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "argon2": "^0.44.0",
+    "bootstrap": "^5.3.8",
+    "connect-pg-simple": "^10.0.0",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2"
   }
 }

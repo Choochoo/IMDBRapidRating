@@ -7,7 +7,34 @@ export function BuildElements() {
     ...BuildEmptyElements(),
     ...BuildFileElements(),
     ...BuildCookieElements(),
-    ...BuildAiElements()
+    ...BuildAiElements(),
+    ...BuildAccountElements(),
+    ...BuildMobileElements()
+  };
+}
+
+function BuildAccountElements() {
+  return {
+    accountBadge: Element("account-badge"),
+    signOut: Element("sign-out"),
+    authDialog: Element("auth-dialog"),
+    loginForm: Element("login-form"),
+    loginUsername: Element("login-username"),
+    loginPassword: Element("login-password"),
+    loginError: Element("login-error"),
+    loginSubmit: Element("login-submit"),
+    migrationDialog: Element("migration-dialog"),
+    migrationSummary: Element("migration-summary"),
+    migrationImport: Element("migration-import"),
+    migrationSkip: Element("migration-skip")
+  };
+}
+
+function BuildMobileElements() {
+  return {
+    mobileRatingBar: Element("mobile-rating-bar"),
+    touchNotSeen: Element("touch-not-seen"),
+    touchUndo: Element("touch-undo")
   };
 }
 
@@ -71,7 +98,8 @@ function BuildImdbSetupElements() {
     imdbDialog: Element("imdb-dialog"),
     imdbInput: Element("imdb-cookie-input"),
     imdbError: Element("imdb-error"),
-    imdbSave: Element("imdb-save")
+    imdbSave: Element("imdb-save"),
+    imdbDelete: Element("imdb-delete")
   };
 }
 
@@ -83,7 +111,8 @@ function BuildTmdbSetupElements() {
     tmdbError: Element("tmdb-error"),
     tmdbSave: Element("tmdb-save"),
     tmdbClose: Element("tmdb-close"),
-    tmdbLater: Element("tmdb-later")
+    tmdbLater: Element("tmdb-later"),
+    tmdbDelete: Element("tmdb-delete")
   };
 }
 
@@ -103,7 +132,8 @@ function BuildAiDialogElements() {
     aiError: Element("ai-error"),
     aiSave: Element("ai-save"),
     aiClose: Element("ai-close"),
-    aiLater: Element("ai-later")
+    aiLater: Element("ai-later"),
+    aiDelete: Element("ai-delete")
   };
 }
 

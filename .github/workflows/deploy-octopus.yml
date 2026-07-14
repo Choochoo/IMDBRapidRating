@@ -35,8 +35,18 @@ jobs:
           path: cache/*.tsv.gz
           key: imdb-source-datasets-v1
 
+      - name: Install dependencies
+        run: npm ci
+        shell: powershell
+
       - name: Validate application
-        run: npm run check
+        run: |
+          npm run check
+          if ($LASTEXITCODE -ne 0) { throw 'Syntax validation failed.' }
+          npm test
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+          npm audit --omit=dev
+          if ($LASTEXITCODE -ne 0) { throw 'Production dependency audit failed.' }
         shell: powershell
 
       - name: Generate movie dataset

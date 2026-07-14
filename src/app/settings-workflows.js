@@ -1,13 +1,13 @@
-import { SaveImdbCookie, SaveOpenAiKey, SaveOpenAiModel, SaveTmdbKey } from "./browser-settings.js";
+import { ValidateApiKey, ValidateImdbCookie } from "./browser-settings.js";
 import { EscapeHtml, FormatCount } from "./util.js";
 
 export async function SaveImdbConnectionFromDialog(app) {
-  const cookie = app.Elements.imdbInput.value.trim();
-  if (!cookie)
-    return app.ShowImdbError("Sign in on IMDb, then paste the full Cookie request-header value.");
+  const result = ValidateImdbCookie(app.Elements.imdbInput.value);
+  if (!result.ok)
+    return app.ShowImdbError(result.error);
   app.SetImdbSaving(true);
   try {
-    SaveBrowserValue(app.Settings, cookie, SaveImdbCookie);
+    await app.SaveAccountSecret("imdb", result.value);
   } finally {
     app.SetImdbSaving(false);
   }
@@ -15,12 +15,12 @@ export async function SaveImdbConnectionFromDialog(app) {
 }
 
 export async function SaveTmdbKeyFromDialog(app) {
-  const apiKey = app.Elements.tmdbInput.value.trim();
-  if (!apiKey)
-    return app.ShowTmdbError("Paste your TMDB API key.");
+  const result = ValidateApiKey(app.Elements.tmdbInput.value, "TMDB");
+  if (!result.ok)
+    return app.ShowTmdbError(result.error);
   app.SetTmdbSaving(true);
   try {
-    SaveBrowserValue(app.Settings, apiKey, SaveTmdbKey);
+    await app.SaveAccountSecret("tmdb", result.value);
   } finally {
     app.SetTmdbSaving(false);
   }
@@ -28,12 +28,12 @@ export async function SaveTmdbKeyFromDialog(app) {
 }
 
 export async function SaveAiKeyFromDialog(app) {
-  const apiKey = app.Elements.aiInput.value.trim();
-  if (!apiKey)
-    return app.ShowAiError("Paste your OpenAI API key.");
+  const result = ValidateApiKey(app.Elements.aiInput.value, "OpenAI");
+  if (!result.ok)
+    return app.ShowAiError(result.error);
   app.SetAiSaving(true);
   try {
-    SaveBrowserValue(app.Settings, apiKey, SaveOpenAiKey);
+    await app.SaveAccountSecret("openai", result.value);
   } finally {
     app.SetAiSaving(false);
   }
@@ -43,15 +43,15 @@ export async function SaveAiKeyFromDialog(app) {
 export async function SaveSelectedAiModel(app) {
   const model = app.Elements.aiModelSelect.value.trim();
   app.SetAiModelSaving(true);
-  SaveOpenAiModel(app.Settings, model);
-  app.SetAiModelSaving(false);
-  await ApplySavedAiModel(app, model);
-}
-
-function SaveBrowserValue(settings, value, save) {
-  const result = save(settings, value);
-  if (!result.ok)
-    throw new Error(result.error);
+  try {
+    await app.SaveAccountPreferences(model);
+  } finally {
+    app.SetAiModelSaving(false);
+  }
+  app.State.ai.model = model;
+  app.Settings.openAiModel = model;
+  await app.RefreshAiModels().catch(() => null);
+  app.ShowToast(`OpenAI model set to <strong>${EscapeHtml(model || "auto")}</strong>`);
 }
 
 async function ApplySavedImdbConnection(app) {
@@ -74,11 +74,4 @@ async function ApplySavedAiKey(app) {
   await app.RefreshAiStatus();
   app.HideAiDialog();
   app.ShowToast("OpenAI key saved. <strong>Recommendations ready</strong>");
-}
-
-async function ApplySavedAiModel(app, model) {
-  app.State.ai.model = model;
-  app.Settings.openAiModel = model;
-  await app.RefreshAiModels().catch(() => null);
-  app.ShowToast(`OpenAI model set to <strong>${EscapeHtml(model || "auto")}</strong>`);
 }
