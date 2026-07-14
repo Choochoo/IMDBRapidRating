@@ -22,7 +22,7 @@ export async function GenerateAiRecommendations(rootPath, options = {}) {
   const result = await RequestOpenAiRecommendations(profile.payload.profile, options);
   if (!result.payload.ok)
     return result;
-  return Ok(EnrichRecommendationPayload(rootPath, result.payload));
+  return Ok(EnrichRecommendationPayload(rootPath, result.payload, profile.payload.profile.exclusions));
 }
 
 function BuildPreferenceProfile(options) {
@@ -30,14 +30,15 @@ function BuildPreferenceProfile(options) {
   const ratings = Array.isArray(profile.ratings) ? profile.ratings : [];
   if (ratings.length < 5)
     return Fail(422, "NOT_ENOUGH_RATINGS", "Import at least five rated IMDb rows before asking for recommendations.");
-  return Ok({ profile: BuildProfile(ratings) });
+  return Ok({ profile: BuildProfile(ratings, profile.exclusions) });
 }
 
-function BuildProfile(ratings) {
+function BuildProfile(ratings, exclusions) {
   return {
     ratings: OptimizeRatings(ratings.map(NormalizeRating).filter(Boolean)),
+    exclusions: NormalizeExclusions(exclusions),
     ratingScale: "1-10",
-    fieldsSent: ["title", "year", "genres", "rating"]
+    fieldsSent: ["title", "year", "genres", "rating", "excludedTitle", "excludedYear"]
   };
 }
 
@@ -89,9 +90,10 @@ function BuildSystemPrompt(options) {
   const count = Number(options.count) || 12;
   const scope = `Recommend ${count} movies the user has not rated.`;
   const criteria = "Consider title, year, genre, and user rating together.";
+  const exclusions = "Never recommend a movie listed in profile.exclusions; those are firm do-not-recommend choices.";
   const why = "Explain the taste pattern and cite rating evidence from the user's data.";
   const format = "Use 2-4 evidence lines naming rated titles, ratings, genres, or eras.";
-  return [scope, criteria, why, format, "Return only JSON matching the schema."].join(" ");
+  return [scope, criteria, exclusions, why, format, "Return only JSON matching the schema."].join(" ");
 }
 
 function BuildRecommendationSchema() {
@@ -158,10 +160,12 @@ function ParseRecommendationPayload(payload) {
   return JSON.parse(text);
 }
 
-function EnrichRecommendationPayload(rootPath, payload) {
+function EnrichRecommendationPayload(rootPath, payload, exclusions) {
   const movies = ReadMovieList(rootPath);
   const recommendations = ReadRecommendations(payload);
-  return { ...payload, recommendations: recommendations.map((item) => EnrichRecommendation(item, movies)) };
+  const normalizedExclusions = NormalizeExclusions(exclusions);
+  const enriched = recommendations.map((item) => EnrichRecommendation(item, movies));
+  return { ...payload, recommendations: enriched.filter((item) => !IsExcludedRecommendation(item, normalizedExclusions)) };
 }
 
 function ReadMovieList(rootPath) {
@@ -200,6 +204,29 @@ function IsRecommendationMovie(movie, title, year) {
 
 function NormalizeMatchTitle(value) {
   return CleanText(value).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function NormalizeExclusions(value) {
+  if (!Array.isArray(value))
+    return [];
+  return value.map(NormalizeExclusion).filter(Boolean);
+}
+
+function NormalizeExclusion(item) {
+  const title = CleanText(item?.title);
+  if (!title)
+    return null;
+  return { title, year: Number(item?.year) || null };
+}
+
+function IsExcludedRecommendation(item, exclusions) {
+  const title = NormalizeMatchTitle(item?.title);
+  const year = Number(item?.year) || null;
+  return exclusions.some((excluded) => {
+    if (NormalizeMatchTitle(excluded.title) !== title)
+      return false;
+    return !excluded.year || !year || excluded.year === year;
+  });
 }
 
 function ExtractResponseText(payload) {

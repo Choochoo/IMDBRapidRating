@@ -54,7 +54,7 @@ export function RenderRecommendationCard(item) {
   const year = RenderRecommendationYear(item);
   const heading = `<h2>${title}${year}</h2>`;
   const genres = RenderRecommendationGenres(item);
-  const body = `${heading}${genres}${RenderRecommendationWhy(item)}${RenderRecommendationRating(item)}`;
+  const body = `${heading}${genres}${RenderRecommendationWhy(item)}${RenderRecommendationActions(item)}`;
   const content = `<div class="recommendation-card-body">${body}</div>`;
   return `<article class="recommendation-card"${RenderRecommendationData(item)}>${RenderRecommendationPoster(item)}${content}</article>`;
 }
@@ -129,6 +129,11 @@ function RenderRecommendationRating(item) {
   if (!item.ttId)
     return `<div class="recommendation-rating unavailable">No IMDb match for app rating.</div>`;
   return `<div class="recommendation-rating"><strong>Already seen?</strong>${RenderRatingButtons()}</div>`;
+}
+
+function RenderRecommendationActions(item) {
+  const exclusion = `<button type="button" class="recommendation-exclusion" data-recommendation-exclusion>Don't recommend again</button>`;
+  return `<div class="recommendation-card-actions">${RenderRecommendationRating(item)}${exclusion}</div>`;
 }
 
 function RenderRatingButtons() {

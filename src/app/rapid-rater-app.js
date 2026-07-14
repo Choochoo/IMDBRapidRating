@@ -285,6 +285,7 @@ export class RapidRaterApp {
   RestoreLocalState() {
     const saved = this.ReadStoredState();
     this.State.ratings = saved.ratings || {};
+    this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(saved.recommendationExclusions);
     this.State.history = Array.isArray(saved.history) ? saved.history : [];
     this.State.savedQueueIds = saved.signature === this.State.signature && Array.isArray(saved.queueIds) ? saved.queueIds : null;
   }
@@ -806,8 +807,49 @@ export class RapidRaterApp {
       apiKey: this.Settings.openAiApiKey,
       model: this.State.ai.model,
       modelLag: this.State.ai.modelLag,
-      profile: BuildAiPreferenceProfile(this.State.ratings, this.State.movieById)
+      profile: BuildAiPreferenceProfile(this.State.ratings, this.State.movieById, this.State.recommendationExclusions)
     };
+  }
+
+  AddRecommendationExclusion(value) {
+    const exclusion = this.NormalizeRecommendationExclusion(value);
+    if (!exclusion)
+      return null;
+    const key = this.RecommendationExclusionKey(exclusion);
+    const others = this.State.recommendationExclusions.filter((item) => this.RecommendationExclusionKey(item) !== key);
+    this.State.recommendationExclusions = [...others, exclusion];
+    this.SaveLocalState();
+    return exclusion;
+  }
+
+  NormalizeRecommendationExclusions(value) {
+    const exclusions = Array.isArray(value) ? value : [];
+    const normalized = new Map();
+    for (const item of exclusions) {
+      const exclusion = this.NormalizeRecommendationExclusion(item);
+      if (exclusion)
+        normalized.set(this.RecommendationExclusionKey(exclusion), exclusion);
+    }
+    return [...normalized.values()];
+  }
+
+  NormalizeRecommendationExclusion(value) {
+    const ttId = /^tt\d+$/.test(String(value?.ttId || "").trim()) ? String(value.ttId).trim() : "";
+    const movie = this.State.movieById.get(ttId) || {};
+    const title = String(value?.title || movie.title || "").replace(/\s+/g, " ").trim();
+    if (!title)
+      return null;
+    return {
+      ttId,
+      title,
+      year: Number(value?.year || movie.year) || null,
+      at: String(value?.at || new Date().toISOString())
+    };
+  }
+
+  RecommendationExclusionKey(value) {
+    const title = String(value?.title || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+    return `${title}|${Number(value?.year) || ""}`;
   }
 
   async RefreshAiModels() {
@@ -898,19 +940,21 @@ export class RapidRaterApp {
   ImportRatingSave(parsed, fileName) {
     const source = this.ReadRatingSaveSource(parsed);
     const ratings = this.NormalizeSavedRatings(source.ratings);
-    if (!Object.keys(ratings).length)
+    const exclusions = this.NormalizeRecommendationExclusions(source.recommendationExclusions);
+    if (!Object.keys(ratings).length && !exclusions.length)
       throw new Error("The selected JSON file does not contain any Rapid Rater records.");
     this.ApplyImportedRatingSave(source, ratings);
     const counts = CountRatings(ratings);
-    this.ShowToast(`Restored <strong>${FormatCount(Object.keys(ratings).length)}</strong> records from ${EscapeHtml(fileName)}, including <strong>${FormatCount(counts.skipped)}</strong> not seen`);
+    this.ShowToast(`Restored <strong>${FormatCount(Object.keys(ratings).length)}</strong> records and <strong>${FormatCount(exclusions.length)}</strong> AI exclusions from ${EscapeHtml(fileName)}, including <strong>${FormatCount(counts.skipped)}</strong> not seen`);
   }
 
   ReadRatingSaveSource(parsed) {
     if (Array.isArray(parsed))
-      return { ratings: parsed, history: [], queueIds: null, signature: "", merge: true };
+      return { ratings: parsed, recommendationExclusions: [], history: [], queueIds: null, signature: "", merge: true };
     const state = parsed.state || parsed;
     return {
       ratings: state.ratings || {},
+      recommendationExclusions: Array.isArray(state.recommendationExclusions) ? state.recommendationExclusions : [],
       history: Array.isArray(state.history) ? state.history : [],
       queueIds: Array.isArray(state.queueIds) ? state.queueIds : null,
       signature: String(state.signature || ""),
@@ -936,6 +980,8 @@ export class RapidRaterApp {
 
   ApplyImportedRatingSave(source, ratings) {
     this.State.ratings = source.merge ? { ...this.State.ratings, ...ratings } : ratings;
+    if (!source.merge)
+      this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(source.recommendationExclusions);
     this.State.history = source.merge ? this.State.history : source.history.slice(-200);
     this.State.savedQueueIds = source.signature === this.State.signature ? source.queueIds : null;
     this.RebuildQueue();
@@ -984,7 +1030,7 @@ export class RapidRaterApp {
   ExportJson() {
     const save = {
       format: "imdb-rapid-rater-save",
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       state: BuildStoragePayload(this.State)
     };

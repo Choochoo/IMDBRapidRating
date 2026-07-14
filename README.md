@@ -12,6 +12,7 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 - Imports your IMDb ratings CSV so already-rated titles are removed from the queue.
 - Saves that ratings CSV in the current browser and auto-loads it on future visits.
 - Generates AI movie recommendations from a minimized ratings profile.
+- Saves a browser-local “Don’t recommend again” list and excludes those movies from future AI picks.
 - Saves IMDb connection data, API keys, ratings, queue progress, and imports in browser storage so visitors never share personal state.
 - Writes ratings `1` through `10` back to IMDb when live mode is configured.
 - Updates the saved ratings CSV after successful live IMDb writes.
@@ -91,7 +92,7 @@ IMDb does not provide a public CSV upload/import API. If you rate movies directl
 
 ## Back Up Or Move A Browser Save
 
-Use **Back Up Progress** to download `imdb-rapid-rater-save.json`. This backup contains ratings, imported exclusions, not-seen records, recent undo history, and queue order. It intentionally excludes the IMDb connection and API keys.
+Use **Back Up Progress** to download `imdb-rapid-rater-save.json`. This backup contains ratings, imported exclusions, not-seen records, AI do-not-recommend choices, recent undo history, and queue order. It intentionally excludes the IMDb connection and API keys.
 
 On another instance or browser, choose **Restore Progress** and select that file. Older `imdb-rapid-rater-export.json` files containing an array of rating records are also accepted; their ratings and not-seen records are merged into the current browser save.
 
@@ -147,12 +148,13 @@ Open the **AI Recommendations** tab to generate movie picks from your saved IMDb
 - Release year
 - Genres
 - Your rating
+- Titles and years you marked **Don't recommend again**
 
 No IMDb cookie, TMDB key, `tt` IDs, submit history, or raw CSV file is sent.
 
 Click **Set OpenAI Key** in the tab and paste an API key. Rapid Rater saves it only in the current browser. The browser builds a minimized preference profile and sends it with the request to the OpenAI proxy. Returned recommendations include title, year, genres, and a structured explanation of why each pick fits.
 
-Recommendations are matched back to `data/movies.json` by title and year. When a match is found, the card includes rating buttons; rating one writes through the same IMDb proxy and local CSV sync path, then removes that recommendation from the screen.
+Recommendations are matched back to `data/movies.json` by title and year. When a match is found, the card includes rating buttons; rating one writes through the same IMDb proxy and local CSV sync path, then removes that recommendation from the screen. **Don't recommend again** removes the card immediately, saves that title and year in the current browser, and sends the exclusion with future AI requests. The server also filters excluded titles from the returned picks.
 
 By default, Rapid Rater calls OpenAI's Models API, filters available GPT text models, sorts them newest first, and selects two places behind the newest eligible model.
 

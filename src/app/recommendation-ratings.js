@@ -7,10 +7,19 @@ export function BindRecommendationRatings(app) {
 }
 
 function HandleRatingClick(app, event) {
+  const exclusionButton = ReadExclusionButton(event.target);
+  if (exclusionButton)
+    return ExcludeRecommendation(app, exclusionButton);
   const button = ReadRatingButton(event.target);
   if (!button)
     return;
   RateRecommendation(app, button).catch((error) => app.ShowRecommendationError(error.message));
+}
+
+function ReadExclusionButton(target) {
+  if (!target?.closest)
+    return null;
+  return target.closest("[data-recommendation-exclusion]");
 }
 
 function ReadRatingButton(target) {
@@ -44,6 +53,22 @@ function BuildRecommendationRateRecord(card, button) {
     year: card.dataset.year || "",
     at: new Date().toISOString()
   };
+}
+
+function ExcludeRecommendation(app, button) {
+  const card = button.closest(".recommendation-card");
+  if (!card)
+    return;
+  const exclusion = app.AddRecommendationExclusion({
+    ttId: card.dataset.ttid || "",
+    title: card.dataset.title || "",
+    year: card.dataset.year || "",
+    at: new Date().toISOString()
+  });
+  if (!exclusion)
+    return app.ShowRecommendationError("This recommendation could not be saved to the exclusion list.");
+  RemoveRecommendationCard(card);
+  app.ShowToast(`<strong>${EscapeHtml(exclusion.title)}</strong> won't be recommended again`);
 }
 
 function ApplyRecommendationRating(app, card, request, payload) {
@@ -90,6 +115,9 @@ function SetCardSaving(card, value) {
   card.classList.toggle("saving", value);
   for (const button of card.querySelectorAll("[data-recommendation-rating]"))
     button.disabled = value;
+  const exclusion = card.querySelector("[data-recommendation-exclusion]");
+  if (exclusion)
+    exclusion.disabled = value;
 }
 
 function RemoveRecommendationCard(card) {

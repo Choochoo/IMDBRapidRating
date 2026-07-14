@@ -439,6 +439,11 @@ button:focus-visible {
 .recommendation-rating {
   display: grid;
   gap: 8px;
+}
+
+.recommendation-card-actions {
+  display: grid;
+  gap: 10px;
   margin-top: auto;
   padding-top: 16px;
 }
@@ -463,6 +468,18 @@ button:focus-visible {
   min-height: 30px;
   padding: 0;
   font-size: 12px;
+}
+
+.recommendation-exclusion {
+  min-height: 36px;
+  border-color: rgba(196, 205, 215, 0.3);
+  background: transparent;
+  color: var(--muted);
+}
+
+.recommendation-exclusion:hover {
+  border-color: rgba(224, 173, 71, 0.65);
+  color: var(--text);
 }
 
 .recommendation-card.saving {

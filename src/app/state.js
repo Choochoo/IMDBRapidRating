@@ -37,6 +37,7 @@ export function BuildStoragePayload(state) {
   return {
     signature: state.signature,
     ratings: state.ratings,
+    recommendationExclusions: state.recommendationExclusions || [],
     history: state.history.slice(-200),
     queueIds: state.queue.map((movie) => movie.ttId)
   };
@@ -48,6 +49,7 @@ function BuildMovieState() {
     movieById: new Map(),
     queue: [],
     ratings: {},
+    recommendationExclusions: [],
     history: [],
     sourceLabel: "",
     signature: ""

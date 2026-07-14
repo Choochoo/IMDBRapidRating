@@ -50,11 +50,12 @@ export function BuildRateRequest(record) {
   };
 }
 
-export function BuildAiPreferenceProfile(records, movieById) {
+export function BuildAiPreferenceProfile(records, movieById, recommendationExclusions = []) {
   return {
     ratings: BuildAiRatings(records, movieById),
+    exclusions: BuildAiExclusions(recommendationExclusions),
     ratingScale: "1-10",
-    fieldsSent: ["title", "year", "genres", "rating"]
+    fieldsSent: ["title", "year", "genres", "rating", "excludedTitle", "excludedYear"]
   };
 }
 
@@ -194,6 +195,13 @@ function CompareRatingRecords(left, right) {
 
 function BuildAiRatings(records, movieById) {
   return SortedRatingRecords(records).map((record) => BuildAiRating(record, movieById)).filter(Boolean);
+}
+
+function BuildAiExclusions(exclusions) {
+  return exclusions.map((item) => ({
+    title: String(item?.title || "").trim(),
+    year: Number(item?.year) || null
+  })).filter((item) => item.title);
 }
 
 function BuildAiRating(record, movieById) {
