@@ -357,12 +357,55 @@ button:focus-visible {
 .recommendation-card {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0)),
     var(--surface);
+}
+
+.recommendation-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   padding: 16px;
+}
+
+.recommendation-poster {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  background:
+    linear-gradient(145deg, rgba(224, 173, 71, 0.34), rgba(108, 145, 210, 0.12)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 16px),
+    #111820;
+}
+
+.recommendation-poster::after {
+  content: attr(data-year);
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.recommendation-poster.has-image {
+  background: #0b0e11;
+}
+
+.recommendation-poster.has-image::after {
+  display: none;
+}
+
+.recommendation-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .recommendation-card h2 {

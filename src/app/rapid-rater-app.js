@@ -16,6 +16,7 @@ import {
   RenderModelOptions,
   RenderRecommendationCard,
   UpdatePoster,
+  UpdateRecommendationPoster,
   UpdateSynopsis
 } from "./rendering.js";
 import { HasImdbCookie, ReadBrowserSettings } from "./browser-settings.js";
@@ -356,11 +357,17 @@ export class RapidRaterApp {
   }
 
   EnrichVisibleMovies(movies) {
-    for (const movie of movies) {
-      if (this.State.metadata[movie.ttId] || this.MetadataInFlight.has(movie.ttId))
-        continue;
-      this.QueueMetadataRequest(movie.ttId);
-    }
+    for (const movie of movies)
+      this.EnrichTitleMetadata(movie.ttId);
+  }
+
+  EnrichTitleMetadata(ttId) {
+    if (!/^tt\d+$/.test(ttId || ""))
+      return;
+    if (this.State.metadata[ttId])
+      return this.ApplyTitleMetadata(ttId, this.State.metadata[ttId]);
+    if (!this.MetadataInFlight.has(ttId))
+      this.QueueMetadataRequest(ttId);
   }
 
   QueueMetadataRequest(ttId) {
@@ -402,10 +409,12 @@ export class RapidRaterApp {
   ApplyTitleMetadata(ttId, metadata) {
     this.State.metadata[ttId] = metadata;
     const card = this.Elements.strip.querySelector(`[data-ttid="${ttId}"]`);
-    if (!card)
-      return;
-    UpdatePoster(card, metadata);
-    UpdateSynopsis(card, metadata);
+    if (card) {
+      UpdatePoster(card, metadata);
+      UpdateSynopsis(card, metadata);
+    }
+    for (const recommendation of this.Elements.recommendationGrid.querySelectorAll(`[data-ttid="${ttId}"]`))
+      UpdateRecommendationPoster(recommendation, metadata);
   }
 
   UpdateStats() {
@@ -724,10 +733,19 @@ export class RapidRaterApp {
   }
 
   RefreshVisibleMetadata() {
-    for (const movie of this.State.queue.slice(0, Config.visibleCount))
-      delete this.State.metadata[movie.ttId];
+    const titleIds = this.ReadVisibleMetadataTitleIds();
+    for (const ttId of titleIds)
+      delete this.State.metadata[ttId];
     if (this.State.queue.length)
       this.RenderVisibleCards();
+    for (const ttId of titleIds)
+      this.EnrichTitleMetadata(ttId);
+  }
+
+  ReadVisibleMetadataTitleIds() {
+    const titleIds = this.State.queue.slice(0, Config.visibleCount).map((movie) => movie.ttId);
+    const cards = this.Elements.recommendationGrid.querySelectorAll("[data-ttid]");
+    return new Set([...titleIds, ...Array.from(cards, (card) => card.dataset.ttid)].filter(Boolean));
   }
 
   SetImdbSaving(value) {
@@ -828,6 +846,8 @@ export class RapidRaterApp {
     this.SetRecommendationStatus(payload.summary || "Recommendations ready.");
     const items = Array.isArray(payload.recommendations) ? payload.recommendations : [];
     this.Elements.recommendationGrid.innerHTML = items.map(RenderRecommendationCard).join("");
+    for (const item of items)
+      this.EnrichTitleMetadata(item.ttId);
   }
 
   ShowRecommendationError(message) {

@@ -29,16 +29,16 @@ async function RateRecommendation(app, button) {
 }
 
 async function SaveRecommendationRating(app, card, button) {
-  const request = app.BuildLiveRateRequest(BuildRateRequest(card, button));
+  const request = app.BuildLiveRateRequest(BuildRecommendationRateRecord(card, button));
   SetCardSaving(card, true);
   const payload = await app.PostJson(Config.rateUrl, request, "AI recommendation rating failed.")
     .finally(() => SetCardSaving(card, false));
   ApplyRecommendationRating(app, card, request, payload);
 }
 
-function BuildRateRequest(card, button) {
+function BuildRecommendationRateRecord(card, button) {
   return {
-    titleId: card.dataset.ttid || "",
+    ttId: card.dataset.ttid || "",
     rating: Number(button.dataset.recommendationRating),
     title: card.dataset.title || "",
     year: card.dataset.year || "",

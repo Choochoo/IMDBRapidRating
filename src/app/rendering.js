@@ -18,6 +18,14 @@ export function UpdatePoster(card, metadata) {
   poster.innerHTML = `<img class="poster-image" src="${EscapeHtml(metadata.posterUrl)}" alt="">`;
 }
 
+export function UpdateRecommendationPoster(card, metadata) {
+  const poster = card.querySelector(".recommendation-poster");
+  if (!poster || !metadata.posterUrl)
+    return;
+  poster.classList.add("has-image");
+  poster.innerHTML = `<img src="${EscapeHtml(metadata.posterUrl)}" alt="" loading="lazy">`;
+}
+
 export function UpdateSynopsis(card, metadata) {
   const synopsis = card.querySelector(".synopsis");
   if (synopsis)
@@ -47,7 +55,8 @@ export function RenderRecommendationCard(item) {
   const heading = `<h2>${title}${year}</h2>`;
   const genres = RenderRecommendationGenres(item);
   const body = `${heading}${genres}${RenderRecommendationWhy(item)}${RenderRecommendationRating(item)}`;
-  return `<article class="recommendation-card"${RenderRecommendationData(item)}>${body}</article>`;
+  const content = `<div class="recommendation-card-body">${body}</div>`;
+  return `<article class="recommendation-card"${RenderRecommendationData(item)}>${RenderRecommendationPoster(item)}${content}</article>`;
 }
 
 export function ToneFromId(ttId) {
@@ -109,6 +118,11 @@ function RenderRecommendationGenres(item) {
   const genres = Array.isArray(item.genres) ? item.genres : [];
   const pills = genres.slice(0, 4).map((genre) => RenderGenrePill(genre)).join("");
   return `<div class="meta">${pills}</div>`;
+}
+
+function RenderRecommendationPoster(item) {
+  const year = EscapeHtml(item.year || "");
+  return `<div class="recommendation-poster" data-year="${year}" aria-hidden="true"></div>`;
 }
 
 function RenderRecommendationRating(item) {
