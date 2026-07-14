@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { GenerateAiRecommendations, GetAiStatus } from "./ai-recommendations.mjs";
-import { Authenticate, EnsureCsrfToken, LoginLimiter, RegenerateSession, RequireAuth, RequireCsrf } from "./auth.mjs";
+import { Authenticate, EnsureCsrfToken, HashPassword, LoginLimiter, RegenerateSession, RegistrationLimiter, RegistrationSchema, RequireAuth, RequireCsrf } from "./auth.mjs";
 import { GetOpenAiModels } from "./openai-models.mjs";
 import { DeleteImdbRating, GetImdbStatus, SubmitImdbRating } from "./imdb-ratings.mjs";
 import { GetTitleMetadata } from "./title-metadata.mjs";
@@ -27,8 +27,8 @@ export function RegisterApiRoutes(app, { store, pool, rootPath }) {
   app.get("/api/auth/session", async (request, response) => {
     const csrfToken = EnsureCsrfToken(request);
     if (!request.session.userId)
-      return response.json({ ok: true, authenticated: false, csrfToken });
-    response.json({ ok: true, authenticated: true, csrfToken, user: SessionUser(request) });
+      return response.json({ ok: true, authenticated: false, csrfToken, registrationEnabled: IsRegistrationEnabled() });
+    response.json({ ok: true, authenticated: true, csrfToken, registrationEnabled: IsRegistrationEnabled(), user: SessionUser(request) });
   });
 
   app.post("/api/auth/login", LoginLimiter, RequireCsrf, async (request, response) => {
@@ -37,6 +37,29 @@ export function RegisterApiRoutes(app, { store, pool, rootPath }) {
       return response.status(401).json({ ok: false, code: "INVALID_LOGIN", error: "The username or password is incorrect." });
     await RegenerateSession(request, user);
     response.json({ ok: true, csrfToken: request.session.csrfToken, user: PublicUser(user) });
+  });
+
+  app.post("/api/auth/register", RegistrationLimiter, RequireCsrf, async (request, response) => {
+    if (!IsRegistrationEnabled())
+      return response.status(403).json({ ok: false, code: "REGISTRATION_DISABLED", error: "New account registration is temporarily unavailable." });
+    const parsed = RegistrationSchema.safeParse(request.body);
+    if (!parsed.success)
+      return response.status(422).json({ ok: false, code: "INVALID_REGISTRATION", error: parsed.error.issues[0]?.message || "The account details are invalid." });
+    if (await store.findUserByUsername(parsed.data.username))
+      return UsernameUnavailable(response);
+    try {
+      const user = await store.createUser({
+        username: parsed.data.username,
+        displayName: parsed.data.displayName,
+        passwordHash: await HashPassword(parsed.data.password)
+      });
+      await RegenerateSession(request, user);
+      response.status(201).json({ ok: true, csrfToken: request.session.csrfToken, user: PublicUser(user) });
+    } catch (error) {
+      if (error?.code === "23505")
+        return UsernameUnavailable(response);
+      throw error;
+    }
   });
 
   app.post("/api/auth/logout", RequireAuth, RequireCsrf, async (request, response) => {
@@ -191,4 +214,12 @@ function DestroySession(request) {
 
 function ReadSessionCookieName() {
   return /^https:/i.test(process.env.APP_ORIGIN || "") ? "__Host-rapid-rater" : "rapid-rater.sid";
+}
+
+function IsRegistrationEnabled() {
+  return String(process.env.PUBLIC_REGISTRATION_ENABLED ?? "true").toLowerCase() !== "false";
+}
+
+function UsernameUnavailable(response) {
+  return response.status(409).json({ ok: false, code: "USERNAME_UNAVAILABLE", error: "That username is unavailable. Choose another one." });
 }

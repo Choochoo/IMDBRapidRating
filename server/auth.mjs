@@ -9,6 +9,19 @@ const LoginSchema = z.object({
   password: z.string().min(12).max(1024)
 });
 
+export const RegistrationSchema = z.object({
+  username: z.string().trim().toLowerCase()
+    .min(3, "Username must contain at least 3 characters.")
+    .max(32, "Username cannot exceed 32 characters.")
+    .regex(/^[a-z0-9][a-z0-9_-]*$/, "Use letters, numbers, underscores, or hyphens."),
+  displayName: z.string().trim()
+    .min(1, "Display name is required.")
+    .max(80, "Display name cannot exceed 80 characters."),
+  password: z.string()
+    .min(12, "Password must contain at least 12 characters.")
+    .max(128, "Password cannot exceed 128 characters.")
+});
+
 export const LoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -16,6 +29,14 @@ export const LoginLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: true,
   message: { ok: false, code: "LOGIN_RATE_LIMITED", error: "Too many sign-in attempts. Try again later." }
+});
+
+export const RegistrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { ok: false, code: "REGISTRATION_RATE_LIMITED", error: "Too many accounts were created from this connection. Try again later." }
 });
 
 export function EnsureCsrfToken(request) {
@@ -47,9 +68,10 @@ export async function Authenticate(store, body) {
 }
 
 export async function HashPassword(password) {
-  if (String(password).length < 12)
-    throw new Error("Password must contain at least 12 characters.");
-  return await argon2.hash(String(password), {
+  const parsed = z.string().min(12).max(128).safeParse(password);
+  if (!parsed.success)
+    throw new Error("Password must contain between 12 and 128 characters.");
+  return await argon2.hash(parsed.data, {
     type: argon2.argon2id,
     memoryCost: 19456,
     timeCost: 2,

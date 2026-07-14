@@ -2,6 +2,8 @@
 
 IMDb Rapid Rater is an account-backed keyboard and touch rating website. It loads a shuffled queue of real IMDb movie IDs, shows three titles at a time on desktop or one on mobile, and writes ratings back to the connected IMDb account.
 
+Visitors can create their own account from the landing page. Public registration is enabled by default and can be stopped immediately by setting `PUBLIC_REGISTRATION_ENABLED=false`; existing users can still sign in.
+
 This project uses an unsupported IMDb website endpoint for write-back. IMDb does not provide a public user-rating write API or CSV import. The write path can break, can be rate limited, and may violate IMDb terms. Use it only for your own account and titles you actually want to rate.
 
 ## What It Does
@@ -57,6 +59,7 @@ Copy `settings.env.example` to `.runtime/settings.env`, provide a dedicated Post
 ```powershell
 npm run key:generate
 npm run db:migrate
+# Optional: administrators can still create an account from the command line.
 npm run user:create -- jared "Jared"
 ```
 

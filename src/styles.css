@@ -911,13 +911,71 @@ button:focus-visible {
   padding: 20px;
 }
 
-.auth-dialog {
+.auth-landing {
+  position: fixed;
+  inset: 0;
   z-index: 20;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 32px 20px;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(224, 173, 71, 0.14), transparent 34%),
+    radial-gradient(circle at 82% 76%, rgba(126, 182, 255, 0.1), transparent 36%),
+    var(--bg);
 }
 
-.auth-card {
-  width: min(460px, 100%);
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(340px, 460px);
+  gap: clamp(36px, 8vw, 110px);
+  align-items: center;
+  width: min(1040px, 100%);
 }
+
+.auth-intro h1 {
+  max-width: 620px;
+  margin: 28px 0 16px;
+  font-size: clamp(38px, 6vw, 68px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.auth-intro p {
+  max-width: 580px;
+  color: #c4cdd7;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.auth-brand { min-width: 0; }
+
+.auth-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(23, 29, 35, 0.94);
+  box-shadow: var(--shadow);
+}
+
+.auth-card h2 { margin: 24px 0 6px; font-size: 25px; }
+.auth-card form > p:not(.cookie-error) { margin: 0 0 20px; color: var(--muted); line-height: 1.45; }
+.auth-card label { display: block; margin: 14px 0 6px; font-size: 13px; font-weight: 700; }
+.auth-card small { display: block; margin-top: 6px; color: var(--muted); line-height: 1.4; }
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.auth-tabs button { border-color: transparent; background: transparent; }
+.auth-tabs button.active { border-color: rgba(224, 173, 71, 0.55); background: var(--accent-soft); color: #f7d58e; }
+.auth-submit { width: 100%; min-height: 44px; border-color: rgba(224, 173, 71, 0.62); background: var(--accent); color: #17120a; font-weight: 800; }
+.auth-submit:hover { border-color: #f1c66f; background: #ebbd61; }
 
 .account-ready {
   border-color: rgba(66, 189, 104, 0.44);
@@ -1248,6 +1306,12 @@ button:focus-visible {
     align-items: end;
     padding: 0;
   }
+
+  .auth-landing { align-items: start; padding: 24px 16px; }
+  .auth-shell { grid-template-columns: 1fr; gap: 24px; }
+  .auth-intro h1 { margin-top: 22px; font-size: 38px; }
+  .auth-intro p { font-size: 15px; }
+  .auth-card { padding: 18px; }
 
   .cookie-card {
     max-height: 100dvh;

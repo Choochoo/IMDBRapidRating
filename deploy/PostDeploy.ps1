@@ -48,7 +48,7 @@ $requiredVariables = @{
     "DATA_ENCRYPTION_KEY"        = "RapidRater.DataEncryptionKey"
     "APP_ORIGIN"                 = "RapidRater.AppOrigin"
 }
-$settingsLines = @("RAPID_RATER_DB_SCHEMA=imdb_rapid_rater", "TRUST_PROXY_HOPS=1", "IMDB_DRY_RUN=false")
+$settingsLines = @("RAPID_RATER_DB_SCHEMA=imdb_rapid_rater", "TRUST_PROXY_HOPS=1", "IMDB_DRY_RUN=false", "PUBLIC_REGISTRATION_ENABLED=true")
 foreach ($entry in $requiredVariables.GetEnumerator()) {
     $value = $null
     if ($null -ne $OctopusParameters -and $OctopusParameters.ContainsKey($entry.Value)) {

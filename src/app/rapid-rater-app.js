@@ -158,6 +158,9 @@ export class RapidRaterApp {
 
   BindAccountEvents() {
     this.Elements.loginForm.addEventListener("submit", (event) => this.HandleLogin(event));
+    this.Elements.signupForm.addEventListener("submit", (event) => this.HandleSignup(event));
+    this.Elements.showLogin.addEventListener("click", () => this.ShowAuthPanel("login"));
+    this.Elements.showSignup.addEventListener("click", () => this.ShowAuthPanel("signup"));
     this.Elements.signOut.addEventListener("click", () => this.SignOut());
   }
 
@@ -175,7 +178,7 @@ export class RapidRaterApp {
     const session = await this.FetchJson("./api/auth/session");
     this.CsrfToken = session.csrfToken || "";
     if (!session.authenticated)
-      return this.ShowAuthDialog();
+      return this.ShowAuthLanding(session.registrationEnabled !== false);
     this.SetSignedInUser(session.user);
     await this.Initialize();
   }
@@ -191,7 +194,7 @@ export class RapidRaterApp {
       });
       this.CsrfToken = payload.csrfToken;
       this.SetSignedInUser(payload.user);
-      this.Elements.authDialog.hidden = true;
+      this.Elements.authLanding.hidden = true;
       this.Elements.loginPassword.value = "";
       await this.Initialize();
     } catch (error) {
@@ -201,17 +204,57 @@ export class RapidRaterApp {
     }
   }
 
-  ShowAuthDialog() {
-    this.Elements.authDialog.hidden = false;
+  async HandleSignup(event) {
+    event.preventDefault();
+    this.Elements.signupError.textContent = "";
+    const password = this.Elements.signupPassword.value;
+    if (password !== this.Elements.signupConfirmation.value) {
+      this.Elements.signupError.textContent = "The passwords do not match.";
+      return;
+    }
+    this.Elements.signupSubmit.disabled = true;
+    try {
+      const payload = await this.RequestJson("./api/auth/register", "POST", {
+        username: this.Elements.signupUsername.value,
+        displayName: this.Elements.signupDisplayName.value,
+        password
+      });
+      this.CsrfToken = payload.csrfToken;
+      this.SetSignedInUser(payload.user);
+      this.Elements.signupPassword.value = "";
+      this.Elements.signupConfirmation.value = "";
+      await this.Initialize();
+    } catch (error) {
+      this.Elements.signupError.textContent = error.message;
+    } finally {
+      this.Elements.signupSubmit.disabled = false;
+    }
+  }
+
+  ShowAuthLanding(registrationEnabled = true) {
+    this.Elements.authLanding.hidden = false;
     this.Elements.signOut.hidden = true;
+    this.Elements.showSignup.hidden = !registrationEnabled;
+    this.ShowAuthPanel("login");
     window.setTimeout(() => this.Elements.loginUsername.focus(), 0);
+  }
+
+  ShowAuthPanel(panel) {
+    const signup = panel === "signup";
+    this.Elements.loginPanel.hidden = signup;
+    this.Elements.signupPanel.hidden = !signup;
+    this.Elements.showLogin.classList.toggle("active", !signup);
+    this.Elements.showSignup.classList.toggle("active", signup);
+    this.Elements.loginError.textContent = "";
+    this.Elements.signupError.textContent = "";
+    window.setTimeout(() => (signup ? this.Elements.signupUsername : this.Elements.loginUsername).focus(), 0);
   }
 
   SetSignedInUser(user) {
     this.User = user;
     this.Elements.accountBadge.textContent = user?.displayName || user?.username || "Signed in";
     this.Elements.signOut.hidden = false;
-    this.Elements.authDialog.hidden = true;
+    this.Elements.authLanding.hidden = true;
   }
 
   async SignOut() {

@@ -183,17 +183,50 @@
       </div>
     </div>
 
-    <section class="cookie-dialog auth-dialog" id="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-      <form class="cookie-card auth-card shadow-lg" id="login-form">
-        <div class="cookie-header"><h1 id="auth-title">Sign in to Rapid Rater</h1></div>
-        <p>Your ratings, queue, preferences, and encrypted service connections will follow this account between computers.</p>
-        <label for="login-username">Username</label>
-        <input class="setup-input" id="login-username" autocomplete="username" required>
-        <label for="login-password">Password</label>
-        <input class="setup-input" id="login-password" type="password" autocomplete="current-password" minlength="12" required>
-        <p class="cookie-error" id="login-error" role="alert"></p>
-        <div class="cookie-actions"><button type="submit" id="login-submit">Sign in</button></div>
-      </form>
+    <section class="auth-landing" id="auth-landing" aria-labelledby="auth-title">
+      <div class="auth-shell">
+        <div class="auth-intro">
+          <div class="brand auth-brand"><span class="brand-mark">RR</span><span>IMDb Rapid Rater</span></div>
+          <h1 id="auth-title">Rate faster. Pick better movies.</h1>
+          <p>Your ratings, queue, preferences, and encrypted service connections follow your account between computers.</p>
+        </div>
+        <div class="auth-card">
+          <nav class="auth-tabs" aria-label="Account access">
+            <button type="button" class="active" id="show-login">Sign in</button>
+            <button type="button" id="show-signup">Create account</button>
+          </nav>
+          <div id="login-panel">
+            <form id="login-form">
+              <h2>Welcome back</h2>
+              <p>Sign in to continue rating.</p>
+              <label for="login-username">Username</label>
+              <input class="setup-input" id="login-username" autocomplete="username" required>
+              <label for="login-password">Password</label>
+              <input class="setup-input" id="login-password" type="password" autocomplete="current-password" minlength="12" maxlength="128" required>
+              <p class="cookie-error" id="login-error" role="alert"></p>
+              <button class="auth-submit" type="submit" id="login-submit">Sign in</button>
+            </form>
+          </div>
+          <div id="signup-panel" hidden>
+            <form id="signup-form">
+              <h2>Create your account</h2>
+              <p>Anyone can sign up. Your private connections are encrypted on the server.</p>
+              <label for="signup-display-name">Display name</label>
+              <input class="setup-input" id="signup-display-name" autocomplete="name" maxlength="80" required>
+              <label for="signup-username">Username</label>
+              <input class="setup-input" id="signup-username" autocomplete="username" minlength="3" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" aria-describedby="username-help" required>
+              <small id="username-help">3–32 letters, numbers, underscores, or hyphens.</small>
+              <label for="signup-password">Password</label>
+              <input class="setup-input" id="signup-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" aria-describedby="password-help" required>
+              <small id="password-help">Use at least 12 characters. A long, unique passphrase works well.</small>
+              <label for="signup-confirmation">Confirm password</label>
+              <input class="setup-input" id="signup-confirmation" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+              <p class="cookie-error" id="signup-error" role="alert"></p>
+              <button class="auth-submit" type="submit" id="signup-submit">Create account</button>
+            </form>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="cookie-dialog" id="migration-dialog" role="dialog" aria-modal="true" aria-labelledby="migration-title" hidden>
