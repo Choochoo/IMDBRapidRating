@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import test from "node:test";
+import { BuildHelmetOptions } from "../server/app.mjs";
 import { ReadDatabaseSchema, ReadPostgresConfig } from "../server/db/config.mjs";
 import { DecryptSecret, EncryptSecret, SafeTokenEquals } from "../server/security/secrets.mjs";
 
@@ -34,4 +35,16 @@ test("database schema names are strictly validated", () => {
   process.env.RAPID_RATER_DB_SCHEMA = "public; drop schema public";
   assert.throws(() => ReadDatabaseSchema());
   delete process.env.RAPID_RATER_DB_SCHEMA;
+});
+
+test("HTTP origins do not upgrade assets to HTTPS-only security contexts", () => {
+  const httpOptions = BuildHelmetOptions(false);
+  assert.equal(httpOptions.contentSecurityPolicy.directives["upgrade-insecure-requests"], null);
+  assert.equal(httpOptions.crossOriginOpenerPolicy, false);
+  assert.equal(httpOptions.originAgentCluster, false);
+
+  const httpsOptions = BuildHelmetOptions(true);
+  assert.deepEqual(httpsOptions.contentSecurityPolicy.directives["upgrade-insecure-requests"], []);
+  assert.equal(Object.hasOwn(httpsOptions, "crossOriginOpenerPolicy"), false);
+  assert.equal(Object.hasOwn(httpsOptions, "originAgentCluster"), false);
 });

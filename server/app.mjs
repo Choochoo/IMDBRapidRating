@@ -17,18 +17,7 @@ export async function CreateApp(rootPath) {
   const secureCookie = /^https:/i.test(process.env.APP_ORIGIN || "");
   app.disable("x-powered-by");
   app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS || 1));
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        connectSrc: ["'self'"]
-      }
-    },
-    crossOriginResourcePolicy: { policy: "cross-origin" }
-  }));
+  app.use(helmet(BuildHelmetOptions(secureCookie)));
   app.use(express.json({ limit: "12mb", type: "application/json" }));
   const PgStore = connectPgSimple(session);
   app.use(session({
@@ -74,4 +63,24 @@ function ReadSessionSecret() {
   if (value.length < 32)
     throw new Error("SESSION_SECRET must contain at least 32 characters.");
   return value;
+}
+
+export function BuildHelmetOptions(secureOrigin) {
+  return {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        connectSrc: ["'self'"],
+        "upgrade-insecure-requests": secureOrigin ? [] : null
+      }
+    },
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    ...(secureOrigin ? {} : {
+      crossOriginOpenerPolicy: false,
+      originAgentCluster: false
+    })
+  };
 }
