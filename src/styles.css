@@ -183,6 +183,35 @@ button:focus-visible {
   flex-wrap: wrap;
 }
 
+.file-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.button-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.backup-action {
+  border-color: rgba(224, 173, 71, 0.5);
+  background: var(--accent-soft);
+  color: #f7d58e;
+}
+
+.backup-action:hover {
+  border-color: var(--accent);
+  background: rgba(224, 173, 71, 0.25);
+}
+
 .status-strip {
   display: flex;
   justify-content: flex-end;

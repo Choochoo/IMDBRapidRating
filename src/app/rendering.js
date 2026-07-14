@@ -21,7 +21,7 @@ export function UpdatePoster(card, metadata) {
 export function UpdateSynopsis(card, metadata) {
   const synopsis = card.querySelector(".synopsis");
   if (synopsis)
-    synopsis.textContent = metadata.synopsis || "Synopsis unavailable.";
+    synopsis.textContent = metadata.synopsis || "To see the synopsis, set up a TMDB key.";
 }
 
 export function RenderFailure(record) {

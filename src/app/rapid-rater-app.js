@@ -82,8 +82,6 @@ export class RapidRaterApp {
     this.Element("import-csv").addEventListener("click", () => this.Elements.csvFile.click());
     this.Element("export-csv").addEventListener("click", () => this.ExportCsv());
     this.Element("export-json").addEventListener("click", () => this.ExportJson());
-    this.Element("reset").addEventListener("click", () => this.ResetAll());
-    this.Element("empty-reset").addEventListener("click", () => this.ResetAll());
     this.Element("empty-export-csv").addEventListener("click", () => this.ExportCsv());
     this.Element("empty-export-json").addEventListener("click", () => this.ExportJson());
     this.Elements.retryFailed.addEventListener("click", () => this.RetryImdbFailures());
@@ -379,7 +377,7 @@ export class RapidRaterApp {
   BuildMissingMetadata() {
     return {
       posterUrl: "",
-      synopsis: "Synopsis unavailable.",
+      synopsis: "To see the synopsis, set up a TMDB key.",
       source: ""
     };
   }
@@ -390,7 +388,7 @@ export class RapidRaterApp {
       throw new Error(payload.error || "Metadata request failed.");
     return {
       posterUrl: payload.posterUrl || "",
-      synopsis: payload.synopsis || "Synopsis unavailable.",
+      synopsis: payload.synopsis || "To see the synopsis, set up a TMDB key.",
       source: payload.source || ""
     };
   }
@@ -858,17 +856,6 @@ export class RapidRaterApp {
     this.Elements.strip.innerHTML = "";
     this.Elements.emptySummary.textContent = BuildCompleteSummary(counts);
     this.Elements.empty.hidden = false;
-  }
-
-  ResetAll() {
-    if (!confirm("Clear local ratings, imported exclusions, and queue progress?"))
-      return;
-    this.State.ratings = {};
-    this.State.history = [];
-    this.State.savedQueueIds = null;
-    this.RebuildQueue();
-    this.SaveLocalState();
-    this.Render();
   }
 
   async HandleJsonFile(event) {

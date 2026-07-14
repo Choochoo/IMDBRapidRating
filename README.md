@@ -91,9 +91,9 @@ IMDb does not provide a public CSV upload/import API. If you rate movies directl
 
 ## Back Up Or Move A Browser Save
 
-Use **Export JSON** to download `imdb-rapid-rater-save.json`. This backup contains ratings, imported exclusions, not-seen records, recent undo history, and queue order. It intentionally excludes the IMDb connection and API keys.
+Use **Back Up Progress** to download `imdb-rapid-rater-save.json`. This backup contains ratings, imported exclusions, not-seen records, recent undo history, and queue order. It intentionally excludes the IMDb connection and API keys.
 
-On another instance or browser, choose **Import save / title JSON** and select that file. Older `imdb-rapid-rater-export.json` files containing an array of rating records are also accepted; their ratings and not-seen records are merged into the current browser save.
+On another instance or browser, choose **Restore Progress** and select that file. Older `imdb-rapid-rater-export.json` files containing an array of rating records are also accepted; their ratings and not-seen records are merged into the current browser save.
 
 ## Enable IMDb Write-Back
 
