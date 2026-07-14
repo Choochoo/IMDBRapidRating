@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 $InstallDir = "C:\inetpub\wwwroot\IMDBRapidRating"
 $LegacyDir = "C:\Users\Jared\Documents\GitHub\IMDBRapidRating"
 $TaskName = "IMDB Rapid Rating Server"
-$Port = 5199
+$Port = 5012
 
 Write-Host "Configuring IMDb Rapid Rating deployment..." -ForegroundColor Cyan
 

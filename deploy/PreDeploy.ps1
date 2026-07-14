@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $TaskName = "IMDB Rapid Rating Server"
-$Port = 5199
+$Port = 5012
 
 Write-Host "Stopping IMDb Rapid Rating before deployment..." -ForegroundColor Cyan
 

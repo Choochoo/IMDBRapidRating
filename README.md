@@ -28,7 +28,7 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 
 Pushes to `main` run `.github/workflows/deploy-octopus.yml` on the self-hosted GitHub runner. The workflow validates the Node application, generates `data/movies.json`, packages the application, pushes it to the Octopus built-in feed, and deploys the `IMDBRapidRating` project to Production.
 
-The Octopus project deploys to `C:\inetpub\wwwroot\IMDBRapidRating` and runs the Node server through the `IMDB Rapid Rating Server` startup task on port `5199`. Personal settings and ratings are not stored in that deployment.
+The Octopus project deploys to `C:\inetpub\wwwroot\IMDBRapidRating` and runs the Node server through the `IMDB Rapid Rating Server` startup task on port `5012`. Personal settings and ratings are not stored in that deployment.
 
 One-time setup:
 
@@ -49,10 +49,10 @@ npm start
 Open the printed URL:
 
 ```text
-http://localhost:5199
+http://localhost:5012
 ```
 
-Port `5199` is the default.
+Port `5012` is the default.
 
 ## Browser-Local User Data
 
