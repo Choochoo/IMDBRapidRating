@@ -1121,6 +1121,10 @@ button:focus-visible {
   letter-spacing: -0.045em;
 }
 
+.auth-intro h1 span {
+  display: block;
+}
+
 .auth-intro p {
   max-width: 580px;
   color: #c4cdd7;
