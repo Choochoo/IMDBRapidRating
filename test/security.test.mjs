@@ -71,6 +71,22 @@ test("configured primary and additional HTTP origins are accepted", async () => 
   }
 });
 
+test("the Film Club hostname is accepted without deployment configuration", async () => {
+  const previousOrigin = process.env.APP_ORIGIN;
+  const previousAllowed = process.env.APP_ALLOWED_ORIGINS;
+  delete process.env.APP_ORIGIN;
+  delete process.env.APP_ALLOWED_ORIGINS;
+  try {
+    const app = express();
+    app.use(VerifyOrigin);
+    app.post("/write", (_request, response) => response.sendStatus(204));
+    await request(app).post("/write").set("Origin", "http://ourfilmclub.duckdns.org:5012").expect(204);
+  } finally {
+    RestoreEnvironment("APP_ORIGIN", previousOrigin);
+    RestoreEnvironment("APP_ALLOWED_ORIGINS", previousAllowed);
+  }
+});
+
 function RestoreEnvironment(name, value) {
   if (value === undefined)
     delete process.env[name];

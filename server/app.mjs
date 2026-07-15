@@ -9,6 +9,8 @@ import { ReadDatabaseSchema } from "./db/config.mjs";
 import { RunMigrations } from "./db/migrate.mjs";
 import { RegisterApiRoutes } from "./routes.mjs";
 
+const BuiltInAllowedOrigins = ["http://ourfilmclub.duckdns.org:5012"];
+
 export async function CreateApp(rootPath) {
   const sessionSecret = ReadSessionSecret();
   const { pool, db } = CreateDatabase();
@@ -59,7 +61,7 @@ export function VerifyOrigin(request, response, next) {
 }
 
 export function ReadAllowedOrigins(request) {
-  const configured = [process.env.APP_ORIGIN, ...(process.env.APP_ALLOWED_ORIGINS || "").split(",")]
+  const configured = [process.env.APP_ORIGIN, ...(process.env.APP_ALLOWED_ORIGINS || "").split(","), ...BuiltInAllowedOrigins]
     .map((value) => String(value || "").trim())
     .filter(Boolean);
   if (!configured.length)
