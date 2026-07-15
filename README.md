@@ -52,6 +52,8 @@ Configure these Octopus project variables before the first account-backed deploy
 
 Use a dedicated PostgreSQL database/user with access only to the `imdb_rapid_rater` schema. The deployment writes the runtime values to an ACL-restricted file, installs production dependencies, and applies migrations before starting the scheduled task.
 
+Additional trusted browser origins can be supplied as a comma-separated `APP_ALLOWED_ORIGINS` runtime setting. The server's deployment currently includes `http://ourfilmclub.duckdns.org:5012` alongside the primary Octopus origin.
+
 ## Run
 
 Copy `settings.env.example` to `.runtime/settings.env`, provide a dedicated PostgreSQL account, and generate secrets:

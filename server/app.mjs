@@ -49,14 +49,31 @@ export function RegisterStaticRoutes(app, rootPath) {
   app.get("/", (_request, response) => response.sendFile(path.join(rootPath, "index.html")));
 }
 
-function VerifyOrigin(request, response, next) {
+export function VerifyOrigin(request, response, next) {
   if (["GET", "HEAD", "OPTIONS"].includes(request.method))
     return next();
-  const origin = request.get("origin");
-  const expected = process.env.APP_ORIGIN || `${request.protocol}://${request.get("host")}`;
-  if (origin === expected)
+  const origin = NormalizeOrigin(request.get("origin"));
+  if (origin && ReadAllowedOrigins(request).has(origin))
     return next();
   response.status(403).json({ ok: false, code: "ORIGIN_REJECTED", error: "The request origin is not allowed." });
+}
+
+export function ReadAllowedOrigins(request) {
+  const configured = [process.env.APP_ORIGIN, ...(process.env.APP_ALLOWED_ORIGINS || "").split(",")]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  if (!configured.length)
+    configured.push(`${request.protocol}://${request.get("host")}`);
+  return new Set(configured.map(NormalizeOrigin).filter(Boolean));
+}
+
+function NormalizeOrigin(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return ["http:", "https:"].includes(url.protocol) ? url.origin : "";
+  } catch {
+    return "";
+  }
 }
 
 function ReadSessionSecret() {

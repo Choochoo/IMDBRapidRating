@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import test from "node:test";
-import { BuildHelmetOptions } from "../server/app.mjs";
+import express from "express";
+import request from "supertest";
+import { BuildHelmetOptions, VerifyOrigin } from "../server/app.mjs";
 import { ReadDatabaseSchema, ReadPostgresConfig } from "../server/db/config.mjs";
 import { DecryptSecret, EncryptSecret, SafeTokenEquals } from "../server/security/secrets.mjs";
 
@@ -48,3 +50,30 @@ test("HTTP origins do not upgrade assets to HTTPS-only security contexts", () =>
   assert.equal(Object.hasOwn(httpsOptions, "crossOriginOpenerPolicy"), false);
   assert.equal(Object.hasOwn(httpsOptions, "originAgentCluster"), false);
 });
+
+test("configured primary and additional HTTP origins are accepted", async () => {
+  const previousOrigin = process.env.APP_ORIGIN;
+  const previousAllowed = process.env.APP_ALLOWED_ORIGINS;
+  process.env.APP_ORIGIN = "http://192.168.1.45:5012/";
+  process.env.APP_ALLOWED_ORIGINS = "http://ourfilmclub.duckdns.org:5012, https://example.test/path";
+  try {
+    const app = express();
+    app.use(VerifyOrigin);
+    app.post("/write", (_request, response) => response.sendStatus(204));
+
+    await request(app).post("/write").set("Origin", "http://192.168.1.45:5012").expect(204);
+    await request(app).post("/write").set("Origin", "http://ourfilmclub.duckdns.org:5012").expect(204);
+    await request(app).post("/write").set("Origin", "https://example.test").expect(204);
+    await request(app).post("/write").set("Origin", "http://evil.example").expect(403);
+  } finally {
+    RestoreEnvironment("APP_ORIGIN", previousOrigin);
+    RestoreEnvironment("APP_ALLOWED_ORIGINS", previousAllowed);
+  }
+});
+
+function RestoreEnvironment(name, value) {
+  if (value === undefined)
+    delete process.env[name];
+  else
+    process.env[name] = value;
+}
