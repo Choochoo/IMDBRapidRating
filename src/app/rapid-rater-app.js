@@ -329,7 +329,7 @@ export class RapidRaterApp {
     if (event.key === "Backspace" || event.key === "Delete") {
       event.preventDefault();
       this.FlashShortcutKey(event.key);
-      this.Undo().catch((error) => this.ShowToast(EscapeHtml(error.message || "Undo failed.")));
+      this.Undo().catch((error) => this.ShowToast(EscapeHtml(error.message || "Could not go back.")));
       return true;
     }
     if (event.key !== Config.skipKey)

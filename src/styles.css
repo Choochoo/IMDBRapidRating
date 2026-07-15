@@ -1543,8 +1543,15 @@ button:focus-visible {
   .poster,
   .movie-card.active .poster {
     flex-basis: auto;
-    aspect-ratio: 2 / 3;
-    max-height: 48dvh;
+    height: 32dvh;
+    min-height: 180px;
+    max-height: 320px;
+    aspect-ratio: auto;
+  }
+
+  .poster-image {
+    object-fit: contain;
+    object-position: center;
   }
 
   .movie-body {
@@ -1552,6 +1559,7 @@ button:focus-visible {
   }
 
   .title {
+    margin-top: 8px;
     font-size: 20px;
   }
 

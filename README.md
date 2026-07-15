@@ -92,7 +92,7 @@ Older browser-local saves are detected after the first sign-in and can be moved 
 - `1` through `9`: rate the active title and submit to IMDb when live mode is ready.
 - `0`: rate the active title `10/10`.
 - `` ` ``: mark the title as not seen without submitting an IMDb rating.
-- `Backspace` or `Delete`: undo the last action.
+- `Backspace` or `Delete`: go back to the previous movie.
 
 ## Import Existing IMDb Ratings
 
@@ -112,19 +112,19 @@ Uploading a fresh IMDb CSV resyncs CSV-owned entries. Rapid Rater removes old `i
 
 Rating actions update synchronized account data after IMDb confirms the write. Failed writes do not count as successfully submitted.
 
-If a rating was already submitted to IMDb, `Backspace` or `Delete` removes or restores the IMDb rating before restoring the card locally. If IMDb rejects the undo, local state is left unchanged so the browser does not drift out of sync.
+If a rating was already submitted to IMDb, `Backspace` or `Delete` removes or restores the IMDb rating before restoring the card locally. If IMDb rejects the reversal, local state is left unchanged so the browser does not drift out of sync.
 
 IMDb does not provide a public CSV upload/import API. If you rate movies directly on IMDb outside this app, export your IMDb ratings CSV again and import the fresh file here.
 
 ## Back Up Or Restore A Save
 
-Use **Back Up Progress** to download `imdb-rapid-rater-save.json`. This backup contains ratings, imported exclusions, not-seen records, AI do-not-recommend choices, recent undo history, and queue order. It intentionally excludes the IMDb connection and API keys.
+Use **Back Up Progress** to download `imdb-rapid-rater-save.json`. This backup contains ratings, imported exclusions, not-seen records, AI do-not-recommend choices, recent action history, and queue order. It intentionally excludes the IMDb connection and API keys.
 
 Choose **Restore Progress** and select that file to restore it into the signed-in account. Older `imdb-rapid-rater-export.json` files are also accepted.
 
 ## Enable IMDb Write-Back
 
-Rapid Rater blocks the rating interface until IMDb is connected. IMDb does not provide a third-party OAuth or public rating-write API, so the website asks for the signed-in IMDb request-header value. It is encrypted in PostgreSQL and decrypted only on the server immediately before submitting or undoing a rating. It is never returned to the browser after saving.
+Rapid Rater blocks the rating interface until IMDb is connected. IMDb does not provide a third-party OAuth or public rating-write API, so the website asks for the signed-in IMDb request-header value. It is encrypted in PostgreSQL and decrypted only on the server immediately before submitting or reversing a rating. It is never returned to the browser after saving.
 
 Do not paste this value into chat, issues, commits, logs, screenshots, or pull requests. Treat it like a temporary password.
 
