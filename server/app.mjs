@@ -9,7 +9,10 @@ import { ReadDatabaseSchema } from "./db/config.mjs";
 import { RunMigrations } from "./db/migrate.mjs";
 import { RegisterApiRoutes } from "./routes.mjs";
 
-const BuiltInAllowedOrigins = ["http://ourfilmclub.duckdns.org:5012"];
+const BuiltInAllowedOrigins = [
+  "http://ourfilmclub.duckdns.org",
+  "http://ourfilmclub.duckdns.org:5012"
+];
 
 export async function CreateApp(rootPath) {
   const sessionSecret = ReadSessionSecret();

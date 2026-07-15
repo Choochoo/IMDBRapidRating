@@ -54,6 +54,8 @@ Use a dedicated PostgreSQL database/user with access only to the `imdb_rapid_rat
 
 Additional trusted browser origins can be supplied as a comma-separated `APP_ALLOWED_ORIGINS` runtime setting. The server's deployment currently includes `http://ourfilmclub.duckdns.org:5012` alongside the primary Octopus origin.
 
+The deployment also configures an IIS reverse proxy for `http://ourfilmclub.duckdns.org/`, so the app remains available on port 5012 while phones and networks that restrict nonstandard ports can use the normal HTTP address.
+
 ## Run
 
 Copy `settings.env.example` to `.runtime/settings.env`, provide a dedicated PostgreSQL account, and generate secrets:

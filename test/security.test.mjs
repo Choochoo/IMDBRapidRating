@@ -80,6 +80,7 @@ test("the Film Club hostname is accepted without deployment configuration", asyn
     const app = express();
     app.use(VerifyOrigin);
     app.post("/write", (_request, response) => response.sendStatus(204));
+    await request(app).post("/write").set("Origin", "http://ourfilmclub.duckdns.org").expect(204);
     await request(app).post("/write").set("Origin", "http://ourfilmclub.duckdns.org:5012").expect(204);
   } finally {
     RestoreEnvironment("APP_ORIGIN", previousOrigin);
