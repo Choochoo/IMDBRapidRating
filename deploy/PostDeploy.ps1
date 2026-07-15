@@ -103,6 +103,20 @@ $settings = New-ScheduledTaskSettingsSet `
     -RestartInterval (New-TimeSpan -Minutes 1) `
     -ExecutionTimeLimit ([TimeSpan]::Zero)
 
+$existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+if ($null -ne $existingTask) {
+    Write-Host "Stopping the existing IMDb Rapid Rating process..."
+    Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    for ($attempt = 1; $attempt -le 20; $attempt++) {
+        $state = (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State
+        if ($state -ne "Running") { break }
+        Start-Sleep -Milliseconds 500
+    }
+    if ((Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State -eq "Running") {
+        throw "The existing IMDb Rapid Rating scheduled task did not stop."
+    }
+}
+
 Register-ScheduledTask `
     -TaskName $TaskName `
     -Action $action `
