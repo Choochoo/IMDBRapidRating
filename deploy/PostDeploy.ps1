@@ -151,6 +151,7 @@ Write-Host "IMDb Rapid Rating is healthy at $healthUrl" -ForegroundColor Green
 Write-Host "Configuring the Our Film Club IIS reverse proxy..."
 $proxySiteName = "Our Film Club"
 $proxyHostName = "ourfilmclub.duckdns.org"
+$proxyIpAddress = "192.168.1.45"
 $proxyDir = "C:\inetpub\wwwroot\OurFilmClubProxy"
 $appCmd = "C:\Windows\System32\inetsrv\appcmd.exe"
 if (-not (Test-Path -LiteralPath $appCmd)) {
@@ -179,22 +180,22 @@ if ($LASTEXITCODE -ne 0) { throw "IIS reverse-proxy support could not be enabled
 
 & $appCmd list site "/name:$proxySiteName" | Out-Null
 if ($LASTEXITCODE -eq 0) {
-    & $appCmd set site $proxySiteName "/bindings:http/*:80:$proxyHostName" | Out-Null
+    & $appCmd set site $proxySiteName "/bindings:http/${proxyIpAddress}:80:$proxyHostName" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "The Our Film Club IIS binding could not be updated." }
     & $appCmd set vdir "$proxySiteName/" "/physicalPath:$proxyDir" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "The Our Film Club IIS path could not be updated." }
 } else {
-    & $appCmd add site "/name:$proxySiteName" "/bindings:http/*:80:$proxyHostName" "/physicalPath:$proxyDir" | Out-Null
+    & $appCmd add site "/name:$proxySiteName" "/bindings:http/${proxyIpAddress}:80:$proxyHostName" "/physicalPath:$proxyDir" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "The Our Film Club IIS site could not be created." }
 }
 & $appCmd start site "/site.name:$proxySiteName" 2>$null | Out-Null
 
-$proxyHealthUrl = "http://$proxyHostName/health"
+$proxyHealthUrl = "http://$proxyIpAddress/health"
 $proxyHealthy = $false
 for ($attempt = 1; $attempt -le 10; $attempt++) {
     Start-Sleep -Seconds 1
     try {
-        $response = Invoke-WebRequest -Uri $proxyHealthUrl -UseBasicParsing -TimeoutSec 5
+        $response = Invoke-WebRequest -Uri $proxyHealthUrl -Headers @{ Host = $proxyHostName } -UseBasicParsing -TimeoutSec 5
         if ($response.StatusCode -eq 200) {
             $proxyHealthy = $true
             break
