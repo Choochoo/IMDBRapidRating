@@ -5,13 +5,11 @@ export const AppSchema = pgSchema(ReadDatabaseSchema());
 
 export const Users = AppSchema.table("users", {
   id: uuid("id").primaryKey(),
-  username: varchar("username", { length: 160 }).notNull(),
-  email: varchar("email", { length: 254 }),
-  displayName: varchar("display_name", { length: 160 }).notNull(),
+  email: varchar("email", { length: 254 }).notNull(),
   passwordHash: text("password_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull()
-}, (table) => [uniqueIndex("users_username_unique").on(table.username)]);
+}, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
 
 export const UserPreferences = AppSchema.table("user_preferences", {
   userId: uuid("user_id").primaryKey().references(() => Users.id, { onDelete: "cascade" }),

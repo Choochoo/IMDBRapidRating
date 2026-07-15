@@ -264,7 +264,7 @@ export class RapidRaterApp {
 
   SetSignedInUser(user) {
     this.User = user;
-    this.Elements.accountBadge.textContent = user?.email || user?.displayName || user?.username || "Signed in";
+    this.Elements.accountBadge.textContent = user?.email || "Signed in";
     this.Elements.signOut.hidden = false;
     this.Elements.authLanding.hidden = true;
   }

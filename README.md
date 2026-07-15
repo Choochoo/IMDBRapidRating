@@ -60,7 +60,7 @@ Copy `settings.env.example` to `.runtime/settings.env`, provide a dedicated Post
 npm run key:generate
 npm run db:migrate
 # Optional: administrators can still create an account from the command line.
-npm run user:create -- jared "Jared"
+npm run user:create -- you@example.com
 ```
 
 ```powershell

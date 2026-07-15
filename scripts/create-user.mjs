@@ -2,24 +2,26 @@ import { LoadLocalEnv } from "../server/env.mjs";
 import { CreateDatabase } from "../server/db/client.mjs";
 import { RunMigrations } from "../server/db/migrate.mjs";
 import { CreateAccountStore } from "../server/account-store.mjs";
-import { HashPassword } from "../server/auth.mjs";
+import { HashPassword, RegistrationSchema } from "../server/auth.mjs";
 import path from "node:path";
 
 process.env.IMDB_RAPID_RATER_HOME ||= path.join(process.cwd(), ".runtime");
 LoadLocalEnv(process.cwd());
-const username = String(process.argv[2] || "").trim().toLowerCase();
-const displayName = String(process.argv[3] || username).trim();
-if (!username)
-  throw new Error("Usage: npm run user:create -- <username> [display name]");
+const email = String(process.argv[2] || "").trim().toLowerCase();
+if (!email)
+  throw new Error("Usage: npm run user:create -- <email>");
 const password = await ReadHiddenPassword("Password (8+ characters): ");
+const account = RegistrationSchema.safeParse({ email, password });
+if (!account.success)
+  throw new Error(account.error.issues[0]?.message || "Enter a valid email address and password.");
 const { pool, db } = CreateDatabase();
 try {
   await RunMigrations(pool);
   const store = CreateAccountStore({ pool, db });
-  if (await store.findUserByUsername(username))
-    throw new Error("That username already exists.");
-  await store.createUser({ username, displayName, passwordHash: await HashPassword(password) });
-  console.log(`Created Rapid Rater account: ${username}`);
+  if (await store.findUserByEmail(account.data.email))
+    throw new Error("An account already exists for that email address.");
+  await store.createUser({ email: account.data.email, passwordHash: await HashPassword(account.data.password) });
+  console.log(`Created Rapid Rater account: ${account.data.email}`);
 } finally {
   await pool.end();
 }

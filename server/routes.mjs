@@ -200,15 +200,11 @@ function Invalid(response) {
 }
 
 function PublicUser(user) {
-  if (user.email)
-    return { id: user.id, email: user.email };
-  return { id: user.id, email: "", username: user.username, displayName: user.displayName };
+  return { id: user.id, email: user.email };
 }
 
 function SessionUser(request) {
-  if (request.session.email)
-    return { id: request.session.userId, email: request.session.email };
-  return { id: request.session.userId, email: "", username: request.session.username, displayName: request.session.displayName };
+  return { id: request.session.userId, email: request.session.email };
 }
 
 function DestroySession(request) {

@@ -5,10 +5,9 @@ import { z } from "zod";
 import { SafeTokenEquals } from "./security/secrets.mjs";
 
 const LoginSchema = z.object({
-  email: z.string().trim().max(254).optional(),
-  username: z.string().trim().max(160).optional(),
+  email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(8).max(1024)
-}).refine((value) => Boolean(value.email || value.username));
+});
 
 export const RegistrationSchema = z.object({
   email: z.string().trim().toLowerCase()
@@ -58,10 +57,7 @@ export async function Authenticate(store, body) {
   const parsed = LoginSchema.safeParse(body);
   if (!parsed.success)
     return null;
-  const identifier = parsed.data.email || parsed.data.username;
-  const user = store.findUserByLogin
-    ? await store.findUserByLogin(identifier)
-    : await store.findUserByUsername(identifier);
+  const user = await store.findUserByEmail(parsed.data.email);
   if (!user || !await argon2.verify(user.passwordHash, parsed.data.password))
     return null;
   return user;
@@ -84,9 +80,7 @@ export function RegenerateSession(request, user) {
     if (error)
       return reject(error);
     request.session.userId = user.id;
-    request.session.username = user.username;
-    request.session.email = user.email || "";
-    request.session.displayName = user.displayName;
+    request.session.email = user.email;
     EnsureCsrfToken(request);
     request.session.save((saveError) => saveError ? reject(saveError) : resolve());
   }));

@@ -6,21 +6,9 @@ import { DecryptSecret, EncryptSecret } from "./security/secrets.mjs";
 
 export function CreateAccountStore({ db, pool }) {
   return {
-    async findUserByUsername(username) {
-      const rows = await db.select().from(Users).where(sql`lower(${Users.username}) = ${NormalizeUsername(username)}`).limit(1);
-      return rows[0] || null;
-    },
-
     async findUserByEmail(email) {
       const rows = await db.select().from(Users).where(sql`lower(${Users.email}) = ${NormalizeEmail(email)}`).limit(1);
       return rows[0] || null;
-    },
-
-    async findUserByLogin(identifier) {
-      const value = String(identifier || "").trim();
-      if (value.includes("@"))
-        return await this.findUserByEmail(value);
-      return await this.findUserByUsername(value);
     },
 
     async findUserById(id) {
@@ -28,15 +16,12 @@ export function CreateAccountStore({ db, pool }) {
       return rows[0] || null;
     },
 
-    async createUser({ username, email, displayName, passwordHash }) {
+    async createUser({ email, passwordHash }) {
       const now = new Date();
       const id = randomUUID();
-      const normalizedEmail = email ? NormalizeEmail(email) : null;
       const user = {
         id,
-        username: username ? NormalizeUsername(username) : `acct_${id}`,
-        email: normalizedEmail,
-        displayName: displayName || normalizedEmail || username,
+        email: NormalizeEmail(email),
         passwordHash,
         createdAt: now,
         updatedAt: now
@@ -103,10 +88,6 @@ export function CreateAccountStore({ db, pool }) {
       return rows[0] ? DecryptSecret(rows[0], userId, secretType) : "";
     }
   };
-}
-
-function NormalizeUsername(value) {
-  return String(value || "").trim().toLowerCase();
 }
 
 function NormalizeEmail(value) {

@@ -1,12 +1,11 @@
 CREATE TABLE IF NOT EXISTS {{schema}}.users (
   id uuid PRIMARY KEY,
-  username varchar(160) NOT NULL,
-  display_name varchar(160) NOT NULL,
+  email varchar(254) NOT NULL,
   password_hash text NOT NULL,
   created_at timestamptz NOT NULL,
   updated_at timestamptz NOT NULL
 );
-CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique ON {{schema}}.users (lower(username));
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique ON {{schema}}.users (lower(email));
 
 CREATE TABLE IF NOT EXISTS {{schema}}.user_preferences (
   user_id uuid PRIMARY KEY REFERENCES {{schema}}.users(id) ON DELETE CASCADE,

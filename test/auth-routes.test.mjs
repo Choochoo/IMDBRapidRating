@@ -7,10 +7,10 @@ import { HashPassword } from "../server/auth.mjs";
 import { RegisterApiRoutes } from "../server/routes.mjs";
 
 test("email login establishes an authenticated session and CSRF protects account writes", async () => {
-  const user = { id: "8133d1c3-2620-42fa-85e6-6b6ec6204301", email: "jared@example.com", username: "acct_test", displayName: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = { id: "8133d1c3-2620-42fa-85e6-6b6ec6204301", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   let saved = null;
   const store = {
-    findUserByLogin: async (email) => email === "jared@example.com" ? user : null,
+    findUserByEmail: async (email) => email === "jared@example.com" ? user : null,
     getBundle: async () => ({
       preferences: { openAiModel: "", openAiModelLag: 2 },
       state: { payload: {}, ratingsCsv: "", revision: 0 },
@@ -49,7 +49,7 @@ test("public registration validates input, creates account data, and signs the u
   const store = {
     findUserByEmail: async (email) => users.get(email) || null,
     createUser: async ({ email, passwordHash }) => {
-      const user = { id: "504cf9d4-7f91-4621-9c53-dcc27e13620c", email, username: "acct_test", displayName: email, passwordHash };
+      const user = { id: "504cf9d4-7f91-4621-9c53-dcc27e13620c", email, passwordHash };
       users.set(email, user);
       return user;
     },
@@ -84,7 +84,7 @@ test("public registration validates input, creates account data, and signs the u
 });
 
 test("registration rejects missing CSRF and unavailable email addresses", async () => {
-  const existing = { id: "99d197c6-b299-4ee8-a223-616a4c5fb575", email: "taken@example.com", username: "acct_taken", displayName: "taken@example.com" };
+  const existing = { id: "99d197c6-b299-4ee8-a223-616a4c5fb575", email: "taken@example.com" };
   const store = {
     findUserByEmail: async (email) => email === "taken@example.com" ? existing : null,
     createUser: async () => { throw new Error("createUser should not run"); }
