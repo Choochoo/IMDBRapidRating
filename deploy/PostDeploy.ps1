@@ -48,13 +48,14 @@ $requiredVariables = @{
     "DATA_ENCRYPTION_KEY"        = "RapidRater.DataEncryptionKey"
     "APP_ORIGIN"                 = "RapidRater.AppOrigin"
 }
-$settingsLines = @(
+$defaultSettingsLines = @(
     "RAPID_RATER_DB_SCHEMA=imdb_rapid_rater",
     "TRUST_PROXY_HOPS=1",
     "IMDB_DRY_RUN=false",
-    "PUBLIC_REGISTRATION_ENABLED=true",
-    "APP_ALLOWED_ORIGINS=http://ourfilmclub.duckdns.org:5012"
+    "PUBLIC_REGISTRATION_ENABLED=true"
 )
+$settingsLines = $defaultSettingsLines
+$usePreservedSettings = $false
 foreach ($entry in $requiredVariables.GetEnumerator()) {
     $value = $null
     if ($null -ne $OctopusParameters -and $OctopusParameters.ContainsKey($entry.Value)) {
@@ -64,14 +65,17 @@ foreach ($entry in $requiredVariables.GetEnumerator()) {
         if (-not (Test-Path -LiteralPath $runtimeSettingsPath)) {
             throw "Required sensitive Octopus variable '$($entry.Value)' is not configured."
         }
-        $settingsLines = $null
+        $usePreservedSettings = $true
         break
     }
     $settingsLines += "$($entry.Key)=$value"
 }
-if ($null -ne $settingsLines) {
-    $settingsLines | Set-Content -LiteralPath $runtimeSettingsPath -Encoding UTF8
+if ($usePreservedSettings) {
+    $settingsLines = Get-Content -LiteralPath $runtimeSettingsPath
 }
+$settingsLines = @($settingsLines | Where-Object { $_ -notmatch '^APP_ALLOWED_ORIGINS=' })
+$settingsLines += "APP_ALLOWED_ORIGINS=http://ourfilmclub.duckdns.org:5012"
+$settingsLines | Set-Content -LiteralPath $runtimeSettingsPath -Encoding UTF8
 icacls $runtimeSettingsPath /inheritance:r /grant:r "SYSTEM:F" "Administrators:F" /Q | Out-Null
 
 Write-Host "Installing production dependencies..."
