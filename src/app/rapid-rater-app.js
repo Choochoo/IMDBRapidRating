@@ -202,7 +202,7 @@ export class RapidRaterApp {
     this.Elements.loginSubmit.disabled = true;
     try {
       const payload = await this.RequestJson("./api/auth/login", "POST", {
-        username: this.Elements.loginUsername.value,
+        email: this.Elements.loginEmail.value,
         password: this.Elements.loginPassword.value
       });
       this.CsrfToken = payload.csrfToken;
@@ -228,8 +228,7 @@ export class RapidRaterApp {
     this.Elements.signupSubmit.disabled = true;
     try {
       const payload = await this.RequestJson("./api/auth/register", "POST", {
-        username: this.Elements.signupUsername.value,
-        displayName: this.Elements.signupDisplayName.value,
+        email: this.Elements.signupEmail.value,
         password
       });
       this.CsrfToken = payload.csrfToken;
@@ -249,7 +248,7 @@ export class RapidRaterApp {
     this.Elements.signOut.hidden = true;
     this.Elements.showSignup.hidden = !registrationEnabled;
     this.ShowAuthPanel("login");
-    window.setTimeout(() => this.Elements.loginUsername.focus(), 0);
+    window.setTimeout(() => this.Elements.loginEmail.focus(), 0);
   }
 
   ShowAuthPanel(panel) {
@@ -260,12 +259,12 @@ export class RapidRaterApp {
     this.Elements.showSignup.classList.toggle("active", signup);
     this.Elements.loginError.textContent = "";
     this.Elements.signupError.textContent = "";
-    window.setTimeout(() => (signup ? this.Elements.signupUsername : this.Elements.loginUsername).focus(), 0);
+    window.setTimeout(() => (signup ? this.Elements.signupEmail : this.Elements.loginEmail).focus(), 0);
   }
 
   SetSignedInUser(user) {
     this.User = user;
-    this.Elements.accountBadge.textContent = user?.displayName || user?.username || "Signed in";
+    this.Elements.accountBadge.textContent = user?.email || user?.displayName || user?.username || "Signed in";
     this.Elements.signOut.hidden = false;
     this.Elements.authLanding.hidden = true;
   }

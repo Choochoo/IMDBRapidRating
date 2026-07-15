@@ -11,14 +11,36 @@ export function CreateAccountStore({ db, pool }) {
       return rows[0] || null;
     },
 
+    async findUserByEmail(email) {
+      const rows = await db.select().from(Users).where(sql`lower(${Users.email}) = ${NormalizeEmail(email)}`).limit(1);
+      return rows[0] || null;
+    },
+
+    async findUserByLogin(identifier) {
+      const value = String(identifier || "").trim();
+      if (value.includes("@"))
+        return await this.findUserByEmail(value);
+      return await this.findUserByUsername(value);
+    },
+
     async findUserById(id) {
       const rows = await db.select().from(Users).where(eq(Users.id, id)).limit(1);
       return rows[0] || null;
     },
 
-    async createUser({ username, displayName, passwordHash }) {
+    async createUser({ username, email, displayName, passwordHash }) {
       const now = new Date();
-      const user = { id: randomUUID(), username: NormalizeUsername(username), displayName, passwordHash, createdAt: now, updatedAt: now };
+      const id = randomUUID();
+      const normalizedEmail = email ? NormalizeEmail(email) : null;
+      const user = {
+        id,
+        username: username ? NormalizeUsername(username) : `acct_${id}`,
+        email: normalizedEmail,
+        displayName: displayName || normalizedEmail || username,
+        passwordHash,
+        createdAt: now,
+        updatedAt: now
+      };
       await db.transaction(async (tx) => {
         await tx.insert(Users).values(user);
         await tx.insert(UserPreferences).values({ userId: user.id, updatedAt: now });
@@ -84,6 +106,10 @@ export function CreateAccountStore({ db, pool }) {
 }
 
 function NormalizeUsername(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function NormalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
 

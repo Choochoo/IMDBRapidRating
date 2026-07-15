@@ -5,20 +5,17 @@ import { z } from "zod";
 import { SafeTokenEquals } from "./security/secrets.mjs";
 
 const LoginSchema = z.object({
-  username: z.string().trim().min(1).max(160),
-  password: z.string().min(12).max(1024)
-});
+  email: z.string().trim().max(254).optional(),
+  username: z.string().trim().max(160).optional(),
+  password: z.string().min(8).max(1024)
+}).refine((value) => Boolean(value.email || value.username));
 
 export const RegistrationSchema = z.object({
-  username: z.string().trim().toLowerCase()
-    .min(3, "Username must contain at least 3 characters.")
-    .max(32, "Username cannot exceed 32 characters.")
-    .regex(/^[a-z0-9][a-z0-9_-]*$/, "Use letters, numbers, underscores, or hyphens."),
-  displayName: z.string().trim()
-    .min(1, "Display name is required.")
-    .max(80, "Display name cannot exceed 80 characters."),
+  email: z.string().trim().toLowerCase()
+    .email("Enter a valid email address.")
+    .max(254, "Email address is too long."),
   password: z.string()
-    .min(12, "Password must contain at least 12 characters.")
+    .min(8, "Password must contain at least 8 characters.")
     .max(128, "Password cannot exceed 128 characters.")
 });
 
@@ -61,16 +58,19 @@ export async function Authenticate(store, body) {
   const parsed = LoginSchema.safeParse(body);
   if (!parsed.success)
     return null;
-  const user = await store.findUserByUsername(parsed.data.username);
+  const identifier = parsed.data.email || parsed.data.username;
+  const user = store.findUserByLogin
+    ? await store.findUserByLogin(identifier)
+    : await store.findUserByUsername(identifier);
   if (!user || !await argon2.verify(user.passwordHash, parsed.data.password))
     return null;
   return user;
 }
 
 export async function HashPassword(password) {
-  const parsed = z.string().min(12).max(128).safeParse(password);
+  const parsed = z.string().min(8).max(128).safeParse(password);
   if (!parsed.success)
-    throw new Error("Password must contain between 12 and 128 characters.");
+    throw new Error("Password must contain between 8 and 128 characters.");
   return await argon2.hash(parsed.data, {
     type: argon2.argon2id,
     memoryCost: 19456,
@@ -85,6 +85,7 @@ export function RegenerateSession(request, user) {
       return reject(error);
     request.session.userId = user.id;
     request.session.username = user.username;
+    request.session.email = user.email || "";
     request.session.displayName = user.displayName;
     EnsureCsrfToken(request);
     request.session.save((saveError) => saveError ? reject(saveError) : resolve());

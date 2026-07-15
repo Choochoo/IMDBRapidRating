@@ -34,7 +34,7 @@ export function RegisterApiRoutes(app, { store, pool, rootPath }) {
   app.post("/api/auth/login", LoginLimiter, RequireCsrf, async (request, response) => {
     const user = await Authenticate(store, request.body);
     if (!user)
-      return response.status(401).json({ ok: false, code: "INVALID_LOGIN", error: "The username or password is incorrect." });
+      return response.status(401).json({ ok: false, code: "INVALID_LOGIN", error: "The email or password is incorrect." });
     await RegenerateSession(request, user);
     response.json({ ok: true, csrfToken: request.session.csrfToken, user: PublicUser(user) });
   });
@@ -45,19 +45,18 @@ export function RegisterApiRoutes(app, { store, pool, rootPath }) {
     const parsed = RegistrationSchema.safeParse(request.body);
     if (!parsed.success)
       return response.status(422).json({ ok: false, code: "INVALID_REGISTRATION", error: parsed.error.issues[0]?.message || "The account details are invalid." });
-    if (await store.findUserByUsername(parsed.data.username))
-      return UsernameUnavailable(response);
+    if (await store.findUserByEmail(parsed.data.email))
+      return EmailUnavailable(response);
     try {
       const user = await store.createUser({
-        username: parsed.data.username,
-        displayName: parsed.data.displayName,
+        email: parsed.data.email,
         passwordHash: await HashPassword(parsed.data.password)
       });
       await RegenerateSession(request, user);
       response.status(201).json({ ok: true, csrfToken: request.session.csrfToken, user: PublicUser(user) });
     } catch (error) {
       if (error?.code === "23505")
-        return UsernameUnavailable(response);
+        return EmailUnavailable(response);
       throw error;
     }
   });
@@ -201,11 +200,15 @@ function Invalid(response) {
 }
 
 function PublicUser(user) {
-  return { id: user.id, username: user.username, displayName: user.displayName };
+  if (user.email)
+    return { id: user.id, email: user.email };
+  return { id: user.id, email: "", username: user.username, displayName: user.displayName };
 }
 
 function SessionUser(request) {
-  return { id: request.session.userId, username: request.session.username, displayName: request.session.displayName };
+  if (request.session.email)
+    return { id: request.session.userId, email: request.session.email };
+  return { id: request.session.userId, email: "", username: request.session.username, displayName: request.session.displayName };
 }
 
 function DestroySession(request) {
@@ -220,6 +223,6 @@ function IsRegistrationEnabled() {
   return String(process.env.PUBLIC_REGISTRATION_ENABLED ?? "true").toLowerCase() !== "false";
 }
 
-function UsernameUnavailable(response) {
-  return response.status(409).json({ ok: false, code: "USERNAME_UNAVAILABLE", error: "That username is unavailable. Choose another one." });
+function EmailUnavailable(response) {
+  return response.status(409).json({ ok: false, code: "EMAIL_UNAVAILABLE", error: "An account already exists for that email address." });
 }

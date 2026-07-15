@@ -11,7 +11,7 @@ const username = String(process.argv[2] || "").trim().toLowerCase();
 const displayName = String(process.argv[3] || username).trim();
 if (!username)
   throw new Error("Usage: npm run user:create -- <username> [display name]");
-const password = await ReadHiddenPassword("Password (12+ characters): ");
+const password = await ReadHiddenPassword("Password (8+ characters): ");
 const { pool, db } = CreateDatabase();
 try {
   await RunMigrations(pool);

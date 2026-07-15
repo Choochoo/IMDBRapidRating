@@ -6,11 +6,11 @@ import test from "node:test";
 import { HashPassword } from "../server/auth.mjs";
 import { RegisterApiRoutes } from "../server/routes.mjs";
 
-test("login establishes an authenticated session and CSRF protects account writes", async () => {
-  const user = { id: "8133d1c3-2620-42fa-85e6-6b6ec6204301", username: "jared", displayName: "Jared", passwordHash: await HashPassword("correct horse battery staple") };
+test("email login establishes an authenticated session and CSRF protects account writes", async () => {
+  const user = { id: "8133d1c3-2620-42fa-85e6-6b6ec6204301", email: "jared@example.com", username: "acct_test", displayName: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   let saved = null;
   const store = {
-    findUserByUsername: async (username) => username === "jared" ? user : null,
+    findUserByLogin: async (email) => email === "jared@example.com" ? user : null,
     getBundle: async () => ({
       preferences: { openAiModel: "", openAiModelLag: 2 },
       state: { payload: {}, ratingsCsv: "", revision: 0 },
@@ -29,12 +29,12 @@ test("login establishes an authenticated session and CSRF protects account write
 
   const anonymous = await agent.get("/api/auth/session").expect(200);
   assert.equal(anonymous.body.authenticated, false);
-  await agent.post("/api/auth/login").send({ username: "jared", password: "correct horse battery staple" }).expect(403);
+  await agent.post("/api/auth/login").send({ email: "jared@example.com", password: "correct horse battery staple" }).expect(403);
   const login = await agent.post("/api/auth/login")
     .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ username: "jared", password: "correct horse battery staple" })
+    .send({ email: "jared@example.com", password: "correct horse battery staple" })
     .expect(200);
-  assert.equal(login.body.user.username, "jared");
+  assert.equal(login.body.user.email, "jared@example.com");
 
   await agent.put("/api/account/state").send({ payload: {}, ratingsCsv: "", revision: 0 }).expect(403);
   await agent.put("/api/account/state")
@@ -47,10 +47,10 @@ test("login establishes an authenticated session and CSRF protects account write
 test("public registration validates input, creates account data, and signs the user in", async () => {
   const users = new Map();
   const store = {
-    findUserByUsername: async (username) => users.get(username) || null,
-    createUser: async ({ username, displayName, passwordHash }) => {
-      const user = { id: "504cf9d4-7f91-4621-9c53-dcc27e13620c", username, displayName, passwordHash };
-      users.set(username, user);
+    findUserByEmail: async (email) => users.get(email) || null,
+    createUser: async ({ email, passwordHash }) => {
+      const user = { id: "504cf9d4-7f91-4621-9c53-dcc27e13620c", email, username: "acct_test", displayName: email, passwordHash };
+      users.set(email, user);
       return user;
     },
     getBundle: async () => ({
@@ -66,37 +66,39 @@ test("public registration validates input, creates account data, and signs the u
 
   await agent.post("/api/auth/register")
     .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ username: "x", displayName: "X", password: "a sufficiently long password" })
+    .send({ email: "not-an-email", password: "12345678" })
     .expect(422);
 
   const created = await agent.post("/api/auth/register")
     .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ username: "New_User", displayName: "New User", password: "a sufficiently long password" })
+    .send({ email: "New_User@Example.com", password: "12345678" })
     .expect(201);
-  assert.equal(created.body.user.username, "new_user");
-  assert.notEqual(users.get("new_user").passwordHash, "a sufficiently long password");
+  assert.equal(created.body.user.email, "new_user@example.com");
+  assert.equal("username" in created.body.user, false);
+  assert.equal("displayName" in created.body.user, false);
+  assert.notEqual(users.get("new_user@example.com").passwordHash, "12345678");
 
   const session = await agent.get("/api/auth/session").expect(200);
   assert.equal(session.body.authenticated, true);
-  assert.equal(session.body.user.displayName, "New User");
+  assert.equal(session.body.user.email, "new_user@example.com");
 });
 
-test("registration rejects missing CSRF and unavailable usernames", async () => {
-  const existing = { id: "99d197c6-b299-4ee8-a223-616a4c5fb575", username: "taken", displayName: "Taken" };
+test("registration rejects missing CSRF and unavailable email addresses", async () => {
+  const existing = { id: "99d197c6-b299-4ee8-a223-616a4c5fb575", email: "taken@example.com", username: "acct_taken", displayName: "taken@example.com" };
   const store = {
-    findUserByUsername: async (username) => username === "taken" ? existing : null,
+    findUserByEmail: async (email) => email === "taken@example.com" ? existing : null,
     createUser: async () => { throw new Error("createUser should not run"); }
   };
   const agent = request.agent(BuildTestApp(store));
   await agent.post("/api/auth/register")
-    .send({ username: "taken", displayName: "Taken", password: "a sufficiently long password" })
+    .send({ email: "taken@example.com", password: "12345678" })
     .expect(403);
   const anonymous = await agent.get("/api/auth/session").expect(200);
   const duplicate = await agent.post("/api/auth/register")
     .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ username: "taken", displayName: "Taken", password: "a sufficiently long password" })
+    .send({ email: "taken@example.com", password: "12345678" })
     .expect(409);
-  assert.equal(duplicate.body.code, "USERNAME_UNAVAILABLE");
+  assert.equal(duplicate.body.code, "EMAIL_UNAVAILABLE");
 });
 
 function BuildTestApp(store) {

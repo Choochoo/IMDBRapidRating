@@ -6,6 +6,7 @@ export const AppSchema = pgSchema(ReadDatabaseSchema());
 export const Users = AppSchema.table("users", {
   id: uuid("id").primaryKey(),
   username: varchar("username", { length: 160 }).notNull(),
+  email: varchar("email", { length: 254 }),
   displayName: varchar("display_name", { length: 160 }).notNull(),
   passwordHash: text("password_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
