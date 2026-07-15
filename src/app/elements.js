@@ -42,6 +42,8 @@ function BuildAccountElements() {
 
 function BuildMobileElements() {
   return {
+    appHeader: document.querySelector(".app-header"),
+    mobileHeaderToggle: Element("mobile-header-toggle"),
     mobileRatingBar: Element("mobile-rating-bar"),
     touchNotSeen: Element("touch-not-seen"),
     touchUndo: Element("touch-undo")

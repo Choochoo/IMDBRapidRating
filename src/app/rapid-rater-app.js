@@ -178,6 +178,7 @@ export class RapidRaterApp {
   }
 
   BindMobileEvents() {
+    this.Elements.mobileHeaderToggle.addEventListener("click", () => this.ToggleMobileHeader());
     this.Elements.mobileRatingBar.addEventListener("click", (event) => {
       const button = event.target.closest("[data-touch-rating]");
       if (button)
@@ -185,6 +186,12 @@ export class RapidRaterApp {
     });
     this.Elements.touchNotSeen.addEventListener("click", () => this.MarkActive(null, "notSeen"));
     this.Elements.touchUndo.addEventListener("click", () => this.Undo());
+  }
+
+  ToggleMobileHeader() {
+    const expanded = this.Elements.mobileHeaderToggle.getAttribute("aria-expanded") !== "true";
+    this.Elements.mobileHeaderToggle.setAttribute("aria-expanded", String(expanded));
+    this.Elements.appHeader.classList.toggle("mobile-dashboard-open", expanded);
   }
 
   async BeginSession() {

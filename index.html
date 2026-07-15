@@ -29,62 +29,69 @@
         </div>
       </div>
 
-      <div class="header-workspace">
-        <div class="stats" aria-label="rating progress">
-          <div class="stat">
-            <strong id="rated-count">0</strong>
-            <span>Rated</span>
+      <button type="button" class="mobile-header-toggle" id="mobile-header-toggle" aria-expanded="false" aria-controls="header-dashboard">
+        <span>Progress &amp; tools</span>
+        <span class="mobile-header-toggle-icon" aria-hidden="true"></span>
+      </button>
+
+      <div class="header-dashboard" id="header-dashboard">
+        <div class="header-workspace">
+          <div class="stats" aria-label="rating progress">
+            <div class="stat">
+              <strong id="rated-count">0</strong>
+              <span>Rated</span>
+            </div>
+            <div class="stat">
+              <strong id="skip-count">0</strong>
+              <span>Not seen</span>
+            </div>
+            <div class="stat">
+              <strong id="imported-count">0</strong>
+              <span>CSV</span>
+            </div>
+            <div class="stat">
+              <strong id="sent-count">0</strong>
+              <span>Sent</span>
+            </div>
+            <div class="stat">
+              <strong id="failed-count">0</strong>
+              <span>Failed</span>
+            </div>
+            <div class="stat">
+              <strong id="pool-status">Ready</strong>
+              <span>Pool</span>
+            </div>
           </div>
-          <div class="stat">
-            <strong id="skip-count">0</strong>
-            <span>Not seen</span>
-          </div>
-          <div class="stat">
-            <strong id="imported-count">0</strong>
-            <span>CSV</span>
-          </div>
-          <div class="stat">
-            <strong id="sent-count">0</strong>
-            <span>Sent</span>
-          </div>
-          <div class="stat">
-            <strong id="failed-count">0</strong>
-            <span>Failed</span>
-          </div>
-          <div class="stat">
-            <strong id="pool-status">Ready</strong>
-            <span>Pool</span>
+
+          <div class="toolbar" aria-label="actions">
+            <button type="button" id="retry-failed">Retry IMDb failures</button>
+            <button type="button" class="file-action" id="load-json" title="Restore a Rapid Rater backup">
+              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+              <span>Restore Progress</span>
+            </button>
+            <button type="button" class="file-action" id="import-csv" title="Add ratings downloaded from IMDb">
+              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/><path d="m14 15 2 2 4-4"/></svg>
+              <span>Add IMDb Ratings</span>
+            </button>
+            <button type="button" class="file-action" id="export-csv" title="Download your ratings as a spreadsheet">
+              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+              <span>Download Ratings</span>
+            </button>
+            <button type="button" class="file-action backup-action" id="export-json" title="Download a complete backup of your progress">
+              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>
+              <span>Back Up Progress</span>
+            </button>
           </div>
         </div>
 
-        <div class="toolbar" aria-label="actions">
-          <button type="button" id="retry-failed">Retry IMDb failures</button>
-          <button type="button" class="file-action" id="load-json" title="Restore a Rapid Rater backup">
-            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
-            <span>Restore Progress</span>
-          </button>
-          <button type="button" class="file-action" id="import-csv" title="Add ratings downloaded from IMDb">
-            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/><path d="m14 15 2 2 4-4"/></svg>
-            <span>Add IMDb Ratings</span>
-          </button>
-          <button type="button" class="file-action" id="export-csv" title="Download your ratings as a spreadsheet">
-            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-            <span>Download Ratings</span>
-          </button>
-          <button type="button" class="file-action backup-action" id="export-json" title="Download a complete backup of your progress">
-            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>
-            <span>Back Up Progress</span>
-          </button>
-        </div>
+        <section class="failure-panel" id="failure-panel" hidden>
+          <div class="failure-header">
+            <strong>IMDb write failures</strong>
+            <button type="button" id="failure-retry">Retry IMDb failures</button>
+          </div>
+          <ul id="failure-list"></ul>
+        </section>
       </div>
-
-      <section class="failure-panel" id="failure-panel" hidden>
-        <div class="failure-header">
-          <strong>IMDb write failures</strong>
-          <button type="button" id="failure-retry">Retry IMDb failures</button>
-        </div>
-        <ul id="failure-list"></ul>
-      </section>
 
       <input id="json-file" type="file" accept=".json,application/json" hidden>
       <input id="csv-file" type="file" accept=".csv,text/csv" hidden>
