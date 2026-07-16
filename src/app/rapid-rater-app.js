@@ -301,6 +301,9 @@ export class RapidRaterApp {
 
   ShowView(view) {
     this.State.activeView = view;
+    document.body.classList.toggle("sync-active", view === "sync");
+    this.Elements.mobileHeaderToggle.setAttribute("aria-expanded", "false");
+    this.Elements.appHeader.classList.remove("mobile-dashboard-open");
     this.Elements.raterView.hidden = view !== "rater";
     this.Elements.recommendationView.hidden = view !== "ai";
     this.Elements.syncView.hidden = view !== "sync";

@@ -20,6 +20,13 @@
           <button type="button" class="view-tab" id="tab-ai">AI Picks</button>
           <button type="button" class="view-tab" id="tab-sync">Sync Movies</button>
         </nav>
+        <button type="button" class="mobile-header-toggle" id="mobile-header-toggle" aria-expanded="false" aria-controls="header-dashboard">
+          <span>Tools &amp; setup</span>
+          <span class="mobile-header-toggle-icon" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <div class="header-dashboard" id="header-dashboard">
         <div class="status-strip" aria-label="system status">
           <span class="status-chip account-ready" id="account-badge">Signed out</span>
           <button type="button" class="status-chip" id="sign-out" hidden>Sign out</button>
@@ -28,14 +35,6 @@
           <span class="status-chip" id="source-badge">Loading</span>
           <span class="status-chip live-missing" id="live-badge">Live checking</span>
         </div>
-      </div>
-
-      <button type="button" class="mobile-header-toggle" id="mobile-header-toggle" aria-expanded="false" aria-controls="header-dashboard">
-        <span>Progress &amp; tools</span>
-        <span class="mobile-header-toggle-icon" aria-hidden="true"></span>
-      </button>
-
-      <div class="header-dashboard" id="header-dashboard">
         <div class="header-workspace">
           <div class="stats" aria-label="rating progress">
             <div class="stat">
@@ -159,11 +158,11 @@
             <div class="sync-next-step">
               <strong>After it downloads</strong>
               <p>Open Letterboxd, choose the downloaded CSV, review the matches, and confirm.</p>
-              <a class="button-link" href="https://letterboxd.com/import/" target="_blank" rel="noopener noreferrer">Open Letterboxd import</a>
+              <a class="sync-text-link" href="https://letterboxd.com/import/" target="_blank" rel="noopener noreferrer">Open Letterboxd import ↗</a>
             </div>
             <div class="sync-secondary-action">
-              <span><strong id="sync-imdb-count">0</strong> IMDb ratings loaded</span>
-              <button type="button" id="sync-import-imdb">Update from IMDb CSV</button>
+              <p><strong id="sync-imdb-count">0</strong> IMDb ratings loaded. Need the latest copy? <a class="sync-text-link" href="https://www.imdb.com/list/ratings/" target="_blank" rel="noopener noreferrer">Open IMDb ratings and choose Export ↗</a></p>
+              <button type="button" id="sync-import-imdb">Import downloaded IMDb CSV</button>
             </div>
           </section>
 
@@ -174,7 +173,7 @@
             <h2>Bring Letterboxd movies into this site</h2>
             <p>First download your Letterboxd data. Then import that ZIP here—do not unzip it.</p>
             <div class="sync-letterboxd-actions">
-              <a class="button-link" href="https://letterboxd.com/user/exportdata/" target="_blank" rel="noopener noreferrer">1. Download from Letterboxd</a>
+              <p>1. <a class="sync-text-link" href="https://letterboxd.com/user/exportdata/" target="_blank" rel="noopener noreferrer">Download your Letterboxd export ZIP ↗</a></p>
               <button type="button" class="sync-primary-action" id="sync-import-letterboxd">2. Import Letterboxd ZIP here</button>
             </div>
             <div class="sync-source" id="sync-source">No Letterboxd export imported yet.</div>
