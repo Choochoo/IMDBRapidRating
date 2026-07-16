@@ -17,7 +17,8 @@
         </div>
         <nav class="view-tabs" aria-label="app views">
           <button type="button" class="view-tab active" id="tab-rater">Rapid Rater</button>
-          <button type="button" class="view-tab" id="tab-ai">AI Recommendations</button>
+          <button type="button" class="view-tab" id="tab-ai">AI Picks</button>
+          <button type="button" class="view-tab" id="tab-sync">Sync Movies</button>
         </nav>
         <div class="status-strip" aria-label="system status">
           <span class="status-chip account-ready" id="account-badge">Signed out</span>
@@ -95,6 +96,7 @@
 
       <input id="json-file" type="file" accept=".json,application/json" hidden>
       <input id="csv-file" type="file" accept=".csv,text/csv" hidden>
+      <input id="letterboxd-file" type="file" accept=".zip,.csv,application/zip,text/csv" hidden>
     </header>
 
     <main class="stage" id="rater-view">
@@ -133,6 +135,61 @@
           <div><strong>Building your watchlist</strong><span id="recommendation-loading-copy">Reading the signals in your ratings...</span></div>
         </div>
         <div class="recommendation-grid" id="recommendation-grid"></div>
+      </div>
+    </section>
+
+    <section class="sync-view" id="sync-view" hidden>
+      <div class="sync-shell">
+        <header class="sync-header">
+          <div>
+            <span class="recommendation-kicker">PostgreSQL is the hub</span>
+            <h1>Sync IMDb &amp; Letterboxd</h1>
+            <p>Combine both rating collections without deleting either one. Missing IMDb ratings can be sent automatically; Letterboxd changes are prepared as an exact-match import file.</p>
+          </div>
+          <div class="sync-import-actions">
+            <button type="button" id="sync-import-imdb">Import latest IMDb CSV</button>
+            <button type="button" class="backup-action" id="sync-import-letterboxd">Import Letterboxd export</button>
+          </div>
+        </header>
+
+        <div class="sync-status" id="sync-status" role="status">Import a Letterboxd export to compare it with the IMDb ratings in this account.</div>
+        <div class="sync-source" id="sync-source">No Letterboxd export imported yet.</div>
+
+        <div class="sync-stat-grid" aria-label="collection sync summary">
+          <div class="sync-stat"><span>IMDb</span><strong id="sync-imdb-count">0</strong><small>confirmed ratings</small></div>
+          <div class="sync-stat"><span>Letterboxd</span><strong id="sync-letterboxd-count">0</strong><small>rated films</small></div>
+          <div class="sync-stat sync-good"><span>Matched</span><strong id="sync-matched-count">0</strong><small>same rating</small></div>
+          <div class="sync-stat sync-imdb"><span>To IMDb</span><strong id="sync-to-imdb-count">0</strong><small>ready to send</small></div>
+          <div class="sync-stat sync-letterboxd"><span>To Letterboxd</span><strong id="sync-to-letterboxd-count">0</strong><small>ready to export</small></div>
+          <div class="sync-stat sync-warning"><span>Conflicts</span><strong id="sync-conflict-count">0</strong><small>different ratings</small></div>
+          <div class="sync-stat"><span>Needs match</span><strong id="sync-unmatched-count">0</strong><small>no IMDb ID found</small></div>
+          <div class="sync-stat"><span>Watched only</span><strong id="sync-watched-only-count">0</strong><small>no rating to copy</small></div>
+        </div>
+
+        <div class="sync-run-panel">
+          <div>
+            <h2>Run the union sync</h2>
+            <p>The app never invents ratings and never deletes from either service.</p>
+          </div>
+          <div class="sync-run-actions">
+            <button type="button" id="sync-to-imdb" disabled>Send missing ratings to IMDb</button>
+            <button type="button" id="sync-to-letterboxd" disabled>Download Letterboxd sync</button>
+            <a class="button-link" href="https://letterboxd.com/import/" target="_blank" rel="noopener noreferrer">Open Letterboxd import</a>
+          </div>
+        </div>
+
+        <div class="sync-detail-grid">
+          <section class="sync-detail-card">
+            <h2>Rating conflicts</h2>
+            <p>These already exist on both services. Sync mode leaves them unchanged so it never overwrites a rating.</p>
+            <ul id="sync-conflict-list"><li>No conflicts.</li></ul>
+          </section>
+          <section class="sync-detail-card">
+            <h2>Needs an IMDb match</h2>
+            <p>These titles remain safely stored in PostgreSQL but cannot be sent to IMDb automatically.</p>
+            <ul id="sync-unmatched-list"><li>No unmatched rated titles.</li></ul>
+          </section>
+        </div>
       </div>
     </section>
 

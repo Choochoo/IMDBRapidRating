@@ -38,6 +38,7 @@ export function BuildStoragePayload(state) {
     signature: state.signature,
     ratings: state.ratings,
     recommendationExclusions: state.recommendationExclusions || [],
+    letterboxd: state.letterboxd || BuildLetterboxdState(),
     history: state.history.slice(-200),
     queueIds: state.queue.map((movie) => movie.ttId)
   };
@@ -50,9 +51,20 @@ function BuildMovieState() {
     queue: [],
     ratings: {},
     recommendationExclusions: [],
+    letterboxd: BuildLetterboxdState(),
     history: [],
     sourceLabel: "",
     signature: ""
+  };
+}
+
+function BuildLetterboxdState() {
+  return {
+    sourceName: "",
+    importedAt: "",
+    files: [],
+    importedRows: 0,
+    items: []
   };
 }
 

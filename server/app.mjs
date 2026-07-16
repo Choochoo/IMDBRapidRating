@@ -50,6 +50,7 @@ export function RegisterStaticRoutes(app, rootPath) {
   app.use("/data", express.static(path.join(rootPath, "data"), { index: false, maxAge: 0 }));
   app.get("/shared/csv.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/csv.js")));
   app.get("/vendor/bootstrap.min.css", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/bootstrap/dist/css/bootstrap.min.css")));
+  app.get("/vendor/fflate.js", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/fflate/esm/browser.js")));
   app.get("/favicon.svg", (_request, response) => response.sendFile(path.join(rootPath, "favicon.svg")));
   app.get("/", (_request, response) => response.sendFile(path.join(rootPath, "index.html")));
 }

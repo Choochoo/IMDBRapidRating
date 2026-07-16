@@ -8,6 +8,7 @@ export function BuildElements() {
     ...BuildFileElements(),
     ...BuildCookieElements(),
     ...BuildAiElements(),
+    ...BuildSyncElements(),
     ...BuildAccountElements(),
     ...BuildMobileElements()
   };
@@ -54,8 +55,10 @@ function BuildViewElements() {
   return {
     tabRater: Element("tab-rater"),
     tabAi: Element("tab-ai"),
+    tabSync: Element("tab-sync"),
     raterView: Element("rater-view"),
     recommendationView: Element("recommendation-view"),
+    syncView: Element("sync-view"),
     ratingFooter: Element("rating-footer")
   };
 }
@@ -93,7 +96,29 @@ function BuildEmptyElements() {
 function BuildFileElements() {
   return {
     jsonFile: Element("json-file"),
-    csvFile: Element("csv-file")
+    csvFile: Element("csv-file"),
+    letterboxdFile: Element("letterboxd-file")
+  };
+}
+
+function BuildSyncElements() {
+  return {
+    syncImportImdb: Element("sync-import-imdb"),
+    syncImportLetterboxd: Element("sync-import-letterboxd"),
+    syncToImdb: Element("sync-to-imdb"),
+    syncToLetterboxd: Element("sync-to-letterboxd"),
+    syncStatus: Element("sync-status"),
+    syncSource: Element("sync-source"),
+    syncImdbCount: Element("sync-imdb-count"),
+    syncLetterboxdCount: Element("sync-letterboxd-count"),
+    syncMatchedCount: Element("sync-matched-count"),
+    syncToImdbCount: Element("sync-to-imdb-count"),
+    syncToLetterboxdCount: Element("sync-to-letterboxd-count"),
+    syncConflictCount: Element("sync-conflict-count"),
+    syncUnmatchedCount: Element("sync-unmatched-count"),
+    syncWatchedOnlyCount: Element("sync-watched-only-count"),
+    syncConflictList: Element("sync-conflict-list"),
+    syncUnmatchedList: Element("sync-unmatched-list")
   };
 }
 

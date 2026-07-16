@@ -1,5 +1,12 @@
 import { Config } from "./config.js";
 import { BuildElements } from "./elements.js";
+import {
+  BuildLetterboxdCsvFiles,
+  ImportLetterboxdCsvFiles,
+  NormalizeLetterboxdState,
+  ReconcileCollections
+} from "./collection-sync.js";
+import { BuildLetterboxdDownload, ReadLetterboxdUpload } from "./letterboxd-zip.js";
 import { DescribeSource, MakeSignature, NormalizeMovieList } from "./movies.js";
 import {
   BuildAiPreferenceProfile,
@@ -103,6 +110,7 @@ export class RapidRaterApp {
     this.BindToolbarEvents();
     this.BindSetupEvents();
     this.BindAiEvents();
+    this.BindSyncEvents();
     this.BindFileEvents();
     this.BindAccountEvents();
     this.BindMobileEvents();
@@ -112,6 +120,7 @@ export class RapidRaterApp {
   BindViewEvents() {
     this.Elements.tabRater.addEventListener("click", () => this.ShowView("rater"));
     this.Elements.tabAi.addEventListener("click", () => this.ShowView("ai"));
+    this.Elements.tabSync.addEventListener("click", () => this.ShowView("sync"));
   }
 
   BindToolbarEvents() {
@@ -167,6 +176,14 @@ export class RapidRaterApp {
   BindFileEvents() {
     this.Elements.jsonFile.addEventListener("change", (event) => this.HandleJsonFile(event));
     this.Elements.csvFile.addEventListener("change", (event) => this.HandleCsvFile(event));
+    this.Elements.letterboxdFile.addEventListener("change", (event) => this.HandleLetterboxdFile(event).catch((error) => this.ShowSyncError(error)));
+  }
+
+  BindSyncEvents() {
+    this.Elements.syncImportImdb.addEventListener("click", () => this.Elements.csvFile.click());
+    this.Elements.syncImportLetterboxd.addEventListener("click", () => this.Elements.letterboxdFile.click());
+    this.Elements.syncToImdb.addEventListener("click", () => this.SyncMissingRatingsToImdb().catch((error) => this.ShowSyncError(error)));
+    this.Elements.syncToLetterboxd.addEventListener("click", () => this.DownloadLetterboxdSync().catch((error) => this.ShowSyncError(error)));
   }
 
   BindAccountEvents() {
@@ -286,11 +303,16 @@ export class RapidRaterApp {
     this.State.activeView = view;
     this.Elements.raterView.hidden = view !== "rater";
     this.Elements.recommendationView.hidden = view !== "ai";
+    this.Elements.syncView.hidden = view !== "sync";
     this.Elements.ratingFooter.hidden = view !== "rater";
+    this.Elements.mobileRatingBar.hidden = view !== "rater";
     this.Elements.tabRater.classList.toggle("active", view === "rater");
     this.Elements.tabAi.classList.toggle("active", view === "ai");
+    this.Elements.tabSync.classList.toggle("active", view === "sync");
     if (view === "ai")
       this.UpdateRecommendationStatus();
+    if (view === "sync")
+      this.UpdateSyncView();
   }
 
   HandleKeyDown(event) {
@@ -452,6 +474,7 @@ export class RapidRaterApp {
       ...status
     });
     this.UpdateStats();
+    this.UpdateSyncView();
   }
 
   async RefreshAiStatus() {
@@ -480,6 +503,7 @@ export class RapidRaterApp {
     const saved = this.ReadStoredState();
     this.State.ratings = saved.ratings || {};
     this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(saved.recommendationExclusions);
+    this.State.letterboxd = NormalizeLetterboxdState(saved.letterboxd, this.State.movieById);
     this.State.history = Array.isArray(saved.history) ? saved.history : [];
     this.State.savedQueueIds = saved.signature === this.State.signature && Array.isArray(saved.queueIds) ? saved.queueIds : null;
   }
@@ -818,6 +842,7 @@ export class RapidRaterApp {
         this.RequireImdbSignIn();
     }
     this.SubmitActiveIds.delete(record.ttId);
+    this.UpdateSyncView();
     this.ScheduleNextSubmit();
   }
 
@@ -841,6 +866,7 @@ export class RapidRaterApp {
       return;
     Object.assign(current, { submitStatus: "submitted", submitError: "", submittedAt: new Date().toISOString(), imdbEchoRating: rating });
     this.SaveLocalState();
+    this.UpdateSyncView();
   }
 
   MarkSubmitFailure(ttId, error) {
@@ -849,6 +875,7 @@ export class RapidRaterApp {
       return;
     Object.assign(current, { submitStatus: "failed", submitError: error, submittedAt: "" });
     this.SaveLocalState();
+    this.UpdateSyncView();
   }
 
   ScheduleNextSubmit() {
@@ -1163,6 +1190,136 @@ export class RapidRaterApp {
     this.Elements.empty.hidden = false;
   }
 
+  ReadSyncPlan() {
+    return ReconcileCollections(this.State.ratings, this.State.letterboxd);
+  }
+
+  UpdateSyncView() {
+    const plan = this.ReadSyncPlan();
+    this.Elements.syncImdbCount.textContent = FormatCount(plan.imdbCount);
+    this.Elements.syncLetterboxdCount.textContent = FormatCount(plan.letterboxdCount);
+    this.Elements.syncMatchedCount.textContent = FormatCount(plan.matched);
+    this.Elements.syncToImdbCount.textContent = FormatCount(plan.toImdb.length);
+    this.Elements.syncToLetterboxdCount.textContent = FormatCount(plan.toLetterboxd.length);
+    this.Elements.syncConflictCount.textContent = FormatCount(plan.conflicts.length);
+    this.Elements.syncUnmatchedCount.textContent = FormatCount(plan.unmatched.length);
+    this.Elements.syncWatchedOnlyCount.textContent = FormatCount(plan.watchedOnly.length);
+    const readyForImdb = plan.toImdb.some((action) => this.CanQueueSyncAction(action));
+    this.Elements.syncToImdb.disabled = !this.State.live.configured || !readyForImdb;
+    this.Elements.syncToLetterboxd.disabled = plan.toLetterboxd.length === 0;
+    this.Elements.syncConflictList.innerHTML = this.RenderSyncConflicts(plan.conflicts);
+    this.Elements.syncUnmatchedList.innerHTML = this.RenderSyncUnmatched(plan.unmatched);
+    this.UpdateSyncSource();
+    this.UpdateSyncStatus(plan);
+  }
+
+  UpdateSyncSource() {
+    if (!this.State.letterboxd.importedAt) {
+      this.Elements.syncSource.textContent = "No Letterboxd export imported yet.";
+      return;
+    }
+    const imported = new Date(this.State.letterboxd.importedAt).toLocaleString();
+    const fileCount = this.State.letterboxd.files.length;
+    this.Elements.syncSource.textContent = `${this.State.letterboxd.sourceName || "Letterboxd export"} imported ${imported} from ${FormatCount(fileCount)} recognized CSV files.`;
+  }
+
+  UpdateSyncStatus(plan) {
+    if (!this.State.letterboxd.importedAt) {
+      this.Elements.syncStatus.textContent = "Import a Letterboxd export to compare it with the IMDb ratings in this account.";
+      return;
+    }
+    const ready = plan.toImdb.length + plan.toLetterboxd.length;
+    if (!ready && !plan.conflicts.length && !plan.unmatched.length) {
+      this.Elements.syncStatus.textContent = "IMDb, Letterboxd, and this account are aligned for every rated title in the imported snapshots.";
+      return;
+    }
+    this.Elements.syncStatus.textContent = `${FormatCount(ready)} rating changes are ready. ${FormatCount(plan.conflicts.length)} conflicts and ${FormatCount(plan.unmatched.length)} unmatched titles require review.`;
+  }
+
+  CanQueueSyncAction(action) {
+    const ttId = action?.record?.ttId || action?.item?.ttId || "";
+    return Boolean(ttId) && !this.SubmitQueuedIds.has(ttId) && !this.SubmitActiveIds.has(ttId);
+  }
+
+  RenderSyncConflicts(conflicts) {
+    if (!conflicts.length)
+      return "<li>No conflicts.</li>";
+    return conflicts.slice(0, 12).map((item) => `<li><strong>${EscapeHtml(item.title)}</strong>${item.year ? ` (${EscapeHtml(item.year)})` : ""}: IMDb ${item.imdbRating}/10, Letterboxd ${item.letterboxdRating}/10</li>`).join("");
+  }
+
+  RenderSyncUnmatched(items) {
+    if (!items.length)
+      return "<li>No unmatched rated titles.</li>";
+    return items.slice(0, 12).map((item) => `<li><strong>${EscapeHtml(item.title)}</strong>${item.year ? ` (${EscapeHtml(item.year)})` : ""}: Letterboxd ${item.rating}/10</li>`).join("");
+  }
+
+  async HandleLetterboxdFile(event) {
+    const file = this.TakeSelectedFile(event);
+    if (!file)
+      return;
+    this.Elements.syncStatus.textContent = "Reading the Letterboxd export...";
+    const files = await ReadLetterboxdUpload(file);
+    this.State.letterboxd = ImportLetterboxdCsvFiles(files, this.State.movieById, file.name);
+    this.SaveLocalState();
+    await this.FlushStateSync();
+    this.UpdateSyncView();
+    this.ShowToast(`Imported <strong>${FormatCount(this.State.letterboxd.items.length)}</strong> Letterboxd movies into this account`);
+  }
+
+  async SyncMissingRatingsToImdb() {
+    if (!this.State.live.configured)
+      return this.RequireImdbSignIn();
+    const plan = this.ReadSyncPlan();
+    let queued = 0;
+    for (const action of plan.toImdb) {
+      const record = action.record || this.CreateLetterboxdSyncRating(action.item);
+      if (!record)
+        continue;
+      if (!action.record)
+        this.State.ratings[record.ttId] = record;
+      if (this.EnqueueLiveSubmit(record.ttId))
+        queued++;
+    }
+    this.RebuildQueue();
+    this.SaveLocalState();
+    this.UpdateStats();
+    this.UpdateSyncView();
+    this.ShowToast(`Queued <strong>${FormatCount(queued)}</strong> Letterboxd ratings for IMDb`);
+  }
+
+  CreateLetterboxdSyncRating(item) {
+    if (!/^tt\d+$/.test(item?.ttId || "") || !Number.isInteger(item?.rating))
+      return null;
+    const movie = this.State.movieById.get(item.ttId) || item;
+    const record = BuildRatingRecord(movie, item.rating, "rated", this.State.live.configured);
+    record.at = item.ratedAt || item.watchedAt || record.at;
+    record.syncSource = "letterboxd";
+    return record;
+  }
+
+  async DownloadLetterboxdSync() {
+    const plan = this.ReadSyncPlan();
+    const files = BuildLetterboxdCsvFiles(plan.toLetterboxd);
+    if (!files.length)
+      return this.ShowToast("Letterboxd already has every rated IMDb title from the imported snapshot.");
+    this.Elements.syncToLetterboxd.disabled = true;
+    this.Elements.syncToLetterboxd.textContent = "Preparing download...";
+    try {
+      const download = await BuildLetterboxdDownload(files);
+      this.Download(download.name, download.content, download.type);
+      this.Elements.syncStatus.textContent = `${FormatCount(plan.toLetterboxd.length)} missing ratings are ready for Letterboxd. Import the downloaded ${files.length === 1 ? "CSV" : "ZIP contents"}, review the preview, then confirm on Letterboxd.`;
+    } finally {
+      this.Elements.syncToLetterboxd.textContent = "Download Letterboxd sync";
+      this.Elements.syncToLetterboxd.disabled = false;
+    }
+  }
+
+  ShowSyncError(error) {
+    const message = error?.message || "Collection sync failed.";
+    this.Elements.syncStatus.textContent = message;
+    this.ShowToast(EscapeHtml(message));
+  }
+
   async HandleJsonFile(event) {
     const file = this.TakeSelectedFile(event);
     if (!file)
@@ -1184,7 +1341,8 @@ export class RapidRaterApp {
     const source = this.ReadRatingSaveSource(parsed);
     const ratings = this.NormalizeSavedRatings(source.ratings);
     const exclusions = this.NormalizeRecommendationExclusions(source.recommendationExclusions);
-    if (!Object.keys(ratings).length && !exclusions.length)
+    const letterboxd = NormalizeLetterboxdState(source.letterboxd, this.State.movieById);
+    if (!Object.keys(ratings).length && !exclusions.length && !letterboxd.items.length)
       throw new Error("The selected JSON file does not contain any Rapid Rater records.");
     this.ApplyImportedRatingSave(source, ratings);
     const counts = CountRatings(ratings);
@@ -1193,11 +1351,12 @@ export class RapidRaterApp {
 
   ReadRatingSaveSource(parsed) {
     if (Array.isArray(parsed))
-      return { ratings: parsed, recommendationExclusions: [], history: [], queueIds: null, signature: "", merge: true };
+      return { ratings: parsed, recommendationExclusions: [], letterboxd: {}, history: [], queueIds: null, signature: "", merge: true };
     const state = parsed.state || parsed;
     return {
       ratings: state.ratings || {},
       recommendationExclusions: Array.isArray(state.recommendationExclusions) ? state.recommendationExclusions : [],
+      letterboxd: state.letterboxd || {},
       history: Array.isArray(state.history) ? state.history : [],
       queueIds: Array.isArray(state.queueIds) ? state.queueIds : null,
       signature: String(state.signature || ""),
@@ -1223,13 +1382,16 @@ export class RapidRaterApp {
 
   ApplyImportedRatingSave(source, ratings) {
     this.State.ratings = source.merge ? { ...this.State.ratings, ...ratings } : ratings;
-    if (!source.merge)
+    if (!source.merge) {
       this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(source.recommendationExclusions);
+      this.State.letterboxd = NormalizeLetterboxdState(source.letterboxd, this.State.movieById);
+    }
     this.State.history = source.merge ? this.State.history : source.history.slice(-200);
     this.State.savedQueueIds = source.signature === this.State.signature ? source.queueIds : null;
     this.RebuildQueue();
     this.SaveLocalState();
     this.Render();
+    this.UpdateSyncView();
   }
 
   async HandleCsvFile(event) {
@@ -1242,6 +1404,7 @@ export class RapidRaterApp {
     this.RebuildQueue();
     this.SaveLocalState();
     this.Render();
+    this.UpdateSyncView();
     this.ShowToast(this.BuildCsvSyncToast(result));
   }
 
@@ -1274,7 +1437,7 @@ export class RapidRaterApp {
   ExportJson() {
     const save = {
       format: "imdb-rapid-rater-save",
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       state: BuildStoragePayload(this.State)
     };

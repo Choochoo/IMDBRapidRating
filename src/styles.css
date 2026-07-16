@@ -288,6 +288,179 @@ button:focus-visible {
   margin: 0 auto;
 }
 
+.sync-view {
+  flex: 1 1 0;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding: 32px 24px 56px;
+  background:
+    radial-gradient(circle at 12% 4%, rgba(66, 189, 104, 0.09), transparent 30%),
+    radial-gradient(circle at 88% 0, rgba(224, 173, 71, 0.08), transparent 28%);
+}
+
+.sync-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.sync-header,
+.sync-run-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid rgba(66, 189, 104, 0.25);
+  border-radius: 16px;
+  background: linear-gradient(120deg, rgba(66, 189, 104, 0.09), rgba(224, 173, 71, 0.04)), var(--surface-soft);
+}
+
+.sync-header h1 {
+  margin: 6px 0 9px;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.sync-header p,
+.sync-run-panel p,
+.sync-detail-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.sync-import-actions,
+.sync-run-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sync-status {
+  margin: 16px 4px 4px;
+  color: #d8e0e8;
+  line-height: 1.45;
+}
+
+.sync-source {
+  margin: 0 4px 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sync-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.sync-stat {
+  min-height: 112px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.sync-stat span,
+.sync-stat small,
+.sync-stat strong {
+  display: block;
+}
+
+.sync-stat span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sync-stat strong {
+  margin: 10px 0 7px;
+  font-size: 29px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sync-stat small {
+  color: var(--muted);
+}
+
+.sync-good {
+  border-color: rgba(66, 189, 104, 0.35);
+}
+
+.sync-imdb {
+  border-color: rgba(126, 182, 255, 0.34);
+}
+
+.sync-letterboxd {
+  border-color: rgba(224, 173, 71, 0.36);
+}
+
+.sync-warning {
+  border-color: rgba(242, 107, 99, 0.36);
+}
+
+.sync-run-panel {
+  align-items: center;
+  margin-bottom: 18px;
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.sync-run-panel h2,
+.sync-detail-card h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.button-link:hover {
+  border-color: rgba(224, 173, 71, 0.55);
+  color: #f7d58e;
+}
+
+.sync-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.sync-detail-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.sync-detail-card ul {
+  display: grid;
+  gap: 7px;
+  margin: 14px 0 0;
+  padding-left: 20px;
+  color: #c4cdd7;
+}
+
 .recommendation-header {
   display: flex;
   justify-content: space-between;
@@ -1387,6 +1560,7 @@ button:focus-visible {
   .app-header,
   .stage,
   .recommendation-view,
+  .sync-view,
   .footer {
     padding-left: 12px;
     padding-right: 12px;
@@ -1420,7 +1594,7 @@ button:focus-visible {
 
   .view-tabs {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 4px;
   }
 
@@ -1564,9 +1738,22 @@ button:focus-visible {
   }
 
   .recommendation-actions,
-  .model-controls {
+  .model-controls,
+  .sync-import-actions,
+  .sync-run-actions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .sync-header,
+  .sync-run-panel {
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .sync-import-actions,
+  .sync-run-actions {
+    width: 100%;
   }
 
   .recommendation-grid {

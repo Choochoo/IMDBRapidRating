@@ -16,6 +16,7 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 - Generates AI movie recommendations from a minimized ratings profile.
 - Saves an account-specific “Don’t recommend again” list and excludes those movies from future AI picks.
 - Synchronizes ratings, queue progress, imports, and preferences through PostgreSQL.
+- Reconciles IMDb ratings with a Letterboxd export and builds a non-destructive union sync plan.
 - Encrypts IMDb connection data and API keys with AES-256-GCM before storing them.
 - Writes ratings `1` through `10` back to IMDb when live mode is configured.
 - Updates the saved ratings CSV after successful live IMDb writes.
@@ -115,6 +116,18 @@ Rating actions update synchronized account data after IMDb confirms the write. F
 If a rating was already submitted to IMDb, `Backspace` or `Delete` removes or restores the IMDb rating before restoring the card locally. If IMDb rejects the reversal, local state is left unchanged so the browser does not drift out of sync.
 
 IMDb does not provide a public CSV upload/import API. If you rate movies directly on IMDb outside this app, export your IMDb ratings CSV again and import the fresh file here.
+
+## Sync IMDb And Letterboxd
+
+Open **Sync Movies** to use the signed-in account's PostgreSQL state as the hub between IMDb and Letterboxd.
+
+1. Import the latest IMDb ratings CSV.
+2. Import the ZIP downloaded from Letterboxd's data export page. Individual `ratings.csv`, `watched.csv`, `diary.csv`, and `watchlist.csv` files are also accepted.
+3. Review matched ratings, missing titles, conflicts, watched-only films, and titles that need an IMDb match.
+4. Choose **Send missing ratings to IMDb** to queue Letterboxd-only ratings through the existing IMDb connection.
+5. Choose **Download Letterboxd sync** and import the generated CSV on Letterboxd. Large exports are divided into files below Letterboxd's 1 MB import limit and downloaded as a ZIP.
+
+Sync mode never deletes from either service and never invents a rating for a watched-only film. Letterboxd's public importer requires the member to review and confirm the generated file; the app does not store a Letterboxd password or session cookie.
 
 ## Back Up Or Restore A Save
 
