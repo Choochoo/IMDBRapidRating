@@ -133,7 +133,7 @@ export function BuildLetterboxdCsvFiles(records, maxBytes = 950_000) {
   }
   chunks.push(current.join("\n"));
   return chunks.map((content, index) => ({
-    name: chunks.length === 1 ? "rapid-rater-to-letterboxd.csv" : `rapid-rater-to-letterboxd-${String(index + 1).padStart(2, "0")}.csv`,
+    name: chunks.length === 1 ? "upload-this-to-letterboxd.csv" : `upload-to-letterboxd-${String(index + 1).padStart(2, "0")}.csv`,
     content
   }));
 }

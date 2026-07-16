@@ -1233,7 +1233,7 @@ export class RapidRaterApp {
       this.Elements.syncStatus.textContent = "IMDb, Letterboxd, and this account are aligned for every rated title in the imported snapshots.";
       return;
     }
-    this.Elements.syncStatus.textContent = `${FormatCount(ready)} rating changes are ready. ${FormatCount(plan.conflicts.length)} conflicts and ${FormatCount(plan.unmatched.length)} unmatched titles require review.`;
+    this.Elements.syncStatus.textContent = `${FormatCount(plan.toLetterboxd.length)} ready for Letterboxd. ${FormatCount(plan.toImdb.length)} ready for IMDb. Open “Review matches and problems” for ${FormatCount(plan.conflicts.length)} different ratings and ${FormatCount(plan.unmatched.length)} unmatched titles.`;
   }
 
   CanQueueSyncAction(action) {
@@ -1307,9 +1307,11 @@ export class RapidRaterApp {
     try {
       const download = await BuildLetterboxdDownload(files);
       this.Download(download.name, download.content, download.type);
-      this.Elements.syncStatus.textContent = `${FormatCount(plan.toLetterboxd.length)} missing ratings are ready for Letterboxd. Import the downloaded ${files.length === 1 ? "CSV" : "ZIP contents"}, review the preview, then confirm on Letterboxd.`;
+      this.Elements.syncStatus.textContent = files.length === 1
+        ? `Downloaded ${download.name}. Now click “Open Letterboxd import” and upload that CSV.`
+        : `Downloaded ${download.name}. Unzip it, then upload each CSV inside to Letterboxd one at a time.`;
     } finally {
-      this.Elements.syncToLetterboxd.textContent = "Download Letterboxd sync";
+      this.Elements.syncToLetterboxd.textContent = "Download file to upload to Letterboxd";
       this.Elements.syncToLetterboxd.disabled = false;
     }
   }

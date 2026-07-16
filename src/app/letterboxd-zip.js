@@ -24,5 +24,5 @@ export async function BuildLetterboxdDownload(files) {
 
 export function BuildLetterboxdArchive(files, tools) {
   const entries = Object.fromEntries(files.map((file) => [file.name, tools.strToU8(file.content)]));
-  return { name: "rapid-rater-to-letterboxd.zip", content: tools.zipSync(entries, { level: 6 }), type: "application/zip" };
+  return { name: "letterboxd-import-files-unzip-me.zip", content: tools.zipSync(entries, { level: 6 }), type: "application/zip" };
 }

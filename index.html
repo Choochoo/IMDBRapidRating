@@ -141,55 +141,71 @@
     <section class="sync-view" id="sync-view" hidden>
       <div class="sync-shell">
         <header class="sync-header">
-          <div>
-            <span class="recommendation-kicker">PostgreSQL is the hub</span>
-            <h1>Sync IMDb &amp; Letterboxd</h1>
-            <p>Combine both rating collections without deleting either one. Missing IMDb ratings can be sent automatically; Letterboxd changes are prepared as an exact-match import file.</p>
-          </div>
-          <div class="sync-import-actions">
-            <button type="button" id="sync-import-imdb">Import latest IMDb CSV</button>
-            <button type="button" class="backup-action" id="sync-import-letterboxd">Import Letterboxd export</button>
-          </div>
+          <span class="recommendation-kicker">Choose a direction</span>
+          <h1>Where do you want your movies to go?</h1>
+          <p>Choose IMDb → Letterboxd to prepare a Letterboxd upload. Choose Letterboxd → This site → IMDb to bring ratings the other way.</p>
         </header>
 
-        <div class="sync-status" id="sync-status" role="status">Import a Letterboxd export to compare it with the IMDb ratings in this account.</div>
-        <div class="sync-source" id="sync-source">No Letterboxd export imported yet.</div>
+        <div class="sync-status" id="sync-status" role="status">Import your Letterboxd export once so the site can see which movies are missing.</div>
 
-        <div class="sync-stat-grid" aria-label="collection sync summary">
-          <div class="sync-stat"><span>IMDb</span><strong id="sync-imdb-count">0</strong><small>confirmed ratings</small></div>
-          <div class="sync-stat"><span>Letterboxd</span><strong id="sync-letterboxd-count">0</strong><small>rated films</small></div>
-          <div class="sync-stat sync-good"><span>Matched</span><strong id="sync-matched-count">0</strong><small>same rating</small></div>
-          <div class="sync-stat sync-imdb"><span>To IMDb</span><strong id="sync-to-imdb-count">0</strong><small>ready to send</small></div>
-          <div class="sync-stat sync-letterboxd"><span>To Letterboxd</span><strong id="sync-to-letterboxd-count">0</strong><small>ready to export</small></div>
-          <div class="sync-stat sync-warning"><span>Conflicts</span><strong id="sync-conflict-count">0</strong><small>different ratings</small></div>
-          <div class="sync-stat"><span>Needs match</span><strong id="sync-unmatched-count">0</strong><small>no IMDb ID found</small></div>
-          <div class="sync-stat"><span>Watched only</span><strong id="sync-watched-only-count">0</strong><small>no rating to copy</small></div>
-        </div>
-
-        <div class="sync-run-panel">
-          <div>
-            <h2>Run the union sync</h2>
-            <p>The app never invents ratings and never deletes from either service.</p>
-          </div>
-          <div class="sync-run-actions">
-            <button type="button" id="sync-to-imdb" disabled>Send missing ratings to IMDb</button>
-            <button type="button" id="sync-to-letterboxd" disabled>Download Letterboxd sync</button>
-            <a class="button-link" href="https://letterboxd.com/import/" target="_blank" rel="noopener noreferrer">Open Letterboxd import</a>
-          </div>
-        </div>
-
-        <div class="sync-detail-grid">
-          <section class="sync-detail-card">
-            <h2>Rating conflicts</h2>
-            <p>These already exist on both services. Sync mode leaves them unchanged so it never overwrites a rating.</p>
-            <ul id="sync-conflict-list"><li>No conflicts.</li></ul>
+        <div class="sync-path-grid">
+          <section class="sync-path-card sync-path-imdb">
+            <div class="sync-route" aria-label="IMDb to Letterboxd">
+              <span>IMDb</span><b aria-hidden="true">→</b><span>Letterboxd</span>
+            </div>
+            <h2>Put IMDb movies on Letterboxd</h2>
+            <p>The site found <strong id="sync-to-letterboxd-count">0</strong> IMDb ratings that are not in your last Letterboxd import.</p>
+            <button type="button" class="sync-primary-action" id="sync-to-letterboxd" disabled>Download file to upload to Letterboxd</button>
+            <div class="sync-next-step">
+              <strong>After it downloads</strong>
+              <p>Open Letterboxd, choose the downloaded CSV, review the matches, and confirm.</p>
+              <a class="button-link" href="https://letterboxd.com/import/" target="_blank" rel="noopener noreferrer">Open Letterboxd import</a>
+            </div>
+            <div class="sync-secondary-action">
+              <span><strong id="sync-imdb-count">0</strong> IMDb ratings loaded</span>
+              <button type="button" id="sync-import-imdb">Update from IMDb CSV</button>
+            </div>
           </section>
-          <section class="sync-detail-card">
-            <h2>Needs an IMDb match</h2>
-            <p>These titles remain safely stored in PostgreSQL but cannot be sent to IMDb automatically.</p>
-            <ul id="sync-unmatched-list"><li>No unmatched rated titles.</li></ul>
+
+          <section class="sync-path-card sync-path-letterboxd">
+            <div class="sync-route" aria-label="Letterboxd to this site and IMDb">
+              <span>Letterboxd</span><b aria-hidden="true">→</b><span>This site</span><b aria-hidden="true">→</b><span>IMDb</span>
+            </div>
+            <h2>Bring Letterboxd movies into this site</h2>
+            <p>First download your Letterboxd data. Then import that ZIP here—do not unzip it.</p>
+            <div class="sync-letterboxd-actions">
+              <a class="button-link" href="https://letterboxd.com/user/exportdata/" target="_blank" rel="noopener noreferrer">1. Download from Letterboxd</a>
+              <button type="button" class="sync-primary-action" id="sync-import-letterboxd">2. Import Letterboxd ZIP here</button>
+            </div>
+            <div class="sync-source" id="sync-source">No Letterboxd export imported yet.</div>
+            <div class="sync-send-step">
+              <p><strong id="sync-letterboxd-count">0</strong> Letterboxd ratings loaded. <strong id="sync-to-imdb-count">0</strong> are missing from IMDb.</p>
+              <button type="button" id="sync-to-imdb" disabled>Send missing Letterboxd ratings to IMDb</button>
+            </div>
           </section>
         </div>
+
+        <details class="sync-review">
+          <summary>Review matches and problems</summary>
+          <div class="sync-review-counts">
+            <span><strong id="sync-matched-count">0</strong> matching ratings</span>
+            <span><strong id="sync-conflict-count">0</strong> different ratings</span>
+            <span><strong id="sync-unmatched-count">0</strong> titles need a match</span>
+            <span><strong id="sync-watched-only-count">0</strong> watched without a rating</span>
+          </div>
+          <div class="sync-detail-grid">
+            <section class="sync-detail-card">
+              <h2>Different ratings</h2>
+              <p>The site leaves these unchanged so it does not overwrite your choice.</p>
+              <ul id="sync-conflict-list"><li>No conflicts.</li></ul>
+            </section>
+            <section class="sync-detail-card">
+              <h2>Titles that need a match</h2>
+              <p>These stay saved in your account but cannot be sent to IMDb automatically.</p>
+              <ul id="sync-unmatched-list"><li>No unmatched rated titles.</li></ul>
+            </section>
+          </div>
+        </details>
       </div>
     </section>
 

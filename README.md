@@ -125,7 +125,7 @@ Open **Sync Movies** to use the signed-in account's PostgreSQL state as the hub 
 2. Import the ZIP downloaded from Letterboxd's data export page. Individual `ratings.csv`, `watched.csv`, `diary.csv`, and `watchlist.csv` files are also accepted.
 3. Review matched ratings, missing titles, conflicts, watched-only films, and titles that need an IMDb match.
 4. Choose **Send missing ratings to IMDb** to queue Letterboxd-only ratings through the existing IMDb connection.
-5. Choose **Download Letterboxd sync** and import the generated CSV on Letterboxd. Large exports are divided into files below Letterboxd's 1 MB import limit and downloaded as a ZIP.
+5. Under **IMDb → Letterboxd**, choose **Download file to upload to Letterboxd**, then upload the generated CSV on Letterboxd. Large collections download as `letterboxd-import-files-unzip-me.zip`; unzip it and upload each CSV inside separately to stay below Letterboxd's 1 MB limit.
 
 Sync mode never deletes from either service and never invents a rating for a watched-only film. Letterboxd's public importer requires the member to review and confirm the generated file; the app does not store a Letterboxd password or session cookie.
 
