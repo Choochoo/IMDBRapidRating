@@ -1,4 +1,4 @@
-import { integer, jsonb, pgSchema, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigserial, integer, jsonb, pgSchema, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 import { ReadDatabaseSchema } from "./config.mjs";
 
 export const AppSchema = pgSchema(ReadDatabaseSchema());
@@ -25,6 +25,17 @@ export const UserStates = AppSchema.table("user_states", {
   revision: integer("revision").notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull()
 });
+
+export const RecommendationQueue = AppSchema.table("recommendation_queue", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  userId: uuid("user_id").notNull().references(() => Users.id, { onDelete: "cascade" }),
+  itemKey: text("item_key").notNull(),
+  ttId: varchar("tt_id", { length: 32 }).notNull().default(""),
+  title: text("title").notNull(),
+  releaseYear: integer("release_year"),
+  payload: jsonb("payload").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull()
+}, (table) => [uniqueIndex("recommendation_queue_user_item_unique").on(table.userId, table.itemKey)]);
 
 export const UserSecrets = AppSchema.table("user_secrets", {
   userId: uuid("user_id").notNull().references(() => Users.id, { onDelete: "cascade" }),

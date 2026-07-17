@@ -61,7 +61,7 @@ export function RenderRecommendationCard(item, index = 0) {
   return `<article class="recommendation-card" style="--card-index:${index};--tone:${tone}"${RenderRecommendationData(item)}>${RenderRecommendationPoster(item)}${content}</article>`;
 }
 
-export function RenderRecommendationSkeletons(count = 8) {
+export function RenderRecommendationSkeletons(count = 9) {
   return Array.from({ length: count }, (_, index) => `
     <article class="recommendation-card recommendation-skeleton" aria-hidden="true" style="--card-index:${index}">
       <div class="recommendation-poster skeleton-block"></div>
@@ -77,7 +77,7 @@ export function RenderRecommendationSkeletons(count = 8) {
 }
 
 export function RenderRecommendationEmpty() {
-  return `<div class="recommendation-empty"><span aria-hidden="true">&#9734;</span><h2>No picks came back this time</h2><p>Try generating again, or add more ratings so the model has a clearer signal.</p></div>`;
+  return `<div class="recommendation-empty"><span aria-hidden="true">&#9734;</span><h2>Your recommendation watchlist is empty</h2><p>Choose how many picks you want, then generate a new batch.</p></div>`;
 }
 
 export function ToneFromId(ttId) {

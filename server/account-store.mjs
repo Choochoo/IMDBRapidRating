@@ -78,6 +78,61 @@ export function CreateAccountStore({ db, pool }) {
       return Number(result.rows[0]?.revision) || 0;
     },
 
+    async listRecommendationQueue(userId) {
+      const result = await pool.query(
+        `SELECT payload FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 ORDER BY id`,
+        [userId]
+      );
+      return result.rows.map((row) => row.payload);
+    },
+
+    async appendRecommendationQueue(userId, items) {
+      if (!Array.isArray(items) || !items.length)
+        return [];
+      const records = items.map((item) => ({
+        itemKey: item.queueKey,
+        ttId: item.ttId || "",
+        title: item.title,
+        year: item.year || null,
+        payload: item
+      }));
+      const result = await pool.query(
+        `INSERT INTO ${Qualified("recommendation_queue")} (user_id, item_key, tt_id, title, release_year, payload) SELECT $1, item->>'itemKey', COALESCE(item->>'ttId', ''), item->>'title', NULLIF(item->>'year', '')::integer, item->'payload' FROM jsonb_array_elements($2::jsonb) AS item ON CONFLICT DO NOTHING RETURNING payload`,
+        [userId, JSON.stringify(records)]
+      );
+      return result.rows.map((row) => row.payload);
+    },
+
+    async removeRecommendation(userId, value) {
+      const result = await pool.query(
+        `DELETE FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 AND (item_key=$2 OR ($3 <> '' AND tt_id=$3))`,
+        [userId, value.queueKey || "", value.ttId || ""]
+      );
+      return result.rowCount;
+    },
+
+    async excludeRecommendation(userId, exclusion) {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const updated = await client.query(
+          `UPDATE ${Qualified("user_states")} SET payload=jsonb_set(COALESCE(payload, '{}'::jsonb), '{recommendationExclusions}', COALESCE(payload->'recommendationExclusions', '[]'::jsonb) || jsonb_build_array($2::jsonb), true), revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`,
+          [userId, JSON.stringify(exclusion)]
+        );
+        await client.query(
+          `DELETE FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 AND (item_key=$2 OR ($3 <> '' AND tt_id=$3))`,
+          [userId, exclusion.queueKey || "", exclusion.ttId || ""]
+        );
+        await client.query("COMMIT");
+        return Number(updated.rows[0]?.revision) || 0;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
     async savePreferences(userId, preferences) {
       const now = new Date();
       await db.insert(UserPreferences).values({ userId, ...preferences, updatedAt: now })

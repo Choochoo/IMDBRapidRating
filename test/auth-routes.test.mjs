@@ -105,6 +105,7 @@ test("a successful IMDb rating is committed to account state by the same request
   const user = { id: "0ed7ef61-71e6-4c9b-92ba-76a680af3b2d", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   let recorded = null;
   let deleted = null;
+  let removedRecommendation = null;
   const store = {
     findUserByEmail: async () => user,
     getSecret: async () => "cookie",
@@ -115,6 +116,10 @@ test("a successful IMDb rating is committed to account state by the same request
     deleteRating: async (userId, ttId) => {
       deleted = { userId, ttId };
       return 18;
+    },
+    removeRecommendation: async (userId, value) => {
+      removedRecommendation = { userId, value };
+      return 1;
     }
   };
   const app = BuildTestApp(store, {
@@ -146,6 +151,9 @@ test("a successful IMDb rating is committed to account state by the same request
     submittedAt: recorded.record.submittedAt,
     imdbEchoRating: 8
   });
+  assert.equal(removedRecommendation.userId, user.id);
+  assert.equal(removedRecommendation.value.ttId, "tt0107050");
+  assert.equal(removedRecommendation.value.queueKey, "grumpy old men|1993");
 
   const removed = await agent.delete("/api/rate")
     .set("x-csrf-token", login.body.csrfToken)
@@ -189,6 +197,80 @@ test("not-seen decisions are committed directly to account state", async () => {
     submitStatus: "skipped",
     submitError: "",
     submittedAt: ""
+  });
+});
+
+test("generated picks append to the saved per-user recommendation queue", async () => {
+  const user = { id: "3accb042-54e8-4e14-8eb5-8444d10433b4", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const existing = { queueKey: "heat|1995", ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"], why: { tasteMatch: "Crime" } };
+  const generated = { queueKey: "thief|1981", ttId: "tt0083190", title: "Thief", year: 1981, genres: ["Crime"], why: { tasteMatch: "Crime" } };
+  const queue = [existing];
+  let received = null;
+  const store = {
+    findUserByEmail: async () => user,
+    getBundle: async () => ({ preferences: { openAiModel: "gpt-test", openAiModelLag: 2 } }),
+    getSecret: async () => "openai-key",
+    listRecommendationQueue: async () => [...queue],
+    appendRecommendationQueue: async (_userId, items) => {
+      queue.push(...items);
+      return items;
+    }
+  };
+  const app = BuildTestApp(store, {
+    generateAiRecommendations: async (_rootPath, options) => {
+      received = options;
+      return { status: 200, payload: { ok: true, summary: "A crime double feature.", recommendations: [generated] } };
+    }
+  });
+  const agent = request.agent(app);
+  const anonymous = await agent.get("/api/auth/session").expect(200);
+  const login = await agent.post("/api/auth/login")
+    .set("x-csrf-token", anonymous.body.csrfToken)
+    .send({ email: user.email, password: "correct horse battery staple" })
+    .expect(200);
+
+  const response = await agent.post("/api/ai/recommendations")
+    .set("x-csrf-token", login.body.csrfToken)
+    .send({ count: 9, profile: { ratings: [{ title: "Collateral", year: 2004, genres: ["Crime"], rating: 9 }], exclusions: [] } })
+    .expect(200);
+
+  assert.equal(received.count, 9);
+  assert.deepEqual(received.queue, [existing]);
+  assert.equal(response.body.addedCount, 1);
+  assert.equal(response.body.requestedCount, 9);
+  assert.deepEqual(response.body.recommendations, [existing, generated]);
+});
+
+test("don't recommend moves a saved pick into the account exclusion list", async () => {
+  const user = { id: "a772239d-a772-4489-8ddc-aa0f95071669", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  let saved = null;
+  const store = {
+    findUserByEmail: async () => user,
+    excludeRecommendation: async (userId, exclusion) => {
+      saved = { userId, exclusion };
+      return 31;
+    }
+  };
+  const agent = request.agent(BuildTestApp(store));
+  const anonymous = await agent.get("/api/auth/session").expect(200);
+  const login = await agent.post("/api/auth/login")
+    .set("x-csrf-token", anonymous.body.csrfToken)
+    .send({ email: user.email, password: "correct horse battery staple" })
+    .expect(200);
+
+  const response = await agent.put("/api/account/recommendation-exclusions")
+    .set("x-csrf-token", login.body.csrfToken)
+    .send({ ttId: "tt0113277", title: "Heat", year: 1995, at: "2026-07-16T22:00:00.000Z" })
+    .expect(200);
+
+  assert.equal(response.body.revision, 31);
+  assert.equal(saved.userId, user.id);
+  assert.deepEqual(saved.exclusion, {
+    ttId: "tt0113277",
+    title: "Heat",
+    year: 1995,
+    at: "2026-07-16T22:00:00.000Z",
+    queueKey: "heat|1995"
   });
 });
 

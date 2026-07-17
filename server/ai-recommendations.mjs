@@ -1,8 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { ResolveOpenAiModel } from "./openai-models.mjs";
+import { NormalizeRecommendationQueue, SameRecommendation } from "./recommendation-queue.mjs";
 
 const OpenAiResponsesUrl = "https://api.openai.com/v1/responses";
+const MaximumRecommendationCount = 99;
+const RecommendationAttempts = 3;
 
 export function GetAiStatus() {
   return {
@@ -14,15 +17,39 @@ export function GetAiStatus() {
 }
 
 export async function GenerateAiRecommendations(rootPath, options = {}) {
+  const count = ReadRecommendationCount(options.count);
+  if (!count)
+    return Fail(422, "INVALID_RECOMMENDATION_COUNT", "Choose between 1 and 99 recommendations.");
   if (!ReadOpenAiApiKey(options))
     return Fail(422, "OPENAI_KEY_MISSING", "OpenAI API key is not configured.");
   const profile = BuildPreferenceProfile(options);
   if (!profile.payload.ok)
     return profile;
-  const result = await RequestOpenAiRecommendations(profile.payload.profile, options);
-  if (!result.payload.ok)
-    return result;
-  return Ok(EnrichRecommendationPayload(rootPath, result.payload, profile.payload.profile.exclusions));
+  return await GenerateUniqueRecommendations(rootPath, profile.payload.profile, { ...options, count });
+}
+
+async function GenerateUniqueRecommendations(rootPath, profile, options) {
+  const accepted = [];
+  let summary = "";
+  let model = "";
+  for (let attempt = 0; attempt < RecommendationAttempts && accepted.length < options.count; attempt++) {
+    const remaining = options.count - accepted.length;
+    const requestProfile = { ...profile, queue: [...profile.queue, ...accepted.map(ToProfileMovie)] };
+    const result = await RequestOpenAiRecommendations(requestProfile, { ...options, count: remaining });
+    if (!result.payload.ok)
+      return result;
+    summary ||= result.payload.summary || "";
+    model = result.payload.model || model;
+    const enriched = EnrichRecommendationPayload(rootPath, result.payload, requestProfile);
+    for (const item of enriched.recommendations) {
+      if (accepted.length >= options.count)
+        break;
+      if (accepted.some((existing) => SameRecommendation(existing, item)))
+        continue;
+      accepted.push(item);
+    }
+  }
+  return Ok({ summary: summary || "Recommendations ready.", recommendations: accepted, model });
 }
 
 function BuildPreferenceProfile(options) {
@@ -30,15 +57,16 @@ function BuildPreferenceProfile(options) {
   const ratings = Array.isArray(profile.ratings) ? profile.ratings : [];
   if (ratings.length < 5)
     return Fail(422, "NOT_ENOUGH_RATINGS", "Import at least five rated IMDb rows before asking for recommendations.");
-  return Ok({ profile: BuildProfile(ratings, profile.exclusions) });
+  return Ok({ profile: BuildProfile(ratings, profile.exclusions, options.queue) });
 }
 
-function BuildProfile(ratings, exclusions) {
+function BuildProfile(ratings, exclusions, queue) {
   return {
     ratings: OptimizeRatings(ratings.map(NormalizeRating).filter(Boolean)),
     exclusions: NormalizeExclusions(exclusions),
+    queue: NormalizeRecommendationQueue(queue).map(ToProfileMovie),
     ratingScale: "1-10",
-    fieldsSent: ["title", "year", "genres", "rating", "excludedTitle", "excludedYear"]
+    fieldsSent: ["title", "year", "genres", "rating", "queuedTitle", "queuedYear", "excludedTitle", "excludedYear"]
   };
 }
 
@@ -74,8 +102,8 @@ function BuildOpenAiBody(profile, options, model) {
   return {
     model,
     input: BuildOpenAiInput(profile, options),
-    text: { format: BuildRecommendationSchema() },
-    max_output_tokens: 3200
+    text: { format: BuildRecommendationSchema(options.count) },
+    max_output_tokens: ReadOutputTokenLimit(options.count)
   };
 }
 
@@ -87,37 +115,37 @@ function BuildOpenAiInput(profile, options) {
 }
 
 function BuildSystemPrompt(options) {
-  const count = Number(options.count) || 12;
+  const count = ReadRecommendationCount(options.count) || 9;
   const scope = `Recommend ${count} movies the user has not rated.`;
   const criteria = "Consider title, year, genre, and user rating together.";
-  const exclusions = "Never recommend a movie listed in profile.exclusions; those are firm do-not-recommend choices.";
+  const exclusions = "Never recommend anything already present in profile.ratings, profile.queue, or profile.exclusions. The queue is the user's saved watchlist and exclusions are permanent do-not-recommend choices.";
   const why = "Explain the taste pattern and cite rating evidence from the user's data.";
   const format = "Use 2-4 evidence lines naming rated titles, ratings, genres, or eras.";
   return [scope, criteria, exclusions, why, format, "Return only JSON matching the schema."].join(" ");
 }
 
-function BuildRecommendationSchema() {
+function BuildRecommendationSchema(count) {
   return {
     type: "json_schema",
     name: "movie_recommendations",
     strict: true,
-    schema: RecommendationSchema()
+    schema: RecommendationSchema(count)
   };
 }
 
-function RecommendationSchema() {
+function RecommendationSchema(count) {
   return {
     type: "object",
     additionalProperties: false,
     required: ["summary", "recommendations"],
-    properties: RecommendationProperties()
+    properties: RecommendationProperties(count)
   };
 }
 
-function RecommendationProperties() {
+function RecommendationProperties(count) {
   return {
     summary: { type: "string" },
-    recommendations: { type: "array", items: RecommendationItemSchema() }
+    recommendations: { type: "array", minItems: count, maxItems: count, items: RecommendationItemSchema() }
   };
 }
 
@@ -160,12 +188,18 @@ function ParseRecommendationPayload(payload) {
   return JSON.parse(text);
 }
 
-function EnrichRecommendationPayload(rootPath, payload, exclusions) {
+function EnrichRecommendationPayload(rootPath, payload, profile) {
   const movies = ReadMovieList(rootPath);
   const recommendations = ReadRecommendations(payload);
-  const normalizedExclusions = NormalizeExclusions(exclusions);
+  const blocked = [...profile.ratings, ...profile.queue, ...profile.exclusions];
+  const unique = [];
   const enriched = recommendations.map((item) => EnrichRecommendation(item, movies));
-  return { ...payload, recommendations: enriched.filter((item) => !IsExcludedRecommendation(item, normalizedExclusions)) };
+  for (const item of enriched) {
+    if (blocked.some((existing) => SameRecommendation(existing, item)) || unique.some((existing) => SameRecommendation(existing, item)))
+      continue;
+    unique.push(item);
+  }
+  return { ...payload, recommendations: NormalizeRecommendationQueue(unique) };
 }
 
 function ReadMovieList(rootPath) {
@@ -219,16 +253,6 @@ function NormalizeExclusion(item) {
   return { title, year: Number(item?.year) || null };
 }
 
-function IsExcludedRecommendation(item, exclusions) {
-  const title = NormalizeMatchTitle(item?.title);
-  const year = Number(item?.year) || null;
-  return exclusions.some((excluded) => {
-    if (NormalizeMatchTitle(excluded.title) !== title)
-      return false;
-    return !excluded.year || !year || excluded.year === year;
-  });
-}
-
 function ExtractResponseText(payload) {
   if (payload?.output_text)
     return payload.output_text;
@@ -256,6 +280,23 @@ function NormalizeRating(item) {
     genres: ReadGenres(item.genres),
     rating
   };
+}
+
+function ToProfileMovie(value) {
+  return {
+    title: CleanText(value?.title),
+    year: Number(value?.year) || null
+  };
+}
+
+export function ReadRecommendationCount(value) {
+  const count = Number(value);
+  return Number.isInteger(count) && count >= 1 && count <= MaximumRecommendationCount ? count : 0;
+}
+
+export function ReadOutputTokenLimit(value) {
+  const count = ReadRecommendationCount(value) || 9;
+  return Math.min(30_000, Math.max(3_200, 800 + count * 280));
 }
 
 function ReadGenres(value) {

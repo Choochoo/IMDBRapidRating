@@ -16,6 +16,6 @@ test("recommendation cards include visual ranking and escape generated text", ()
   assert.doesNotMatch(html, /<script>/);
 });
 
-test("empty recommendation response has a useful retry state", () => {
-  assert.match(RenderRecommendationEmpty(), /No picks came back this time/);
+test("empty recommendation queue explains how to add picks", () => {
+  assert.match(RenderRecommendationEmpty(), /watchlist is empty/);
 });

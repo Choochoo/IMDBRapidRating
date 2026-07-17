@@ -67,13 +67,12 @@ function ExcludeRecommendation(app, button) {
   });
   if (!exclusion)
     return app.ShowRecommendationError("This recommendation could not be saved to the exclusion list.");
-  RemoveRecommendationCard(card);
   app.ShowToast(`<strong>${EscapeHtml(exclusion.title)}</strong> won't be recommended again`);
 }
 
 function ApplyRecommendationRating(app, card, request, payload) {
   const record = SaveLocalRating(app, request, payload);
-  RemoveRecommendationCard(card);
+  app.RemoveRecommendationFromQueue(record);
   app.ShowToast(`${EscapeHtml(record.title)} <strong>${record.rating}</strong>`);
 }
 
@@ -118,9 +117,4 @@ function SetCardSaving(card, value) {
   const exclusion = card.querySelector("[data-recommendation-exclusion]");
   if (exclusion)
     exclusion.disabled = value;
-}
-
-function RemoveRecommendationCard(card) {
-  card.classList.add("rated");
-  window.setTimeout(() => card.remove(), Config.animationMs);
 }

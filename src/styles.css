@@ -604,6 +604,33 @@ body.sync-active .app-header {
   padding-top: 6px;
 }
 
+.recommendation-count-control {
+  display: grid;
+  grid-template-columns: auto 64px;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 5px 6px 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.recommendation-count-control input {
+  width: 64px;
+  min-height: 32px;
+  padding: 4px 6px;
+  border: 1px solid rgba(224, 173, 71, 0.35);
+  border-radius: 6px;
+  background: #111820;
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+}
+
 #generate-recommendations {
   min-height: 42px;
   border-color: rgba(224, 173, 71, 0.7);
@@ -695,6 +722,19 @@ body.sync-active .app-header {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+}
+
+.recommendation-grid.posters-collapsed {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.recommendation-grid.posters-collapsed .recommendation-poster {
+  display: none;
+}
+
+.recommendation-grid.posters-collapsed .recommendation-card-body {
+  padding: 14px;
 }
 
 .recommendation-card {
@@ -1818,6 +1858,10 @@ body.sync-active .app-header {
   .model-controls {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .recommendation-count-control {
+    grid-template-columns: 1fr 72px;
   }
 
   .sync-header,

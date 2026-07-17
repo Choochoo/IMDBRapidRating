@@ -108,10 +108,15 @@
           <div class="recommendation-heading-copy">
             <span class="recommendation-kicker">Curated for your taste</span>
             <h1>AI Recommendations</h1>
-            <p>Fresh picks shaped by your ratings, favorite genres, and movies you would rather skip.</p>
+            <p>Fresh picks shaped by your ratings and exclusions. Every batch is added to your saved watchlist.</p>
           </div>
           <div class="recommendation-actions">
             <button type="button" id="configure-ai">Set OpenAI Key</button>
+            <button type="button" id="toggle-recommendation-posters" aria-pressed="false">Hide posters</button>
+            <label class="recommendation-count-control" for="recommendation-count">
+              <span>Number of picks</span>
+              <input id="recommendation-count" type="number" min="1" max="99" step="1" value="9" inputmode="numeric">
+            </label>
             <button type="button" id="generate-recommendations">Generate picks</button>
           </div>
         </header>

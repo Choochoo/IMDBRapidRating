@@ -49,7 +49,7 @@ import { BuildCompleteSummary, CountRatings } from "./stats.js";
 import { UndoRating } from "./undo-rating.js";
 import { EscapeHtml, FormatCount, Shuffle } from "./util.js";
 
-const RecommendationCount = 8;
+const DefaultRecommendationCount = 9;
 const StateConflictRetryCount = 4;
 const AccountRefreshIntervalMs = 15_000;
 const RecommendationLoadingMessages = [
@@ -65,6 +65,7 @@ export class RapidRaterApp {
     this.Elements = BuildElements();
     this.Settings = ReadBrowserSettings();
     this.LegacySettings = { ...this.Settings };
+    this.RecommendationPostersCollapsed = this.ReadRecommendationPosterPreference();
     this.State = BuildState();
     this.AccountPayload = {};
     this.RatingsCsvText = "";
@@ -79,6 +80,7 @@ export class RapidRaterApp {
     this.ToastTimer = 0;
     this.AiLoadingTimer = 0;
     this.AiLoadingMessageIndex = 0;
+    this.PendingRecommendationCount = DefaultRecommendationCount;
     this.SubmitInFlight = false;
     this.SubmitQueue = [];
     this.SubmitQueuedIds = new Set();
@@ -89,6 +91,7 @@ export class RapidRaterApp {
 
   Start() {
     this.BindEvents();
+    this.UpdateRecommendationPosterVisibility();
     this.BeginSession().catch((error) => this.ShowStartupError(error));
   }
 
@@ -103,6 +106,7 @@ export class RapidRaterApp {
     const data = await this.LoadMovieData();
     this.ApplyMovieData(data, data.sourceLabel);
     await this.LoadSavedRatingsCsv();
+    await this.RefreshRecommendationQueue({ force: true, silent: true });
     this.StartAccountRefresh();
     this.RequireImdbSignIn();
   }
@@ -121,10 +125,10 @@ export class RapidRaterApp {
     this.BindAccountEvents();
     this.BindMobileEvents();
     window.addEventListener("keydown", (event) => this.HandleKeyDown(event));
-    window.addEventListener("focus", () => this.RefreshAccountStateFromServer().catch(() => null));
+    window.addEventListener("focus", () => this.RefreshRemoteState().catch(() => null));
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden)
-        this.RefreshAccountStateFromServer().catch(() => null);
+        this.RefreshRemoteState().catch(() => null);
     });
   }
 
@@ -163,6 +167,7 @@ export class RapidRaterApp {
     this.Elements.aiSave.addEventListener("click", () => this.HandleAiSaveClick());
     this.Elements.aiDelete.addEventListener("click", () => this.DeleteAccountSecret("openai"));
     this.Elements.generateRecommendations.addEventListener("click", () => this.HandleRecommendationClick());
+    this.Elements.toggleRecommendationPosters.addEventListener("click", () => this.ToggleRecommendationPosters());
     this.Elements.refreshAiModels.addEventListener("click", () => this.HandleModelRefreshClick());
     this.Elements.aiModelSelect.addEventListener("change", () => this.HandleModelSelectChange());
     BindRecommendationRatings(this);
@@ -188,6 +193,31 @@ export class RapidRaterApp {
     this.Elements.jsonFile.addEventListener("change", (event) => this.HandleJsonFile(event));
     this.Elements.csvFile.addEventListener("change", (event) => this.HandleCsvFile(event));
     this.Elements.letterboxdFile.addEventListener("change", (event) => this.HandleLetterboxdFile(event).catch((error) => this.ShowSyncError(error)));
+  }
+
+  ToggleRecommendationPosters() {
+    this.RecommendationPostersCollapsed = !this.RecommendationPostersCollapsed;
+    try {
+      localStorage.setItem(Config.recommendationPosterPreferenceKey, this.RecommendationPostersCollapsed ? "collapsed" : "expanded");
+    } catch {
+      // The visual toggle still works when browser storage is unavailable.
+    }
+    this.UpdateRecommendationPosterVisibility();
+  }
+
+  ReadRecommendationPosterPreference() {
+    try {
+      return localStorage.getItem(Config.recommendationPosterPreferenceKey) === "collapsed";
+    } catch {
+      return false;
+    }
+  }
+
+  UpdateRecommendationPosterVisibility() {
+    const collapsed = Boolean(this.RecommendationPostersCollapsed);
+    this.Elements.recommendationGrid.classList.toggle("posters-collapsed", collapsed);
+    this.Elements.toggleRecommendationPosters.setAttribute("aria-pressed", String(collapsed));
+    this.Elements.toggleRecommendationPosters.textContent = collapsed ? "Show posters" : "Hide posters";
   }
 
   BindSyncEvents() {
@@ -582,8 +612,16 @@ export class RapidRaterApp {
       return;
     this.AccountRefreshTimer = window.setInterval(() => {
       if (!document.hidden)
-        this.RefreshAccountStateFromServer().catch(() => null);
+        this.RefreshRemoteState().catch(() => null);
     }, AccountRefreshIntervalMs);
+  }
+
+  async RefreshRemoteState() {
+    const [accountChanged, queueChanged] = await Promise.all([
+      this.RefreshAccountStateFromServer(),
+      this.RefreshRecommendationQueue()
+    ]);
+    return accountChanged || queueChanged;
   }
 
   async RefreshAccountStateFromServer() {
@@ -789,7 +827,9 @@ export class RapidRaterApp {
   UpdateRecommendationStatus() {
     if (!this.State.ai.configured)
       return this.SetRecommendationStatus("Add an OpenAI API key to generate recommendations.");
-    this.SetRecommendationStatus(`Ready with ${this.ReadAiModelLabel()}.`);
+    const saved = this.State.recommendationQueue.length;
+    const queue = saved ? ` ${FormatCount(saved)} saved ${saved === 1 ? "pick" : "picks"} in your watchlist.` : "";
+    this.SetRecommendationStatus(`Ready with ${this.ReadAiModelLabel()}.${queue}`);
   }
 
   SetRecommendationStatus(message) {
@@ -1114,6 +1154,7 @@ export class RapidRaterApp {
   SetAiControlsDisabled(value) {
     const disabled = value || !this.State.ai.configured;
     this.Elements.generateRecommendations.disabled = disabled;
+    this.Elements.recommendationCount.disabled = disabled;
     this.Elements.refreshAiModels.disabled = disabled;
     this.Elements.aiModelSelect.disabled = disabled;
   }
@@ -1139,18 +1180,27 @@ export class RapidRaterApp {
   async GenerateRecommendations() {
     if (!this.State.ai.configured)
       return this.ShowAiDialog();
-    this.SetAiLoading(true);
-    const payload = await this.RequestRecommendations().finally(() => this.SetAiLoading(false));
+    const count = this.ReadRecommendationCount();
+    this.PendingRecommendationCount = count;
+    this.SetAiLoading(true, count);
+    const payload = await this.RequestRecommendations(count).finally(() => this.SetAiLoading(false, count));
     this.RenderRecommendations(payload);
   }
 
-  async RequestRecommendations() {
-    return await this.PostJson(Config.recommendationsUrl, this.BuildRecommendationRequest(), "AI recommendation request failed.");
+  ReadRecommendationCount() {
+    const count = Number(this.Elements.recommendationCount.value);
+    if (!Number.isInteger(count) || count < 1 || count > 99)
+      throw new Error("Choose a whole number from 1 to 99 for the number of picks.");
+    return count;
   }
 
-  BuildRecommendationRequest() {
+  async RequestRecommendations(count) {
+    return await this.PostJson(Config.recommendationsUrl, this.BuildRecommendationRequest(count), "AI recommendation request failed.");
+  }
+
+  BuildRecommendationRequest(count = this.ReadRecommendationCount()) {
     return {
-      count: RecommendationCount,
+      count,
       profile: BuildAiPreferenceProfile(this.State.ratings, this.State.movieById, this.State.recommendationExclusions)
     };
   }
@@ -1162,7 +1212,10 @@ export class RapidRaterApp {
     const key = this.RecommendationExclusionKey(exclusion);
     const others = this.State.recommendationExclusions.filter((item) => this.RecommendationExclusionKey(item) !== key);
     this.State.recommendationExclusions = [...others, exclusion];
+    this.RemoveRecommendationFromQueue(exclusion);
     this.SaveLocalState();
+    this.RequestJson(Config.recommendationExclusionsUrl, "PUT", exclusion, { keepalive: true })
+      .catch((error) => this.ShowToast(`<strong>Don't recommend was not saved:</strong> ${EscapeHtml(error.message)}`));
     return exclusion;
   }
 
@@ -1187,7 +1240,8 @@ export class RapidRaterApp {
       ttId,
       title,
       year: Number(value?.year || movie.year) || null,
-      at: String(value?.at || new Date().toISOString())
+      at: String(value?.at || new Date().toISOString()),
+      queueKey: this.RecommendationExclusionKey({ title, year: Number(value?.year || movie.year) || null })
     };
   }
 
@@ -1215,7 +1269,7 @@ export class RapidRaterApp {
     this.UpdateAiControls();
   }
 
-  SetAiLoading(value) {
+  SetAiLoading(value, count = this.PendingRecommendationCount) {
     this.State.ai.loading = value;
     this.SetAiControlsDisabled(value);
     this.Elements.generateRecommendations.textContent = value ? "Finding movies..." : "Generate picks";
@@ -1229,8 +1283,9 @@ export class RapidRaterApp {
     this.UpdateAiLoadingMessage();
     this.Elements.recommendationGrid.classList.add("is-loading");
     this.Elements.recommendationGrid.setAttribute("aria-busy", "true");
-    this.Elements.recommendationGrid.innerHTML = RenderRecommendationSkeletons(RecommendationCount);
-    this.SetRecommendationStatus("Your personalized cinema lineup is being prepared.");
+    if (!this.State.recommendationQueue.length)
+      this.Elements.recommendationGrid.innerHTML = RenderRecommendationSkeletons(Math.min(count, 12));
+    this.SetRecommendationStatus(`Generating ${FormatCount(count)} new ${count === 1 ? "pick" : "picks"} for your saved watchlist.`);
     this.AiLoadingTimer = window.setInterval(() => {
       this.AiLoadingMessageIndex = (this.AiLoadingMessageIndex + 1) % RecommendationLoadingMessages.length;
       this.UpdateAiLoadingMessage();
@@ -1242,8 +1297,16 @@ export class RapidRaterApp {
   }
 
   RenderRecommendations(payload) {
-    this.SetRecommendationStatus(payload.summary || "Recommendations ready.");
-    const items = Array.isArray(payload.recommendations) ? payload.recommendations : [];
+    this.State.recommendationQueue = this.NormalizeRecommendationQueue(payload.recommendations);
+    const added = Number(payload.addedCount) || 0;
+    const total = this.State.recommendationQueue.length;
+    const summary = payload.summary ? ` ${payload.summary}` : "";
+    this.SetRecommendationStatus(`Added ${FormatCount(added)} new ${added === 1 ? "pick" : "picks"}. ${FormatCount(total)} saved in your watchlist.${summary}`);
+    this.RenderRecommendationQueue();
+  }
+
+  RenderRecommendationQueue() {
+    const items = this.State.recommendationQueue;
     this.Elements.recommendationGrid.classList.remove("is-loading");
     this.Elements.recommendationGrid.setAttribute("aria-busy", "false");
     this.Elements.recommendationGrid.innerHTML = items.length ? items.map(RenderRecommendationCard).join("") : RenderRecommendationEmpty();
@@ -1251,11 +1314,73 @@ export class RapidRaterApp {
       this.EnrichTitleMetadata(item.ttId);
   }
 
+  async RefreshRecommendationQueue(options = {}) {
+    if (this.State.ai.loading && !options.force)
+      return false;
+    const payload = await this.FetchJson(Config.recommendationQueueUrl);
+    const queue = this.NormalizeRecommendationQueue(payload.recommendations);
+    const previous = this.RecommendationQueueSignature(this.State.recommendationQueue);
+    const next = this.RecommendationQueueSignature(queue);
+    if (!options.force && previous === next)
+      return false;
+    this.State.recommendationQueue = queue;
+    this.RenderRecommendationQueue();
+    this.UpdateRecommendationStatus();
+    if (!options.silent)
+      this.ShowToast("Your saved recommendation watchlist was updated.");
+    return true;
+  }
+
+  NormalizeRecommendationQueue(value) {
+    const normalized = [];
+    for (const item of Array.isArray(value) ? value : []) {
+      const title = String(item?.title || "").replace(/\s+/g, " ").trim();
+      if (!title)
+        continue;
+      const recommendation = {
+        ...item,
+        ttId: /^tt\d+$/.test(String(item?.ttId || "").trim()) ? String(item.ttId).trim() : "",
+        title,
+        year: Number(item?.year) || null,
+        queueKey: String(item?.queueKey || this.RecommendationExclusionKey({ title, year: item?.year }))
+      };
+      if (!normalized.some((existing) => this.IsSameRecommendation(existing, recommendation)))
+        normalized.push(recommendation);
+    }
+    return normalized;
+  }
+
+  RemoveRecommendationFromQueue(value) {
+    const previousLength = this.State.recommendationQueue.length;
+    this.State.recommendationQueue = this.State.recommendationQueue.filter((item) => !this.IsSameRecommendation(item, value));
+    if (this.State.recommendationQueue.length === previousLength)
+      return false;
+    this.RenderRecommendationQueue();
+    this.UpdateRecommendationStatus();
+    return true;
+  }
+
+  IsSameRecommendation(left, right) {
+    const leftId = String(left?.ttId || "").trim();
+    const rightId = String(right?.ttId || "").trim();
+    if (leftId && rightId && leftId === rightId)
+      return true;
+    const leftTitle = String(left?.title || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+    const rightTitle = String(right?.title || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+    if (!leftTitle || leftTitle !== rightTitle)
+      return false;
+    const leftYear = Number(left?.year) || null;
+    const rightYear = Number(right?.year) || null;
+    return !leftYear || !rightYear || leftYear === rightYear;
+  }
+
+  RecommendationQueueSignature(value) {
+    return this.NormalizeRecommendationQueue(value).map((item) => `${item.queueKey}|${item.addedAt || ""}`).join("\n");
+  }
+
   ShowRecommendationError(message) {
     this.SetAiLoading(false);
-    this.Elements.recommendationGrid.classList.remove("is-loading");
-    this.Elements.recommendationGrid.setAttribute("aria-busy", "false");
-    this.Elements.recommendationGrid.innerHTML = `<div class="recommendation-empty recommendation-error"><span aria-hidden="true">!</span><h2>We couldn't finish that lineup</h2><p>Nothing was changed. Check the message above and try again.</p></div>`;
+    this.RenderRecommendationQueue();
     this.SetRecommendationStatus(message || "Could not generate recommendations.");
   }
 

@@ -50,6 +50,7 @@ function BuildMovieState() {
     movieById: new Map(),
     queue: [],
     ratings: {},
+    recommendationQueue: [],
     recommendationExclusions: [],
     letterboxd: BuildLetterboxdState(),
     history: [],

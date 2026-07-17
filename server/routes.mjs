@@ -5,6 +5,7 @@ import { GetOpenAiModels } from "./openai-models.mjs";
 import { DeleteImdbRating, GetImdbStatus, SubmitImdbRating } from "./imdb-ratings.mjs";
 import { GetTitleMetadata } from "./title-metadata.mjs";
 import { HasEncryptionKey } from "./security/secrets.mjs";
+import { RecommendationKey } from "./recommendation-queue.mjs";
 
 const StateSchema = z.object({
   payload: z.record(z.string(), z.unknown()),
@@ -14,6 +15,12 @@ const StateSchema = z.object({
 const NotSeenSchema = z.object({
   titleId: z.string().trim().regex(/^tt\d+$/),
   title: z.string().max(500).default(""),
+  year: z.union([z.string(), z.number()]).optional(),
+  at: z.string().optional()
+});
+const RecommendationExclusionSchema = z.object({
+  ttId: z.string().trim().regex(/^tt\d+$/).or(z.literal("")).default(""),
+  title: z.string().trim().min(1).max(500),
   year: z.union([z.string(), z.number()]).optional(),
   at: z.string().optional()
 });
@@ -29,7 +36,8 @@ export function RegisterApiRoutes(app, {
   pool,
   rootPath,
   submitImdbRating = SubmitImdbRating,
-  deleteImdbRating = DeleteImdbRating
+  deleteImdbRating = DeleteImdbRating,
+  generateAiRecommendations = GenerateAiRecommendations
 }) {
   app.get("/health", async (_request, response) => {
     await pool.query("SELECT 1");
@@ -106,6 +114,15 @@ export function RegisterApiRoutes(app, {
     response.json({ ok: true, titleId: record.ttId, revision });
   });
 
+  app.put("/api/account/recommendation-exclusions", RequireCsrf, async (request, response) => {
+    const parsed = RecommendationExclusionSchema.safeParse(request.body);
+    if (!parsed.success)
+      return Invalid(response);
+    const exclusion = BuildRecommendationExclusion(parsed.data);
+    const revision = await store.excludeRecommendation(request.session.userId, exclusion);
+    response.json({ ok: true, exclusion, revision });
+  });
+
   app.put("/api/account/preferences", RequireCsrf, async (request, response) => {
     const parsed = PreferencesSchema.safeParse(request.body);
     if (!parsed.success)
@@ -149,6 +166,7 @@ export function RegisterApiRoutes(app, {
       return SendResult(response, result);
     const record = BuildSubmittedRatingRecord(request.body, result.payload);
     const revision = await store.recordRating(request.session.userId, record);
+    await store.removeRecommendation(request.session.userId, { ...record, queueKey: RecommendationKey(record) });
     response.status(result.status).json({ ...result.payload, revision });
   });
 
@@ -172,9 +190,25 @@ export function RegisterApiRoutes(app, {
     SendResult(response, await GetOpenAiModels(options));
   });
 
+  app.get("/api/ai/recommendations/queue", async (request, response) => {
+    const recommendations = await store.listRecommendationQueue(request.session.userId);
+    response.json({ ok: true, recommendations, count: recommendations.length });
+  });
+
   app.post("/api/ai/recommendations", RequireCsrf, async (request, response) => {
     const options = await BuildOpenAiOptions(store, request.session.userId);
-    SendResult(response, await GenerateAiRecommendations(rootPath, { ...request.body, ...options }));
+    const queue = await store.listRecommendationQueue(request.session.userId);
+    const result = await generateAiRecommendations(rootPath, { ...request.body, ...options, queue });
+    if (!result.payload?.ok)
+      return SendResult(response, result);
+    const added = await store.appendRecommendationQueue(request.session.userId, result.payload.recommendations);
+    const recommendations = await store.listRecommendationQueue(request.session.userId);
+    response.status(result.status).json({
+      ...result.payload,
+      recommendations,
+      addedCount: added.length,
+      requestedCount: Number(request.body.count)
+    });
   });
 
   app.get(/^\/api\/title\/(tt\d+)$/, async (request, response) => {
@@ -226,6 +260,16 @@ function BuildNotSeenRecord(request) {
     submitError: "",
     submittedAt: ""
   };
+}
+
+function BuildRecommendationExclusion(request) {
+  const exclusion = {
+    ttId: request.ttId || "",
+    title: String(request.title || "").trim().slice(0, 500),
+    year: ReadYear(request.year) || null,
+    at: ReadTimestamp(request.at, new Date().toISOString())
+  };
+  return { ...exclusion, queueKey: RecommendationKey(exclusion) };
 }
 
 function ReadYear(value) {

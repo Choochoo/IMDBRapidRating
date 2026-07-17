@@ -186,6 +186,8 @@ function BuildAiModelElements() {
 function BuildRecommendationElements() {
   return {
     generateRecommendations: Element("generate-recommendations"),
+    toggleRecommendationPosters: Element("toggle-recommendation-posters"),
+    recommendationCount: Element("recommendation-count"),
     recommendationStatus: Element("recommendation-status"),
     recommendationLoading: Element("recommendation-loading"),
     recommendationLoadingCopy: Element("recommendation-loading-copy"),
