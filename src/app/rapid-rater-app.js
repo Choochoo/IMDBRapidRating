@@ -1324,8 +1324,9 @@ export class RapidRaterApp {
       const end = start + movies.length;
       const range = movies.length === 1 ? `Pick ${start + 1}` : `Picks ${start + 1}–${end}`;
       const action = collapsed ? "Expand row" : "Collapse row";
+      const titles = movies.map((item) => `${EscapeHtml(item.title)}${item.year ? ` (${EscapeHtml(item.year)})` : ""}`).join(" <span aria-hidden=\"true\">•</span> ");
       const cards = movies.map((item, index) => RenderRecommendationCard(item, start + index)).join("");
-      rows.push(`<section class="recommendation-row"><button type="button" class="recommendation-row-toggle" data-recommendation-row-toggle data-row-key="${EscapeHtml(rowKey)}" aria-expanded="${String(!collapsed)}"><span>${range}</span><span>${action}</span></button><div class="recommendation-row-grid"${collapsed ? " hidden" : ""}>${cards}</div></section>`);
+      rows.push(`<section class="recommendation-row"><button type="button" class="recommendation-row-toggle" data-recommendation-row-toggle data-row-key="${EscapeHtml(rowKey)}" aria-expanded="${String(!collapsed)}"><span class="recommendation-row-range">${range}</span><span class="recommendation-row-titles">${titles}</span><span class="recommendation-row-action">${action}</span></button><div class="recommendation-row-grid"${collapsed ? " hidden" : ""}>${cards}</div></section>`);
     }
     return rows.join("");
   }

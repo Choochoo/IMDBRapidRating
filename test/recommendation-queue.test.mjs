@@ -101,6 +101,7 @@ test("recommendation watchlist renders and toggles collapsible three-movie rows"
   assert.equal((html.match(/data-recommendation-row-toggle/g) || []).length, 2);
   assert.match(html, /Picks 1–3/);
   assert.match(html, /Pick 4/);
+  assert.match(html, /recommendation-row-titles">Heat \(1995\).*Thief \(1981\).*Collateral \(2004\)/);
   assert.match(html, /data-row-key="heat\|1995" aria-expanded="false"/);
   assert.match(html, /recommendation-row-grid" hidden/);
 
