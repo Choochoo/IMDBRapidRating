@@ -1309,6 +1309,7 @@ export class RapidRaterApp {
 
   RenderRecommendationQueue() {
     const items = this.State.recommendationQueue;
+    this.PruneCollapsedRecommendationRows(items.length);
     this.Elements.recommendationGrid.classList.remove("is-loading");
     this.Elements.recommendationGrid.setAttribute("aria-busy", "false");
     this.Elements.recommendationGrid.innerHTML = items.length ? this.BuildRecommendationRows(items) : RenderRecommendationEmpty();
@@ -1320,7 +1321,7 @@ export class RapidRaterApp {
     const rows = [];
     for (let start = 0; start < items.length; start += 3) {
       const movies = items.slice(start, start + 3);
-      const rowKey = movies[0]?.queueKey || this.RecommendationExclusionKey(movies[0]);
+      const rowKey = `row-${Math.floor(start / 3)}`;
       const collapsed = this.CollapsedRecommendationRows.has(rowKey);
       const end = start + movies.length;
       const range = movies.length === 1 ? `Pick ${start + 1}` : `Picks ${start + 1}–${end}`;
@@ -1347,7 +1348,7 @@ export class RapidRaterApp {
   ReadCollapsedRecommendationRows() {
     try {
       const value = JSON.parse(localStorage.getItem(this.CollapsedRecommendationRowsStorageKey()) || "[]");
-      return new Set(Array.isArray(value) ? value.map(String).filter(Boolean) : []);
+      return new Set(Array.isArray(value) ? value.map(String).filter((item) => /^row-\d+$/.test(item)) : []);
     } catch {
       return new Set();
     }
@@ -1363,6 +1364,15 @@ export class RapidRaterApp {
 
   CollapsedRecommendationRowsStorageKey() {
     return `${Config.recommendationRowsPreferenceKey}:${this.User?.id || "anonymous"}`;
+  }
+
+  PruneCollapsedRecommendationRows(itemCount) {
+    const rowCount = Math.ceil(Number(itemCount || 0) / 3);
+    const active = new Set([...this.CollapsedRecommendationRows].filter((key) => Number(key.slice(4)) < rowCount));
+    if (active.size === this.CollapsedRecommendationRows.size)
+      return;
+    this.CollapsedRecommendationRows = active;
+    this.SaveCollapsedRecommendationRows();
   }
 
   async RefreshRecommendationQueue(options = {}) {

@@ -88,7 +88,7 @@ test("recommendation posters collapse globally and remember the browser preferen
 
 test("recommendation watchlist renders and toggles collapsible three-movie rows", () => {
   const app = Object.create(RapidRaterApp.prototype);
-  app.CollapsedRecommendationRows = new Set(["heat|1995"]);
+  app.CollapsedRecommendationRows = new Set(["row-0"]);
   const items = [
     QueueItem("heat|1995", "tt0113277", "Heat", 1995),
     QueueItem("thief|1981", "tt0083190", "Thief", 1981),
@@ -102,14 +102,18 @@ test("recommendation watchlist renders and toggles collapsible three-movie rows"
   assert.match(html, /Picks 1–3/);
   assert.match(html, /Pick 4/);
   assert.match(html, /recommendation-row-titles">Heat \(1995\).*Thief \(1981\).*Collateral \(2004\)/);
-  assert.match(html, /data-row-key="heat\|1995" aria-expanded="false"/);
+  assert.match(html, /data-row-key="row-0" aria-expanded="false"/);
   assert.match(html, /recommendation-row-grid" hidden/);
 
   let rendered = 0;
   app.RenderRecommendationQueue = () => { rendered++; };
-  app.ToggleRecommendationRow({ dataset: { rowKey: "heat|1995" } });
-  assert.equal(app.CollapsedRecommendationRows.has("heat|1995"), false);
+  app.ToggleRecommendationRow({ dataset: { rowKey: "row-0" } });
+  assert.equal(app.CollapsedRecommendationRows.has("row-0"), false);
   assert.equal(rendered, 1);
+
+  const shifted = app.BuildRecommendationRows(items.slice(1));
+  assert.match(shifted, /recommendation-row-titles">Thief \(1981\).*Collateral \(2004\).*Manhunter \(1986\)/);
+  assert.match(shifted, /data-row-key="row-0" aria-expanded="true"/);
 });
 
 test("collapsed recommendation rows persist per signed-in account", () => {
@@ -122,10 +126,10 @@ test("collapsed recommendation rows persist per signed-in account", () => {
   try {
     const app = Object.create(RapidRaterApp.prototype);
     app.User = { id: "user-1" };
-    app.CollapsedRecommendationRows = new Set(["heat|1995", "thief|1981"]);
+    app.CollapsedRecommendationRows = new Set(["row-0", "row-1"]);
     app.SaveCollapsedRecommendationRows();
 
-    assert.deepEqual([...app.ReadCollapsedRecommendationRows()], ["heat|1995", "thief|1981"]);
+    assert.deepEqual([...app.ReadCollapsedRecommendationRows()], ["row-0", "row-1"]);
     app.User = { id: "user-2" };
     assert.deepEqual([...app.ReadCollapsedRecommendationRows()], []);
   } finally {
