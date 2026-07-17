@@ -7,6 +7,9 @@ export function BindRecommendationRatings(app) {
 }
 
 function HandleRatingClick(app, event) {
+  const rowButton = ReadRowButton(event.target);
+  if (rowButton)
+    return app.ToggleRecommendationRow(rowButton);
   const exclusionButton = ReadExclusionButton(event.target);
   if (exclusionButton)
     return ExcludeRecommendation(app, exclusionButton);
@@ -14,6 +17,12 @@ function HandleRatingClick(app, event) {
   if (!button)
     return;
   RateRecommendation(app, button).catch((error) => app.ShowRecommendationError(error.message));
+}
+
+function ReadRowButton(target) {
+  if (!target?.closest)
+    return null;
+  return target.closest("[data-recommendation-row-toggle]");
 }
 
 function ReadExclusionButton(target) {

@@ -86,6 +86,31 @@ test("recommendation posters collapse globally and remember the browser preferen
   }
 });
 
+test("recommendation watchlist renders and toggles collapsible three-movie rows", () => {
+  const app = Object.create(RapidRaterApp.prototype);
+  app.CollapsedRecommendationRows = new Set(["heat|1995"]);
+  const items = [
+    QueueItem("heat|1995", "tt0113277", "Heat", 1995),
+    QueueItem("thief|1981", "tt0083190", "Thief", 1981),
+    QueueItem("collateral|2004", "tt0369339", "Collateral", 2004),
+    QueueItem("manhunter|1986", "tt0091474", "Manhunter", 1986)
+  ];
+
+  const html = app.BuildRecommendationRows(items);
+
+  assert.equal((html.match(/data-recommendation-row-toggle/g) || []).length, 2);
+  assert.match(html, /Picks 1–3/);
+  assert.match(html, /Pick 4/);
+  assert.match(html, /data-row-key="heat\|1995" aria-expanded="false"/);
+  assert.match(html, /recommendation-row-grid" hidden/);
+
+  let rendered = 0;
+  app.RenderRecommendationQueue = () => { rendered++; };
+  app.ToggleRecommendationRow({ dataset: { rowKey: "heat|1995" } });
+  assert.equal(app.CollapsedRecommendationRows.has("heat|1995"), false);
+  assert.equal(rendered, 1);
+});
+
 test("AI generation sends the saved queue and refills after server-side duplicate filtering", async () => {
   const calls = [];
   const responses = [
@@ -141,4 +166,8 @@ function Recommendation(title, year) {
 
 function Rating(title, year, rating) {
   return { title, year, genres: ["Drama"], rating };
+}
+
+function QueueItem(queueKey, ttId, title, year) {
+  return { queueKey, ttId, title, year, genres: ["Crime"], why: { tasteMatch: "Match", ratingEvidence: [] } };
 }

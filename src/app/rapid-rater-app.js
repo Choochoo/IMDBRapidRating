@@ -66,6 +66,7 @@ export class RapidRaterApp {
     this.Settings = ReadBrowserSettings();
     this.LegacySettings = { ...this.Settings };
     this.RecommendationPostersCollapsed = this.ReadRecommendationPosterPreference();
+    this.CollapsedRecommendationRows = new Set();
     this.State = BuildState();
     this.AccountPayload = {};
     this.RatingsCsvText = "";
@@ -1284,7 +1285,7 @@ export class RapidRaterApp {
     this.Elements.recommendationGrid.classList.add("is-loading");
     this.Elements.recommendationGrid.setAttribute("aria-busy", "true");
     if (!this.State.recommendationQueue.length)
-      this.Elements.recommendationGrid.innerHTML = RenderRecommendationSkeletons(Math.min(count, 12));
+      this.Elements.recommendationGrid.innerHTML = `<div class="recommendation-row-grid">${RenderRecommendationSkeletons(Math.min(count, 12))}</div>`;
     this.SetRecommendationStatus(`Generating ${FormatCount(count)} new ${count === 1 ? "pick" : "picks"} for your saved watchlist.`);
     this.AiLoadingTimer = window.setInterval(() => {
       this.AiLoadingMessageIndex = (this.AiLoadingMessageIndex + 1) % RecommendationLoadingMessages.length;
@@ -1309,9 +1310,35 @@ export class RapidRaterApp {
     const items = this.State.recommendationQueue;
     this.Elements.recommendationGrid.classList.remove("is-loading");
     this.Elements.recommendationGrid.setAttribute("aria-busy", "false");
-    this.Elements.recommendationGrid.innerHTML = items.length ? items.map(RenderRecommendationCard).join("") : RenderRecommendationEmpty();
+    this.Elements.recommendationGrid.innerHTML = items.length ? this.BuildRecommendationRows(items) : RenderRecommendationEmpty();
     for (const item of items)
       this.EnrichTitleMetadata(item.ttId);
+  }
+
+  BuildRecommendationRows(items) {
+    const rows = [];
+    for (let start = 0; start < items.length; start += 3) {
+      const movies = items.slice(start, start + 3);
+      const rowKey = movies[0]?.queueKey || this.RecommendationExclusionKey(movies[0]);
+      const collapsed = this.CollapsedRecommendationRows.has(rowKey);
+      const end = start + movies.length;
+      const range = movies.length === 1 ? `Pick ${start + 1}` : `Picks ${start + 1}–${end}`;
+      const action = collapsed ? "Expand row" : "Collapse row";
+      const cards = movies.map((item, index) => RenderRecommendationCard(item, start + index)).join("");
+      rows.push(`<section class="recommendation-row"><button type="button" class="recommendation-row-toggle" data-recommendation-row-toggle data-row-key="${EscapeHtml(rowKey)}" aria-expanded="${String(!collapsed)}"><span>${range}</span><span>${action}</span></button><div class="recommendation-row-grid"${collapsed ? " hidden" : ""}>${cards}</div></section>`);
+    }
+    return rows.join("");
+  }
+
+  ToggleRecommendationRow(button) {
+    const rowKey = String(button?.dataset?.rowKey || "");
+    if (!rowKey)
+      return;
+    if (this.CollapsedRecommendationRows.has(rowKey))
+      this.CollapsedRecommendationRows.delete(rowKey);
+    else
+      this.CollapsedRecommendationRows.add(rowKey);
+    this.RenderRecommendationQueue();
   }
 
   async RefreshRecommendationQueue(options = {}) {
