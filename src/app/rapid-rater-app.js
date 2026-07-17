@@ -93,6 +93,7 @@ export class RapidRaterApp {
   Start() {
     this.BindEvents();
     this.UpdateRecommendationPosterVisibility();
+    this.ShowView(this.State.activeView);
     this.BeginSession().catch((error) => this.ShowStartupError(error));
   }
 
@@ -344,6 +345,8 @@ export class RapidRaterApp {
 
   ShowView(view) {
     this.State.activeView = view;
+    document.body.classList.toggle("rater-active", view === "rater");
+    document.body.classList.toggle("ai-active", view === "ai");
     document.body.classList.toggle("sync-active", view === "sync");
     this.Elements.mobileHeaderToggle.setAttribute("aria-expanded", "false");
     this.Elements.appHeader.classList.remove("mobile-dashboard-open");

@@ -27,6 +27,11 @@
   display: none !important;
 }
 
+#rating-footer[hidden],
+#mobile-rating-bar[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   height: 100%;
@@ -1752,6 +1757,10 @@ body.sync-active .app-header {
     height: auto;
     min-height: 100dvh;
     overflow: auto;
+    padding-bottom: 0;
+  }
+
+  body.rater-active {
     padding-bottom: calc(112px + env(safe-area-inset-bottom));
   }
 

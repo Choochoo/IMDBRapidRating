@@ -137,6 +137,40 @@ test("collapsed recommendation rows persist per signed-in account", () => {
   }
 });
 
+test("AI Picks hides both rating bars and removes the mobile bottom-bar layout state", () => {
+  const classes = new Set(["rater-active"]);
+  const originalDocument = globalThis.document;
+  globalThis.document = {
+    body: {
+      classList: {
+        toggle(name, enabled) {
+          if (enabled)
+            classes.add(name);
+          else
+            classes.delete(name);
+        }
+      }
+    }
+  };
+  try {
+    const app = Object.create(RapidRaterApp.prototype);
+    app.State = { activeView: "rater" };
+    app.Elements = ViewElements();
+    app.UpdateRecommendationStatus = () => {};
+    app.UpdateSyncView = () => {};
+
+    app.ShowView("ai");
+
+    assert.equal(app.Elements.recommendationView.hidden, false);
+    assert.equal(app.Elements.ratingFooter.hidden, true);
+    assert.equal(app.Elements.mobileRatingBar.hidden, true);
+    assert.equal(classes.has("rater-active"), false);
+    assert.equal(classes.has("ai-active"), true);
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
 test("AI generation sends the saved queue and refills after server-side duplicate filtering", async () => {
   const calls = [];
   const responses = [
@@ -196,4 +230,20 @@ function Rating(title, year, rating) {
 
 function QueueItem(queueKey, ttId, title, year) {
   return { queueKey, ttId, title, year, genres: ["Crime"], why: { tasteMatch: "Match", ratingEvidence: [] } };
+}
+
+function ViewElements() {
+  const ClassList = () => ({ toggle() {}, remove() {} });
+  return {
+    appHeader: { classList: ClassList() },
+    mobileHeaderToggle: { setAttribute() {} },
+    raterView: { hidden: false },
+    recommendationView: { hidden: true },
+    syncView: { hidden: true },
+    ratingFooter: { hidden: false },
+    mobileRatingBar: { hidden: false },
+    tabRater: { classList: ClassList() },
+    tabAi: { classList: ClassList() },
+    tabSync: { classList: ClassList() }
+  };
 }
