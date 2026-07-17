@@ -330,6 +330,7 @@ export class RapidRaterApp {
 
   SetSignedInUser(user) {
     this.User = user;
+    this.CollapsedRecommendationRows = this.ReadCollapsedRecommendationRows();
     this.Elements.accountBadge.textContent = user?.email || "Signed in";
     this.Elements.signOut.hidden = false;
     this.Elements.authLanding.hidden = true;
@@ -1339,7 +1340,29 @@ export class RapidRaterApp {
       this.CollapsedRecommendationRows.delete(rowKey);
     else
       this.CollapsedRecommendationRows.add(rowKey);
+    this.SaveCollapsedRecommendationRows();
     this.RenderRecommendationQueue();
+  }
+
+  ReadCollapsedRecommendationRows() {
+    try {
+      const value = JSON.parse(localStorage.getItem(this.CollapsedRecommendationRowsStorageKey()) || "[]");
+      return new Set(Array.isArray(value) ? value.map(String).filter(Boolean) : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  SaveCollapsedRecommendationRows() {
+    try {
+      localStorage.setItem(this.CollapsedRecommendationRowsStorageKey(), JSON.stringify([...this.CollapsedRecommendationRows]));
+    } catch {
+      // Row collapsing still works for the current page when browser storage is unavailable.
+    }
+  }
+
+  CollapsedRecommendationRowsStorageKey() {
+    return `${Config.recommendationRowsPreferenceKey}:${this.User?.id || "anonymous"}`;
   }
 
   async RefreshRecommendationQueue(options = {}) {

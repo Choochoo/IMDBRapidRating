@@ -112,6 +112,27 @@ test("recommendation watchlist renders and toggles collapsible three-movie rows"
   assert.equal(rendered, 1);
 });
 
+test("collapsed recommendation rows persist per signed-in account", () => {
+  const saved = new Map();
+  const originalStorage = globalThis.localStorage;
+  globalThis.localStorage = {
+    getItem: (key) => saved.get(key) || null,
+    setItem: (key, value) => saved.set(key, value)
+  };
+  try {
+    const app = Object.create(RapidRaterApp.prototype);
+    app.User = { id: "user-1" };
+    app.CollapsedRecommendationRows = new Set(["heat|1995", "thief|1981"]);
+    app.SaveCollapsedRecommendationRows();
+
+    assert.deepEqual([...app.ReadCollapsedRecommendationRows()], ["heat|1995", "thief|1981"]);
+    app.User = { id: "user-2" };
+    assert.deepEqual([...app.ReadCollapsedRecommendationRows()], []);
+  } finally {
+    globalThis.localStorage = originalStorage;
+  }
+});
+
 test("AI generation sends the saved queue and refills after server-side duplicate filtering", async () => {
   const calls = [];
   const responses = [
