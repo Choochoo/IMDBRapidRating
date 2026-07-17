@@ -18,7 +18,13 @@ const PreferencesSchema = z.object({
 });
 const SecretTypes = new Set(["imdb", "tmdb", "openai"]);
 
-export function RegisterApiRoutes(app, { store, pool, rootPath }) {
+export function RegisterApiRoutes(app, {
+  store,
+  pool,
+  rootPath,
+  submitImdbRating = SubmitImdbRating,
+  deleteImdbRating = DeleteImdbRating
+}) {
   app.get("/health", async (_request, response) => {
     await pool.query("SELECT 1");
     response.json({ ok: true, database: "connected", encryptionConfigured: HasEncryptionKey() });
@@ -123,12 +129,21 @@ export function RegisterApiRoutes(app, { store, pool, rootPath }) {
 
   app.post("/api/rate", RequireCsrf, async (request, response) => {
     const cookie = await store.getSecret(request.session.userId, "imdb");
-    SendResult(response, await SubmitImdbRating(request.body.titleId, request.body.rating, cookie));
+    const result = await submitImdbRating(request.body.titleId, request.body.rating, cookie);
+    if (!result.payload?.ok)
+      return SendResult(response, result);
+    const record = BuildSubmittedRatingRecord(request.body, result.payload);
+    const revision = await store.recordRating(request.session.userId, record);
+    response.status(result.status).json({ ...result.payload, revision });
   });
 
   app.delete("/api/rate", RequireCsrf, async (request, response) => {
     const cookie = await store.getSecret(request.session.userId, "imdb");
-    SendResult(response, await DeleteImdbRating(request.body.titleId, cookie));
+    const result = await deleteImdbRating(request.body.titleId, cookie);
+    if (!result.payload?.ok)
+      return SendResult(response, result);
+    const revision = await store.deleteRating(request.session.userId, result.payload.titleId);
+    response.status(result.status).json({ ...result.payload, revision });
   });
 
   app.get("/api/ai/status", async (request, response) => {
@@ -166,6 +181,32 @@ function BuildBundle(bundle) {
     ratingsCsv: bundle.state.ratingsCsv || "",
     revision: Number(bundle.state.revision) || 0
   };
+}
+
+function BuildSubmittedRatingRecord(request, result) {
+  const submittedAt = new Date().toISOString();
+  return {
+    status: "rated",
+    rating: result.rating,
+    title: String(request.title || "").trim().slice(0, 500),
+    year: ReadYear(request.year),
+    ttId: result.titleId,
+    at: ReadTimestamp(request.at, submittedAt),
+    submitStatus: "submitted",
+    submitError: "",
+    submittedAt,
+    imdbEchoRating: result.rating
+  };
+}
+
+function ReadYear(value) {
+  const year = Number(value);
+  return Number.isInteger(year) && year >= 1870 && year <= 2200 ? year : "";
+}
+
+function ReadTimestamp(value, fallback) {
+  const timestamp = String(value || "");
+  return Number.isFinite(Date.parse(timestamp)) ? timestamp : fallback;
 }
 
 async function BuildOpenAiOptions(store, userId) {

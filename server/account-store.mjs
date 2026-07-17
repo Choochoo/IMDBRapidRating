@@ -62,6 +62,22 @@ export function CreateAccountStore({ db, pool }) {
       return { ok: false, current: current.rows[0] || null };
     },
 
+    async recordRating(userId, record) {
+      const result = await pool.query(
+        `UPDATE ${Qualified("user_states")} SET payload=jsonb_set(COALESCE(payload, '{}'::jsonb), '{ratings}', COALESCE(payload->'ratings', '{}'::jsonb) || jsonb_build_object($2::text, $3::jsonb), true), revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`,
+        [userId, record.ttId, JSON.stringify(record)]
+      );
+      return Number(result.rows[0]?.revision) || 0;
+    },
+
+    async deleteRating(userId, ttId) {
+      const result = await pool.query(
+        `UPDATE ${Qualified("user_states")} SET payload=jsonb_set(COALESCE(payload, '{}'::jsonb), '{ratings}', COALESCE(payload->'ratings', '{}'::jsonb) - $2::text, true), revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`,
+        [userId, ttId]
+      );
+      return Number(result.rows[0]?.revision) || 0;
+    },
+
     async savePreferences(userId, preferences) {
       const now = new Date();
       await db.insert(UserPreferences).values({ userId, ...preferences, updatedAt: now })

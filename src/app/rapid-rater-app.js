@@ -509,8 +509,10 @@ export class RapidRaterApp {
     this.State.sourceLabel = sourceLabel || DescribeSource(raw, "custom data");
     this.State.signature = MakeSignature(movies);
     this.RestoreLocalState();
+    const hasSavedQueue = Array.isArray(this.State.savedQueueIds);
     this.RebuildQueue();
-    this.SaveLocalState();
+    if (!hasSavedQueue)
+      this.SaveLocalState();
     this.Render();
   }
 

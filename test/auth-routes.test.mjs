@@ -101,10 +101,64 @@ test("registration rejects missing CSRF and unavailable email addresses", async 
   assert.equal(duplicate.body.code, "EMAIL_UNAVAILABLE");
 });
 
-function BuildTestApp(store) {
+test("a successful IMDb rating is committed to account state by the same request", async () => {
+  const user = { id: "0ed7ef61-71e6-4c9b-92ba-76a680af3b2d", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  let recorded = null;
+  let deleted = null;
+  const store = {
+    findUserByEmail: async () => user,
+    getSecret: async () => "cookie",
+    recordRating: async (userId, record) => {
+      recorded = { userId, record };
+      return 17;
+    },
+    deleteRating: async (userId, ttId) => {
+      deleted = { userId, ttId };
+      return 18;
+    }
+  };
+  const app = BuildTestApp(store, {
+    submitImdbRating: async (titleId, rating) => ({ status: 200, payload: { ok: true, titleId, rating } }),
+    deleteImdbRating: async (titleId) => ({ status: 200, payload: { ok: true, titleId, deleted: true } })
+  });
+  const agent = request.agent(app);
+  const anonymous = await agent.get("/api/auth/session").expect(200);
+  const login = await agent.post("/api/auth/login")
+    .set("x-csrf-token", anonymous.body.csrfToken)
+    .send({ email: user.email, password: "correct horse battery staple" })
+    .expect(200);
+
+  const rated = await agent.post("/api/rate")
+    .set("x-csrf-token", login.body.csrfToken)
+    .send({ titleId: "tt0107050", rating: 8, title: "Grumpy Old Men", year: 1993, at: "2026-07-16T20:00:00.000Z" })
+    .expect(200);
+  assert.equal(rated.body.revision, 17);
+  assert.equal(recorded.userId, user.id);
+  assert.deepEqual(recorded.record, {
+    status: "rated",
+    rating: 8,
+    title: "Grumpy Old Men",
+    year: 1993,
+    ttId: "tt0107050",
+    at: "2026-07-16T20:00:00.000Z",
+    submitStatus: "submitted",
+    submitError: "",
+    submittedAt: recorded.record.submittedAt,
+    imdbEchoRating: 8
+  });
+
+  const removed = await agent.delete("/api/rate")
+    .set("x-csrf-token", login.body.csrfToken)
+    .send({ titleId: "tt0107050" })
+    .expect(200);
+  assert.equal(removed.body.revision, 18);
+  assert.deepEqual(deleted, { userId: user.id, ttId: "tt0107050" });
+});
+
+function BuildTestApp(store, dependencies = {}) {
   const app = express();
   app.use(express.json());
   app.use(session({ secret: "a-secure-test-secret-that-is-long-enough", resave: false, saveUninitialized: false }));
-  RegisterApiRoutes(app, { store, pool: { query: async () => ({ rows: [] }) }, rootPath: process.cwd() });
+  RegisterApiRoutes(app, { store, pool: { query: async () => ({ rows: [] }) }, rootPath: process.cwd(), ...dependencies });
   return app;
 }
