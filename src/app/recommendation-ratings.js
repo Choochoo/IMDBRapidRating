@@ -106,7 +106,7 @@ function MarkSubmitSuccess(record, payload) {
 function FinishLocalRating(app, movie, previous) {
   app.State.history.push({ ttId: movie.ttId, previous });
   app.RebuildQueue();
-  app.SaveLocalState();
+  app.PersistStateNow();
   app.UpdateStats();
   return app.State.ratings[movie.ttId];
 }

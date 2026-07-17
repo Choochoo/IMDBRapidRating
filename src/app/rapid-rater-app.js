@@ -1,5 +1,6 @@
 import { Config } from "./config.js";
 import { BuildElements } from "./elements.js";
+import { MergeAccountPayload } from "./account-state-merge.js";
 import {
   BuildLetterboxdCsvFiles,
   ImportLetterboxdCsvFiles,
@@ -49,6 +50,8 @@ import { UndoRating } from "./undo-rating.js";
 import { EscapeHtml, FormatCount, Shuffle } from "./util.js";
 
 const RecommendationCount = 8;
+const StateConflictRetryCount = 4;
+const AccountRefreshIntervalMs = 15_000;
 const RecommendationLoadingMessages = [
   "Reading the signals in your ratings...",
   "Finding patterns across genres and eras...",
@@ -70,6 +73,8 @@ export class RapidRaterApp {
     this.User = null;
     this.SyncTimer = 0;
     this.SyncPromise = Promise.resolve();
+    this.StateDirty = false;
+    this.AccountRefreshTimer = 0;
     this.Initialized = false;
     this.ToastTimer = 0;
     this.AiLoadingTimer = 0;
@@ -98,6 +103,7 @@ export class RapidRaterApp {
     const data = await this.LoadMovieData();
     this.ApplyMovieData(data, data.sourceLabel);
     await this.LoadSavedRatingsCsv();
+    this.StartAccountRefresh();
     this.RequireImdbSignIn();
   }
 
@@ -115,6 +121,11 @@ export class RapidRaterApp {
     this.BindAccountEvents();
     this.BindMobileEvents();
     window.addEventListener("keydown", (event) => this.HandleKeyDown(event));
+    window.addEventListener("focus", () => this.RefreshAccountStateFromServer().catch(() => null));
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden)
+        this.RefreshAccountStateFromServer().catch(() => null);
+    });
   }
 
   BindViewEvents() {
@@ -428,6 +439,7 @@ export class RapidRaterApp {
     this.AccountPayload = account.payload || {};
     this.RatingsCsvText = account.ratingsCsv || "";
     this.AccountRevision = Number(account.revision) || 0;
+    this.StateDirty = false;
   }
 
   async OfferLegacyMigration() {
@@ -517,8 +529,14 @@ export class RapidRaterApp {
 
   SaveLocalState() {
     this.AccountPayload = BuildStoragePayload(this.State);
+    this.StateDirty = true;
     window.clearTimeout(this.SyncTimer);
     this.SyncTimer = window.setTimeout(() => this.FlushStateSync().catch((error) => this.ShowToast(EscapeHtml(error.message))), 300);
+  }
+
+  PersistStateNow() {
+    this.SaveLocalState();
+    this.FlushStateSync().catch((error) => this.ShowToast(EscapeHtml(error.message)));
   }
 
   async FlushStateSync() {
@@ -528,12 +546,67 @@ export class RapidRaterApp {
   }
 
   async PerformStateSync() {
-    const result = await this.RequestJson("./api/account/state", "PUT", {
-      payload: this.AccountPayload || BuildStoragePayload(this.State),
-      ratingsCsv: this.RatingsCsvText || "",
-      revision: this.AccountRevision
-    });
-    this.AccountRevision = Number(result.revision);
+    let mergedAnotherDevice = false;
+    for (let attempt = 0; attempt < StateConflictRetryCount; attempt++) {
+      try {
+        const payloadBeingSaved = this.AccountPayload || BuildStoragePayload(this.State);
+        const result = await this.RequestJson("./api/account/state", "PUT", {
+          payload: payloadBeingSaved,
+          ratingsCsv: this.RatingsCsvText || "",
+          revision: this.AccountRevision
+        });
+        this.AccountRevision = Number(result.revision);
+        if (this.AccountPayload === payloadBeingSaved)
+          this.StateDirty = false;
+        if (mergedAnotherDevice)
+          this.ShowToast("Changes from your other device were combined and saved.");
+        return;
+      } catch (error) {
+        const current = error?.status === 409 ? error.payload?.current : null;
+        if (!current || attempt === StateConflictRetryCount - 1)
+          throw error;
+        this.AccountPayload = MergeAccountPayload(current.payload, this.AccountPayload);
+        this.RatingsCsvText ||= current.ratings_csv || current.ratingsCsv || "";
+        this.AccountRevision = Number(current.revision) || 0;
+        this.ApplyMergedAccountPayload(this.AccountPayload);
+        mergedAnotherDevice = true;
+      }
+    }
+  }
+
+  StartAccountRefresh() {
+    if (this.AccountRefreshTimer)
+      return;
+    this.AccountRefreshTimer = window.setInterval(() => {
+      if (!document.hidden)
+        this.RefreshAccountStateFromServer().catch(() => null);
+    }, AccountRefreshIntervalMs);
+  }
+
+  async RefreshAccountStateFromServer() {
+    if (!this.User || this.StateDirty)
+      return false;
+    const account = await this.FetchJson("./api/account/state");
+    const revision = Number(account.revision) || 0;
+    if (revision <= this.AccountRevision)
+      return false;
+    this.AccountPayload = account.payload || {};
+    this.RatingsCsvText = account.ratingsCsv || "";
+    this.AccountRevision = revision;
+    this.ApplyMergedAccountPayload(this.AccountPayload);
+    this.ShowToast("Updated with changes from your other device.");
+    return true;
+  }
+
+  ApplyMergedAccountPayload(payload) {
+    this.State.ratings = payload.ratings || {};
+    this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(payload.recommendationExclusions);
+    this.State.letterboxd = NormalizeLetterboxdState(payload.letterboxd, this.State.movieById);
+    this.State.history = Array.isArray(payload.history) ? payload.history.slice(-200) : [];
+    this.State.savedQueueIds = payload.signature === this.State.signature && Array.isArray(payload.queueIds) ? payload.queueIds : null;
+    this.RebuildQueue();
+    this.Render();
+    this.UpdateSyncView();
   }
 
   RebuildQueue() {
@@ -789,7 +862,7 @@ export class RapidRaterApp {
 
   AdvanceQueue() {
     this.State.queue.shift();
-    this.SaveLocalState();
+    this.PersistStateNow();
     this.State.locked = false;
     this.Render();
   }
@@ -1263,7 +1336,7 @@ export class RapidRaterApp {
     this.Elements.syncStatus.textContent = "Reading the Letterboxd export...";
     const files = await ReadLetterboxdUpload(file);
     this.State.letterboxd = ImportLetterboxdCsvFiles(files, this.State.movieById, file.name);
-    this.SaveLocalState();
+    this.PersistStateNow();
     await this.FlushStateSync();
     this.UpdateSyncView();
     this.ShowToast(`Imported <strong>${FormatCount(this.State.letterboxd.items.length)}</strong> Letterboxd movies into this account`);
