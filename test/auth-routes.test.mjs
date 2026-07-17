@@ -155,6 +155,43 @@ test("a successful IMDb rating is committed to account state by the same request
   assert.deepEqual(deleted, { userId: user.id, ttId: "tt0107050" });
 });
 
+test("not-seen decisions are committed directly to account state", async () => {
+  const user = { id: "241c7a98-53a7-42b3-bde7-3fd3a27db9dc", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  let recorded = null;
+  const store = {
+    findUserByEmail: async () => user,
+    recordRating: async (userId, record) => {
+      recorded = { userId, record };
+      return 23;
+    }
+  };
+  const agent = request.agent(BuildTestApp(store));
+  const anonymous = await agent.get("/api/auth/session").expect(200);
+  const login = await agent.post("/api/auth/login")
+    .set("x-csrf-token", anonymous.body.csrfToken)
+    .send({ email: user.email, password: "correct horse battery staple" })
+    .expect(200);
+
+  const saved = await agent.put("/api/account/not-seen")
+    .set("x-csrf-token", login.body.csrfToken)
+    .send({ titleId: "tt0111257", title: "Speed", year: 1994, at: "2026-07-16T21:00:00.000Z" })
+    .expect(200);
+
+  assert.equal(saved.body.revision, 23);
+  assert.equal(recorded.userId, user.id);
+  assert.deepEqual(recorded.record, {
+    status: "notSeen",
+    rating: null,
+    title: "Speed",
+    year: 1994,
+    ttId: "tt0111257",
+    at: "2026-07-16T21:00:00.000Z",
+    submitStatus: "skipped",
+    submitError: "",
+    submittedAt: ""
+  });
+});
+
 function BuildTestApp(store, dependencies = {}) {
   const app = express();
   app.use(express.json());

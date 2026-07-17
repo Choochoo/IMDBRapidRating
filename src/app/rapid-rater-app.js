@@ -420,12 +420,13 @@ export class RapidRaterApp {
     return payload;
   }
 
-  async RequestJson(url, method, body) {
+  async RequestJson(url, method, body, options = {}) {
     const response = await fetch(url, {
       method,
       cache: "no-store",
       headers: { "content-type": "application/json", "x-csrf-token": this.CsrfToken },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      ...options
     });
     const payload = await response.json().catch(() => null);
     if (!response.ok || !payload?.ok)
@@ -846,6 +847,19 @@ export class RapidRaterApp {
     this.State.history.push({ ttId: movie.ttId, previous });
     if (status === "rated")
       this.EnqueueLiveSubmit(movie.ttId);
+    else
+      this.PersistNotSeen(this.State.ratings[movie.ttId]);
+  }
+
+  PersistNotSeen(record) {
+    const request = {
+      titleId: record.ttId,
+      title: record.title || "",
+      year: record.year || "",
+      at: record.at || new Date().toISOString()
+    };
+    this.RequestJson(Config.notSeenUrl, "PUT", request, { keepalive: true })
+      .catch((error) => this.ShowToast(`<strong>Not seen was not saved:</strong> ${EscapeHtml(error.message)}`));
   }
 
   AnimateActiveCard(status) {

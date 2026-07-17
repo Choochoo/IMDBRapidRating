@@ -10,6 +10,7 @@ export const Config = Object.freeze({
   recommendationsUrl: "./api/ai/recommendations",
   titleMetadataUrl: "./api/title/",
   rateUrl: "./api/rate",
+  notSeenUrl: "./api/account/not-seen",
   submitDelayMs: 750,
   skipKey: "`",
   ratingKeys: Object.freeze({

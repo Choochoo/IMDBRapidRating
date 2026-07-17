@@ -11,6 +11,12 @@ const StateSchema = z.object({
   ratingsCsv: z.string().max(10 * 1024 * 1024).default(""),
   revision: z.number().int().nonnegative()
 });
+const NotSeenSchema = z.object({
+  titleId: z.string().trim().regex(/^tt\d+$/),
+  title: z.string().max(500).default(""),
+  year: z.union([z.string(), z.number()]).optional(),
+  at: z.string().optional()
+});
 const SecretSchema = z.object({ value: z.string().trim().min(1).max(64 * 1024) });
 const PreferencesSchema = z.object({
   openAiModel: z.string().trim().max(160),
@@ -89,6 +95,15 @@ export function RegisterApiRoutes(app, {
     if (!result.ok)
       return response.status(409).json({ ok: false, code: "STATE_CONFLICT", error: "Your account changed in another browser.", current: result.current });
     response.json({ ok: true, revision: result.revision });
+  });
+
+  app.put("/api/account/not-seen", RequireCsrf, async (request, response) => {
+    const parsed = NotSeenSchema.safeParse(request.body);
+    if (!parsed.success)
+      return Invalid(response);
+    const record = BuildNotSeenRecord(parsed.data);
+    const revision = await store.recordRating(request.session.userId, record);
+    response.json({ ok: true, titleId: record.ttId, revision });
   });
 
   app.put("/api/account/preferences", RequireCsrf, async (request, response) => {
@@ -196,6 +211,20 @@ function BuildSubmittedRatingRecord(request, result) {
     submitError: "",
     submittedAt,
     imdbEchoRating: result.rating
+  };
+}
+
+function BuildNotSeenRecord(request) {
+  return {
+    status: "notSeen",
+    rating: null,
+    title: String(request.title || "").trim().slice(0, 500),
+    year: ReadYear(request.year),
+    ttId: request.titleId,
+    at: ReadTimestamp(request.at, new Date().toISOString()),
+    submitStatus: "skipped",
+    submitError: "",
+    submittedAt: ""
   };
 }
 
