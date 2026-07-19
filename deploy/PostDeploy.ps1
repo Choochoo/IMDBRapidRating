@@ -164,15 +164,26 @@ New-Item -Path $proxyDir -ItemType Directory -Force | Out-Null
 & $appCmd set config /section:system.webServer/proxy /enabled:true /preserveHostHeader:true /reverseRewriteHostInResponseHeaders:false /commit:apphost | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "IIS reverse-proxy support could not be enabled." }
 
-& $appCmd list site $proxySiteName | Out-Null
+foreach ($serviceName in @("WAS", "W3SVC")) {
+    $service = Get-Service -Name $serviceName -ErrorAction Stop
+    if ($service.Status -ne "Running") {
+        Start-Service -Name $serviceName -ErrorAction Stop
+        $service.WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Running, [TimeSpan]::FromSeconds(30))
+    }
+}
+
+$existingSite = (& $appCmd list site $proxySiteName 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -eq 0) {
-    & $appCmd set site $proxySiteName "/bindings:http/${proxyIpAddress}:80:$proxyHostName" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "The IMDb Rapid Rater IIS binding could not be updated." }
-    & $appCmd set vdir "$proxySiteName/" "/physicalPath:$proxyDir" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "The IMDb Rapid Rater IIS path could not be updated." }
-} else {
-    & $appCmd add site "/name:$proxySiteName" "/bindings:http/${proxyIpAddress}:80:$proxyHostName" "/physicalPath:$proxyDir" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "The IMDb Rapid Rater IIS site could not be created." }
+    Write-Host "Recreating the script-owned IIS proxy site to clear its current state..."
+    $deleteOutput = (& $appCmd delete site $proxySiteName 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "The existing IMDb Rapid Rater IIS proxy site could not be removed: $deleteOutput"
+    }
+}
+
+$addOutput = (& $appCmd add site "/name:$proxySiteName" "/bindings:http/${proxyIpAddress}:80:$proxyHostName" "/physicalPath:$proxyDir" 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) {
+    throw "The IMDb Rapid Rater IIS proxy site could not be created: $addOutput"
 }
 
 $proxyConfig = @"
@@ -196,6 +207,10 @@ Copy-Item -LiteralPath $proxyConfigPath -Destination (Join-Path $proxyDir "web.c
 $siteState = (& $appCmd list site $proxySiteName /text:state 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) {
     throw "The IMDb Rapid Rater IIS site state could not be read: $siteState"
+}
+if ($siteState -eq "Unknown") {
+    $serviceState = (Get-Service -Name "WAS", "W3SVC" | ForEach-Object { "$($_.Name)=$($_.Status)" }) -join ", "
+    throw "The freshly recreated IMDb Rapid Rater IIS site still has state 'Unknown' ($serviceState)."
 }
 if ($siteState -ne "Started") {
     $startOutput = (& $appCmd start site $proxySiteName 2>&1 | Out-String).Trim()
