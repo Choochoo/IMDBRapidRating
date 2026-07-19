@@ -193,10 +193,16 @@ $proxyConfig = @"
 $proxyConfigPath = Join-Path $proxyDir "web.proxy.config"
 $proxyConfig | Set-Content -LiteralPath $proxyConfigPath -Encoding UTF8
 Copy-Item -LiteralPath $proxyConfigPath -Destination (Join-Path $proxyDir "web.config") -Force
-& $appCmd stop site "/site.name:$proxySiteName" 2>$null | Out-Null
-Start-Sleep -Milliseconds 500
-& $appCmd start site "/site.name:$proxySiteName" | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "The IMDb Rapid Rater IIS site could not be restarted." }
+$siteState = (& $appCmd list site "/name:$proxySiteName" /text:state 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) {
+    throw "The IMDb Rapid Rater IIS site state could not be read: $siteState"
+}
+if ($siteState -ne "Started") {
+    $startOutput = (& $appCmd start site "/site.name:$proxySiteName" 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "The IMDb Rapid Rater IIS site could not be started from state '$siteState': $startOutput"
+    }
+}
 Write-Host "Maintenance mode disabled; checking the public site..." -ForegroundColor Cyan
 
 $proxyHealthUrl = "http://$proxyIpAddress/health"
