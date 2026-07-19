@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { GenerateAiRecommendations, ReadOutputTokenLimit, ReadRecommendationCount } from "../server/ai-recommendations.mjs";
 import { NormalizeRecommendationQueue, RecommendationKey, SameRecommendation } from "../server/recommendation-queue.mjs";
@@ -94,7 +97,7 @@ test("active rating movie moves into the saved wishlist", async () => {
   };
   app.NewActionId = () => "5d226a99-19c4-463a-9f0f-cbe9d717a641";
   app.RequestJson = async (url, method, body) => {
-    assert.equal(url, "./api/rater/decision");
+    assert.equal(url, "/api/rater/decision");
     assert.equal(method, "PUT");
     assert.equal(body.expectedRevision, 7);
     assert.equal(body.kind, "wishlist");
@@ -302,6 +305,53 @@ test("AI generation sends the saved queue and refills after server-side duplicat
     assert.equal(calls[1].text.format.schema.properties.recommendations.minItems, 1);
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test("AI generation sends active filters and rejects catalog matches outside them", async () => {
+  const rootPath = await mkdtemp(path.join(tmpdir(), "rapid-rater-ai-filters-"));
+  await mkdir(path.join(rootPath, "data"));
+  await writeFile(path.join(rootPath, "data", "movies.json"), JSON.stringify({
+    movies: [
+      { ttId: "tt0113277", title: "Heat", year: 1995, originCountries: ["US"], originalLanguage: "en" },
+      { ttId: "tt6751668", title: "Parasite", year: 2019, originCountries: ["KR"], originalLanguage: "ko" }
+    ]
+  }));
+  const calls = [];
+  const responses = [Recommendation("Heat", 1995), Recommendation("Parasite", 2019)];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (_url, options) => {
+    calls.push(JSON.parse(options.body));
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ output_text: JSON.stringify({ summary: "Filtered", recommendations: [responses.shift()] }) })
+    };
+  };
+  try {
+    const result = await GenerateAiRecommendations(rootPath, {
+      apiKey: "test-key",
+      model: "gpt-test",
+      count: 1,
+      filters: { minYear: 2000, excludedOriginCountries: ["US"], updatedAt: "2026-07-19T12:00:00.000Z" },
+      profile: { ratings: [
+        Rating("The Godfather", 1972, 10),
+        Rating("Goodfellas", 1990, 9),
+        Rating("Jaws", 1975, 8),
+        Rating("Arrival", 2016, 8),
+        Rating("Memento", 2000, 9)
+      ] }
+    });
+
+    assert.deepEqual(result.payload.recommendations.map((item) => item.title), ["Parasite"]);
+    assert.equal(calls.length, 2);
+    const profile = JSON.parse(calls[0].input[1].content);
+    assert.equal(profile.filters.minYear, 2000);
+    assert.deepEqual(profile.filters.excludedOriginCountries, ["US"]);
+    assert.equal(profile.filters.updatedAt, undefined);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await rm(rootPath, { recursive: true, force: true });
   }
 });
 

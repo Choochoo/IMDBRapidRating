@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BuildUserDataPath, EnsureUserDataParent, MigrateLegacyFile } from "./user-data.mjs";
+import { NormalizeLanguageCode, NormalizeTmdbOrigin } from "../shared/title-filters.js";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CachePath = BuildTitleMetadataCachePath();
@@ -127,7 +128,8 @@ async function FetchTmdbExtras(mediaType, id, apiKey) {
     seriesStatus: CleanMetadataText(payload?.status || ""),
     seasonCount: Number(payload?.number_of_seasons) || 0,
     episodeCount: Number(payload?.number_of_episodes) || 0,
-    episodeRuntimeMinutes: ReadEpisodeRuntime(payload)
+    episodeRuntimeMinutes: ReadEpisodeRuntime(payload),
+    ...NormalizeTmdbOrigin(mediaType, null, payload)
   };
 }
 
@@ -142,6 +144,8 @@ function BuildTmdbMetadata(item, extras, mediaType) {
     seasonCount: Number(extras.seasonCount) || 0,
     episodeCount: Number(extras.episodeCount) || 0,
     episodeRuntimeMinutes: Number(extras.episodeRuntimeMinutes) || 0,
+    originCountries: Array.isArray(extras.originCountries) ? extras.originCountries : [],
+    originalLanguage: extras.originalLanguage || NormalizeLanguageCode(item.original_language),
     source: "tmdb"
   };
 }

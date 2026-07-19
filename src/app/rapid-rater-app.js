@@ -53,6 +53,15 @@ import { UndoRating } from "./undo-rating.js";
 import { EscapeHtml, FormatCount } from "./util.js";
 import { IsCanonicalViewPath, PathForView, RouteFromPathname } from "./view-routes.js";
 import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../shared/media.js";
+import { NormalizeTitleFilters } from "../../shared/title-filters.js";
+import {
+  ApplyTitleFilters,
+  HideTitleFilterDialog,
+  ResetTitleFilterDialog,
+  ShowTitleFilterDialog,
+  UpdateTitleFilterButton,
+  UpdateTitleFilterPreview
+} from "./title-filter-workflows.js";
 
 const DefaultRecommendationCount = 9;
 const StateConflictRetryCount = 4;
@@ -96,18 +105,17 @@ export class RapidRaterApp {
     this.MetadataInFlight = new Set();
     this.MediaSwitchToken = 0;
     this.MediaSwitching = false;
+    this.PendingRoute = { mediaType: "movie", view: "rater" };
     document.documentElement.style.setProperty("--anim", `${Config.animationMs}ms`);
   }
 
   Start() {
     this.BindEvents();
     this.UpdateRecommendationPosterVisibility();
-    const initialRoute = RouteFromPathname(window.location.pathname);
-    this.State.mediaType = initialRoute.mediaType;
+    this.PendingRoute = RouteFromPathname(window.location.pathname);
+    this.State.mediaType = this.PendingRoute.mediaType;
     this.UpdateMediaUx();
-    this.ShowView(initialRoute.view);
-    if (!IsCanonicalViewPath(window.location.pathname))
-      window.history.replaceState(initialRoute, "", PathForView(initialRoute.view, initialRoute.mediaType));
+    this.ShowView(this.PendingRoute.view);
     this.BeginSession().catch((error) => this.ShowStartupError(error));
   }
 
@@ -193,6 +201,12 @@ export class RapidRaterApp {
 
   async ApplyBrowserRoute() {
     const route = RouteFromPathname(window.location.pathname);
+    if (!this.User) {
+      this.PendingRoute = route;
+      if (window.location.pathname !== "/")
+        window.history.replaceState({}, "", "/");
+      return;
+    }
     if (route.mediaType !== this.State.mediaType)
       return await this.ActivateMedia(route.mediaType, route.view);
     this.ShowView(route.view);
@@ -210,6 +224,14 @@ export class RapidRaterApp {
   }
 
   BindSetupEvents() {
+    this.Elements.configureFilters.addEventListener("click", () => ShowTitleFilterDialog(this));
+    this.Elements.filtersClose.addEventListener("click", () => HideTitleFilterDialog(this));
+    this.Elements.filtersReset.addEventListener("click", () => ResetTitleFilterDialog(this));
+    this.Elements.filtersApply.addEventListener("click", () => ApplyTitleFilters(this).catch((error) => {
+      this.Elements.filterError.textContent = error.message || "Filters could not be applied.";
+    }));
+    this.Elements.filtersDialog.addEventListener("input", () => UpdateTitleFilterPreview(this));
+    this.Elements.filtersDialog.addEventListener("change", () => UpdateTitleFilterPreview(this));
     this.Elements.configureImdb.addEventListener("click", () => this.ShowImdbDialog());
     this.Elements.imdbSave.addEventListener("click", () => SaveImdbConnectionFromDialog(this).catch((error) => this.ShowImdbError(error.message)));
     this.Elements.imdbDelete.addEventListener("click", () => this.DeleteAccountSecret("imdb"));
@@ -323,11 +345,11 @@ export class RapidRaterApp {
   }
 
   async BeginSession() {
-    const session = await this.FetchJson("./api/auth/session");
+    const session = await this.FetchJson("/api/auth/session");
     this.CsrfToken = session.csrfToken || "";
     if (!session.authenticated)
       return this.ShowAuthLanding(session.registrationEnabled !== false);
-    this.SetSignedInUser(session.user);
+    this.EnterAuthenticatedApp(session.user);
     await this.Initialize();
   }
 
@@ -336,12 +358,12 @@ export class RapidRaterApp {
     this.Elements.loginError.textContent = "";
     this.Elements.loginSubmit.disabled = true;
     try {
-      const payload = await this.RequestJson("./api/auth/login", "POST", {
+      const payload = await this.RequestJson("/api/auth/login", "POST", {
         email: this.Elements.loginEmail.value,
         password: this.Elements.loginPassword.value
       });
       this.CsrfToken = payload.csrfToken;
-      this.SetSignedInUser(payload.user);
+      this.EnterAuthenticatedApp(payload.user);
       this.Elements.authLanding.hidden = true;
       this.Elements.loginPassword.value = "";
       await this.Initialize();
@@ -362,12 +384,12 @@ export class RapidRaterApp {
     }
     this.Elements.signupSubmit.disabled = true;
     try {
-      const payload = await this.RequestJson("./api/auth/register", "POST", {
+      const payload = await this.RequestJson("/api/auth/register", "POST", {
         email: this.Elements.signupEmail.value,
         password
       });
       this.CsrfToken = payload.csrfToken;
-      this.SetSignedInUser(payload.user);
+      this.EnterAuthenticatedApp(payload.user);
       this.Elements.signupPassword.value = "";
       this.Elements.signupConfirmation.value = "";
       await this.Initialize();
@@ -379,6 +401,10 @@ export class RapidRaterApp {
   }
 
   ShowAuthLanding(registrationEnabled = true) {
+    if (window.location.pathname !== "/")
+      window.history.replaceState({}, "", "/");
+    document.body.classList.remove("tv-mode");
+    document.title = "IMDb Rapid Rater";
     this.Elements.authLanding.hidden = false;
     this.Elements.signOut.hidden = true;
     this.Elements.showSignup.hidden = !registrationEnabled;
@@ -405,10 +431,21 @@ export class RapidRaterApp {
     this.Elements.authLanding.hidden = true;
   }
 
+  EnterAuthenticatedApp(user) {
+    this.SetSignedInUser(user);
+    const route = this.PendingRoute || { mediaType: "movie", view: "rater" };
+    this.State.mediaType = route.mediaType;
+    this.UpdateMediaUx();
+    this.ShowView(route.view);
+    const path = PathForView(route.view, route.mediaType);
+    if (!IsCanonicalViewPath(window.location.pathname) || window.location.pathname !== path)
+      window.history.replaceState(route, "", path);
+  }
+
   async SignOut() {
     await this.FlushStateSync().catch(() => null);
     this.RaterEvents?.close();
-    await this.RequestJson("./api/auth/logout", "POST", {});
+    await this.RequestJson("/api/auth/logout", "POST", {});
     window.location.reload();
   }
 
@@ -462,6 +499,7 @@ export class RapidRaterApp {
     this.Elements.watchlistTitle.textContent = isTv ? "Saved TV watchlist" : "Saved movie watchlist";
     this.Elements.emptyTitle.textContent = isTv ? "TV show pool exhausted" : "Movie pool exhausted";
     this.Elements.touchNotSeen.textContent = isTv ? "Not watched" : "Not seen";
+    UpdateTitleFilterButton(this);
     const shortcutCopy = this.Elements.ratingFooter.querySelector(".shortcut-copy span");
     if (shortcutCopy)
       shortcutCopy.textContent = `1-9 rate IMDb, 0 = 10/10. \` = ${isTv ? "not watched" : "not seen"}, Backspace = go back.`;
@@ -489,7 +527,8 @@ export class RapidRaterApp {
     return [
       this.Elements.imdbDialog,
       this.Elements.tmdbDialog,
-      this.Elements.aiDialog
+      this.Elements.aiDialog,
+      this.Elements.filtersDialog
     ];
   }
 
@@ -553,6 +592,7 @@ export class RapidRaterApp {
       mediaType,
       ratings: saved.ratings || {},
       recommendationExclusions: saved.recommendationExclusions || [],
+      filters: NormalizeTitleFilters(saved.filters),
       letterboxd: saved.letterboxd || fresh.letterboxd,
       history: Array.isArray(saved.history) ? saved.history.slice(-200) : [],
       metadata: {},
@@ -697,7 +737,7 @@ export class RapidRaterApp {
   }
 
   async LoadAccountState() {
-    const account = await this.FetchJson("./api/account/state");
+    const account = await this.FetchJson("/api/account/state");
     ApplyAccountSettings(this.Settings, account.settings);
     this.AccountPayload = NormalizeAccountPayload(account.payload);
     this.RatingsCsvText = account.ratingsCsv || "";
@@ -837,7 +877,9 @@ export class RapidRaterApp {
     this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(saved.recommendationExclusions);
     this.State.letterboxd = NormalizeLetterboxdState(saved.letterboxd, this.State.movieById);
     this.State.history = Array.isArray(saved.history) ? saved.history : [];
+    this.State.filters = NormalizeTitleFilters(saved.filters);
     this.State.savedQueueIds = null;
+    UpdateTitleFilterButton(this);
   }
 
   ReadStoredState() {
@@ -872,7 +914,7 @@ export class RapidRaterApp {
     for (let attempt = 0; attempt < StateConflictRetryCount; attempt++) {
       try {
         const payloadBeingSaved = this.AccountPayload || BuildStoragePayload(this.State);
-        const result = await this.RequestJson("./api/account/state", "PUT", {
+        const result = await this.RequestJson("/api/account/state", "PUT", {
           payload: payloadBeingSaved,
           ratingsCsv: this.RatingsCsvText || "",
           revision: this.AccountRevision,
@@ -916,7 +958,7 @@ export class RapidRaterApp {
   async RefreshAccountStateFromServer() {
     if (!this.User || this.StateDirty)
       return false;
-    const account = await this.FetchJson("./api/account/state");
+    const account = await this.FetchJson("/api/account/state");
     const revision = Number(account.revision) || 0;
     if (revision <= this.AccountRevision)
       return false;
@@ -934,7 +976,9 @@ export class RapidRaterApp {
     this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(media.recommendationExclusions);
     this.State.letterboxd = NormalizeLetterboxdState(media.letterboxd, this.State.movieById);
     this.State.history = Array.isArray(media.history) ? media.history.slice(-200) : [];
+    this.State.filters = NormalizeTitleFilters(media.filters);
     this.RebuildQueue();
+    UpdateTitleFilterButton(this);
     this.Render();
     this.UpdateSyncView();
   }
@@ -1489,13 +1533,13 @@ export class RapidRaterApp {
   }
 
   async SaveAccountSecret(type, value) {
-    await this.RequestJson(`./api/account/secrets/${type}`, "PUT", { value });
+    await this.RequestJson(`/api/account/secrets/${type}`, "PUT", { value });
     const setting = type === "imdb" ? "imdbConfigured" : type === "tmdb" ? "tmdbConfigured" : "openAiConfigured";
     this.Settings[setting] = true;
   }
 
   async DeleteAccountSecret(type) {
-    await this.RequestJson(`./api/account/secrets/${type}`, "DELETE", {});
+    await this.RequestJson(`/api/account/secrets/${type}`, "DELETE", {});
     if (type === "imdb") {
       this.Elements.imdbDialog.hidden = true;
       await this.RefreshLiveStatus();
@@ -1511,7 +1555,7 @@ export class RapidRaterApp {
   }
 
   async SaveAccountPreferences(model) {
-    const payload = await this.RequestJson("./api/account/preferences", "PUT", {
+    const payload = await this.RequestJson("/api/account/preferences", "PUT", {
       openAiModel: model,
       openAiModelLag: Number(this.Settings.openAiModelLag) || 2
     });

@@ -1,4 +1,5 @@
 import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../shared/media.js";
+import { NormalizeTitleFilters } from "../../shared/title-filters.js";
 
 export function MergeAccountPayload(remoteValue, localValue) {
   const remote = NormalizeAccountPayload(remoteValue);
@@ -19,13 +20,24 @@ function MergeMediaPayload(remote, local) {
     ...local,
     ratings: MergeRecordMaps(remote.ratings, local.ratings),
     recommendationExclusions: MergeExclusions(remote.recommendationExclusions, local.recommendationExclusions),
-    history: MergeHistory(remote.history, local.history)
+    history: MergeHistory(remote.history, local.history),
+    filters: NewestFilters(remote.filters, local.filters)
   };
   if (remote.letterboxd || local.letterboxd)
     merged.letterboxd = NewestLetterboxdSnapshot(remote.letterboxd, local.letterboxd);
   delete merged.queueIds;
   delete merged.signature;
   return merged;
+}
+
+function NewestFilters(remoteValue, localValue) {
+  const remote = NormalizeTitleFilters(remoteValue);
+  const local = NormalizeTitleFilters(localValue);
+  if (!remote.updatedAt)
+    return local;
+  if (!local.updatedAt)
+    return remote;
+  return ReadTime(remote.updatedAt) > ReadTime(local.updatedAt) ? remote : local;
 }
 
 export function MergeRecordMaps(remoteValue, localValue) {

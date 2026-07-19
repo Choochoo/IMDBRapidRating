@@ -87,6 +87,7 @@ function BuildCounterElements() {
 
 function BuildStatusElements() {
   return {
+    configureFilters: Element("configure-filters"),
     sourceBadge: Element("source-badge"),
     liveBadge: Element("live-badge"),
     retryFailed: Element("retry-failed"),
@@ -135,8 +136,29 @@ function BuildSyncElements() {
 
 function BuildCookieElements() {
   return {
+    ...BuildFilterElements(),
     ...BuildImdbSetupElements(),
     ...BuildTmdbSetupElements()
+  };
+}
+
+function BuildFilterElements() {
+  return {
+    filtersDialog: Element("filters-dialog"),
+    filtersTitle: Element("filters-title"),
+    filtersDescription: Element("filters-description"),
+    filtersClose: Element("filters-close"),
+    filterMinYear: Element("filter-min-year"),
+    filterMaxYear: Element("filter-max-year"),
+    filterCountryOptions: Element("filter-country-options"),
+    filterLanguageOptions: Element("filter-language-options"),
+    filterBollywood: Element("filter-bollywood"),
+    filterIncludeUnknown: Element("filter-include-unknown"),
+    filterOriginNote: Element("filter-origin-note"),
+    filterPreview: Element("filter-preview"),
+    filterError: Element("filter-error"),
+    filtersReset: Element("filters-reset"),
+    filtersApply: Element("filters-apply")
   };
 }
 

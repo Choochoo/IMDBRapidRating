@@ -1736,6 +1736,115 @@ body.tv-mode #tab-sync {
   padding: 20px;
 }
 
+.filter-card {
+  width: min(880px, 100%);
+  max-height: min(860px, calc(100dvh - 36px));
+  overflow: auto;
+}
+
+.filter-section {
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.filter-section legend {
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.filter-year-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.filter-year-grid label {
+  margin: 0;
+}
+
+.filter-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  max-height: 190px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.filter-option,
+.cookie-card label.filter-option,
+.filter-checkbox,
+.cookie-card label.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 8px;
+  border-radius: 7px;
+  font-weight: 600;
+}
+
+.filter-option:hover,
+.filter-checkbox:hover {
+  background: rgba(126, 182, 255, 0.08);
+}
+
+.filter-option input,
+.filter-checkbox input {
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+
+.filter-option span {
+  min-width: 0;
+  flex: 1;
+}
+
+.filter-option small,
+.filter-checkbox small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.filter-options-empty {
+  grid-column: 1 / -1;
+  padding: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.filter-toggles {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+}
+
+.filter-origin-note,
+.filter-preview {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.filter-preview {
+  color: #d8e8fb !important;
+  font-weight: 750;
+}
+
+.status-chip.filter-active {
+  border-color: rgba(224, 173, 71, 0.58);
+  background: var(--accent-soft);
+  color: #f7d58e;
+}
+
 .auth-landing {
   position: fixed;
   inset: 0;
@@ -2017,6 +2126,25 @@ body.tv-mode #tab-sync {
 }
 
 @media (max-width: 720px) {
+  .filter-options {
+    grid-template-columns: 1fr;
+    max-height: 220px;
+  }
+
+  .filter-year-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filter-checkbox {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .filter-checkbox small {
+    flex-basis: 100%;
+    padding-left: 24px;
+  }
+
   body {
     height: auto;
     min-height: 100dvh;

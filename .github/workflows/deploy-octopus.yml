@@ -53,6 +53,26 @@ jobs:
         run: npm run build:data
         shell: powershell
 
+      - name: Restore TMDB origin cache
+        uses: actions/cache@v4
+        with:
+          path: cache/tmdb-title-origins.json
+          key: tmdb-title-origins-v1-${{ github.sha }}
+          restore-keys: |
+            tmdb-title-origins-v1-
+
+      - name: Enrich production origins
+        env:
+          TMDB_BUILD_API_KEY: ${{ secrets.TMDB_BUILD_API_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:TMDB_BUILD_API_KEY)) {
+            Write-Warning 'TMDB_BUILD_API_KEY is not configured; origin filters will have no catalog metadata.'
+          } else {
+            npm run build:origins
+            if ($LASTEXITCODE -ne 0) { throw 'TMDB origin enrichment failed.' }
+          }
+        shell: powershell
+
       - name: Stage deployment package
         shell: powershell
         run: |

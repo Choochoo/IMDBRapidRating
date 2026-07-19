@@ -59,6 +59,28 @@ test("generic account saves cannot overwrite the authoritative queue", () => {
   assert.equal(payload.signature, undefined);
 });
 
+test("server queue filters are reversible and do not mark hidden titles as seen", async () => {
+  const database = FakeRaterDatabase();
+  const store = CreateRaterQueueStore(database.pool);
+  const titles = [
+    { ttId: "tt0000001", year: 1990, originCountries: ["US"], originalLanguage: "en" },
+    { ttId: "tt0000002", year: 2015, originCountries: ["KR"], originalLanguage: "ko" },
+    { ttId: "tt0000003", year: 2020, originCountries: ["IN"], originalLanguage: "hi" }
+  ];
+  const titlePool = { titles, ids: titles.map((title) => title.ttId), version: "pool-v1" };
+  database.state.payload = {
+    media: { movie: { filters: { minYear: 2000, excludeBollywood: true }, ratings: {} }, tv: {} }
+  };
+
+  const filtered = await store.getRaterQueue("user-1", titlePool);
+  assert.deepEqual(filtered.queueIds, ["tt0000002"]);
+  assert.deepEqual(database.state.payload.media.movie.ratings, {});
+
+  database.state.payload.media.movie.filters = {};
+  const restored = await store.getRaterQueue("user-1", titlePool);
+  assert.deepEqual([...restored.queueIds].sort(), ["tt0000001", "tt0000002", "tt0000003"]);
+});
+
 test("atomic decisions advance only the expected head and reject a stale device", async () => {
   const database = FakeRaterDatabase();
   const store = CreateRaterQueueStore(database.pool);
@@ -121,13 +143,17 @@ function FakeRaterDatabase() {
         return { rows: [{ ...queue, queue_ids: [...queue.queue_ids] }], rowCount: 1 };
       if (/SELECT payload, revision FROM/.test(sql))
         return { rows: [{ payload: structuredClone(state.payload), revision: state.revision }], rowCount: 1 };
+      if (/SELECT tt_id FROM/.test(sql))
+        return { rows: [], rowCount: 0 };
       if (/UPDATE .*user_states/.test(sql)) {
         state.payload = JSON.parse(parameters[1]);
         state.revision++;
         return { rows: [{ revision: state.revision }], rowCount: 1 };
       }
       if (/UPDATE .*rater_queues/.test(sql)) {
-        queue.queue_ids = JSON.parse(parameters[2]);
+        const replacesPool = /SET pool_version=\$3, queue_ids=\$4/.test(sql);
+        queue.pool_version = replacesPool ? parameters[2] : (parameters[3] || queue.pool_version);
+        queue.queue_ids = JSON.parse(parameters[replacesPool ? 3 : 2]);
         queue.revision++;
         return { rows: [{ ...queue, queue_ids: [...queue.queue_ids] }], rowCount: 1 };
       }

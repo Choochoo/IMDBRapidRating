@@ -11,6 +11,7 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 - Switches the entire product between Movies and TV Shows, with separate URLs, queues, stats, histories, and watchlists.
 - Shows three large title cards at a time on desktop or one on mobile.
 - Loads real feature-film, TV-series, and TV-miniseries IDs from IMDb's non-commercial datasets. Episodes are intentionally excluded.
+- Filters each rating queue by release/premiere year, production country, original language, and an optional Bollywood approximation without marking hidden titles as seen.
 - Presents series-native facts in TV mode, including run years, status, seasons, episodes, and episode runtime when TMDB metadata is available.
 - Enriches visible cards with poster and synopsis metadata from TMDB when configured.
 - Imports your IMDb ratings CSV so already-rated titles are removed from the queue.
@@ -44,7 +45,7 @@ One-time setup:
 .\scripts\setup-octopus-project.ps1 -ApiKey "<Octopus API key>"
 ```
 
-The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories.
+The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add a `TMDB_BUILD_API_KEY` Actions secret to enrich the generated catalogs with production-country and original-language metadata. Deployment still succeeds without it, but only year filtering is available until an enriched catalog is deployed.
 
 Configure these Octopus project variables before the first account-backed deployment. Mark the first three as sensitive:
 
@@ -89,6 +90,8 @@ Port `5012` is the default.
 Ratings, imported CSV data, recent history, queue order, AI exclusions, and preferences are stored per account in PostgreSQL. Movie and TV state is namespaced so actions in one section never alter the other. The browser stores only an `HttpOnly` session cookie. Signing into the same account on another computer loads the synchronized save.
 
 Each Movies and TV Shows queue is independently server-authoritative. Every rating, not-seen/not-watched choice, wishlist action, and undo includes the expected queue revision and advances only the current section's server-side head. Stale devices reload the canonical queue instead of merging or reshuffling it. Open devices receive media-scoped queue revision events, with focus refresh and polling as fallbacks.
+
+Filters are also independent for Movies and TV Shows. Open **Filters** beside the progress counters to choose a year range or exclude production countries and original languages. **Hide Bollywood** is intentionally labeled as an approximation: it hides Indian productions whose TMDB original language is Hindi. Filtered titles stay untouched and return to the queue when the filter is removed. Titles with no origin metadata remain included by default.
 
 Movie- and TV-pool builds each include a SHA-256 identity. When either pool changes, its remaining order is preserved, unavailable titles are removed, and newly eligible titles are appended deterministically instead of resetting the active choices.
 
@@ -194,6 +197,7 @@ Open **Movie Watchlist** or **TV Watchlist** to generate picks from the active s
 - Genres
 - Your rating
 - Titles and years you marked **Don't recommend again**
+- The active year range and origin exclusions
 
 No IMDb cookie, TMDB key, `tt` IDs, submit history, or raw CSV file is sent.
 
@@ -214,6 +218,15 @@ npm run build:data
 ```
 
 The generated `data/movies.json` and `data/shows.json` files are ignored because they are derived from IMDb datasets.
+
+IMDb's public datasets provide title type, year, genre, and rating data, but not production country or original language. To enable the origin filters, enrich both generated catalogs through TMDB after `build:data`:
+
+```powershell
+$env:TMDB_BUILD_API_KEY = "<TMDB v3 API key or read access token>"
+npm run build:origins
+```
+
+The enrichment is resumable. Results, including titles TMDB could not match, are checkpointed in the ignored `cache/tmdb-title-origins.json` file. `TMDB_ORIGIN_CONCURRENCY` can be set from `1` to `24` and defaults to `12`. Re-run `build:origins` after generating fresh IMDb catalogs; cached titles are reused.
 
 The script downloads these files into `cache/`:
 
@@ -265,6 +278,8 @@ db/migrations/             Versioned PostgreSQL schema migrations
 shared/                    Browser/server shared helpers
 scripts/server.mjs         Local server entrypoint
 scripts/build-movie-pool.mjs  IMDb dataset builder
+scripts/enrich-title-origins.mjs Build-time TMDB origin enrichment
+shared/title-filters.js     Shared normalization and filter rules
 data/movies.json           Generated movie queue, ignored
 data/shows.json            Generated TV-series queue, ignored
 cache/                     Downloaded IMDb TSV cache, ignored

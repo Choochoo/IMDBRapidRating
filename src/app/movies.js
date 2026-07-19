@@ -1,4 +1,5 @@
 import { CleanText, FormatCount, NormalizeGenres, ToNumber } from "./util.js";
+import { NormalizeTitleOrigin } from "../../shared/title-filters.js";
 
 export function NormalizeMovieList(raw) {
   const list = Array.isArray(raw) ? raw : raw.movies || raw.shows || raw.titles;
@@ -34,6 +35,7 @@ function NormalizeMovie(item, seen) {
 }
 
 function BuildMovieItem(item, ttId, title) {
+  const origin = NormalizeTitleOrigin(item);
   return {
     ttId,
     title,
@@ -43,6 +45,7 @@ function BuildMovieItem(item, ttId, title) {
     titleType: CleanText(item.titleType || ""),
     runtimeMinutes: ToNumber(item.runtimeMinutes || item.runtime),
     genres: NormalizeGenres(item.genres),
+    ...origin,
     imdbRating: ToNumber(item.imdbRating || item.averageRating),
     numVotes: ToNumber(item.numVotes || item.votes)
   };

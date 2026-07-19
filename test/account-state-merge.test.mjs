@@ -124,6 +124,18 @@ test("movie and TV conflicts merge inside separate media namespaces", () => {
   assert.deepEqual(Object.keys(ReadMediaPayload(merged, "tv").ratings), ["tt0000002"]);
 });
 
+test("the most recently changed filters win during a device conflict", () => {
+  const merged = MergeAccountPayload({
+    media: { movie: { filters: { minYear: 1980, updatedAt: "2026-07-16T10:00:00.000Z" } }, tv: {} }
+  }, {
+    media: { movie: { filters: { minYear: 2000, excludeBollywood: true, updatedAt: "2026-07-16T11:00:00.000Z" } }, tv: {} }
+  });
+
+  const filters = ReadMediaPayload(merged, "movie").filters;
+  assert.equal(filters.minYear, 2000);
+  assert.equal(filters.excludeBollywood, true);
+});
+
 function Record(ttId, rating, at) {
   return { ttId, status: "rated", rating, at, submitStatus: "submitted", submittedAt: at };
 }

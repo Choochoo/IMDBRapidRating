@@ -4,9 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>IMDb Rapid Rater</title>
-    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./vendor/bootstrap.min.css">
-    <link rel="stylesheet" href="./src/styles.css">
+    <base href="/">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/vendor/bootstrap.min.css">
+    <link rel="stylesheet" href="/src/styles.css">
   </head>
   <body class="rater-active">
     <header class="app-header">
@@ -38,6 +39,7 @@
           <button type="button" class="status-chip" id="sign-out" hidden>Sign out</button>
           <button type="button" class="status-chip live-missing" id="configure-imdb">IMDb checking</button>
           <button type="button" class="status-chip metadata-missing" id="configure-tmdb">TMDB key needed</button>
+          <button type="button" class="status-chip" id="configure-filters">Filters</button>
           <span class="status-chip" id="source-badge">Loading</span>
           <span class="status-chip live-missing" id="live-badge">Live checking</span>
         </div>
@@ -338,6 +340,51 @@
       </div>
     </section>
 
+    <section class="cookie-dialog" id="filters-dialog" role="dialog" aria-modal="true" aria-labelledby="filters-title" hidden>
+      <div class="cookie-card filter-card">
+        <div class="cookie-header">
+          <h1 id="filters-title">Movie filters</h1>
+          <button type="button" id="filters-close">Close</button>
+        </div>
+        <p id="filters-description">Choose which release years and production origins stay in your rating queue. Filtered titles are not marked as unseen and return if you remove a filter.</p>
+
+        <fieldset class="filter-section">
+          <legend>Release year</legend>
+          <div class="filter-year-grid">
+            <label for="filter-min-year">From
+              <input class="setup-input" id="filter-min-year" type="number" min="1870" max="2200" inputmode="numeric" placeholder="Any year">
+            </label>
+            <label for="filter-max-year">Through
+              <input class="setup-input" id="filter-max-year" type="number" min="1870" max="2200" inputmode="numeric" placeholder="Any year">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="filter-section">
+          <legend>Production countries to hide</legend>
+          <div class="filter-options" id="filter-country-options"></div>
+        </fieldset>
+
+        <fieldset class="filter-section">
+          <legend>Original languages to hide</legend>
+          <div class="filter-options" id="filter-language-options"></div>
+        </fieldset>
+
+        <div class="filter-toggles">
+          <label class="filter-checkbox"><input id="filter-bollywood" type="checkbox"> Hide Bollywood <small>Approximation: Indian productions whose original language is Hindi.</small></label>
+          <label class="filter-checkbox"><input id="filter-include-unknown" type="checkbox" checked> Include titles whose origin is unknown</label>
+        </div>
+
+        <p class="filter-origin-note" id="filter-origin-note"></p>
+        <p class="filter-preview" id="filter-preview" role="status"></p>
+        <p class="cookie-error" id="filter-error" role="alert"></p>
+        <div class="cookie-actions">
+          <button type="button" id="filters-reset">Reset</button>
+          <button type="button" class="backup-action" id="filters-apply">Apply filters</button>
+        </div>
+      </div>
+    </section>
+
     <section class="cookie-dialog" id="imdb-dialog" role="dialog" aria-modal="true" aria-labelledby="imdb-title" hidden>
       <div class="cookie-card">
         <div class="cookie-header">
@@ -407,6 +454,6 @@
       </div>
     </section>
 
-    <script type="module" src="./src/app.js"></script>
+    <script type="module" src="/src/app.js"></script>
   </body>
 </html>

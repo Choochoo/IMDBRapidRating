@@ -1,6 +1,7 @@
 import { CreateQueueSeed, QueueSnapshot, ReconcileQueueIds, SameQueueIds } from "./rater-queue.mjs";
 import { ReadDatabaseSchema } from "./db/config.mjs";
 import { NormalizeMediaType, ReadMediaPayload, WriteMediaPayload } from "../shared/media.js";
+import { FilterTitlePool } from "./movie-pool.mjs";
 
 export function CreateRaterQueueStore(pool) {
   return {
@@ -14,19 +15,20 @@ export function CreateRaterQueueStore(pool) {
           queue = await ReadQueue(client, userId, mediaType, true);
         const seed = String(queue?.seed || CreateQueueSeed());
         const media = ReadMediaPayload(state.payload, mediaType);
+        const eligiblePool = FilterTitlePool(titlePool, media.filters);
         const legacyIds = queue ? queue.queue_ids : media.queueIds;
         const unavailable = [...Object.keys(media.ratings || {}), ...recommendations];
-        const queueIds = ReconcileQueueIds(legacyIds, titlePool.ids, unavailable, seed);
-        const changed = !queue || queue.pool_version !== titlePool.version || !SameQueueIds(queue.queue_ids, queueIds);
+        const queueIds = ReconcileQueueIds(legacyIds, eligiblePool.ids, unavailable, seed);
+        const changed = !queue || queue.pool_version !== eligiblePool.version || !SameQueueIds(queue.queue_ids, queueIds);
         if (!queue) {
           queue = (await client.query(
             `INSERT INTO ${Qualified("rater_queues")} (user_id, media_type, pool_version, seed, queue_ids, revision, created_at, updated_at) VALUES ($1, $2, $3, $4, $5::jsonb, 1, now(), now()) RETURNING pool_version, seed, queue_ids, revision`,
-            [userId, mediaType, titlePool.version, seed, JSON.stringify(queueIds)]
+            [userId, mediaType, eligiblePool.version, seed, JSON.stringify(queueIds)]
           )).rows[0];
         } else if (changed) {
           queue = (await client.query(
             `UPDATE ${Qualified("rater_queues")} SET pool_version=$3, queue_ids=$4::jsonb, revision=revision+1, updated_at=now() WHERE user_id=$1 AND media_type=$2 RETURNING pool_version, seed, queue_ids, revision`,
-            [userId, mediaType, titlePool.version, JSON.stringify(queueIds)]
+            [userId, mediaType, eligiblePool.version, JSON.stringify(queueIds)]
           )).rows[0];
         }
         return { ...QueueSnapshot(queue), changed };
@@ -122,9 +124,10 @@ export function CreateRaterQueueStore(pool) {
         const state = await ReadState(client, userId, true);
         const recommendations = await ReadRecommendationIds(client, userId, mediaType);
         const media = ReadMediaPayload(state.payload, mediaType);
+        const eligiblePool = FilterTitlePool(titlePool, media.filters);
         const unavailable = [...Object.keys(media.ratings || {}), ...recommendations];
-        const queueIds = ReconcileQueueIds(request.queueIds, titlePool.ids, unavailable, queue.seed);
-        const nextQueue = await WriteQueue(client, userId, mediaType, queueIds, titlePool.version);
+        const queueIds = ReconcileQueueIds(request.queueIds, eligiblePool.ids, unavailable, queue.seed);
+        const nextQueue = await WriteQueue(client, userId, mediaType, queueIds, eligiblePool.version);
         return { ok: true, queue: QueueSnapshot(nextQueue) };
       });
     }

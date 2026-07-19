@@ -5,6 +5,7 @@ const MediaStateKeys = Object.freeze([
   "recommendationExclusions",
   "letterboxd",
   "history",
+  "filters",
   "signature",
   "queueIds"
 ]);

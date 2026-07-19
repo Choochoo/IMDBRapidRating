@@ -7,7 +7,7 @@ import { GetTitleMetadata } from "./title-metadata.mjs";
 import { HasEncryptionKey } from "./security/secrets.mjs";
 import { NormalizeRecommendationItem, RecommendationKey } from "./recommendation-queue.mjs";
 import { ReadMoviePool, ReadTitlePool } from "./movie-pool.mjs";
-import { MediaTypes, NormalizeMediaType } from "../shared/media.js";
+import { MediaTypes, NormalizeMediaType, ReadMediaPayload } from "../shared/media.js";
 
 const MediaTypeSchema = z.enum(MediaTypes);
 
@@ -339,7 +339,7 @@ export function RegisterApiRoutes(app, {
     const mediaType = ReadRequestMediaType(request, response);
     if (!mediaType)
       return;
-    const options = await BuildOpenAiOptions(store, request.session.userId);
+    const options = await BuildOpenAiOptions(store, request.session.userId, mediaType);
     const queue = await store.listRecommendationQueue(request.session.userId, mediaType);
     const result = await generateAiRecommendations(rootPath, { ...request.body, ...options, queue, mediaType });
     if (!result.payload?.ok)
@@ -467,12 +467,13 @@ function ReadTimestamp(value, fallback) {
   return Number.isFinite(Date.parse(timestamp)) ? timestamp : fallback;
 }
 
-async function BuildOpenAiOptions(store, userId) {
+async function BuildOpenAiOptions(store, userId, mediaType = "movie") {
   const bundle = await store.getBundle(userId);
   return {
     apiKey: await store.getSecret(userId, "openai"),
     model: bundle.preferences.openAiModel,
-    modelLag: bundle.preferences.openAiModelLag
+    modelLag: bundle.preferences.openAiModelLag,
+    filters: ReadMediaPayload(bundle.state?.payload, mediaType).filters
   };
 }
 

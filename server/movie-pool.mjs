@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { HasActiveTitleFilters, IsTitleAllowed, NormalizeTitleOrigin } from "../shared/title-filters.js";
 
 const Cache = new Map();
 
@@ -16,10 +17,12 @@ export async function ReadTitlePool(rootPath, mediaType = "movie") {
   if (cached?.modifiedAt === file.mtimeMs)
     return cached.value;
   const raw = JSON.parse(await readFile(filePath, "utf8"));
-  const ids = NormalizeTitleIds(raw);
+  const titles = NormalizeTitles(raw);
+  const ids = titles.map((title) => title.ttId);
   if (!ids.length)
     throw new Error(`The ${mediaType === "tv" ? "TV show" : "movie"} pool does not contain any valid IMDb IDs.`);
   const value = {
+    titles,
     ids,
     version: ReadPoolVersion(raw.poolVersion, ids)
   };
@@ -31,20 +34,29 @@ export function CalculatePoolVersion(ids) {
   return createHash("sha256").update(ids.join("\n"), "utf8").digest("hex");
 }
 
-function NormalizeTitleIds(raw) {
+export function FilterTitlePool(pool, filters) {
+  if (!HasActiveTitleFilters(filters))
+    return pool;
+  const titles = Array.isArray(pool?.titles) ? pool.titles.filter((title) => IsTitleAllowed(title, filters)) : [];
+  const ids = titles.map((title) => title.ttId);
+  return { ...pool, titles, ids, version: CalculatePoolVersion(ids) };
+}
+
+function NormalizeTitles(raw) {
   const titles = Array.isArray(raw) ? raw : raw?.movies || raw?.shows || raw?.titles;
   if (!Array.isArray(titles))
     return [];
   const seen = new Set();
-  const ids = [];
+  const normalized = [];
   for (const title of titles) {
     const ttId = String(title?.ttId || title?.tconst || title?.id || "").trim();
     if (!/^tt\d+$/.test(ttId) || seen.has(ttId))
       continue;
     seen.add(ttId);
-    ids.push(ttId);
+    const year = Number(title?.year || title?.startYear) || null;
+    normalized.push({ ttId, year, ...NormalizeTitleOrigin(title) });
   }
-  return ids;
+  return normalized;
 }
 
 function ReadPoolVersion(value, ids) {

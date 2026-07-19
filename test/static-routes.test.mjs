@@ -20,6 +20,14 @@ test("browser module graph can load the shared media helper", async () => {
   assert.match(response.headers["content-type"], /javascript/);
 });
 
+test("browser module graph can load the shared title filter helper", async () => {
+  const app = express();
+  RegisterStaticRoutes(app, process.cwd());
+  const response = await request(app).get("/shared/title-filters.js").expect(200);
+  assert.match(response.text, /export function IsTitleAllowed/);
+  assert.match(response.headers["content-type"], /javascript/);
+});
+
 test("browser can load the local ZIP implementation without a CDN", async () => {
   const app = express();
   RegisterStaticRoutes(app, process.cwd());
@@ -35,6 +43,8 @@ test("each top-level view has a refreshable browser route", async () => {
   for (const path of ["/rate", "/wishlist", "/sync", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"]) {
     const response = await request(app).get(path).expect(200);
     assert.match(response.text, /<title>IMDb Rapid Rater<\/title>/);
+    assert.match(response.text, /<base href="\/">/);
+    assert.match(response.text, /src="\/src\/app\.js"/);
     assert.match(response.headers["content-type"], /html/);
   }
 });

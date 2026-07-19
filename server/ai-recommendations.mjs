@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { ResolveOpenAiModel } from "./openai-models.mjs";
 import { NormalizeRecommendationQueue, SameRecommendation } from "./recommendation-queue.mjs";
+import { HasActiveTitleFilters, IsTitleAllowed, NormalizeTitleFilters } from "../shared/title-filters.js";
 
 const OpenAiResponsesUrl = "https://api.openai.com/v1/responses";
 const MaximumRecommendationCount = 99;
@@ -57,18 +58,24 @@ function BuildPreferenceProfile(options) {
   const ratings = Array.isArray(profile.ratings) ? profile.ratings : [];
   if (ratings.length < 5)
     return Fail(422, "NOT_ENOUGH_RATINGS", "Import at least five rated IMDb rows before asking for recommendations.");
-  return Ok({ profile: BuildProfile(ratings, profile.exclusions, options.queue, options.mediaType) });
+  return Ok({ profile: BuildProfile(ratings, profile.exclusions, options.queue, options.mediaType, options.filters) });
 }
 
-function BuildProfile(ratings, exclusions, queue, mediaType) {
+function BuildProfile(ratings, exclusions, queue, mediaType, filters) {
   return {
     mediaType: mediaType === "tv" ? "tv" : "movie",
     ratings: OptimizeRatings(ratings.map(NormalizeRating).filter(Boolean)),
     exclusions: NormalizeExclusions(exclusions),
     queue: NormalizeRecommendationQueue(queue).map(ToProfileMovie),
+    filters: BuildProfileFilters(filters),
     ratingScale: "1-10",
-    fieldsSent: ["title", "year", "genres", "rating", "queuedTitle", "queuedYear", "excludedTitle", "excludedYear"]
+    fieldsSent: ["title", "year", "genres", "rating", "queuedTitle", "queuedYear", "excludedTitle", "excludedYear", "yearRange", "excludedProductionCountries", "excludedOriginalLanguages"]
   };
+}
+
+function BuildProfileFilters(filters) {
+  const { updatedAt, ...profileFilters } = NormalizeTitleFilters(filters);
+  return profileFilters;
 }
 
 function OptimizeRatings(ratings) {
@@ -123,9 +130,10 @@ function BuildSystemPrompt(options) {
     ? "Recommend whole series, not individual episodes or seasons. Consider title, premiere year, genre, series commitment, and user rating together."
     : "Consider title, year, genre, and user rating together.";
   const exclusions = "Never recommend anything already present in profile.ratings, profile.queue, or profile.exclusions. The queue is the user's saved watchlist and exclusions are permanent do-not-recommend choices.";
+  const filters = "Honor profile.filters exactly: stay within its year range, avoid excluded production countries and original languages, apply its Bollywood exclusion, and include unknown-origin titles only when allowed.";
   const why = "Explain the taste pattern and cite rating evidence from the user's data.";
   const format = "Use 2-4 evidence lines naming rated titles, ratings, genres, or eras.";
-  return [scope, criteria, exclusions, why, format, "Return only JSON matching the schema."].join(" ");
+  return [scope, criteria, exclusions, filters, why, format, "Return only JSON matching the schema."].join(" ");
 }
 
 function BuildRecommendationSchema(count) {
@@ -197,8 +205,11 @@ function EnrichRecommendationPayload(rootPath, payload, profile) {
   const recommendations = ReadRecommendations(payload);
   const blocked = [...profile.ratings, ...profile.queue, ...profile.exclusions];
   const unique = [];
-  const enriched = recommendations.map((item) => EnrichRecommendation(item, titles));
-  for (const item of enriched) {
+  for (const recommendation of recommendations) {
+    const matchedTitle = FindRecommendationMovie(recommendation, titles);
+    if (HasActiveTitleFilters(profile.filters) && (!matchedTitle || !IsTitleAllowed(matchedTitle, profile.filters)))
+      continue;
+    const item = EnrichRecommendation(recommendation, matchedTitle);
     if (blocked.some((existing) => SameRecommendation(existing, item)) || unique.some((existing) => SameRecommendation(existing, item)))
       continue;
     unique.push(item);
@@ -219,11 +230,15 @@ function ReadRecommendations(payload) {
   return Array.isArray(payload.recommendations) ? payload.recommendations : [];
 }
 
-function EnrichRecommendation(item, movies) {
-  const movie = FindRecommendationMovie(item, movies);
+function EnrichRecommendation(item, movie) {
   if (!movie)
     return { ...item, ttId: "" };
-  return { ...item, ttId: movie.ttId, title: movie.title || item.title, year: movie.year || item.year };
+  return {
+    ...item,
+    ttId: movie.ttId,
+    title: movie.title || item.title,
+    year: movie.year || item.year
+  };
 }
 
 function FindRecommendationMovie(item, movies) {
