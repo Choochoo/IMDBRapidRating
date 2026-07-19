@@ -5,7 +5,7 @@ import { GetOpenAiModels } from "./openai-models.mjs";
 import { DeleteImdbRating, GetImdbStatus, SubmitImdbRating } from "./imdb-ratings.mjs";
 import { GetTitleMetadata } from "./title-metadata.mjs";
 import { HasEncryptionKey } from "./security/secrets.mjs";
-import { RecommendationKey } from "./recommendation-queue.mjs";
+import { NormalizeRecommendationItem, RecommendationKey } from "./recommendation-queue.mjs";
 
 const StateSchema = z.object({
   payload: z.record(z.string(), z.unknown()),
@@ -23,6 +23,12 @@ const RecommendationExclusionSchema = z.object({
   title: z.string().trim().min(1).max(500),
   year: z.union([z.string(), z.number()]).optional(),
   at: z.string().optional()
+});
+const RecommendationQueueItemSchema = z.object({
+  ttId: z.string().trim().regex(/^tt\d+$/),
+  title: z.string().trim().min(1).max(500),
+  year: z.union([z.string(), z.number()]).optional(),
+  genres: z.array(z.string().trim().min(1).max(100)).max(30).default([])
 });
 const SecretSchema = z.object({ value: z.string().trim().min(1).max(64 * 1024) });
 const PreferencesSchema = z.object({
@@ -193,6 +199,27 @@ export function RegisterApiRoutes(app, {
   app.get("/api/ai/recommendations/queue", async (request, response) => {
     const recommendations = await store.listRecommendationQueue(request.session.userId);
     response.json({ ok: true, recommendations, count: recommendations.length });
+  });
+
+  app.put("/api/ai/recommendations/queue", RequireCsrf, async (request, response) => {
+    const parsed = RecommendationQueueItemSchema.safeParse(request.body);
+    if (!parsed.success)
+      return Invalid(response);
+    const recommendation = NormalizeRecommendationItem({
+      ...parsed.data,
+      source: "rating-system",
+      why: { tasteMatch: "Added from the rating queue.", ratingEvidence: [] },
+      addedAt: new Date().toISOString()
+    });
+    const added = await store.appendRecommendationQueue(request.session.userId, [recommendation]);
+    const recommendations = await store.listRecommendationQueue(request.session.userId);
+    response.json({
+      ok: true,
+      recommendation,
+      recommendations,
+      count: recommendations.length,
+      addedCount: added.length
+    });
   });
 
   app.post("/api/ai/recommendations", RequireCsrf, async (request, response) => {

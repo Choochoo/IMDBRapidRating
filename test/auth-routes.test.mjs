@@ -241,6 +241,40 @@ test("generated picks append to the saved per-user recommendation queue", async 
   assert.deepEqual(response.body.recommendations, [existing, generated]);
 });
 
+test("a rating-system movie can be added directly to the saved wishlist", async () => {
+  const user = { id: "c95c1ff0-325f-4f64-a763-669403435215", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const queue = [];
+  let appended = null;
+  const store = {
+    findUserByEmail: async () => user,
+    listRecommendationQueue: async () => [...queue],
+    appendRecommendationQueue: async (userId, items) => {
+      appended = { userId, items };
+      queue.push(...items);
+      return items;
+    }
+  };
+  const agent = request.agent(BuildTestApp(store));
+  const anonymous = await agent.get("/api/auth/session").expect(200);
+  const login = await agent.post("/api/auth/login")
+    .set("x-csrf-token", anonymous.body.csrfToken)
+    .send({ email: user.email, password: "correct horse battery staple" })
+    .expect(200);
+
+  const response = await agent.put("/api/ai/recommendations/queue")
+    .set("x-csrf-token", login.body.csrfToken)
+    .send({ ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime", "Drama"] })
+    .expect(200);
+
+  assert.equal(appended.userId, user.id);
+  assert.equal(response.body.addedCount, 1);
+  assert.equal(response.body.count, 1);
+  assert.equal(response.body.recommendation.source, "rating-system");
+  assert.equal(response.body.recommendation.queueKey, "heat|1995");
+  assert.equal(response.body.recommendation.why.tasteMatch, "Added from the rating queue.");
+  assert.deepEqual(response.body.recommendations, appended.items);
+});
+
 test("don't recommend moves a saved pick into the account exclusion list", async () => {
   const user = { id: "a772239d-a772-4489-8ddc-aa0f95071669", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   let saved = null;

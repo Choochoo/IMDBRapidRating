@@ -119,6 +119,7 @@ export class RapidRaterApp {
 
   BindEvents() {
     this.BindViewEvents();
+    this.BindRaterEvents();
     this.BindToolbarEvents();
     this.BindSetupEvents();
     this.BindAiEvents();
@@ -195,6 +196,16 @@ export class RapidRaterApp {
     this.Elements.jsonFile.addEventListener("change", (event) => this.HandleJsonFile(event));
     this.Elements.csvFile.addEventListener("change", (event) => this.HandleCsvFile(event));
     this.Elements.letterboxdFile.addEventListener("change", (event) => this.HandleLetterboxdFile(event).catch((error) => this.ShowSyncError(error)));
+  }
+
+  BindRaterEvents() {
+    this.Elements.strip.addEventListener("click", (event) => {
+      const button = event.target.closest?.("[data-add-active-to-wishlist]");
+      if (!button)
+        return;
+      this.AddActiveMovieToWishlist(button)
+        .catch((error) => this.ShowToast(`<strong>Wishlist was not updated:</strong> ${EscapeHtml(error.message)}`));
+    });
   }
 
   ToggleRecommendationPosters() {
@@ -656,11 +667,29 @@ export class RapidRaterApp {
   }
 
   RebuildQueue() {
-    const activeIds = new Set(Object.keys(this.State.ratings));
+    const activeIds = this.BuildUnavailableRatingIds();
     const queuedIds = new Set();
     const savedQueue = this.BuildSavedQueue(activeIds, queuedIds);
     const freshQueue = this.State.movies.filter((movie) => !activeIds.has(movie.ttId) && !queuedIds.has(movie.ttId));
     this.State.queue = savedQueue.concat(Shuffle(freshQueue));
+  }
+
+  BuildUnavailableRatingIds() {
+    const ids = new Set(Object.keys(this.State.ratings));
+    for (const recommendation of this.State.recommendationQueue || []) {
+      if (/^tt\d+$/.test(String(recommendation?.ttId || "")))
+        ids.add(recommendation.ttId);
+    }
+    return ids;
+  }
+
+  RemoveWishlistedMoviesFromRatingQueue() {
+    const wishlistedIds = new Set((this.State.recommendationQueue || []).map((item) => item.ttId).filter((ttId) => /^tt\d+$/.test(String(ttId || ""))));
+    if (!wishlistedIds.size)
+      return false;
+    const previousLength = this.State.queue.length;
+    this.State.queue = this.State.queue.filter((movie) => !wishlistedIds.has(movie.ttId));
+    return this.State.queue.length !== previousLength;
   }
 
   BuildSavedQueue(activeIds, queuedIds) {
@@ -926,6 +955,39 @@ export class RapidRaterApp {
     this.PersistStateNow();
     this.State.locked = false;
     this.Render();
+  }
+
+  async AddActiveMovieToWishlist(button) {
+    if (this.State.locked || !this.State.queue.length)
+      return false;
+    this.State.locked = true;
+    button.disabled = true;
+    button.classList.add("saving");
+    const originalLabel = button.innerHTML;
+    button.textContent = "Adding...";
+    const movie = this.State.queue[0];
+    try {
+      const payload = await this.RequestJson(Config.recommendationQueueUrl, "PUT", {
+        ttId: movie.ttId,
+        title: movie.title,
+        year: movie.year || "",
+        genres: Array.isArray(movie.genres) ? movie.genres : []
+      });
+      this.State.recommendationQueue = this.NormalizeRecommendationQueue(payload.recommendations);
+      this.RemoveWishlistedMoviesFromRatingQueue();
+      this.PersistStateNow();
+      this.RenderRecommendationQueue();
+      this.UpdateRecommendationStatus();
+      this.Render();
+      const message = Number(payload.addedCount) > 0 ? "added to your wishlist" : "is already in your wishlist";
+      this.ShowToast(`<strong>${EscapeHtml(movie.title)}</strong> ${message}`);
+      return true;
+    } finally {
+      this.State.locked = false;
+      button.disabled = false;
+      button.classList.remove("saving");
+      button.innerHTML = originalLabel;
+    }
   }
 
   EnqueueLiveSubmit(ttId) {
@@ -1303,11 +1365,14 @@ export class RapidRaterApp {
 
   RenderRecommendations(payload) {
     this.State.recommendationQueue = this.NormalizeRecommendationQueue(payload.recommendations);
+    const ratingQueueChanged = this.RemoveWishlistedMoviesFromRatingQueue();
     const added = Number(payload.addedCount) || 0;
     const total = this.State.recommendationQueue.length;
     const summary = payload.summary ? ` ${payload.summary}` : "";
     this.SetRecommendationStatus(`Added ${FormatCount(added)} new ${added === 1 ? "pick" : "picks"}. ${FormatCount(total)} saved in your watchlist.${summary}`);
     this.RenderRecommendationQueue();
+    if (ratingQueueChanged)
+      this.Render();
   }
 
   RenderRecommendationQueue() {
@@ -1388,8 +1453,11 @@ export class RapidRaterApp {
     if (!options.force && previous === next)
       return false;
     this.State.recommendationQueue = queue;
+    const ratingQueueChanged = this.RemoveWishlistedMoviesFromRatingQueue();
     this.RenderRecommendationQueue();
     this.UpdateRecommendationStatus();
+    if (ratingQueueChanged)
+      this.Render();
     if (!options.silent)
       this.ShowToast("Your saved recommendation watchlist was updated.");
     return true;

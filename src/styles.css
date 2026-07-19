@@ -1307,6 +1307,30 @@ body.sync-active .app-header {
   line-height: 1.55;
 }
 
+.movie-wishlist-action {
+  display: inline-flex;
+  min-height: 42px;
+  margin-top: 14px;
+  align-self: flex-start;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-color: rgba(224, 173, 71, 0.58);
+  background: var(--accent-soft);
+  color: #f5d28b;
+  font-weight: 800;
+}
+
+.movie-wishlist-action:hover {
+  border-color: var(--accent);
+  background: rgba(224, 173, 71, 0.27);
+}
+
+.movie-wishlist-action.saving {
+  border-color: var(--line);
+  background: var(--surface-strong);
+}
+
 .meta {
   display: flex;
   flex-wrap: wrap;

@@ -90,7 +90,8 @@ function RenderCardBody(movie, index, metadata, queueLength) {
   const synopsis = EscapeHtml(metadata.synopsis || "Loading synopsis...");
   const title = `<h2 class="title">${EscapeHtml(movie.title)}</h2>`;
   const body = `${RenderPosition(movie, index, queueLength)}${title}<p class="synopsis">${synopsis}</p>`;
-  return `<div class="movie-body">${body}<div class="meta">${RenderMeta(movie)}</div></div>`;
+  const wishlist = index === 0 ? `<button type="button" class="movie-wishlist-action" data-add-active-to-wishlist><span aria-hidden="true">&#9734;</span> Add to wishlist</button>` : "";
+  return `<div class="movie-body">${body}<div class="meta">${RenderMeta(movie)}</div>${wishlist}</div>`;
 }
 
 function RenderPosition(movie, index, queueLength) {

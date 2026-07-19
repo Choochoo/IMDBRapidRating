@@ -56,6 +56,69 @@ test("browser queue removal matches by IMDb ID or normalized title and year", ()
   assert.deepEqual(app.State.recommendationQueue.map((item) => item.ttId), ["tt0083190"]);
 });
 
+test("rating queue rebuild excludes movies already saved to the wishlist", () => {
+  const app = Object.create(RapidRaterApp.prototype);
+  const movies = [
+    { ttId: "tt0113277", title: "Heat" },
+    { ttId: "tt0083190", title: "Thief" },
+    { ttId: "tt0369339", title: "Collateral" }
+  ];
+  app.State = {
+    movies,
+    movieById: new Map(movies.map((movie) => [movie.ttId, movie])),
+    ratings: { tt0083190: { status: "rated" } },
+    recommendationQueue: [{ ttId: "tt0113277", title: "Heat", year: 1995 }],
+    savedQueueIds: ["tt0113277", "tt0083190", "tt0369339"]
+  };
+
+  app.RebuildQueue();
+
+  assert.deepEqual(app.State.queue.map((movie) => movie.ttId), ["tt0369339"]);
+});
+
+test("active rating movie moves into the saved wishlist", async () => {
+  const app = Object.create(RapidRaterApp.prototype);
+  const heat = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime", "Drama"] };
+  const thief = { ttId: "tt0083190", title: "Thief", year: 1981, genres: ["Crime"] };
+  app.State = { queue: [heat, thief], recommendationQueue: [], locked: false };
+  app.RequestJson = async (url, method, body) => {
+    assert.equal(url, "./api/ai/recommendations/queue");
+    assert.equal(method, "PUT");
+    assert.deepEqual(body, heat);
+    return { ok: true, recommendations: [{ ...heat, queueKey: "heat|1995" }], addedCount: 1 };
+  };
+  let persisted = 0;
+  let rendered = 0;
+  let recommendationRendered = 0;
+  let toast = "";
+  app.PersistStateNow = () => { persisted++; };
+  app.Render = () => { rendered++; };
+  app.RenderRecommendationQueue = () => { recommendationRendered++; };
+  app.UpdateRecommendationStatus = () => {};
+  app.ShowToast = (value) => { toast = value; };
+  const classes = new Set();
+  const button = {
+    disabled: false,
+    innerHTML: "<span>☆</span> Add to wishlist",
+    textContent: "",
+    classList: {
+      add: (value) => classes.add(value),
+      remove: (value) => classes.delete(value)
+    }
+  };
+
+  assert.equal(await app.AddActiveMovieToWishlist(button), true);
+  assert.deepEqual(app.State.queue.map((movie) => movie.ttId), ["tt0083190"]);
+  assert.deepEqual(app.State.recommendationQueue.map((movie) => movie.ttId), ["tt0113277"]);
+  assert.equal(app.State.locked, false);
+  assert.equal(persisted, 1);
+  assert.equal(rendered, 1);
+  assert.equal(recommendationRendered, 1);
+  assert.match(toast, /added to your wishlist/);
+  assert.equal(button.disabled, false);
+  assert.equal(classes.has("saving"), false);
+});
+
 test("recommendation posters collapse globally and remember the browser preference", () => {
   const classes = new Set();
   const saved = new Map();

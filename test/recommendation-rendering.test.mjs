@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons } from "../src/app/rendering.js";
+import { RenderCard, RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons } from "../src/app/rendering.js";
 
 test("recommendation loading renders eight cinematic placeholders", () => {
   const html = RenderRecommendationSkeletons(8);
@@ -18,4 +18,14 @@ test("recommendation cards include visual ranking and escape generated text", ()
 
 test("empty recommendation queue explains how to add picks", () => {
   assert.match(RenderRecommendationEmpty(), /watchlist is empty/);
+});
+
+test("only the active rating card offers the wishlist action", () => {
+  const movie = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"], imdbRating: 8.3, numVotes: 700000 };
+  const active = RenderCard(movie, 0, {}, 3);
+  const preview = RenderCard(movie, 1, {}, 3);
+
+  assert.match(active, /data-add-active-to-wishlist/);
+  assert.match(active, /Add to wishlist/);
+  assert.doesNotMatch(preview, /data-add-active-to-wishlist/);
 });
