@@ -152,6 +152,7 @@ Write-Host "Configuring the IMDb Rapid Rater IIS reverse proxy..."
 $proxySiteName = "Our Film Club"
 $proxyHostName = "ourfilmclub.duckdns.org"
 $proxyIpAddress = "192.168.1.45"
+$proxyUpstreamUrl = "http://${proxyIpAddress}:$Port"
 $proxyDir = "C:\inetpub\wwwroot\OurFilmClubProxy"
 $maintenanceConfigPath = Join-Path $proxyDir "web.maintenance.config"
 $appCmd = "C:\Windows\System32\inetsrv\appcmd.exe"
@@ -173,9 +174,8 @@ if ($LASTEXITCODE -eq 0) {
     & $appCmd add site "/name:$proxySiteName" "/bindings:http/${proxyIpAddress}:80:$proxyHostName" "/physicalPath:$proxyDir" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "The IMDb Rapid Rater IIS site could not be created." }
 }
-& $appCmd start site "/site.name:$proxySiteName" 2>$null | Out-Null
 
-$proxyConfig = @'
+$proxyConfig = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
   <system.webServer>
@@ -183,16 +183,20 @@ $proxyConfig = @'
       <rules>
         <rule name="Proxy IMDb Rapid Rating" stopProcessing="true">
           <match url="(.*)" />
-          <action type="Rewrite" url="http://127.0.0.1:5012/{R:1}" appendQueryString="true" />
+          <action type="Rewrite" url="$proxyUpstreamUrl/{R:1}" appendQueryString="true" />
         </rule>
       </rules>
     </rewrite>
   </system.webServer>
 </configuration>
-'@
+"@
 $proxyConfigPath = Join-Path $proxyDir "web.proxy.config"
 $proxyConfig | Set-Content -LiteralPath $proxyConfigPath -Encoding UTF8
 Copy-Item -LiteralPath $proxyConfigPath -Destination (Join-Path $proxyDir "web.config") -Force
+& $appCmd stop site "/site.name:$proxySiteName" 2>$null | Out-Null
+Start-Sleep -Milliseconds 500
+& $appCmd start site "/site.name:$proxySiteName" | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "The IMDb Rapid Rater IIS site could not be restarted." }
 Write-Host "Maintenance mode disabled; checking the public site..." -ForegroundColor Cyan
 
 $proxyHealthUrl = "http://$proxyIpAddress/health"
@@ -206,7 +210,11 @@ for ($attempt = 1; $attempt -le 10; $attempt++) {
             break
         }
     } catch {
-        Write-Host "IIS proxy health check attempt $attempt is still waiting..."
+        $healthError = $_.Exception.Message
+        if ($null -ne $_.Exception.Response) {
+            $healthError = "HTTP $([int]$_.Exception.Response.StatusCode): $healthError"
+        }
+        Write-Host "IIS proxy health check attempt $attempt failed: $healthError"
     }
 }
 if (-not $proxyHealthy) {
