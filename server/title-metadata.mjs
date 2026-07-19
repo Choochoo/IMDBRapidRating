@@ -31,6 +31,7 @@ async function LoadTitleMetadata(titleId, options) {
     posterUrl: tmdb?.posterUrl || titlePage?.posterUrl || suggestion?.posterUrl || "",
     synopsis: tmdb?.synopsis || titlePage?.synopsis || "",
     actors: FirstActorList(tmdb?.actors, titlePage?.actors, suggestion?.actors),
+    trailerUrl: FirstTrailerUrl(tmdb?.trailerUrl, titlePage?.trailerUrl),
     source: tmdb?.source || titlePage?.source || suggestion?.source || ""
   };
 }
@@ -39,6 +40,8 @@ function ShouldUseCachedMetadata(metadata, options) {
   if (!metadata)
     return false;
   if (!Array.isArray(metadata.actors))
+    return false;
+  if (typeof metadata.trailerUrl !== "string")
     return false;
   if (metadata.synopsis && metadata.posterUrl)
     return true;
@@ -56,8 +59,8 @@ async function FetchTmdbMetadata(titleId, options) {
   const result = FindTmdbResult(payload);
   if (!result)
     throw new Error("TMDB did not find this IMDb title.");
-  const actors = await FetchTmdbActors(result.mediaType, result.item.id, apiKey).catch(() => []);
-  return BuildTmdbMetadata(result.item, actors);
+  const extras = await FetchTmdbExtras(result.mediaType, result.item.id, apiKey).catch(() => ({ actors: [], trailerUrl: "" }));
+  return BuildTmdbMetadata(result.item, extras.actors, extras.trailerUrl);
 }
 
 function BuildTmdbFindUrl(titleId, apiKey) {
@@ -97,24 +100,28 @@ function FindTmdbResult(payload) {
   return null;
 }
 
-async function FetchTmdbActors(mediaType, id, apiKey) {
+async function FetchTmdbExtras(mediaType, id, apiKey) {
   if (!Number.isInteger(Number(id)))
-    return [];
-  const params = new URLSearchParams({ language: "en-US" });
+    return { actors: [], trailerUrl: "" };
+  const params = new URLSearchParams({ language: "en-US", append_to_response: "credits,videos" });
   if (!IsTmdbBearerToken(apiKey))
     params.set("api_key", apiKey);
-  const response = await fetch(`${TmdbApiUrl}/${mediaType}/${id}/credits?${params}`, { headers: BuildTmdbHeaders(apiKey) });
+  const response = await fetch(`${TmdbApiUrl}/${mediaType}/${id}?${params}`, { headers: BuildTmdbHeaders(apiKey) });
   if (!response.ok)
-    throw new Error(`TMDB credits returned HTTP ${response.status}.`);
+    throw new Error(`TMDB details returned HTTP ${response.status}.`);
   const payload = await response.json();
-  return ReadActorNames(payload?.cast);
+  return {
+    actors: ReadActorNames(payload?.credits?.cast),
+    trailerUrl: PickTmdbTrailerUrl(payload?.videos?.results)
+  };
 }
 
-function BuildTmdbMetadata(item, actors) {
+function BuildTmdbMetadata(item, actors, trailerUrl) {
   return {
     posterUrl: BuildTmdbPosterUrl(item.poster_path),
     synopsis: CleanMetadataText(item.overview || ""),
     actors: ReadActorNames(actors),
+    trailerUrl: NormalizeTrailerUrl(trailerUrl),
     source: "tmdb"
   };
 }
@@ -134,6 +141,7 @@ async function FetchTitlePageMetadata(titleId) {
     posterUrl: NormalizeImageUrl(jsonLd?.image || ""),
     synopsis: CleanMetadataText(jsonLd?.description || ""),
     actors: ReadActorNames(jsonLd?.actor),
+    trailerUrl: ReadImdbTrailerUrl(jsonLd?.trailer),
     source: "imdb-title-page"
   };
 }
@@ -148,6 +156,7 @@ async function FetchSuggestionMetadata(titleId) {
     posterUrl: NormalizeImageUrl(item?.i?.imageUrl || ""),
     synopsis: "",
     actors: ReadActorNames(String(item?.s || "").split(",")),
+    trailerUrl: "",
     source: "imdb-suggestion"
   };
 }
@@ -164,6 +173,47 @@ export function ReadActorNames(value) {
       break;
   }
   return names;
+}
+
+export function PickTmdbTrailerUrl(value) {
+  const videos = Array.isArray(value) ? value : [];
+  const candidates = videos
+    .filter((video) => String(video?.site || "").toLowerCase() === "youtube" && /^[a-z0-9_-]+$/i.test(String(video?.key || "")))
+    .map((video, index) => ({ video, index, score: ScoreTmdbTrailer(video) }))
+    .sort((left, right) => right.score - left.score || left.index - right.index);
+  const key = String(candidates[0]?.video?.key || "");
+  return key ? `https://www.youtube.com/watch?v=${encodeURIComponent(key)}` : "";
+}
+
+export function NormalizeTrailerUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function ScoreTmdbTrailer(video) {
+  const type = String(video?.type || "").toLowerCase();
+  const name = String(video?.name || "").toLowerCase();
+  return (type === "trailer" ? 100 : type === "teaser" ? 50 : 0)
+    + (video?.official ? 25 : 0)
+    + (name.includes("official") ? 10 : 0);
+}
+
+function ReadImdbTrailerUrl(value) {
+  const trailer = value && typeof value === "object" ? value : {};
+  return FirstTrailerUrl(trailer.url, trailer.embedUrl, trailer.contentUrl);
+}
+
+function FirstTrailerUrl(...values) {
+  for (const value of values) {
+    const url = NormalizeTrailerUrl(value);
+    if (url)
+      return url;
+  }
+  return "";
 }
 
 function FirstActorList(...values) {

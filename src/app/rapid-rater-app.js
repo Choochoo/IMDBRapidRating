@@ -28,7 +28,8 @@ import {
   UpdateActors,
   UpdatePoster,
   UpdateRecommendationPoster,
-  UpdateSynopsis
+  UpdateSynopsis,
+  UpdateTrailerLink
 } from "./rendering.js";
 import {
   ApplyAccountSettings,
@@ -753,7 +754,7 @@ export class RapidRaterApp {
 
   BuildCardHtml(movie, index) {
     const metadata = this.State.metadata[movie.ttId] || {};
-    return RenderCard(movie, index, metadata, this.State.queue.length);
+    return RenderCard(movie, index, metadata);
   }
 
   EnrichVisibleMovies(movies) {
@@ -786,6 +787,7 @@ export class RapidRaterApp {
       posterUrl: "",
       synopsis: "To see the synopsis, set up a TMDB key.",
       actors: [],
+      trailerUrl: "",
       source: ""
     };
   }
@@ -798,6 +800,7 @@ export class RapidRaterApp {
       posterUrl: payload.posterUrl || "",
       synopsis: payload.synopsis || "To see the synopsis, set up a TMDB key.",
       actors: Array.isArray(payload.actors) ? payload.actors.slice(0, 3) : [],
+      trailerUrl: payload.trailerUrl || "",
       source: payload.source || ""
     };
   }
@@ -813,9 +816,12 @@ export class RapidRaterApp {
       UpdatePoster(card, metadata);
       UpdateSynopsis(card, metadata);
       UpdateActors(card, metadata);
+      UpdateTrailerLink(card, metadata);
     }
-    for (const recommendation of this.Elements.recommendationGrid.querySelectorAll(`[data-ttid="${ttId}"]`))
+    for (const recommendation of this.Elements.recommendationGrid.querySelectorAll(`[data-ttid="${ttId}"]`)) {
       UpdateRecommendationPoster(recommendation, metadata);
+      UpdateTrailerLink(recommendation, metadata);
+    }
   }
 
   UpdateStats() {

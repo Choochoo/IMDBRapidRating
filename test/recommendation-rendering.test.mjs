@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { RenderCard, RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons, UpdateActors } from "../src/app/rendering.js";
+import { RenderCard, RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons, UpdateActors, UpdateTrailerLink } from "../src/app/rendering.js";
 
 test("recommendation loading renders eight cinematic placeholders", () => {
   const html = RenderRecommendationSkeletons(8);
@@ -22,17 +22,20 @@ test("empty recommendation queue explains how to add picks", () => {
 
 test("only the active rating card offers the wishlist action", () => {
   const movie = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"], imdbRating: 8.3, numVotes: 700000 };
-  const active = RenderCard(movie, 0, {}, 3);
-  const preview = RenderCard(movie, 1, {}, 3);
+  const active = RenderCard(movie, 0, {});
+  const preview = RenderCard(movie, 1, {});
 
   assert.match(active, /data-add-active-to-wishlist/);
   assert.match(active, /Add to wishlist/);
   assert.doesNotMatch(preview, /data-add-active-to-wishlist/);
+  assert.doesNotMatch(active, /1\s*\/\s*3/);
+  assert.doesNotMatch(preview, /2\s*\/\s*3/);
+  assert.match(active, /class="movie-id">tt0113277/);
 });
 
 test("movie cards show at most the top three actors", () => {
   const movie = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"] };
-  const html = RenderCard(movie, 0, { actors: ["Al Pacino", "Robert De Niro", "Val Kilmer", "Jon Voight"] }, 3);
+  const html = RenderCard(movie, 0, { actors: ["Al Pacino", "Robert De Niro", "Val Kilmer", "Jon Voight"] });
 
   assert.match(html, /Starring/);
   assert.match(html, /Al Pacino · Robert De Niro · Val Kilmer/);
@@ -48,4 +51,28 @@ test("actor metadata updates an already-rendered movie card", () => {
 
   assert.equal(cast.hidden, false);
   assert.equal(names.textContent, "Al Pacino · Robert De Niro · Val Kilmer");
+});
+
+test("the active rater card renders a safe external trailer link", () => {
+  const movie = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"] };
+  const html = RenderCard(movie, 0, { trailerUrl: "https://www.youtube.com/watch?v=abc_123" });
+
+  assert.match(html, /Watch trailer/);
+  assert.match(html, /href="https:\/\/www\.youtube\.com\/watch\?v=abc_123"/);
+  assert.match(html, /target="_blank" rel="noopener noreferrer"/);
+});
+
+test("wishlist cards receive their trailer link when metadata arrives", () => {
+  const attributes = new Map();
+  const link = {
+    hidden: true,
+    setAttribute: (name, value) => attributes.set(name, value),
+    removeAttribute: (name) => attributes.delete(name)
+  };
+  const card = { querySelector: (selector) => selector === "[data-trailer-link]" ? link : null };
+
+  UpdateTrailerLink(card, { trailerUrl: "https://www.youtube.com/watch?v=trailer" });
+
+  assert.equal(link.hidden, false);
+  assert.equal(attributes.get("href"), "https://www.youtube.com/watch?v=trailer");
 });

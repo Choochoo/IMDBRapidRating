@@ -1,13 +1,12 @@
-import { Config } from "./config.js";
 import { EscapeHtml, FormatCount } from "./util.js";
 import { IsCsvSyncFailure } from "./rating-records.js";
 
-export function RenderCard(movie, index, metadata, queueLength) {
+export function RenderCard(movie, index, metadata) {
   const tone = ToneFromId(movie.ttId);
   const className = index === 0 ? "movie-card active" : "movie-card";
   const id = EscapeHtml(movie.ttId);
   const opening = `<article class="${className}" data-ttid="${id}" style="--tone: ${tone};">`;
-  return `${opening}${RenderPoster(movie, metadata)}${RenderCardBody(movie, index, metadata, queueLength)}</article>`;
+  return `${opening}${RenderPoster(movie, metadata)}${RenderCardBody(movie, index, metadata)}</article>`;
 }
 
 export function UpdatePoster(card, metadata) {
@@ -41,6 +40,18 @@ export function UpdateActors(card, metadata) {
   const names = cast.querySelector("span");
   if (names)
     names.textContent = actors.join(" · ");
+}
+
+export function UpdateTrailerLink(card, metadata) {
+  const link = card.querySelector("[data-trailer-link]");
+  if (!link)
+    return;
+  const url = ReadTrailerUrl(metadata);
+  link.hidden = !url;
+  if (url)
+    link.setAttribute("href", url);
+  else
+    link.removeAttribute("href");
 }
 
 export function RenderFailure(record) {
@@ -97,12 +108,14 @@ export function ToneFromId(ttId) {
   return palettes[hash % palettes.length];
 }
 
-function RenderCardBody(movie, index, metadata, queueLength) {
+function RenderCardBody(movie, index, metadata) {
   const synopsis = EscapeHtml(metadata.synopsis || "Loading synopsis...");
   const title = `<h2 class="title">${EscapeHtml(movie.title)}</h2>`;
-  const body = `${RenderPosition(movie, index, queueLength)}${title}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>`;
+  const body = `${RenderMovieId(movie)}${title}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>`;
   const wishlist = index === 0 ? `<button type="button" class="movie-wishlist-action" data-add-active-to-wishlist><span aria-hidden="true">&#9734;</span> Add to wishlist</button>` : "";
-  return `<div class="movie-body">${body}<div class="meta">${RenderMeta(movie)}</div>${wishlist}</div>`;
+  const trailer = index === 0 ? RenderTrailerLink(metadata, "movie-trailer-link") : "";
+  const actions = index === 0 ? `<div class="movie-card-actions">${trailer}${wishlist}</div>` : "";
+  return `<div class="movie-body">${body}<div class="meta">${RenderMeta(movie)}</div>${actions}</div>`;
 }
 
 function RenderActors(metadata) {
@@ -118,10 +131,24 @@ function ReadActors(metadata) {
     .slice(0, 3);
 }
 
-function RenderPosition(movie, index, queueLength) {
-  const visibleTotal = Math.min(Config.visibleCount, queueLength);
-  const position = `${index + 1} / ${visibleTotal}`;
-  return `<div class="position"><span>${position}</span><span>${EscapeHtml(movie.ttId)}</span></div>`;
+function RenderTrailerLink(metadata, className) {
+  const url = ReadTrailerUrl(metadata);
+  const hidden = url ? "" : " hidden";
+  const href = url ? ` href="${EscapeHtml(url)}"` : "";
+  return `<a class="${className}" data-trailer-link${href} target="_blank" rel="noopener noreferrer"${hidden}><span aria-hidden="true">&#9654;</span> Watch trailer</a>`;
+}
+
+function ReadTrailerUrl(metadata) {
+  try {
+    const url = new URL(String(metadata?.trailerUrl || ""));
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function RenderMovieId(movie) {
+  return `<div class="movie-id">${EscapeHtml(movie.ttId)}</div>`;
 }
 
 function RenderPoster(movie, metadata) {
@@ -179,7 +206,8 @@ function RenderRecommendationRating(item) {
 
 function RenderRecommendationActions(item) {
   const exclusion = `<button type="button" class="recommendation-exclusion" data-recommendation-exclusion>Don't recommend again</button>`;
-  return `<div class="recommendation-card-actions">${RenderRecommendationRating(item)}${exclusion}</div>`;
+  const trailer = RenderTrailerLink({}, "recommendation-trailer-link");
+  return `<div class="recommendation-card-actions">${RenderRecommendationRating(item)}${trailer}${exclusion}</div>`;
 }
 
 function RenderRatingButtons() {

@@ -112,7 +112,6 @@
           </div>
           <div class="recommendation-actions">
             <button type="button" id="configure-ai">Set OpenAI Key</button>
-            <button type="button" id="toggle-recommendation-posters" aria-pressed="false">Hide posters</button>
             <label class="recommendation-count-control" for="recommendation-count">
               <span>Number of picks</span>
               <input id="recommendation-count" type="number" min="1" max="99" step="1" value="9" inputmode="numeric">
@@ -120,7 +119,6 @@
             <button type="button" id="generate-recommendations">Generate picks</button>
           </div>
         </header>
-        <div class="recommendation-status" id="recommendation-status" role="status">Import your IMDb CSV, then generate recommendations.</div>
         <div class="model-panel">
           <div class="model-copy">
             <strong id="ai-model-status">Model: checking</strong>
@@ -137,6 +135,13 @@
         <div class="recommendation-loading" id="recommendation-loading" role="status" aria-live="polite" hidden>
           <span class="recommendation-spinner" aria-hidden="true"></span>
           <div><strong>Building your watchlist</strong><span id="recommendation-loading-copy">Reading the signals in your ratings...</span></div>
+        </div>
+        <div class="recommendation-list-toolbar">
+          <div class="recommendation-list-copy">
+            <strong>Saved watchlist</strong>
+            <div class="recommendation-status" id="recommendation-status" role="status">Import your IMDb CSV, then generate recommendations.</div>
+          </div>
+          <button type="button" class="recommendation-poster-toggle" id="toggle-recommendation-posters" aria-pressed="false">Hide posters</button>
         </div>
         <div class="recommendation-grid" id="recommendation-grid"></div>
       </div>
