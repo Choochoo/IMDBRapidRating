@@ -1,31 +1,23 @@
 $ErrorActionPreference = "Stop"
 
 $InstallDir = "C:\inetpub\wwwroot\IMDBRapidRating"
-$LegacyDir = "C:\Users\Jared\Documents\GitHub\IMDBRapidRating"
 $TaskName = "IMDB Rapid Rating Server"
 $Port = 5012
+
+function Get-RapidRaterParameter {
+    param([string]$Name)
+
+    if ($null -ne $OctopusParameters -and $OctopusParameters.ContainsKey($Name)) {
+        return [string]$OctopusParameters[$Name]
+    }
+    return ""
+}
 
 Write-Host "Configuring IMDb Rapid Rating deployment..." -ForegroundColor Cyan
 
 New-Item -Path (Join-Path $InstallDir "data") -ItemType Directory -Force | Out-Null
 New-Item -Path (Join-Path $InstallDir "cache") -ItemType Directory -Force | Out-Null
 New-Item -Path (Join-Path $InstallDir ".runtime") -ItemType Directory -Force | Out-Null
-
-$preservedFiles = @(
-    ".env.local",
-    "data\imdb-ratings.csv",
-    "cache\title-metadata.json"
-)
-
-foreach ($relativePath in $preservedFiles) {
-    $source = Join-Path $LegacyDir $relativePath
-    $destination = Join-Path $InstallDir $relativePath
-    if ((Test-Path -LiteralPath $source) -and -not (Test-Path -LiteralPath $destination)) {
-        New-Item -Path (Split-Path $destination -Parent) -ItemType Directory -Force | Out-Null
-        Copy-Item -LiteralPath $source -Destination $destination -Force
-        Write-Host "Migrated preserved file: $relativePath"
-    }
-}
 
 $nodeCandidates = @(
     "C:\Program Files\nodejs\node.exe",
@@ -57,10 +49,7 @@ $defaultSettingsLines = @(
 $settingsLines = $defaultSettingsLines
 $usePreservedSettings = $false
 foreach ($entry in $requiredVariables.GetEnumerator()) {
-    $value = $null
-    if ($null -ne $OctopusParameters -and $OctopusParameters.ContainsKey($entry.Value)) {
-        $value = [string]$OctopusParameters[$entry.Value]
-    }
+    $value = Get-RapidRaterParameter -Name $entry.Value
     if ([string]::IsNullOrWhiteSpace($value)) {
         if (-not (Test-Path -LiteralPath $runtimeSettingsPath)) {
             throw "Required sensitive Octopus variable '$($entry.Value)' is not configured."
@@ -73,8 +62,11 @@ foreach ($entry in $requiredVariables.GetEnumerator()) {
 if ($usePreservedSettings) {
     $settingsLines = Get-Content -LiteralPath $runtimeSettingsPath
 }
-$settingsLines = @($settingsLines | Where-Object { $_ -notmatch '^APP_ALLOWED_ORIGINS=' })
-$settingsLines += "APP_ALLOWED_ORIGINS=http://ourfilmclub.duckdns.org:5012"
+$allowedOrigins = Get-RapidRaterParameter -Name "RapidRater.AllowedOrigins"
+if (-not [string]::IsNullOrWhiteSpace($allowedOrigins)) {
+    $settingsLines = @($settingsLines | Where-Object { $_ -notmatch '^APP_ALLOWED_ORIGINS=' })
+    $settingsLines += "APP_ALLOWED_ORIGINS=$allowedOrigins"
+}
 $settingsLines | Set-Content -LiteralPath $runtimeSettingsPath -Encoding UTF8
 icacls $runtimeSettingsPath /inheritance:r /grant:r "SYSTEM:F" "Administrators:F" /Q | Out-Null
 
@@ -148,45 +140,34 @@ if (-not $healthy) {
 
 Write-Host "IMDb Rapid Rating is healthy at $healthUrl" -ForegroundColor Green
 
-Write-Host "Configuring the IMDb Rapid Rater IIS reverse proxy..."
-$proxySiteName = "Our Film Club"
-$proxyHostName = "ourfilmclub.duckdns.org"
-$proxyIpAddress = "192.168.1.45"
-$proxyUpstreamUrl = "http://${proxyIpAddress}:$Port"
-$proxyDir = "C:\inetpub\wwwroot\OurFilmClubProxy"
-$maintenanceConfigPath = Join-Path $proxyDir "web.maintenance.config"
+Write-Host "Checking optional IIS reverse-proxy configuration..."
+$proxySiteName = Get-RapidRaterParameter -Name "RapidRater.ProxySiteName"
+$proxyHostName = Get-RapidRaterParameter -Name "RapidRater.ProxyHostName"
+$proxyDir = Get-RapidRaterParameter -Name "RapidRater.ProxyDirectory"
+if ([string]::IsNullOrWhiteSpace($proxySiteName) -or
+    [string]::IsNullOrWhiteSpace($proxyHostName) -or
+    [string]::IsNullOrWhiteSpace($proxyDir)) {
+    Write-Host "Optional IIS proxy skipped. Configure RapidRater.ProxySiteName, RapidRater.ProxyHostName, and RapidRater.ProxyDirectory to enable it."
+    return
+}
+
+$proxyUpstreamHost = Get-RapidRaterParameter -Name "RapidRater.ProxyUpstreamHost"
+if ([string]::IsNullOrWhiteSpace($proxyUpstreamHost)) { $proxyUpstreamHost = "127.0.0.1" }
+$proxyHealthAddress = Get-RapidRaterParameter -Name "RapidRater.ProxyHealthAddress"
+if ([string]::IsNullOrWhiteSpace($proxyHealthAddress)) { $proxyHealthAddress = "127.0.0.1" }
+$proxyUpstreamUrl = "http://${proxyUpstreamHost}:$Port"
 $appCmd = "C:\Windows\System32\inetsrv\appcmd.exe"
-if (-not (Test-Path -LiteralPath $appCmd)) {
-    throw "IIS appcmd.exe is unavailable."
-}
-New-Item -Path $proxyDir -ItemType Directory -Force | Out-Null
-
-& $appCmd set config /section:system.webServer/proxy /enabled:true /preserveHostHeader:true /reverseRewriteHostInResponseHeaders:false /commit:apphost | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "IIS reverse-proxy support could not be enabled." }
-
-foreach ($serviceName in @("WAS", "W3SVC")) {
-    $service = Get-Service -Name $serviceName -ErrorAction Stop
-    if ($service.Status -ne "Running") {
-        Start-Service -Name $serviceName -ErrorAction Stop
-        $service.WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Running, [TimeSpan]::FromSeconds(30))
+$siteState = "Unavailable"
+try {
+    if (-not (Test-Path -LiteralPath $appCmd)) {
+        throw "IIS appcmd.exe is unavailable."
     }
-}
+    New-Item -Path $proxyDir -ItemType Directory -Force | Out-Null
 
-$existingSite = (& $appCmd list site $proxySiteName 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "Recreating the script-owned IIS proxy site to clear its current state..."
-    $deleteOutput = (& $appCmd delete site $proxySiteName 2>&1 | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0) {
-        throw "The existing IMDb Rapid Rater IIS proxy site could not be removed: $deleteOutput"
-    }
-}
+    & $appCmd set config /section:system.webServer/proxy /enabled:true /preserveHostHeader:true /reverseRewriteHostInResponseHeaders:false /commit:apphost | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "IIS reverse-proxy support could not be enabled." }
 
-$addOutput = (& $appCmd add site "/name:$proxySiteName" "/bindings:http/${proxyIpAddress}:80:$proxyHostName" "/physicalPath:$proxyDir" 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -ne 0) {
-    throw "The IMDb Rapid Rater IIS proxy site could not be created: $addOutput"
-}
-
-$proxyConfig = @"
+    $proxyConfig = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
   <system.webServer>
@@ -201,47 +182,42 @@ $proxyConfig = @"
   </system.webServer>
 </configuration>
 "@
-$proxyConfigPath = Join-Path $proxyDir "web.proxy.config"
-$proxyConfig | Set-Content -LiteralPath $proxyConfigPath -Encoding UTF8
-Copy-Item -LiteralPath $proxyConfigPath -Destination (Join-Path $proxyDir "web.config") -Force
-$siteState = (& $appCmd list site $proxySiteName /text:state 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -ne 0) {
-    throw "The IMDb Rapid Rater IIS site state could not be read: $siteState"
-}
-if ($siteState -eq "Unknown") {
-    $serviceState = (Get-Service -Name "WAS", "W3SVC" | ForEach-Object { "$($_.Name)=$($_.Status)" }) -join ", "
-    throw "The freshly recreated IMDb Rapid Rater IIS site still has state 'Unknown' ($serviceState)."
-}
-if ($siteState -ne "Started") {
-    $startOutput = (& $appCmd start site $proxySiteName 2>&1 | Out-String).Trim()
+    $proxyConfigPath = Join-Path $proxyDir "web.proxy.config"
+    $proxyConfig | Set-Content -LiteralPath $proxyConfigPath -Encoding UTF8
+    Copy-Item -LiteralPath $proxyConfigPath -Destination (Join-Path $proxyDir "web.config") -Force
+    $siteState = (& $appCmd list site $proxySiteName /text:state 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) {
-        throw "The IMDb Rapid Rater IIS site could not be started from state '$siteState': $startOutput"
+        $siteState = "Unavailable"
     }
+} catch {
+    $siteState = "Unavailable"
+    Write-Warning "The optional IIS proxy configuration could not be refreshed: $($_.Exception.Message)"
 }
-Write-Host "Maintenance mode disabled; checking the public site..." -ForegroundColor Cyan
+Write-Host "IIS proxy site state: $siteState"
+Write-Host "Application deployment is complete; checking the optional public proxy..." -ForegroundColor Cyan
 
-$proxyHealthUrl = "http://$proxyIpAddress/health"
+$proxyHealthUrl = "http://$proxyHealthAddress/health"
 $proxyHealthy = $false
-for ($attempt = 1; $attempt -le 10; $attempt++) {
-    Start-Sleep -Seconds 1
-    try {
-        $response = Invoke-WebRequest -Uri $proxyHealthUrl -Headers @{ Host = $proxyHostName } -UseBasicParsing -TimeoutSec 5
-        if ($response.StatusCode -eq 200) {
-            $proxyHealthy = $true
-            break
+if ($siteState -eq "Started") {
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        Start-Sleep -Seconds 1
+        try {
+            $response = Invoke-WebRequest -Uri $proxyHealthUrl -Headers @{ Host = $proxyHostName } -UseBasicParsing -TimeoutSec 5
+            if ($response.StatusCode -eq 200) {
+                $proxyHealthy = $true
+                break
+            }
+        } catch {
+            $healthError = $_.Exception.Message
+            if ($null -ne $_.Exception.Response) {
+                $healthError = "HTTP $([int]$_.Exception.Response.StatusCode): $healthError"
+            }
+            Write-Host "IIS proxy health check attempt $attempt failed: $healthError"
         }
-    } catch {
-        $healthError = $_.Exception.Message
-        if ($null -ne $_.Exception.Response) {
-            $healthError = "HTTP $([int]$_.Exception.Response.StatusCode): $healthError"
-        }
-        Write-Host "IIS proxy health check attempt $attempt failed: $healthError"
     }
 }
 if (-not $proxyHealthy) {
-    if (Test-Path -LiteralPath $maintenanceConfigPath) {
-        Copy-Item -LiteralPath $maintenanceConfigPath -Destination (Join-Path $proxyDir "web.config") -Force
-    }
-    throw "The IMDb Rapid Rater IIS proxy failed its health check at $proxyHealthUrl"
+    Write-Warning "The optional IIS proxy is not healthy (site state: $siteState). IMDb Rapid Rater remains healthy at $healthUrl, so deployment will continue."
+} else {
+    Write-Host "IMDb Rapid Rater IIS proxy is healthy at $proxyHealthUrl" -ForegroundColor Green
 }
-Write-Host "IMDb Rapid Rater is healthy at $proxyHealthUrl" -ForegroundColor Green

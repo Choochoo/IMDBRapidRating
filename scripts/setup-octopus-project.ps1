@@ -1,5 +1,6 @@
 param(
-    [string]$OctopusUrl = "http://192.168.1.45:8080",
+    [Parameter(Mandatory = $true)]
+    [string]$OctopusUrl,
 
     [Parameter(Mandatory = $true)]
     [string]$ApiKey,

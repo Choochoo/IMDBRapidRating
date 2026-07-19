@@ -54,15 +54,15 @@ test("HTTP origins do not upgrade assets to HTTPS-only security contexts", () =>
 test("configured primary and additional HTTP origins are accepted", async () => {
   const previousOrigin = process.env.APP_ORIGIN;
   const previousAllowed = process.env.APP_ALLOWED_ORIGINS;
-  process.env.APP_ORIGIN = "http://192.168.1.45:5012/";
-  process.env.APP_ALLOWED_ORIGINS = "http://ourfilmclub.duckdns.org:5012, https://example.test/path";
+  process.env.APP_ORIGIN = "http://app.example.test:5012/";
+  process.env.APP_ALLOWED_ORIGINS = "http://alternate.example.test:5012, https://example.test/path";
   try {
     const app = express();
     app.use(VerifyOrigin);
     app.post("/write", (_request, response) => response.sendStatus(204));
 
-    await request(app).post("/write").set("Origin", "http://192.168.1.45:5012").expect(204);
-    await request(app).post("/write").set("Origin", "http://ourfilmclub.duckdns.org:5012").expect(204);
+    await request(app).post("/write").set("Origin", "http://app.example.test:5012").expect(204);
+    await request(app).post("/write").set("Origin", "http://alternate.example.test:5012").expect(204);
     await request(app).post("/write").set("Origin", "https://example.test").expect(204);
     await request(app).post("/write").set("Origin", "http://evil.example").expect(403);
   } finally {
@@ -71,7 +71,7 @@ test("configured primary and additional HTTP origins are accepted", async () => 
   }
 });
 
-test("the Film Club hostname is accepted without deployment configuration", async () => {
+test("the request host is accepted without deployment configuration", async () => {
   const previousOrigin = process.env.APP_ORIGIN;
   const previousAllowed = process.env.APP_ALLOWED_ORIGINS;
   delete process.env.APP_ORIGIN;
@@ -80,8 +80,11 @@ test("the Film Club hostname is accepted without deployment configuration", asyn
     const app = express();
     app.use(VerifyOrigin);
     app.post("/write", (_request, response) => response.sendStatus(204));
-    await request(app).post("/write").set("Origin", "http://ourfilmclub.duckdns.org").expect(204);
-    await request(app).post("/write").set("Origin", "http://ourfilmclub.duckdns.org:5012").expect(204);
+    await request(app)
+      .post("/write")
+      .set("Host", "app.example.test:5012")
+      .set("Origin", "http://app.example.test:5012")
+      .expect(204);
   } finally {
     RestoreEnvironment("APP_ORIGIN", previousOrigin);
     RestoreEnvironment("APP_ALLOWED_ORIGINS", previousAllowed);

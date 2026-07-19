@@ -12,10 +12,10 @@ const TestMoviePool = {
 };
 
 test("email login establishes an authenticated session and CSRF protects account writes", async () => {
-  const user = { id: "8133d1c3-2620-42fa-85e6-6b6ec6204301", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = { id: "8133d1c3-2620-42fa-85e6-6b6ec6204301", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   let saved = null;
   const store = {
-    findUserByEmail: async (email) => email === "jared@example.com" ? user : null,
+    findUserByEmail: async (email) => email === "user@example.com" ? user : null,
     getBundle: async () => ({
       preferences: { openAiModel: "", openAiModelLag: 2 },
       state: { payload: {}, ratingsCsv: "", revision: 0 },
@@ -34,12 +34,12 @@ test("email login establishes an authenticated session and CSRF protects account
 
   const anonymous = await agent.get("/api/auth/session").expect(200);
   assert.equal(anonymous.body.authenticated, false);
-  await agent.post("/api/auth/login").send({ email: "jared@example.com", password: "correct horse battery staple" }).expect(403);
+  await agent.post("/api/auth/login").send({ email: "user@example.com", password: "correct horse battery staple" }).expect(403);
   const login = await agent.post("/api/auth/login")
     .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: "jared@example.com", password: "correct horse battery staple" })
+    .send({ email: "user@example.com", password: "correct horse battery staple" })
     .expect(200);
-  assert.equal(login.body.user.email, "jared@example.com");
+  assert.equal(login.body.user.email, "user@example.com");
 
   await agent.put("/api/account/state").send({ payload: {}, ratingsCsv: "", revision: 0 }).expect(403);
   await agent.put("/api/account/state")
@@ -107,7 +107,7 @@ test("registration rejects missing CSRF and unavailable email addresses", async 
 });
 
 test("a successful IMDb rating is committed to account state by the same request", async () => {
-  const user = { id: "0ed7ef61-71e6-4c9b-92ba-76a680af3b2d", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = { id: "0ed7ef61-71e6-4c9b-92ba-76a680af3b2d", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   let recorded = null;
   let deleted = null;
   let removedRecommendation = null;
@@ -171,7 +171,7 @@ test("a successful IMDb rating is committed to account state by the same request
 });
 
 test("not-seen decisions are committed directly to account state", async () => {
-  const user = { id: "241c7a98-53a7-42b3-bde7-3fd3a27db9dc", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = { id: "241c7a98-53a7-42b3-bde7-3fd3a27db9dc", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   let recorded = null;
   const store = {
     findUserByEmail: async () => user,
@@ -209,7 +209,7 @@ test("not-seen decisions are committed directly to account state", async () => {
 });
 
 test("rater decisions require the current queue head and return the canonical next queue", async () => {
-  const user = { id: "d3039098-ed05-4740-bc99-b929927b0dd7", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = { id: "d3039098-ed05-4740-bc99-b929927b0dd7", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   const initialQueue = { revision: 12, poolVersion: "pool-v1", queueIds: ["tt0113277", "tt0083190"] };
   let received = null;
   const store = {
@@ -261,7 +261,7 @@ test("rater decisions require the current queue head and return the canonical ne
 });
 
 test("the TV queue route selects the independent TV catalog and queue namespace", async () => {
-  const user = { id: "95c3cf3e-c6d8-4ba5-aec1-53f5870a6279", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = { id: "95c3cf3e-c6d8-4ba5-aec1-53f5870a6279", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   const tvPool = { ids: ["tt0903747"], version: "tv-pool-v1" };
   let received = null;
   const store = {
@@ -290,7 +290,7 @@ test("the TV queue route selects the independent TV catalog and queue namespace"
 });
 
 test("generated picks append to the saved per-user recommendation queue", async () => {
-  const user = { id: "3accb042-54e8-4e14-8eb5-8444d10433b4", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = { id: "3accb042-54e8-4e14-8eb5-8444d10433b4", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   const existing = { queueKey: "heat|1995", ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"], why: { tasteMatch: "Crime" } };
   const generated = { queueKey: "thief|1981", ttId: "tt0083190", title: "Thief", year: 1981, genres: ["Crime"], why: { tasteMatch: "Crime" } };
   const queue = [existing];
@@ -331,7 +331,7 @@ test("generated picks append to the saved per-user recommendation queue", async 
 });
 
 test("a rating-system movie can be added directly to the saved wishlist", async () => {
-  const user = { id: "c95c1ff0-325f-4f64-a763-669403435215", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = { id: "c95c1ff0-325f-4f64-a763-669403435215", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   const queue = [];
   let appended = null;
   const store = {
@@ -365,7 +365,7 @@ test("a rating-system movie can be added directly to the saved wishlist", async 
 });
 
 test("don't recommend moves a saved pick into the account exclusion list", async () => {
-  const user = { id: "a772239d-a772-4489-8ddc-aa0f95071669", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = { id: "a772239d-a772-4489-8ddc-aa0f95071669", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   let saved = null;
   const store = {
     findUserByEmail: async () => user,

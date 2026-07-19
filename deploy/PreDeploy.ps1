@@ -2,13 +2,30 @@ $ErrorActionPreference = "Stop"
 
 $TaskName = "IMDB Rapid Rating Server"
 $Port = 5012
-$ProxyDir = "C:\inetpub\wwwroot\OurFilmClubProxy"
-$MaintenancePagePath = Join-Path $ProxyDir "maintenance.html"
-$MaintenanceConfigPath = Join-Path $ProxyDir "web.maintenance.config"
+$ProxyDir = ""
+$ProxySiteName = ""
+$ProxyHostName = ""
+if ($null -ne $OctopusParameters) {
+    if ($OctopusParameters.ContainsKey("RapidRater.ProxyDirectory")) {
+        $ProxyDir = [string]$OctopusParameters["RapidRater.ProxyDirectory"]
+    }
+    if ($OctopusParameters.ContainsKey("RapidRater.ProxySiteName")) {
+        $ProxySiteName = [string]$OctopusParameters["RapidRater.ProxySiteName"]
+    }
+    if ($OctopusParameters.ContainsKey("RapidRater.ProxyHostName")) {
+        $ProxyHostName = [string]$OctopusParameters["RapidRater.ProxyHostName"]
+    }
+}
 
-Write-Host "Enabling the IMDb Rapid Rater maintenance page..." -ForegroundColor Cyan
+if (-not [string]::IsNullOrWhiteSpace($ProxyDir) -and
+    -not [string]::IsNullOrWhiteSpace($ProxySiteName) -and
+    -not [string]::IsNullOrWhiteSpace($ProxyHostName)) {
+    $MaintenancePagePath = Join-Path $ProxyDir "maintenance.html"
+    $MaintenanceConfigPath = Join-Path $ProxyDir "web.maintenance.config"
 
-New-Item -Path $ProxyDir -ItemType Directory -Force | Out-Null
+    Write-Host "Enabling the IMDb Rapid Rater maintenance page..." -ForegroundColor Cyan
+
+    New-Item -Path $ProxyDir -ItemType Directory -Force | Out-Null
 
 $maintenancePage = @'
 <!doctype html>
@@ -103,6 +120,9 @@ $maintenanceConfig | Set-Content -LiteralPath $MaintenanceConfigPath -Encoding U
 Copy-Item -LiteralPath $MaintenanceConfigPath -Destination (Join-Path $ProxyDir "web.config") -Force
 
 Write-Host "IMDb Rapid Rater is in maintenance mode." -ForegroundColor Green
+} else {
+    Write-Host "IIS maintenance mode skipped because the optional proxy integration is not fully configured."
+}
 
 Write-Host "Stopping IMDb Rapid Rating before deployment..." -ForegroundColor Cyan
 

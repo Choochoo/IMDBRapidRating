@@ -42,7 +42,9 @@ The Octopus project deploys to `C:\inetpub\wwwroot\IMDBRapidRating` and runs the
 One-time setup:
 
 ```powershell
-.\scripts\setup-octopus-project.ps1 -ApiKey "<Octopus API key>"
+.\scripts\setup-octopus-project.ps1 `
+  -OctopusUrl "https://octopus.example.com" `
+  -ApiKey "<Octopus API key>"
 ```
 
 The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add a `TMDB_BUILD_API_KEY` Actions secret to enrich the generated catalogs with production-country and original-language metadata. Deployment still succeeds without it, but only year filtering is available until an enriched catalog is deployed.
@@ -53,14 +55,21 @@ Configure these Octopus project variables before the first account-backed deploy
 - `RapidRater.SessionSecret`
 - `RapidRater.DataEncryptionKey`
 - `RapidRater.AppOrigin`
+- `RapidRater.AllowedOrigins` (optional comma-separated origins)
 
 Use a dedicated PostgreSQL database/user with access only to the `imdb_rapid_rater` schema. The deployment writes the runtime values to an ACL-restricted file, installs production dependencies, and applies migrations before starting the scheduled task.
 
-Additional trusted browser origins can be supplied as a comma-separated `APP_ALLOWED_ORIGINS` runtime setting. The server's deployment currently includes `http://ourfilmclub.duckdns.org:5012` alongside the primary Octopus origin.
+`RapidRater.AppOrigin` is the primary browser origin. Additional trusted browser origins can be supplied through `RapidRater.AllowedOrigins`; the deployment writes them to the `APP_ALLOWED_ORIGINS` runtime setting. The repository contains no deployment-specific hostnames or addresses.
 
-The deployment also configures an IIS reverse proxy for `http://ourfilmclub.duckdns.org/`, so the app remains available on port 5012 while phones and networks that restrict nonstandard ports can use the normal HTTP address.
+An existing IIS reverse-proxy site can be integrated by configuring these optional Octopus project variables:
 
-During a deployment, the IIS site returns a branded maintenance page with HTTP 503 while the Node process is stopped, dependencies are installed, and migrations and health checks run. The maintenance page is removed only after both the application and public proxy pass their health checks; if deployment verification fails, it remains enabled instead of exposing a gateway error.
+- `RapidRater.ProxySiteName`
+- `RapidRater.ProxyHostName`
+- `RapidRater.ProxyDirectory`
+- `RapidRater.ProxyUpstreamHost` (defaults to `127.0.0.1`)
+- `RapidRater.ProxyHealthAddress` (defaults to `127.0.0.1`)
+
+The first three proxy variables enable the integration. During deployment, the configured IIS directory serves a branded maintenance page while the Node process is stopped and updated. The application's local health check on port 5012 remains the deployment gate. The IIS proxy is checked separately on a best-effort basis, so an unhealthy or unavailable proxy produces a warning without rolling back a healthy application.
 
 The Octopus pre- and post-deployment scripts are stored inline in the deployment process. The GitHub Actions workflow refreshes the process from `scripts/setup-octopus-project.ps1` before creating each release, so deployment-script changes take effect with the next push to `main`.
 

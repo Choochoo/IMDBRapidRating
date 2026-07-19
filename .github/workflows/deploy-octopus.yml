@@ -184,4 +184,3 @@ jobs:
           Write-Host 'IMDb Rapid Rating deployment complete.' -ForegroundColor Green
           Write-Host "Version: ${{ env.PACKAGE_VERSION }}"
           Write-Host 'Path: C:\inetpub\wwwroot\IMDBRapidRating'
-          Write-Host 'URL: http://192.168.1.45'

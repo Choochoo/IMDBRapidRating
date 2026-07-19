@@ -91,7 +91,7 @@ test("an idle device refreshes its queue when another device saves", async () =>
   const remotePayload = { ratings: { tt0000003: Record("tt0000003", 9, "2026-07-16T12:00:00.000Z") } };
   const app = Object.create(RapidRaterApp.prototype);
   Object.assign(app, {
-    User: { email: "jared@example.com" },
+    User: { email: "user@example.com" },
     StateDirty: false,
     AccountRevision: 7,
     AccountPayload: { ratings: {} },
