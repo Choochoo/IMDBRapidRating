@@ -6,6 +6,11 @@ import test from "node:test";
 import { HashPassword } from "../server/auth.mjs";
 import { RegisterApiRoutes } from "../server/routes.mjs";
 
+const TestMoviePool = {
+  ids: ["tt0113277", "tt0083190"],
+  version: "pool-v1"
+};
+
 test("email login establishes an authenticated session and CSRF protects account writes", async () => {
   const user = { id: "8133d1c3-2620-42fa-85e6-6b6ec6204301", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   let saved = null;
@@ -206,7 +211,10 @@ test("rater decisions require the current queue head and return the canonical ne
   let received = null;
   const store = {
     findUserByEmail: async () => user,
-    getRaterQueue: async () => initialQueue,
+    getRaterQueue: async (_userId, moviePool) => {
+      assert.equal(moviePool, TestMoviePool);
+      return initialQueue;
+    },
     commitRaterDecision: async (_userId, decision) => {
       received = decision;
       return {
@@ -359,6 +367,12 @@ function BuildTestApp(store, dependencies = {}) {
   const app = express();
   app.use(express.json());
   app.use(session({ secret: "a-secure-test-secret-that-is-long-enough", resave: false, saveUninitialized: false }));
-  RegisterApiRoutes(app, { store, pool: { query: async () => ({ rows: [] }) }, rootPath: process.cwd(), ...dependencies });
+  RegisterApiRoutes(app, {
+    store,
+    pool: { query: async () => ({ rows: [] }) },
+    rootPath: process.cwd(),
+    readMoviePool: async () => TestMoviePool,
+    ...dependencies
+  });
   return app;
 }

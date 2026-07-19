@@ -68,6 +68,7 @@ export function RegisterApiRoutes(app, {
   submitImdbRating = SubmitImdbRating,
   deleteImdbRating = DeleteImdbRating,
   generateAiRecommendations = GenerateAiRecommendations,
+  readMoviePool = ReadMoviePool,
   raterEvents = { subscribe() {}, publish() {} }
 }) {
   app.get("/health", async (_request, response) => {
@@ -133,12 +134,12 @@ export function RegisterApiRoutes(app, {
     const result = await store.saveState(request.session.userId, parsed.data.payload, parsed.data.ratingsCsv, parsed.data.revision);
     if (!result.ok)
       return response.status(409).json({ ok: false, code: "STATE_CONFLICT", error: "Your account changed in another browser.", current: result.current });
-    await ReconcileRaterQueue(store, request.session.userId, rootPath, raterEvents);
+    await ReconcileRaterQueue(store, request.session.userId, rootPath, readMoviePool, raterEvents);
     response.json({ ok: true, revision: result.revision });
   });
 
   app.get("/api/rater/queue", async (request, response) => {
-    const queue = await store.getRaterQueue(request.session.userId, await ReadMoviePool(rootPath));
+    const queue = await store.getRaterQueue(request.session.userId, await readMoviePool(rootPath));
     response.json({ ok: true, queue });
   });
 
@@ -150,7 +151,7 @@ export function RegisterApiRoutes(app, {
     const parsed = RaterDecisionSchema.safeParse(request.body);
     if (!parsed.success)
       return Invalid(response);
-    const moviePool = await ReadMoviePool(rootPath);
+    const moviePool = await readMoviePool(rootPath);
     await store.getRaterQueue(request.session.userId, moviePool);
     const decision = BuildRaterDecision(parsed.data);
     const committed = await store.commitRaterDecision(request.session.userId, decision);
@@ -181,7 +182,7 @@ export function RegisterApiRoutes(app, {
     const parsed = RaterQueueRestoreSchema.safeParse(request.body);
     if (!parsed.success)
       return Invalid(response);
-    const result = await store.replaceRaterQueue(request.session.userId, parsed.data, await ReadMoviePool(rootPath));
+    const result = await store.replaceRaterQueue(request.session.userId, parsed.data, await readMoviePool(rootPath));
     if (!result.ok)
       return response.status(409).json({ ok: false, code: result.code, error: "The rating queue changed on another device.", current: result.current });
     raterEvents.publish(request.session.userId, result.queue.revision);
@@ -194,7 +195,7 @@ export function RegisterApiRoutes(app, {
       return Invalid(response);
     const record = BuildNotSeenRecord(parsed.data);
     const revision = await store.recordRating(request.session.userId, record);
-    await ReconcileRaterQueue(store, request.session.userId, rootPath, raterEvents);
+    await ReconcileRaterQueue(store, request.session.userId, rootPath, readMoviePool, raterEvents);
     response.json({ ok: true, titleId: record.ttId, revision });
   });
 
@@ -251,7 +252,7 @@ export function RegisterApiRoutes(app, {
     const record = BuildSubmittedRatingRecord(request.body, result.payload);
     const revision = await store.recordRating(request.session.userId, record);
     await store.removeRecommendation(request.session.userId, { ...record, queueKey: RecommendationKey(record) });
-    await ReconcileRaterQueue(store, request.session.userId, rootPath, raterEvents);
+    await ReconcileRaterQueue(store, request.session.userId, rootPath, readMoviePool, raterEvents);
     response.status(result.status).json({ ...result.payload, revision });
   });
 
@@ -294,7 +295,7 @@ export function RegisterApiRoutes(app, {
     });
     const added = await store.appendRecommendationQueue(request.session.userId, [recommendation]);
     const recommendations = await store.listRecommendationQueue(request.session.userId);
-    await ReconcileRaterQueue(store, request.session.userId, rootPath, raterEvents);
+    await ReconcileRaterQueue(store, request.session.userId, rootPath, readMoviePool, raterEvents);
     response.json({
       ok: true,
       recommendation,
@@ -312,7 +313,7 @@ export function RegisterApiRoutes(app, {
       return SendResult(response, result);
     const added = await store.appendRecommendationQueue(request.session.userId, result.payload.recommendations);
     const recommendations = await store.listRecommendationQueue(request.session.userId);
-    await ReconcileRaterQueue(store, request.session.userId, rootPath, raterEvents);
+    await ReconcileRaterQueue(store, request.session.userId, rootPath, readMoviePool, raterEvents);
     response.status(result.status).json({
       ...result.payload,
       recommendations,
@@ -457,10 +458,10 @@ function Invalid(response) {
   return response.status(422).json({ ok: false, code: "INVALID_REQUEST", error: "The submitted data is invalid." });
 }
 
-async function ReconcileRaterQueue(store, userId, rootPath, raterEvents) {
+async function ReconcileRaterQueue(store, userId, rootPath, readMoviePool, raterEvents) {
   if (typeof store.getRaterQueue !== "function")
     return null;
-  const queue = await store.getRaterQueue(userId, await ReadMoviePool(rootPath));
+  const queue = await store.getRaterQueue(userId, await readMoviePool(rootPath));
   if (queue.changed)
     raterEvents.publish(userId, queue.revision);
   return queue;
