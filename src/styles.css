@@ -1314,6 +1314,13 @@ body.sync-active .app-header {
   font-variant-numeric: tabular-nums;
 }
 
+.recommendation-poster::after,
+.poster::after {
+  -webkit-text-stroke: 1.5px rgba(8, 11, 14, 0.9);
+  paint-order: stroke fill;
+  text-shadow: 0 2px 7px rgba(0, 0, 0, 0.8);
+}
+
 .active .poster::before {
   content: "Active";
   position: absolute;
@@ -1348,6 +1355,10 @@ body.sync-active .app-header {
 .movie-card.active .movie-body {
   overflow: auto;
   scrollbar-width: thin;
+}
+
+.movie-card.active .movie-body > * {
+  flex-shrink: 0;
 }
 
 .movie-id {
