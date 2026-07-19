@@ -55,21 +55,30 @@ async function GenerateUniqueRecommendations(rootPath, profile, options) {
 
 function BuildPreferenceProfile(options) {
   const profile = NormalizeProfile(options.profile);
-  const ratings = Array.isArray(profile.ratings) ? profile.ratings : [];
+  const mediaType = options.mediaType === "tv" ? "tv" : "movie";
+  const ratings = (Array.isArray(profile.ratings) ? profile.ratings : [])
+    .map((rating) => NormalizeRating(rating, mediaType))
+    .filter(Boolean);
   if (ratings.length < 5)
-    return Fail(422, "NOT_ENOUGH_RATINGS", "Import at least five rated IMDb rows before asking for recommendations.");
-  return Ok({ profile: BuildProfile(ratings, profile.exclusions, options.queue, options.mediaType, options.filters) });
+    return Fail(422, "NOT_ENOUGH_RATINGS", "Rate at least five titles in the selected taste source before asking for recommendations.");
+  const ratedTargets = Array.isArray(options.targetRatings)
+    ? options.targetRatings.map((rating) => NormalizeRating(rating, mediaType)).filter(Boolean)
+    : Array.isArray(profile.ratedTargets) ? profile.ratedTargets : ratings;
+  const exclusions = Array.isArray(options.targetExclusions) ? options.targetExclusions : profile.exclusions;
+  return Ok({ profile: BuildProfile(ratings, ratedTargets, exclusions, options.queue, mediaType, options.filters, profile.tasteBasis) });
 }
 
-function BuildProfile(ratings, exclusions, queue, mediaType, filters) {
+function BuildProfile(ratings, ratedTargets, exclusions, queue, mediaType, filters, tasteBasis) {
   return {
-    mediaType: mediaType === "tv" ? "tv" : "movie",
-    ratings: OptimizeRatings(ratings.map(NormalizeRating).filter(Boolean)),
+    mediaType,
+    tasteBasis: NormalizeTasteBasis(tasteBasis),
+    ratings: OptimizeRatings(ratings),
+    ratedTargets: NormalizeProfileTitles(ratedTargets),
     exclusions: NormalizeExclusions(exclusions),
     queue: NormalizeRecommendationQueue(queue).map(ToProfileMovie),
     filters: BuildProfileFilters(filters),
     ratingScale: "1-10",
-    fieldsSent: ["title", "year", "genres", "rating", "queuedTitle", "queuedYear", "excludedTitle", "excludedYear", "yearRange", "excludedProductionCountries", "excludedOriginalLanguages"]
+    fieldsSent: ["title", "year", "genres", "rating", "sourceMediaType", "ratedTargetTitle", "ratedTargetYear", "queuedTitle", "queuedYear", "excludedTitle", "excludedYear", "yearRange", "excludedProductionCountries", "excludedOriginalLanguages", "tasteBasis"]
   };
 }
 
@@ -117,23 +126,29 @@ function BuildOpenAiBody(profile, options, model) {
 
 function BuildOpenAiInput(profile, options) {
   return [
-    { role: "system", content: BuildSystemPrompt(options) },
+    { role: "system", content: BuildSystemPrompt(profile, options) },
     { role: "user", content: JSON.stringify(profile) }
   ];
 }
 
-function BuildSystemPrompt(options) {
+function BuildSystemPrompt(profile, options) {
   const count = ReadRecommendationCount(options.count) || 9;
   const isTv = options.mediaType === "tv";
   const scope = `Recommend ${count} ${isTv ? "TV series" : "movies"} the user has not rated.`;
   const criteria = isTv
     ? "Recommend whole series, not individual episodes or seasons. Consider title, premiere year, genre, series commitment, and user rating together."
     : "Consider title, year, genre, and user rating together.";
-  const exclusions = "Never recommend anything already present in profile.ratings, profile.queue, or profile.exclusions. The queue is the user's saved watchlist and exclusions are permanent do-not-recommend choices.";
+  const source = profile.tasteBasis === "other"
+    ? `The taste evidence comes from the user's ${isTv ? "movie" : "TV"} ratings.`
+    : profile.tasteBasis === "both"
+      ? "The taste evidence combines the user's movie and TV ratings."
+      : `The taste evidence comes from the user's ${isTv ? "TV" : "movie"} ratings.`;
+  const evidence = `${source} Use profile.ratings only as taste evidence and use each sourceMediaType to interpret it. Regardless of the evidence source, return only ${isTv ? "TV series" : "movies"}.`;
+  const exclusions = "Never recommend anything already present in profile.ratedTargets, profile.queue, or profile.exclusions. ratedTargets are titles already rated in the requested section, the queue is that section's saved watchlist, and exclusions are that section's permanent do-not-recommend choices.";
   const filters = "Honor profile.filters exactly: stay within its year range, avoid excluded production countries and original languages, apply its Bollywood exclusion, and include unknown-origin titles only when allowed.";
   const why = "Explain the taste pattern and cite rating evidence from the user's data.";
   const format = "Use 2-4 evidence lines naming rated titles, ratings, genres, or eras.";
-  return [scope, criteria, exclusions, filters, why, format, "Return only JSON matching the schema."].join(" ");
+  return [scope, criteria, evidence, exclusions, filters, why, format, "Return only JSON matching the schema."].join(" ");
 }
 
 function BuildRecommendationSchema(count) {
@@ -203,7 +218,7 @@ function ParseRecommendationPayload(payload) {
 function EnrichRecommendationPayload(rootPath, payload, profile) {
   const titles = ReadTitleList(rootPath, profile.mediaType);
   const recommendations = ReadRecommendations(payload);
-  const blocked = [...profile.ratings, ...profile.queue, ...profile.exclusions];
+  const blocked = [...profile.ratedTargets, ...profile.queue, ...profile.exclusions];
   const unique = [];
   for (const recommendation of recommendations) {
     const matchedTitle = FindRecommendationMovie(recommendation, titles);
@@ -290,16 +305,31 @@ function NormalizeProfile(profile) {
   return profile && typeof profile === "object" ? profile : {};
 }
 
-function NormalizeRating(item) {
+function NormalizeRating(item, fallbackMediaType = "movie") {
   const rating = Number(item?.rating);
   if (!Number.isInteger(rating) || rating < 1 || rating > 10)
     return null;
+  const title = CleanText(item.title);
+  if (!title)
+    return null;
+  const sourceMediaType = item?.sourceMediaType || item?.mediaType;
   return {
-    title: CleanText(item.title),
+    title,
     year: Number(item.year) || null,
     genres: ReadGenres(item.genres),
-    rating
+    rating,
+    sourceMediaType: sourceMediaType === "tv" || sourceMediaType === "movie" ? sourceMediaType : fallbackMediaType
   };
+}
+
+function NormalizeProfileTitles(value) {
+  if (!Array.isArray(value))
+    return [];
+  return value.map(ToProfileMovie).filter((item) => item.title);
+}
+
+function NormalizeTasteBasis(value) {
+  return ["current", "other", "both"].includes(value) ? value : "current";
 }
 
 function ToProfileMovie(value) {

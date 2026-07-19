@@ -1,5 +1,6 @@
 import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../shared/media.js";
 import { NormalizeTitleFilters } from "../../shared/title-filters.js";
+import { NormalizeRecommendationBasis } from "../../shared/recommendation-basis.js";
 
 export function MergeAccountPayload(remoteValue, localValue) {
   const remote = NormalizeAccountPayload(remoteValue);
@@ -21,7 +22,8 @@ function MergeMediaPayload(remote, local) {
     ratings: MergeRecordMaps(remote.ratings, local.ratings),
     recommendationExclusions: MergeExclusions(remote.recommendationExclusions, local.recommendationExclusions),
     history: MergeHistory(remote.history, local.history),
-    filters: NewestFilters(remote.filters, local.filters)
+    filters: NewestFilters(remote.filters, local.filters),
+    recommendationBasis: NewestRecommendationBasis(remote.recommendationBasis, local.recommendationBasis)
   };
   if (remote.letterboxd || local.letterboxd)
     merged.letterboxd = NewestLetterboxdSnapshot(remote.letterboxd, local.letterboxd);
@@ -30,9 +32,18 @@ function MergeMediaPayload(remote, local) {
   return merged;
 }
 
+function NewestRecommendationBasis(remoteValue, localValue) {
+  return NewestTimestampedValue(
+    NormalizeRecommendationBasis(remoteValue),
+    NormalizeRecommendationBasis(localValue)
+  );
+}
+
 function NewestFilters(remoteValue, localValue) {
-  const remote = NormalizeTitleFilters(remoteValue);
-  const local = NormalizeTitleFilters(localValue);
+  return NewestTimestampedValue(NormalizeTitleFilters(remoteValue), NormalizeTitleFilters(localValue));
+}
+
+function NewestTimestampedValue(remote, local) {
   if (!remote.updatedAt)
     return local;
   if (!local.updatedAt)

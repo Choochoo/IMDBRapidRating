@@ -153,6 +153,17 @@ jobs:
             --space "${{ env.OCTOPUS_SPACE }}" `
             --replace-existing
 
+      - name: Sync Octopus deployment process
+        shell: powershell
+        env:
+          OCTOPUS_SERVER_URL: ${{ secrets.OCTOPUS_SERVER_URL }}
+          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+        run: |
+          & '.\deploy-package\scripts\setup-octopus-project.ps1' `
+            -OctopusUrl $env:OCTOPUS_SERVER_URL `
+            -ApiKey $env:OCTOPUS_API_KEY `
+            -SpaceName '${{ env.OCTOPUS_SPACE }}'
+
       - name: Create and deploy release
         shell: powershell
         run: |

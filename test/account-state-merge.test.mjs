@@ -136,6 +136,17 @@ test("the most recently changed filters win during a device conflict", () => {
   assert.equal(filters.excludeBollywood, true);
 });
 
+test("the most recently changed recommendation basis wins per media section", () => {
+  const merged = MergeAccountPayload({
+    media: { movie: { recommendationBasis: { source: "other", updatedAt: "2026-07-16T12:00:00.000Z" } }, tv: {} }
+  }, {
+    media: { movie: { recommendationBasis: { source: "both", updatedAt: "2026-07-16T11:00:00.000Z" } }, tv: {} }
+  });
+
+  assert.equal(ReadMediaPayload(merged, "movie").recommendationBasis.source, "other");
+  assert.equal(ReadMediaPayload(merged, "tv").recommendationBasis.source, "current");
+});
+
 function Record(ttId, rating, at) {
   return { ttId, status: "rated", rating, at, submitStatus: "submitted", submittedAt: at };
 }

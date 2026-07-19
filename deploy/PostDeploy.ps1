@@ -148,16 +148,33 @@ if (-not $healthy) {
 
 Write-Host "IMDb Rapid Rating is healthy at $healthUrl" -ForegroundColor Green
 
-Write-Host "Configuring the Our Film Club IIS reverse proxy..."
+Write-Host "Configuring the IMDb Rapid Rater IIS reverse proxy..."
 $proxySiteName = "Our Film Club"
 $proxyHostName = "ourfilmclub.duckdns.org"
 $proxyIpAddress = "192.168.1.45"
 $proxyDir = "C:\inetpub\wwwroot\OurFilmClubProxy"
+$maintenanceConfigPath = Join-Path $proxyDir "web.maintenance.config"
 $appCmd = "C:\Windows\System32\inetsrv\appcmd.exe"
 if (-not (Test-Path -LiteralPath $appCmd)) {
     throw "IIS appcmd.exe is unavailable."
 }
 New-Item -Path $proxyDir -ItemType Directory -Force | Out-Null
+
+& $appCmd set config /section:system.webServer/proxy /enabled:true /preserveHostHeader:true /reverseRewriteHostInResponseHeaders:false /commit:apphost | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "IIS reverse-proxy support could not be enabled." }
+
+& $appCmd list site "/name:$proxySiteName" | Out-Null
+if ($LASTEXITCODE -eq 0) {
+    & $appCmd set site $proxySiteName "/bindings:http/${proxyIpAddress}:80:$proxyHostName" | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "The IMDb Rapid Rater IIS binding could not be updated." }
+    & $appCmd set vdir "$proxySiteName/" "/physicalPath:$proxyDir" | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "The IMDb Rapid Rater IIS path could not be updated." }
+} else {
+    & $appCmd add site "/name:$proxySiteName" "/bindings:http/${proxyIpAddress}:80:$proxyHostName" "/physicalPath:$proxyDir" | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "The IMDb Rapid Rater IIS site could not be created." }
+}
+& $appCmd start site "/site.name:$proxySiteName" 2>$null | Out-Null
+
 $proxyConfig = @'
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
@@ -173,22 +190,10 @@ $proxyConfig = @'
   </system.webServer>
 </configuration>
 '@
-$proxyConfig | Set-Content -LiteralPath (Join-Path $proxyDir "web.config") -Encoding UTF8
-
-& $appCmd set config /section:system.webServer/proxy /enabled:true /preserveHostHeader:true /reverseRewriteHostInResponseHeaders:false /commit:apphost | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "IIS reverse-proxy support could not be enabled." }
-
-& $appCmd list site "/name:$proxySiteName" | Out-Null
-if ($LASTEXITCODE -eq 0) {
-    & $appCmd set site $proxySiteName "/bindings:http/${proxyIpAddress}:80:$proxyHostName" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "The Our Film Club IIS binding could not be updated." }
-    & $appCmd set vdir "$proxySiteName/" "/physicalPath:$proxyDir" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "The Our Film Club IIS path could not be updated." }
-} else {
-    & $appCmd add site "/name:$proxySiteName" "/bindings:http/${proxyIpAddress}:80:$proxyHostName" "/physicalPath:$proxyDir" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "The Our Film Club IIS site could not be created." }
-}
-& $appCmd start site "/site.name:$proxySiteName" 2>$null | Out-Null
+$proxyConfigPath = Join-Path $proxyDir "web.proxy.config"
+$proxyConfig | Set-Content -LiteralPath $proxyConfigPath -Encoding UTF8
+Copy-Item -LiteralPath $proxyConfigPath -Destination (Join-Path $proxyDir "web.config") -Force
+Write-Host "Maintenance mode disabled; checking the public site..." -ForegroundColor Cyan
 
 $proxyHealthUrl = "http://$proxyIpAddress/health"
 $proxyHealthy = $false
@@ -205,6 +210,9 @@ for ($attempt = 1; $attempt -le 10; $attempt++) {
     }
 }
 if (-not $proxyHealthy) {
-    throw "The Our Film Club IIS proxy failed its health check at $proxyHealthUrl"
+    if (Test-Path -LiteralPath $maintenanceConfigPath) {
+        Copy-Item -LiteralPath $maintenanceConfigPath -Destination (Join-Path $proxyDir "web.config") -Force
+    }
+    throw "The IMDb Rapid Rater IIS proxy failed its health check at $proxyHealthUrl"
 }
-Write-Host "Our Film Club is healthy at $proxyHealthUrl" -ForegroundColor Green
+Write-Host "IMDb Rapid Rater is healthy at $proxyHealthUrl" -ForegroundColor Green

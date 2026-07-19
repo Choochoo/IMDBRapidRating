@@ -729,6 +729,42 @@ body.tv-mode #tab-sync {
   text-align: center;
 }
 
+.recommendation-basis-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(224, 173, 71, 0.28);
+  border-radius: 12px;
+  background: rgba(224, 173, 71, 0.065);
+}
+
+.recommendation-basis-copy strong,
+.recommendation-basis-copy span {
+  display: block;
+}
+
+.recommendation-basis-copy span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+#recommendation-basis {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid rgba(224, 173, 71, 0.45);
+  border-radius: 8px;
+  background: #111820;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+}
+
 #generate-recommendations {
   min-height: 42px;
   border-color: rgba(224, 173, 71, 0.7);
@@ -2376,6 +2412,10 @@ body.tv-mode #tab-sync {
 
   .recommendation-count-control {
     grid-template-columns: 1fr 72px;
+  }
+
+  .recommendation-basis-panel {
+    grid-template-columns: 1fr;
   }
 
   .recommendation-list-toolbar {

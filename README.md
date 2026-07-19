@@ -60,6 +60,10 @@ Additional trusted browser origins can be supplied as a comma-separated `APP_ALL
 
 The deployment also configures an IIS reverse proxy for `http://ourfilmclub.duckdns.org/`, so the app remains available on port 5012 while phones and networks that restrict nonstandard ports can use the normal HTTP address.
 
+During a deployment, the IIS site returns a branded maintenance page with HTTP 503 while the Node process is stopped, dependencies are installed, and migrations and health checks run. The maintenance page is removed only after both the application and public proxy pass their health checks; if deployment verification fails, it remains enabled instead of exposing a gateway error.
+
+The Octopus pre- and post-deployment scripts are stored inline in the deployment process. The GitHub Actions workflow refreshes the process from `scripts/setup-octopus-project.ps1` before creating each release, so deployment-script changes take effect with the next push to `main`.
+
 ## Run
 
 Copy `settings.env.example` to `.runtime/settings.env`, provide a dedicated PostgreSQL account, and generate secrets:

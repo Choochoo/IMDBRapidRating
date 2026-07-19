@@ -28,6 +28,14 @@ test("browser module graph can load the shared title filter helper", async () =>
   assert.match(response.headers["content-type"], /javascript/);
 });
 
+test("browser module graph can load the recommendation basis helper", async () => {
+  const app = express();
+  RegisterStaticRoutes(app, process.cwd());
+  const response = await request(app).get("/shared/recommendation-basis.js").expect(200);
+  assert.match(response.text, /export function NormalizeRecommendationBasis/);
+  assert.match(response.headers["content-type"], /javascript/);
+});
+
 test("browser can load the local ZIP implementation without a CDN", async () => {
   const app = express();
   RegisterStaticRoutes(app, process.cwd());

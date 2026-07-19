@@ -54,6 +54,7 @@ import { EscapeHtml, FormatCount } from "./util.js";
 import { IsCanonicalViewPath, PathForView, RouteFromPathname } from "./view-routes.js";
 import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../shared/media.js";
 import { NormalizeTitleFilters } from "../../shared/title-filters.js";
+import { NormalizeRecommendationBasis } from "../../shared/recommendation-basis.js";
 import {
   ApplyTitleFilters,
   HideTitleFilterDialog,
@@ -249,6 +250,7 @@ export class RapidRaterApp {
     this.Elements.aiSave.addEventListener("click", () => this.HandleAiSaveClick());
     this.Elements.aiDelete.addEventListener("click", () => this.DeleteAccountSecret("openai"));
     this.Elements.generateRecommendations.addEventListener("click", () => this.HandleRecommendationClick());
+    this.Elements.recommendationBasis.addEventListener("change", () => this.HandleRecommendationBasisChange());
     this.Elements.toggleRecommendationPosters.addEventListener("click", () => this.ToggleRecommendationPosters());
     this.Elements.refreshAiModels.addEventListener("click", () => this.HandleModelRefreshClick());
     this.Elements.aiModelSelect.addEventListener("change", () => this.HandleModelSelectChange());
@@ -261,6 +263,15 @@ export class RapidRaterApp {
 
   HandleRecommendationClick() {
     this.GenerateRecommendations().catch((error) => this.ShowRecommendationError(error.message));
+  }
+
+  HandleRecommendationBasisChange() {
+    this.State.recommendationBasis = NormalizeRecommendationBasis({
+      source: this.Elements.recommendationBasis.value,
+      updatedAt: new Date().toISOString()
+    });
+    this.UpdateRecommendationBasisControl();
+    this.PersistStateNow();
   }
 
   HandleModelRefreshClick() {
@@ -466,8 +477,10 @@ export class RapidRaterApp {
     this.Elements.tabRater.classList.toggle("active", view === "rater");
     this.Elements.tabAi.classList.toggle("active", view === "ai");
     this.Elements.tabSync.classList.toggle("active", view === "sync");
-    if (view === "ai")
+    if (view === "ai") {
+      this.UpdateRecommendationBasisControl();
       this.UpdateRecommendationStatus();
+    }
     if (view === "sync")
       this.UpdateSyncView();
   }
@@ -494,11 +507,12 @@ export class RapidRaterApp {
     this.Elements.poolLabel.textContent = isTv ? "Show pool" : "Movie pool";
     this.Elements.recommendationTitle.textContent = isTv ? "TV Show Recommendations" : "Movie Recommendations";
     this.Elements.recommendationDescription.textContent = isTv
-      ? "Fresh series picks shaped by your TV ratings and exclusions. Every batch is added to your saved TV watchlist."
-      : "Fresh movie picks shaped by your ratings and exclusions. Every batch is added to your saved movie watchlist.";
+      ? "Fresh series picks shaped by the ratings you choose and your TV exclusions. Every batch is added to your saved TV watchlist."
+      : "Fresh movie picks shaped by the ratings you choose and your movie exclusions. Every batch is added to your saved movie watchlist.";
     this.Elements.watchlistTitle.textContent = isTv ? "Saved TV watchlist" : "Saved movie watchlist";
     this.Elements.emptyTitle.textContent = isTv ? "TV show pool exhausted" : "Movie pool exhausted";
     this.Elements.touchNotSeen.textContent = isTv ? "Not watched" : "Not seen";
+    this.UpdateRecommendationBasisControl();
     UpdateTitleFilterButton(this);
     const shortcutCopy = this.Elements.ratingFooter.querySelector(".shortcut-copy span");
     if (shortcutCopy)
@@ -593,6 +607,7 @@ export class RapidRaterApp {
       ratings: saved.ratings || {},
       recommendationExclusions: saved.recommendationExclusions || [],
       filters: NormalizeTitleFilters(saved.filters),
+      recommendationBasis: NormalizeRecommendationBasis(saved.recommendationBasis),
       letterboxd: saved.letterboxd || fresh.letterboxd,
       history: Array.isArray(saved.history) ? saved.history.slice(-200) : [],
       metadata: {},
@@ -878,7 +893,9 @@ export class RapidRaterApp {
     this.State.letterboxd = NormalizeLetterboxdState(saved.letterboxd, this.State.movieById);
     this.State.history = Array.isArray(saved.history) ? saved.history : [];
     this.State.filters = NormalizeTitleFilters(saved.filters);
+    this.State.recommendationBasis = NormalizeRecommendationBasis(saved.recommendationBasis);
     this.State.savedQueueIds = null;
+    this.UpdateRecommendationBasisControl();
     UpdateTitleFilterButton(this);
   }
 
@@ -977,7 +994,9 @@ export class RapidRaterApp {
     this.State.letterboxd = NormalizeLetterboxdState(media.letterboxd, this.State.movieById);
     this.State.history = Array.isArray(media.history) ? media.history.slice(-200) : [];
     this.State.filters = NormalizeTitleFilters(media.filters);
+    this.State.recommendationBasis = NormalizeRecommendationBasis(media.recommendationBasis);
     this.RebuildQueue();
+    this.UpdateRecommendationBasisControl();
     UpdateTitleFilterButton(this);
     this.Render();
     this.UpdateSyncView();
@@ -1198,6 +1217,46 @@ export class RapidRaterApp {
     const saved = this.State.recommendationQueue.length;
     const queue = saved ? ` ${FormatCount(saved)} saved ${saved === 1 ? "pick" : "picks"} in your watchlist.` : "";
     this.SetRecommendationStatus(`Ready with ${this.ReadAiModelLabel()}.${queue}`);
+  }
+
+  UpdateRecommendationBasisControl() {
+    const isTv = this.State.mediaType === "tv";
+    const currentMediaType = isTv ? "tv" : "movie";
+    const otherMediaType = isTv ? "movie" : "tv";
+    const currentName = isTv ? "TV" : "movie";
+    const otherName = isTv ? "movie" : "TV";
+    const outputName = isTv ? "TV shows" : "movies";
+    const basis = NormalizeRecommendationBasis(this.State.recommendationBasis).source;
+    const optionLabels = {
+      current: `My ${currentName} ratings`,
+      other: `My ${otherName} ratings`,
+      both: "Both"
+    };
+    for (const option of this.Elements.recommendationBasis.options)
+      option.textContent = optionLabels[option.value] || option.textContent;
+    this.Elements.recommendationBasis.value = basis;
+    this.Elements.recommendationBasisLabel.textContent = `Build ${isTv ? "TV" : "movie"} picks from`;
+    const currentCount = this.CountTasteRatings(currentMediaType);
+    const otherCount = this.CountTasteRatings(otherMediaType);
+    const selectedCount = basis === "both" ? currentCount + otherCount : basis === "other" ? otherCount : currentCount;
+    const sourceCopy = basis === "both"
+      ? `${this.FormatTasteRatingCount(currentCount, currentName)} and ${this.FormatTasteRatingCount(otherCount, otherName)}`
+      : this.FormatTasteRatingCount(selectedCount, basis === "other" ? otherName : currentName);
+    const readiness = selectedCount < 5
+      ? `You need at least 5 selected ratings; currently using ${sourceCopy}.`
+      : `Using ${sourceCopy} as taste signals.`;
+    this.Elements.recommendationBasisDetail.textContent = `${readiness} Picks, filters, and watchlist stay ${outputName}.`;
+  }
+
+  FormatTasteRatingCount(count, mediaName) {
+    return `${FormatCount(count)} ${mediaName} ${count === 1 ? "rating" : "ratings"}`;
+  }
+
+  CountTasteRatings(mediaType) {
+    const records = mediaType === this.State.mediaType
+      ? this.State.ratings
+      : ReadMediaPayload(this.AccountPayload, mediaType).ratings;
+    return BuildAiPreferenceProfile(records || {}, new Map()).ratings.length;
   }
 
   SetRecommendationStatus(message) {
@@ -1598,6 +1657,7 @@ export class RapidRaterApp {
     const disabled = value || !this.State.ai.configured;
     this.Elements.generateRecommendations.disabled = disabled;
     this.Elements.recommendationCount.disabled = disabled;
+    this.Elements.recommendationBasis.disabled = Boolean(value);
     this.Elements.refreshAiModels.disabled = disabled;
     this.Elements.aiModelSelect.disabled = disabled;
   }
@@ -1641,15 +1701,39 @@ export class RapidRaterApp {
   }
 
   async RequestRecommendations(count) {
-    return await this.PostJson(Config.recommendationsUrl, this.BuildRecommendationRequest(count), "AI recommendation request failed.");
+    return await this.PostJson(Config.recommendationsUrl, await this.BuildRecommendationRequest(count), "AI recommendation request failed.");
   }
 
-  BuildRecommendationRequest(count = this.ReadRecommendationCount()) {
+  async BuildRecommendationRequest(count = this.ReadRecommendationCount()) {
+    const targetMediaType = this.State.mediaType;
+    const otherMediaType = targetMediaType === "tv" ? "movie" : "tv";
+    const basis = NormalizeRecommendationBasis(this.State.recommendationBasis).source;
+    const targetProfile = BuildAiPreferenceProfile(this.State.ratings, this.State.movieById, this.State.recommendationExclusions);
+    let tasteRatings = [];
+    if (basis !== "other")
+      tasteRatings.push(...this.TagTasteRatings(targetProfile.ratings, targetMediaType));
+    if (basis !== "current") {
+      const otherMedia = ReadMediaPayload(this.AccountPayload, otherMediaType);
+      const otherRatings = otherMedia.ratings || {};
+      const otherCatalog = Object.keys(otherRatings).length ? await this.EnsureCatalog(otherMediaType) : { movieById: new Map() };
+      const otherProfile = BuildAiPreferenceProfile(otherRatings, otherCatalog.movieById);
+      tasteRatings.push(...this.TagTasteRatings(otherProfile.ratings, otherMediaType));
+    }
     return {
       count,
-      mediaType: this.State.mediaType,
-      profile: BuildAiPreferenceProfile(this.State.ratings, this.State.movieById, this.State.recommendationExclusions)
+      mediaType: targetMediaType,
+      profile: {
+        ...targetProfile,
+        ratings: tasteRatings,
+        ratedTargets: targetProfile.ratings.map(({ title, year }) => ({ title, year })),
+        tasteBasis: basis,
+        fieldsSent: [...targetProfile.fieldsSent, "sourceMediaType", "ratedTargetTitle", "ratedTargetYear", "tasteBasis"]
+      }
     };
+  }
+
+  TagTasteRatings(ratings, mediaType) {
+    return ratings.map((rating) => ({ ...rating, sourceMediaType: mediaType }));
   }
 
   AddRecommendationExclusion(value) {

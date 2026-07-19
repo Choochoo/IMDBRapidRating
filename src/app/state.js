@@ -1,4 +1,5 @@
 import { NormalizeTitleFilters } from "../../shared/title-filters.js";
+import { NormalizeRecommendationBasis } from "../../shared/recommendation-basis.js";
 
 export function BuildState() {
   return {
@@ -49,7 +50,8 @@ export function BuildStoragePayload(state) {
     recommendationExclusions: state.recommendationExclusions || [],
     letterboxd: state.letterboxd || BuildLetterboxdState(),
     history: state.history.slice(-200),
-    filters: NormalizeTitleFilters(state.filters)
+    filters: NormalizeTitleFilters(state.filters),
+    recommendationBasis: NormalizeRecommendationBasis(state.recommendationBasis)
   };
 }
 
@@ -64,6 +66,7 @@ function BuildMovieState() {
     letterboxd: BuildLetterboxdState(),
     history: [],
     filters: NormalizeTitleFilters(),
+    recommendationBasis: NormalizeRecommendationBasis(),
     sourceLabel: "",
     signature: ""
   };

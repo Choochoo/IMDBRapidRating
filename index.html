@@ -127,6 +127,18 @@
             <button type="button" id="generate-recommendations">Generate picks</button>
           </div>
         </header>
+        <div class="recommendation-basis-panel">
+          <div class="recommendation-basis-copy">
+            <strong id="recommendation-basis-label">Build movie picks from</strong>
+            <span id="recommendation-basis-detail">Your movie ratings shape the taste profile. Picks stay movies.</span>
+          </div>
+          <label class="visually-hidden" for="recommendation-basis">Ratings used for recommendations</label>
+          <select id="recommendation-basis" aria-describedby="recommendation-basis-detail">
+            <option value="current">My movie ratings</option>
+            <option value="other">My TV ratings</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
         <div class="model-panel">
           <div class="model-copy">
             <strong id="ai-model-status">Model: checking</strong>

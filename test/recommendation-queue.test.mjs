@@ -42,6 +42,39 @@ test("browser recommendation count defaults to 9 and rejects values above 99", (
   assert.throws(() => app.ReadRecommendationCount(), /1 to 99/);
 });
 
+test("movie picks can use TV taste signals without changing movie exclusions or rated-title blocking", async () => {
+  const movie = { ttId: "tt0000001", title: "Rated Movie", year: 2001, genres: ["Drama"] };
+  const tvRatings = Object.fromEntries(Array.from({ length: 5 }, (_, index) => {
+    const number = index + 2;
+    const ttId = `tt000000${number}`;
+    return [ttId, ClientRating(ttId, `TV Show ${number}`, 2010 + index, 10 - index, "tv")];
+  }));
+  const tvTitles = Object.values(tvRatings).map((rating) => ({ ...rating, genres: ["Mystery"] }));
+  const app = Object.create(RapidRaterApp.prototype);
+  app.State = {
+    mediaType: "movie",
+    recommendationBasis: { source: "other", updatedAt: "2026-07-19T12:00:00.000Z" },
+    ratings: { [movie.ttId]: ClientRating(movie.ttId, movie.title, movie.year, 8, "movie") },
+    movieById: new Map([[movie.ttId, movie]]),
+    recommendationExclusions: [{ title: "Blocked Movie", year: 2002 }]
+  };
+  app.AccountPayload = { media: { movie: {}, tv: { ratings: tvRatings } } };
+  app.EnsureCatalog = async (mediaType) => {
+    assert.equal(mediaType, "tv");
+    return { movieById: new Map(tvTitles.map((title) => [title.ttId, title])) };
+  };
+
+  const request = await app.BuildRecommendationRequest(7);
+
+  assert.equal(request.count, 7);
+  assert.equal(request.mediaType, "movie");
+  assert.equal(request.profile.tasteBasis, "other");
+  assert.equal(request.profile.ratings.length, 5);
+  assert.ok(request.profile.ratings.every((rating) => rating.sourceMediaType === "tv"));
+  assert.deepEqual(request.profile.ratedTargets, [{ title: "Rated Movie", year: 2001 }]);
+  assert.deepEqual(request.profile.exclusions, [{ title: "Blocked Movie", year: 2002 }]);
+});
+
 test("browser queue removal matches by IMDb ID or normalized title and year", () => {
   const app = Object.create(RapidRaterApp.prototype);
   app.State = {
@@ -244,6 +277,7 @@ test("AI Picks hides both rating bars and removes the mobile bottom-bar layout s
     const app = Object.create(RapidRaterApp.prototype);
     app.State = { activeView: "rater" };
     app.Elements = ViewElements();
+    app.UpdateRecommendationBasisControl = () => {};
     app.UpdateRecommendationStatus = () => {};
     app.UpdateSyncView = () => {};
 
@@ -355,12 +389,72 @@ test("AI generation sends active filters and rejects catalog matches outside the
   }
 });
 
+test("cross-media taste titles are evidence, while target ratings remain blocked", async () => {
+  const rootPath = await mkdtemp(path.join(tmpdir(), "rapid-rater-ai-cross-media-"));
+  await mkdir(path.join(rootPath, "data"));
+  await writeFile(path.join(rootPath, "data", "movies.json"), JSON.stringify({
+    movies: [
+      { ttId: "tt0000010", title: "Already Rated", year: 2001 },
+      { ttId: "tt0000011", title: "Shared Taste", year: 2020 }
+    ]
+  }));
+  const calls = [];
+  const responses = [Recommendation("Already Rated", 2001), Recommendation("Shared Taste", 2020)];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (_url, options) => {
+    calls.push(JSON.parse(options.body));
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ output_text: JSON.stringify({ summary: "Cross-media", recommendations: [responses.shift()] }) })
+    };
+  };
+  try {
+    const result = await GenerateAiRecommendations(rootPath, {
+      apiKey: "test-key",
+      model: "gpt-test",
+      count: 1,
+      mediaType: "movie",
+      targetRatings: [{ ...Rating("Already Rated", 2001, 8), mediaType: "movie" }],
+      targetExclusions: [{ title: "Movie Exclusion", year: 2002 }],
+      profile: {
+        tasteBasis: "other",
+        ratings: [
+          { ...Rating("Shared Taste", 2020, 10), sourceMediaType: "tv" },
+          { ...Rating("Series Two", 2019, 9), sourceMediaType: "tv" },
+          { ...Rating("Series Three", 2018, 8), sourceMediaType: "tv" },
+          { ...Rating("Series Four", 2017, 8), sourceMediaType: "tv" },
+          { ...Rating("Series Five", 2016, 7), sourceMediaType: "tv" }
+        ],
+        ratedTargets: []
+      }
+    });
+
+    assert.deepEqual(result.payload.recommendations.map((item) => item.title), ["Shared Taste"]);
+    assert.equal(calls.length, 2);
+    const profile = JSON.parse(calls[0].input[1].content);
+    assert.equal(profile.mediaType, "movie");
+    assert.equal(profile.tasteBasis, "other");
+    assert.equal(profile.ratings[0].sourceMediaType, "tv");
+    assert.deepEqual(profile.ratedTargets, [{ title: "Already Rated", year: 2001 }]);
+    assert.deepEqual(profile.exclusions, [{ title: "Movie Exclusion", year: 2002 }]);
+    assert.match(calls[0].input[0].content, /return only movies/i);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await rm(rootPath, { recursive: true, force: true });
+  }
+});
+
 function Recommendation(title, year) {
   return { title, year, genres: ["Crime"], why: { tasteMatch: "Match", ratingEvidence: ["Evidence"] } };
 }
 
 function Rating(title, year, rating) {
   return { title, year, genres: ["Drama"], rating };
+}
+
+function ClientRating(ttId, title, year, rating, mediaType) {
+  return { ttId, title, year, rating, mediaType, status: "rated", at: `${year}-01-01T00:00:00.000Z` };
 }
 
 function QueueItem(queueKey, ttId, title, year) {

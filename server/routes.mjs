@@ -469,11 +469,14 @@ function ReadTimestamp(value, fallback) {
 
 async function BuildOpenAiOptions(store, userId, mediaType = "movie") {
   const bundle = await store.getBundle(userId);
+  const media = ReadMediaPayload(bundle.state?.payload, mediaType);
   return {
     apiKey: await store.getSecret(userId, "openai"),
     model: bundle.preferences.openAiModel,
     modelLag: bundle.preferences.openAiModelLag,
-    filters: ReadMediaPayload(bundle.state?.payload, mediaType).filters
+    filters: media.filters,
+    targetRatings: Object.values(media.ratings || {}),
+    targetExclusions: Array.isArray(media.recommendationExclusions) ? media.recommendationExclusions : []
   };
 }
 
