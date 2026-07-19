@@ -1,15 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CreateAccountStore } from "../server/account-store.mjs";
+import { ReadMediaPayload } from "../shared/media.js";
 
 test("successful IMDb writes update the matching PostgreSQL rating atomically", async () => {
   const calls = [];
-  const pool = {
+  let revision = 10;
+  let payload = {};
+  const client = {
     async query(sql, parameters) {
       calls.push({ sql, parameters });
-      return { rows: [{ revision: calls.length + 10 }], rowCount: 1 };
-    }
+      if (/^SELECT payload/.test(sql))
+        return { rows: [{ payload, revision }], rowCount: 1 };
+      if (/^UPDATE/.test(sql)) {
+        payload = JSON.parse(parameters[1]);
+        return { rows: [{ revision: ++revision }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    },
+    release() {}
   };
+  const pool = { connect: async () => client };
   const store = CreateAccountStore({ db: {}, pool });
   const record = { ttId: "tt0107050", status: "rated", rating: 8 };
 
@@ -18,10 +29,10 @@ test("successful IMDb writes update the matching PostgreSQL rating atomically", 
 
   assert.equal(savedRevision, 11);
   assert.equal(deletedRevision, 12);
-  assert.match(calls[0].sql, /jsonb_build_object/);
-  assert.match(calls[1].sql, /payload->'ratings'.*- \$2::text/);
-  assert.deepEqual(calls[0].parameters, ["user-1", record.ttId, JSON.stringify(record)]);
-  assert.deepEqual(calls[1].parameters, ["user-1", record.ttId]);
+  const updates = calls.filter((call) => /^UPDATE/.test(call.sql));
+  assert.equal(updates.length, 2);
+  assert.equal(Object.keys(ReadMediaPayload(JSON.parse(updates[0].parameters[1]), "movie").ratings)[0], record.ttId);
+  assert.deepEqual(ReadMediaPayload(payload, "movie").ratings, {});
 });
 
 test("recommendation queue store appends, lists, and removes per-user picks", async () => {
@@ -48,7 +59,8 @@ test("recommendation queue store appends, lists, and removes per-user picks", as
   assert.equal(removed, 1);
   assert.match(calls[0].sql, /ORDER BY id/);
   assert.match(calls[1].sql, /ON CONFLICT DO NOTHING/);
-  assert.deepEqual(JSON.parse(calls[1].parameters[1]), [{ itemKey: "heat|1995", ttId: "tt0113277", title: "Heat", year: 1995, payload: saved }]);
+  assert.equal(calls[0].parameters[1], "movie");
+  assert.deepEqual(JSON.parse(calls[1].parameters[2]), [{ itemKey: "heat|1995", ttId: "tt0113277", title: "Heat", year: 1995, payload: { ...saved, mediaType: "movie" } }]);
   assert.match(calls[2].sql, /DELETE FROM/);
 });
 
@@ -58,6 +70,8 @@ test("excluding a recommendation updates account state and removes the queue row
   const client = {
     async query(sql, parameters) {
       calls.push({ sql, parameters });
+      if (/^SELECT payload/.test(sql))
+        return { rows: [{ payload: {}, revision: 40 }], rowCount: 1 };
       if (/^UPDATE/.test(sql))
         return { rows: [{ revision: 41 }], rowCount: 1 };
       return { rows: [], rowCount: 1 };
@@ -71,8 +85,10 @@ test("excluding a recommendation updates account state and removes the queue row
 
   assert.equal(revision, 41);
   assert.equal(calls[0].sql, "BEGIN");
-  assert.match(calls[1].sql, /recommendationExclusions/);
-  assert.match(calls[2].sql, /DELETE FROM/);
-  assert.equal(calls[3].sql, "COMMIT");
+  assert.match(calls[1].sql, /^SELECT payload/);
+  assert.match(calls[2].sql, /^UPDATE/);
+  assert.equal(ReadMediaPayload(JSON.parse(calls[2].parameters[1]), "movie").recommendationExclusions.length, 1);
+  assert.match(calls[3].sql, /DELETE FROM/);
+  assert.equal(calls[4].sql, "COMMIT");
   assert.equal(released, true);
 });

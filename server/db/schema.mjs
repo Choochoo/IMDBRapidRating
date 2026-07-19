@@ -1,4 +1,4 @@
-import { bigserial, integer, jsonb, pgSchema, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigserial, integer, jsonb, pgSchema, primaryKey, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 import { ReadDatabaseSchema } from "./config.mjs";
 
 export const AppSchema = pgSchema(ReadDatabaseSchema());
@@ -29,27 +29,30 @@ export const UserStates = AppSchema.table("user_states", {
 export const RecommendationQueue = AppSchema.table("recommendation_queue", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   userId: uuid("user_id").notNull().references(() => Users.id, { onDelete: "cascade" }),
+  mediaType: varchar("media_type", { length: 16 }).notNull().default("movie"),
   itemKey: text("item_key").notNull(),
   ttId: varchar("tt_id", { length: 32 }).notNull().default(""),
   title: text("title").notNull(),
   releaseYear: integer("release_year"),
   payload: jsonb("payload").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull()
-}, (table) => [uniqueIndex("recommendation_queue_user_item_unique").on(table.userId, table.itemKey)]);
+}, (table) => [uniqueIndex("recommendation_queue_user_media_item_unique").on(table.userId, table.mediaType, table.itemKey)]);
 
 export const RaterQueues = AppSchema.table("rater_queues", {
-  userId: uuid("user_id").primaryKey().references(() => Users.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => Users.id, { onDelete: "cascade" }),
+  mediaType: varchar("media_type", { length: 16 }).notNull().default("movie"),
   poolVersion: varchar("pool_version", { length: 64 }).notNull(),
   seed: varchar("seed", { length: 128 }).notNull(),
   queueIds: jsonb("queue_ids").notNull().default([]),
   revision: integer("revision").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull()
-});
+}, (table) => [primaryKey({ columns: [table.userId, table.mediaType] })]);
 
 export const RaterActions = AppSchema.table("rater_actions", {
   userId: uuid("user_id").notNull().references(() => Users.id, { onDelete: "cascade" }),
   actionId: uuid("action_id").notNull(),
+  mediaType: varchar("media_type", { length: 16 }).notNull().default("movie"),
   kind: varchar("kind", { length: 32 }).notNull(),
   ttId: varchar("tt_id", { length: 32 }).notNull(),
   result: jsonb("result").notNull(),

@@ -5,7 +5,7 @@ export const Config = Object.freeze({
   recommendationPosterPreferenceKey: "imdb-rapid-rater-recommendation-posters-v1",
   recommendationRowsPreferenceKey: "imdb-rapid-rater-recommendation-rows-v1",
   animationMs: 110,
-  dataUrl: "./data/movies.json",
+  dataUrls: Object.freeze({ movie: "./data/movies.json", tv: "./data/shows.json" }),
   liveStatusUrl: "./api/imdb/status",
   aiStatusUrl: "./api/ai/status",
   aiModelsUrl: "./api/ai/models",

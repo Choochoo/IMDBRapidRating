@@ -51,10 +51,11 @@ export function RegisterStaticRoutes(app, rootPath) {
   app.use("/src", express.static(path.join(rootPath, "src"), { index: false, maxAge: 0 }));
   app.use("/data", express.static(path.join(rootPath, "data"), { index: false, maxAge: 0 }));
   app.get("/shared/csv.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/csv.js")));
+  app.get("/shared/media.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/media.js")));
   app.get("/vendor/bootstrap.min.css", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/bootstrap/dist/css/bootstrap.min.css")));
   app.get("/vendor/fflate.js", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/fflate/esm/browser.js")));
   app.get("/favicon.svg", (_request, response) => response.sendFile(path.join(rootPath, "favicon.svg")));
-  app.get(["/", "/rate", "/wishlist", "/sync"], (request, response) => {
+  app.get(["/", "/rate", "/wishlist", "/sync", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"], (request, response) => {
     if (request.path !== "/" && request.path.endsWith("/"))
       return response.redirect(308, request.path.replace(/\/+$/, ""));
     response.sendFile(path.join(rootPath, "index.html"));

@@ -7,7 +7,7 @@ import { BuildUserDataPath, EnsureUserDataParent, MigrateLegacyFile } from "./us
 export const RatingsCsvMaxBytes = 10 * 1024 * 1024;
 
 const RatingsCsvFile = "imdb-ratings.csv";
-const DefaultHeaders = Object.freeze(["Const", "Your Rating", "Date Rated", "Title", "Year"]);
+const DefaultHeaders = Object.freeze(["Const", "Your Rating", "Date Rated", "Title", "Title Type", "Year"]);
 
 export function ReadSavedRatingsCsv(rootPath) {
   const filePath = BuildRatingsCsvPath(rootPath);
@@ -115,6 +115,7 @@ function BuildHeaderIndexes(headers) {
     ratingIndex: FindHeaderIndex(headers, "your rating"),
     dateIndex: FindHeaderIndex(headers, "date rated"),
     titleIndex: FindHeaderIndex(headers, "title"),
+    titleTypeIndex: FindHeaderIndex(headers, "title type"),
     yearIndex: FindHeaderIndex(headers, "year")
   };
 }
@@ -145,6 +146,7 @@ function UpdateCsvRow(row, indexes, record) {
   SetCsvValue(row, indexes.ratingIndex, record.rating);
   SetCsvValue(row, indexes.dateIndex, FormatCsvDate(record.at));
   SetCsvValue(row, indexes.titleIndex, record.title);
+  SetCsvValue(row, indexes.titleTypeIndex, record.mediaType === "tv" ? "TV Series" : "Movie");
   SetCsvValue(row, indexes.yearIndex, record.year);
 }
 
@@ -176,6 +178,7 @@ function BuildValidRatingRecord(record, ttId, rating) {
     ttId,
     rating,
     title: String(record?.title || ""),
+    mediaType: record?.mediaType === "tv" ? "tv" : "movie",
     year: record?.year || "",
     at: record?.at || new Date().toISOString()
   };

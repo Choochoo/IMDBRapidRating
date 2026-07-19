@@ -28,10 +28,15 @@ async function LoadTitleMetadata(titleId, options) {
   ]);
   return {
     titleId,
+    mediaType: options.mediaType === "tv" ? "tv" : "movie",
     posterUrl: tmdb?.posterUrl || titlePage?.posterUrl || suggestion?.posterUrl || "",
     synopsis: tmdb?.synopsis || titlePage?.synopsis || "",
     actors: FirstActorList(tmdb?.actors, titlePage?.actors, suggestion?.actors),
     trailerUrl: FirstTrailerUrl(tmdb?.trailerUrl, titlePage?.trailerUrl),
+    seriesStatus: tmdb?.seriesStatus || "",
+    seasonCount: Number(tmdb?.seasonCount) || 0,
+    episodeCount: Number(tmdb?.episodeCount) || 0,
+    episodeRuntimeMinutes: Number(tmdb?.episodeRuntimeMinutes) || 0,
     source: tmdb?.source || titlePage?.source || suggestion?.source || ""
   };
 }
@@ -42,6 +47,8 @@ function ShouldUseCachedMetadata(metadata, options) {
   if (!Array.isArray(metadata.actors))
     return false;
   if (typeof metadata.trailerUrl !== "string")
+    return false;
+  if (options.mediaType === "tv" && (metadata.mediaType !== "tv" || !("seriesStatus" in metadata)))
     return false;
   if (metadata.synopsis && metadata.posterUrl)
     return true;
@@ -56,11 +63,11 @@ async function FetchTmdbMetadata(titleId, options) {
   if (!response.ok)
     throw new Error(`TMDB returned HTTP ${response.status}.`);
   const payload = await response.json();
-  const result = FindTmdbResult(payload);
+  const result = FindTmdbResult(payload, options.mediaType);
   if (!result)
     throw new Error("TMDB did not find this IMDb title.");
   const extras = await FetchTmdbExtras(result.mediaType, result.item.id, apiKey).catch(() => ({ actors: [], trailerUrl: "" }));
-  return BuildTmdbMetadata(result.item, extras.actors, extras.trailerUrl);
+  return BuildTmdbMetadata(result.item, extras, result.mediaType);
 }
 
 function BuildTmdbFindUrl(titleId, apiKey) {
@@ -90,9 +97,13 @@ function IsTmdbBearerToken(apiKey) {
   return String(apiKey || "").includes(".");
 }
 
-function FindTmdbResult(payload) {
+function FindTmdbResult(payload, expectedMediaType) {
   const movies = Array.isArray(payload?.movie_results) ? payload.movie_results : [];
   const shows = Array.isArray(payload?.tv_results) ? payload.tv_results : [];
+  if (expectedMediaType === "tv" && shows[0])
+    return { item: shows[0], mediaType: "tv" };
+  if (expectedMediaType === "movie" && movies[0])
+    return { item: movies[0], mediaType: "movie" };
   if (movies[0])
     return { item: movies[0], mediaType: "movie" };
   if (shows[0])
@@ -112,18 +123,33 @@ async function FetchTmdbExtras(mediaType, id, apiKey) {
   const payload = await response.json();
   return {
     actors: ReadActorNames(payload?.credits?.cast),
-    trailerUrl: PickTmdbTrailerUrl(payload?.videos?.results)
+    trailerUrl: PickTmdbTrailerUrl(payload?.videos?.results),
+    seriesStatus: CleanMetadataText(payload?.status || ""),
+    seasonCount: Number(payload?.number_of_seasons) || 0,
+    episodeCount: Number(payload?.number_of_episodes) || 0,
+    episodeRuntimeMinutes: ReadEpisodeRuntime(payload)
   };
 }
 
-function BuildTmdbMetadata(item, actors, trailerUrl) {
+function BuildTmdbMetadata(item, extras, mediaType) {
   return {
+    mediaType,
     posterUrl: BuildTmdbPosterUrl(item.poster_path),
     synopsis: CleanMetadataText(item.overview || ""),
-    actors: ReadActorNames(actors),
-    trailerUrl: NormalizeTrailerUrl(trailerUrl),
+    actors: ReadActorNames(extras.actors),
+    trailerUrl: NormalizeTrailerUrl(extras.trailerUrl),
+    seriesStatus: extras.seriesStatus || "",
+    seasonCount: Number(extras.seasonCount) || 0,
+    episodeCount: Number(extras.episodeCount) || 0,
+    episodeRuntimeMinutes: Number(extras.episodeRuntimeMinutes) || 0,
     source: "tmdb"
   };
+}
+
+function ReadEpisodeRuntime(payload) {
+  const runtimes = Array.isArray(payload?.episode_run_time) ? payload.episode_run_time : [];
+  const value = runtimes.map(Number).find((runtime) => Number.isFinite(runtime) && runtime > 0);
+  return value || Number(payload?.last_episode_to_air?.runtime) || 0;
 }
 
 function BuildTmdbPosterUrl(posterPath) {

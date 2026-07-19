@@ -47,19 +47,20 @@ async function RateRecommendation(app, button) {
 }
 
 async function SaveRecommendationRating(app, card, button) {
-  const request = app.BuildLiveRateRequest(BuildRecommendationRateRecord(card, button));
+  const request = app.BuildLiveRateRequest(BuildRecommendationRateRecord(app, card, button));
   SetCardSaving(card, true);
   const payload = await app.PostJson(Config.rateUrl, request, "AI recommendation rating failed.")
     .finally(() => SetCardSaving(card, false));
   ApplyRecommendationRating(app, card, request, payload);
 }
 
-function BuildRecommendationRateRecord(card, button) {
+function BuildRecommendationRateRecord(app, card, button) {
   return {
     ttId: card.dataset.ttid || "",
     rating: Number(button.dataset.recommendationRating),
     title: card.dataset.title || "",
     year: card.dataset.year || "",
+    mediaType: app.State.mediaType,
     at: new Date().toISOString()
   };
 }
@@ -99,6 +100,7 @@ function BuildRatedMovie(request, payload) {
     ttId: request.titleId,
     title: request.title,
     year: request.year,
+    mediaType: request.mediaType,
     rating: payload.rating ?? request.rating
   };
 }

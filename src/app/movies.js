@@ -1,7 +1,7 @@
 import { CleanText, FormatCount, NormalizeGenres, ToNumber } from "./util.js";
 
 export function NormalizeMovieList(raw) {
-  const list = Array.isArray(raw) ? raw : raw.movies;
+  const list = Array.isArray(raw) ? raw : raw.movies || raw.shows || raw.titles;
   if (!Array.isArray(list))
     return [];
   const seen = new Set();
@@ -17,7 +17,7 @@ export function MakeSignature(movies) {
 export function DescribeSource(raw, label) {
   const count = NormalizeMovieList(raw).length;
   if (raw?.generatedAt)
-    return "Movie pool ready";
+    return raw?.mediaType === "tv" ? "TV show pool ready" : "Movie pool ready";
   return `${FormatCount(count)} ${label}`;
 }
 
@@ -38,6 +38,9 @@ function BuildMovieItem(item, ttId, title) {
     ttId,
     title,
     year: ToNumber(item.year || item.startYear || item.Year),
+    endYear: ToNumber(item.endYear),
+    mediaType: item.mediaType === "tv" ? "tv" : "movie",
+    titleType: CleanText(item.titleType || ""),
     runtimeMinutes: ToNumber(item.runtimeMinutes || item.runtime),
     genres: NormalizeGenres(item.genres),
     imdbRating: ToNumber(item.imdbRating || item.averageRating),

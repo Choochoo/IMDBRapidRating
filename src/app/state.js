@@ -1,6 +1,7 @@
 export function BuildState() {
   return {
     activeView: "rater",
+    mediaType: "movie",
     ...BuildMovieState(),
     metadata: {},
     live: BuildLiveState(),
@@ -11,6 +12,10 @@ export function BuildState() {
     queuePoolVersion: "",
     queueReady: false
   };
+}
+
+export function BuildMediaState() {
+  return BuildMovieState();
 }
 
 export function BuildCheckedLiveState(status) {

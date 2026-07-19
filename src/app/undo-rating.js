@@ -27,17 +27,18 @@ async function UndoLatestRating(app) {
 }
 
 function BlockActiveSubmit(app, ttId) {
-  if (!app.SubmitActiveIds.has(ttId))
+  if (!app.SubmitActiveIds.has(app.SubmitKey(ttId)))
     return false;
   app.ShowToast("IMDb write is in progress; press undo again in a moment.");
   return true;
 }
 
 function CancelQueuedSubmit(app, ttId) {
-  if (!app.SubmitQueuedIds.has(ttId))
+  const key = app.SubmitKey(ttId);
+  if (!app.SubmitQueuedIds.has(key))
     return false;
-  app.SubmitQueue = app.SubmitQueue.filter((id) => id !== ttId);
-  app.SubmitQueuedIds.delete(ttId);
+  app.SubmitQueue = app.SubmitQueue.filter((item) => item.key !== key);
+  app.SubmitQueuedIds.delete(key);
   return true;
 }
 
@@ -80,7 +81,7 @@ async function RestorePreviousLiveRating(app, previous) {
 }
 
 async function DeleteLiveRating(app, ttId) {
-  const result = await app.RequestJson(Config.rateUrl, "DELETE", { titleId: ttId, deferAccountState: true });
+  const result = await app.RequestJson(Config.rateUrl, "DELETE", { titleId: ttId, mediaType: app.State.mediaType, deferAccountState: true });
   app.AccountRevision = Math.max(app.AccountRevision, Number(result.revision) || 0);
   return true;
 }

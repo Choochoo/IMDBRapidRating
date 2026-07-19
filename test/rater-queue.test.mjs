@@ -74,7 +74,7 @@ test("atomic decisions advance only the expected head and reject a stale device"
   assert.equal(first.ok, true);
   assert.equal(first.queue.revision, 5);
   assert.deepEqual(first.queue.queueIds, ["tt0000002", "tt0000003"]);
-  assert.equal(database.state.payload.ratings.tt0000001.rating, 8);
+  assert.equal(database.state.payload.media.movie.ratings.tt0000001.rating, 8);
 
   const duplicate = await store.commitRaterDecision("user-1", {
     actionId: "20c61166-6fa0-4117-9828-c51d0e0861dd",
@@ -114,7 +114,7 @@ function FakeRaterDatabase() {
       if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql))
         return { rows: [], rowCount: 0 };
       if (/SELECT tt_id, result FROM/.test(sql)) {
-        const action = actions.get(parameters[1]);
+        const action = actions.get(parameters[2]);
         return { rows: action ? [action] : [], rowCount: action ? 1 : 0 };
       }
       if (/SELECT pool_version, seed, queue_ids, revision FROM/.test(sql))
@@ -127,12 +127,12 @@ function FakeRaterDatabase() {
         return { rows: [{ revision: state.revision }], rowCount: 1 };
       }
       if (/UPDATE .*rater_queues/.test(sql)) {
-        queue.queue_ids = JSON.parse(parameters[1]);
+        queue.queue_ids = JSON.parse(parameters[2]);
         queue.revision++;
         return { rows: [{ ...queue, queue_ids: [...queue.queue_ids] }], rowCount: 1 };
       }
       if (/INSERT INTO .*rater_actions/.test(sql)) {
-        actions.set(parameters[1], { tt_id: parameters[3], result: JSON.parse(parameters[4]) });
+        actions.set(parameters[1], { tt_id: parameters[4], result: JSON.parse(parameters[5]) });
         return { rows: [], rowCount: 1 };
       }
       throw new Error(`Unexpected SQL in fake database: ${sql}`);

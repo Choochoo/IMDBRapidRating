@@ -25,12 +25,18 @@ await DownloadDataset(Files.ratings);
 console.log(`Reading ratings with at least ${Options.minVotes.toLocaleString()} votes...`);
 const Ratings = await ReadRatings(path.join(CacheDir, Files.ratings));
 console.log(`Kept ${Ratings.size.toLocaleString()} rated titles.`);
-console.log("Reading title basics and filtering feature films...");
-const Movies = await ReadBasics(path.join(CacheDir, Files.basics), Ratings);
-const OutputMovies = ApplyLimit(SortMovies(Movies));
-const OutputPath = path.join(DataDir, "movies.json");
-await writeFile(OutputPath, `${JSON.stringify(BuildPayload(OutputMovies), null, 2)}\n`, "utf8");
-console.log(`Wrote ${OutputMovies.length.toLocaleString()} movies to ${OutputPath}`);
+console.log("Reading title basics and building separate movie and TV series pools...");
+const Catalogs = await ReadBasics(path.join(CacheDir, Files.basics), Ratings);
+await WriteCatalog("movie", ApplyLimit(SortTitles(Catalogs.movie)));
+await WriteCatalog("tv", ApplyLimit(SortTitles(Catalogs.tv)));
+
+async function WriteCatalog(mediaType, titles) {
+  const fileName = mediaType === "tv" ? "shows.json" : "movies.json";
+  const outputPath = path.join(DataDir, fileName);
+  await writeFile(outputPath, `${JSON.stringify(BuildPayload(titles, mediaType), null, 2)}\n`, "utf8");
+  const label = mediaType === "tv" ? "TV shows" : "movies";
+  console.log(`Wrote ${titles.length.toLocaleString()} ${label} to ${outputPath}`);
+}
 
 async function DownloadDataset(fileName) {
   const outputPath = path.join(CacheDir, fileName);
@@ -87,55 +93,67 @@ function ReadRatingRow(columns, header) {
 }
 
 async function ReadBasics(filePath, ratings) {
-  const movies = [];
+  const catalogs = { movie: [], tv: [] };
   let header = null;
   for await (const columns of ReadTsvGzip(filePath)) {
     if (!header) {
       header = MakeHeaderMap(columns);
       continue;
     }
-    AddMovieRow(movies, columns, header, ratings);
+    AddTitleRow(catalogs, columns, header, ratings);
   }
-  return movies;
+  return catalogs;
 }
 
-function AddMovieRow(movies, columns, header, ratings) {
-  const movie = ReadMovieRow(columns, header, ratings);
-  if (!movie)
+function AddTitleRow(catalogs, columns, header, ratings) {
+  const title = ReadTitleRow(columns, header, ratings);
+  if (!title)
     return;
-  movies.push(movie);
+  catalogs[title.mediaType].push(title);
 }
 
-function ReadMovieRow(columns, header, ratings) {
+function ReadTitleRow(columns, header, ratings) {
   const tconst = columns[header.tconst];
   const rating = ratings.get(tconst);
-  if (!IsMovieRow(columns, header, rating))
+  const mediaType = ReadMediaType(columns[header.titleType]);
+  if (!IsEligibleTitle(columns, header, rating, mediaType))
     return null;
-  return BuildMovie(columns, header, rating, tconst);
+  return BuildTitle(columns, header, rating, tconst, mediaType);
 }
 
-function IsMovieRow(columns, header, rating) {
+function IsEligibleTitle(columns, header, rating, mediaType) {
   if (!rating)
     return false;
-  if (columns[header.titleType] !== "movie")
+  if (!mediaType)
     return false;
   return columns[header.isAdult] === "0";
 }
 
-function BuildMovie(columns, header, rating, tconst) {
+function ReadMediaType(titleType) {
+  if (titleType === "movie")
+    return "movie";
+  if (titleType === "tvSeries" || titleType === "tvMiniSeries")
+    return "tv";
+  return "";
+}
+
+function BuildTitle(columns, header, rating, tconst, mediaType) {
   const startYear = ParseNullableInt(columns[header.startYear]);
   const title = CleanValue(columns[header.primaryTitle]);
   const hasValidYear = IsValidYear(startYear);
   if (!hasValidYear || !title)
     return null;
-  return BuildMoviePayload(columns, header, rating, tconst, startYear, title);
+  return BuildTitlePayload(columns, header, rating, tconst, startYear, title, mediaType);
 }
 
-function BuildMoviePayload(columns, header, rating, tconst, startYear, title) {
+function BuildTitlePayload(columns, header, rating, tconst, startYear, title, mediaType) {
   return {
     ttId: tconst,
     title,
     year: startYear,
+    endYear: mediaType === "tv" ? ParseNullableInt(columns[header.endYear]) : null,
+    mediaType,
+    titleType: columns[header.titleType],
     runtimeMinutes: ParseNullableInt(columns[header.runtimeMinutes]),
     genres: ReadGenres(columns[header.genres]),
     imdbRating: rating.averageRating,
@@ -211,43 +229,45 @@ function CleanValue(value) {
   return value.trim();
 }
 
-function SortMovies(movies) {
-  return movies.sort((left, right) => CompareMovies(left, right));
+function SortTitles(titles) {
+  return titles.sort((left, right) => CompareTitles(left, right));
 }
 
-function ApplyLimit(movies) {
-  return Options.limit === null ? movies : movies.slice(0, Options.limit);
+function ApplyLimit(titles) {
+  return Options.limit === null ? titles : titles.slice(0, Options.limit);
 }
 
-function CompareMovies(left, right) {
+function CompareTitles(left, right) {
   const voteDiff = right.numVotes - left.numVotes;
   if (voteDiff !== 0)
     return voteDiff;
   return left.title.localeCompare(right.title);
 }
 
-function BuildPayload(movies) {
+function BuildPayload(titles, mediaType) {
+  const collectionKey = mediaType === "tv" ? "shows" : "movies";
   return {
     generatedAt: new Date().toISOString(),
-    poolVersion: createHash("sha256").update(movies.map((movie) => movie.ttId).join("\n"), "utf8").digest("hex"),
-    source: BuildSourceMetadata(),
-    movies
+    poolVersion: createHash("sha256").update(titles.map((title) => title.ttId).join("\n"), "utf8").digest("hex"),
+    mediaType,
+    source: BuildSourceMetadata(mediaType),
+    [collectionKey]: titles
   };
 }
 
-function BuildSourceMetadata() {
+function BuildSourceMetadata(mediaType) {
   return {
     name: "IMDb Non-Commercial Datasets",
     url: SourceBase,
     files: Object.values(Files),
-    filters: BuildSourceFilters(),
+    filters: BuildSourceFilters(mediaType),
     credit: "Information courtesy of IMDb (https://www.imdb.com). Used with permission."
   };
 }
 
-function BuildSourceFilters() {
+function BuildSourceFilters(mediaType) {
   return {
-    titleType: "movie",
+    titleTypes: mediaType === "tv" ? ["tvSeries", "tvMiniSeries"] : ["movie"],
     isAdult: false,
     minVotes: Options.minVotes,
     minYear: Options.minYear,

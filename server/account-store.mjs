@@ -4,6 +4,7 @@ import { UserPreferences, UserSecrets, Users, UserStates } from "./db/schema.mjs
 import { ReadDatabaseSchema } from "./db/config.mjs";
 import { DecryptSecret, EncryptSecret } from "./security/secrets.mjs";
 import { CreateRaterQueueStore } from "./rater-queue-store.mjs";
+import { NormalizeMediaType, ReadMediaPayload, WriteMediaPayload } from "../shared/media.js";
 
 export function CreateAccountStore({ db, pool }) {
   return {
@@ -64,69 +65,73 @@ export function CreateAccountStore({ db, pool }) {
       return { ok: false, current: current.rows[0] || null };
     },
 
-    async recordRating(userId, record) {
-      const result = await pool.query(
-        `UPDATE ${Qualified("user_states")} SET payload=jsonb_set(COALESCE(payload, '{}'::jsonb), '{ratings}', COALESCE(payload->'ratings', '{}'::jsonb) || jsonb_build_object($2::text, $3::jsonb), true), revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`,
-        [userId, record.ttId, JSON.stringify(record)]
-      );
-      return Number(result.rows[0]?.revision) || 0;
+    async recordRating(userId, record, mediaType = record?.mediaType) {
+      return await MutateMediaState(pool, userId, mediaType, (state) => ({
+        ...state,
+        ratings: { ...(state.ratings || {}), [record.ttId]: { ...record, mediaType: NormalizeMediaType(mediaType) } }
+      }));
     },
 
-    async deleteRating(userId, ttId) {
-      const result = await pool.query(
-        `UPDATE ${Qualified("user_states")} SET payload=jsonb_set(COALESCE(payload, '{}'::jsonb), '{ratings}', COALESCE(payload->'ratings', '{}'::jsonb) - $2::text, true), revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`,
-        [userId, ttId]
-      );
-      return Number(result.rows[0]?.revision) || 0;
+    async deleteRating(userId, ttId, mediaType = "movie") {
+      return await MutateMediaState(pool, userId, mediaType, (state) => {
+        const ratings = { ...(state.ratings || {}) };
+        delete ratings[ttId];
+        return { ...state, ratings };
+      });
     },
 
-    async listRecommendationQueue(userId) {
+    async listRecommendationQueue(userId, mediaType = "movie") {
       const result = await pool.query(
-        `SELECT payload FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 ORDER BY id`,
-        [userId]
+        `SELECT payload FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 AND media_type=$2 ORDER BY id`,
+        [userId, NormalizeMediaType(mediaType)]
       );
       return result.rows.map((row) => row.payload);
     },
 
-    async appendRecommendationQueue(userId, items) {
+    async appendRecommendationQueue(userId, items, mediaType = "movie") {
       if (!Array.isArray(items) || !items.length)
         return [];
+      const key = NormalizeMediaType(mediaType);
       const records = items.map((item) => ({
         itemKey: item.queueKey,
         ttId: item.ttId || "",
         title: item.title,
         year: item.year || null,
-        payload: item
+        payload: { ...item, mediaType: key }
       }));
       const result = await pool.query(
-        `INSERT INTO ${Qualified("recommendation_queue")} (user_id, item_key, tt_id, title, release_year, payload) SELECT $1, item->>'itemKey', COALESCE(item->>'ttId', ''), item->>'title', NULLIF(item->>'year', '')::integer, item->'payload' FROM jsonb_array_elements($2::jsonb) AS item ON CONFLICT DO NOTHING RETURNING payload`,
-        [userId, JSON.stringify(records)]
+        `INSERT INTO ${Qualified("recommendation_queue")} (user_id, media_type, item_key, tt_id, title, release_year, payload) SELECT $1, $2, item->>'itemKey', COALESCE(item->>'ttId', ''), item->>'title', NULLIF(item->>'year', '')::integer, item->'payload' FROM jsonb_array_elements($3::jsonb) AS item ON CONFLICT DO NOTHING RETURNING payload`,
+        [userId, key, JSON.stringify(records)]
       );
       return result.rows.map((row) => row.payload);
     },
 
-    async removeRecommendation(userId, value) {
+    async removeRecommendation(userId, value, mediaType = "movie") {
       const result = await pool.query(
-        `DELETE FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 AND (item_key=$2 OR ($3 <> '' AND tt_id=$3))`,
-        [userId, value.queueKey || "", value.ttId || ""]
+        `DELETE FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 AND media_type=$2 AND (item_key=$3 OR ($4 <> '' AND tt_id=$4))`,
+        [userId, NormalizeMediaType(mediaType), value.queueKey || "", value.ttId || ""]
       );
       return result.rowCount;
     },
 
-    async excludeRecommendation(userId, exclusion) {
+    async excludeRecommendation(userId, exclusion, mediaType = "movie") {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
-        const updated = await client.query(
-          `UPDATE ${Qualified("user_states")} SET payload=jsonb_set(COALESCE(payload, '{}'::jsonb), '{recommendationExclusions}', COALESCE(payload->'recommendationExclusions', '[]'::jsonb) || jsonb_build_array($2::jsonb), true), revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`,
-          [userId, JSON.stringify(exclusion)]
-        );
+        const state = await ReadUserState(client, userId);
+        const key = NormalizeMediaType(mediaType);
+        const media = ReadMediaPayload(state.payload, key);
+        const mediaPayload = {
+          ...media,
+          recommendationExclusions: [...(Array.isArray(media.recommendationExclusions) ? media.recommendationExclusions : []), { ...exclusion, mediaType: key }]
+        };
+        const updated = await WriteUserState(client, userId, WriteMediaPayload(state.payload, key, mediaPayload));
         await client.query(
-          `DELETE FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 AND (item_key=$2 OR ($3 <> '' AND tt_id=$3))`,
-          [userId, exclusion.queueKey || "", exclusion.ttId || ""]
+          `DELETE FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 AND media_type=$2 AND (item_key=$3 OR ($4 <> '' AND tt_id=$4))`,
+          [userId, key, exclusion.queueKey || "", exclusion.ttId || ""]
         );
         await client.query("COMMIT");
-        return Number(updated.rows[0]?.revision) || 0;
+        return Number(updated) || 0;
       } catch (error) {
         await client.query("ROLLBACK");
         throw error;
@@ -161,6 +166,37 @@ export function CreateAccountStore({ db, pool }) {
       return rows[0] ? DecryptSecret(rows[0], userId, secretType) : "";
     }
   };
+}
+
+async function MutateMediaState(pool, userId, mediaType, mutate) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const state = await ReadUserState(client, userId);
+    const key = NormalizeMediaType(mediaType);
+    const payload = WriteMediaPayload(state.payload, key, mutate(ReadMediaPayload(state.payload, key)));
+    const revision = await WriteUserState(client, userId, payload);
+    await client.query("COMMIT");
+    return revision;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function ReadUserState(client, userId) {
+  const result = await client.query(`SELECT payload, revision FROM ${Qualified("user_states")} WHERE user_id=$1 FOR UPDATE`, [userId]);
+  return result.rows[0] || { payload: {}, revision: 0 };
+}
+
+async function WriteUserState(client, userId, payload) {
+  const result = await client.query(
+    `UPDATE ${Qualified("user_states")} SET payload=$2::jsonb, revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`,
+    [userId, JSON.stringify(payload)]
+  );
+  return Number(result.rows[0]?.revision) || 0;
 }
 
 function NormalizeEmail(value) {

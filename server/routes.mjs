@@ -6,32 +6,40 @@ import { DeleteImdbRating, GetImdbStatus, SubmitImdbRating } from "./imdb-rating
 import { GetTitleMetadata } from "./title-metadata.mjs";
 import { HasEncryptionKey } from "./security/secrets.mjs";
 import { NormalizeRecommendationItem, RecommendationKey } from "./recommendation-queue.mjs";
-import { ReadMoviePool } from "./movie-pool.mjs";
+import { ReadMoviePool, ReadTitlePool } from "./movie-pool.mjs";
+import { MediaTypes, NormalizeMediaType } from "../shared/media.js";
+
+const MediaTypeSchema = z.enum(MediaTypes);
 
 const StateSchema = z.object({
   payload: z.record(z.string(), z.unknown()),
   ratingsCsv: z.string().max(10 * 1024 * 1024).default(""),
-  revision: z.number().int().nonnegative()
+  revision: z.number().int().nonnegative(),
+  mediaType: MediaTypeSchema.default("movie")
 });
 const NotSeenSchema = z.object({
+  mediaType: MediaTypeSchema.default("movie"),
   titleId: z.string().trim().regex(/^tt\d+$/),
   title: z.string().max(500).default(""),
   year: z.union([z.string(), z.number()]).optional(),
   at: z.string().optional()
 });
 const RecommendationExclusionSchema = z.object({
+  mediaType: MediaTypeSchema.default("movie"),
   ttId: z.string().trim().regex(/^tt\d+$/).or(z.literal("")).default(""),
   title: z.string().trim().min(1).max(500),
   year: z.union([z.string(), z.number()]).optional(),
   at: z.string().optional()
 });
 const RecommendationQueueItemSchema = z.object({
+  mediaType: MediaTypeSchema.default("movie"),
   ttId: z.string().trim().regex(/^tt\d+$/),
   title: z.string().trim().min(1).max(500),
   year: z.union([z.string(), z.number()]).optional(),
   genres: z.array(z.string().trim().min(1).max(100)).max(30).default([])
 });
 const RaterDecisionSchema = z.object({
+  mediaType: MediaTypeSchema.default("movie"),
   actionId: z.string().uuid(),
   expectedRevision: z.number().int().positive(),
   kind: z.enum(["rated", "notSeen", "wishlist"]),
@@ -46,11 +54,13 @@ const RaterDecisionSchema = z.object({
     context.addIssue({ code: "custom", path: ["rating"], message: "A rating is required." });
 });
 const RaterUndoSchema = z.object({
+  mediaType: MediaTypeSchema.default("movie"),
   actionId: z.string().uuid(),
   expectedRevision: z.number().int().positive(),
   titleId: z.string().trim().regex(/^tt\d+$/)
 });
 const RaterQueueRestoreSchema = z.object({
+  mediaType: MediaTypeSchema.default("movie"),
   expectedRevision: z.number().int().positive(),
   queueIds: z.array(z.string().trim().regex(/^tt\d+$/)).max(100_000)
 });
@@ -69,6 +79,7 @@ export function RegisterApiRoutes(app, {
   deleteImdbRating = DeleteImdbRating,
   generateAiRecommendations = GenerateAiRecommendations,
   readMoviePool = ReadMoviePool,
+  readTitlePool = ReadTitlePool,
   raterEvents = { subscribe() {}, publish() {} }
 }) {
   app.get("/health", async (_request, response) => {
@@ -134,32 +145,39 @@ export function RegisterApiRoutes(app, {
     const result = await store.saveState(request.session.userId, parsed.data.payload, parsed.data.ratingsCsv, parsed.data.revision);
     if (!result.ok)
       return response.status(409).json({ ok: false, code: "STATE_CONFLICT", error: "Your account changed in another browser.", current: result.current });
-    await ReconcileRaterQueue(store, request.session.userId, rootPath, readMoviePool, raterEvents);
+    await ReconcileRaterQueue(store, request.session.userId, parsed.data.mediaType, rootPath, readMoviePool, readTitlePool, raterEvents);
     response.json({ ok: true, revision: result.revision });
   });
 
   app.get("/api/rater/queue", async (request, response) => {
-    const queue = await store.getRaterQueue(request.session.userId, await readMoviePool(rootPath));
+    const mediaType = ReadRequestMediaType(request, response);
+    if (!mediaType)
+      return;
+    const queue = await store.getRaterQueue(request.session.userId, mediaType, await ReadRequestedPool(rootPath, mediaType, readMoviePool, readTitlePool));
     response.json({ ok: true, queue });
   });
 
   app.get("/api/rater/events", async (request, response) => {
-    raterEvents.subscribe(request.session.userId, request, response);
+    const mediaType = ReadRequestMediaType(request, response);
+    if (!mediaType)
+      return;
+    raterEvents.subscribe(request.session.userId, request, response, mediaType);
   });
 
   app.put("/api/rater/decision", RequireCsrf, async (request, response) => {
     const parsed = RaterDecisionSchema.safeParse(request.body);
     if (!parsed.success)
       return Invalid(response);
-    const moviePool = await readMoviePool(rootPath);
-    await store.getRaterQueue(request.session.userId, moviePool);
+    const mediaType = parsed.data.mediaType;
+    const titlePool = await ReadRequestedPool(rootPath, mediaType, readMoviePool, readTitlePool);
+    await store.getRaterQueue(request.session.userId, mediaType, titlePool);
     const decision = BuildRaterDecision(parsed.data);
     const committed = await store.commitRaterDecision(request.session.userId, decision);
     if (!committed.ok)
       return response.status(409).json({ ok: false, code: committed.code, error: "The rating queue changed on another device.", current: committed.current });
-    raterEvents.publish(request.session.userId, committed.queue.revision);
+    raterEvents.publish(request.session.userId, committed.queue.revision, mediaType);
     if (decision.kind === "wishlist")
-      committed.recommendations = await store.listRecommendationQueue(request.session.userId);
+      committed.recommendations = await store.listRecommendationQueue(request.session.userId, mediaType);
     response.json({ ok: true, ...committed });
   });
 
@@ -170,11 +188,12 @@ export function RegisterApiRoutes(app, {
     const result = await store.commitRaterUndo(request.session.userId, {
       actionId: parsed.data.actionId,
       expectedRevision: parsed.data.expectedRevision,
-      ttId: parsed.data.titleId
+      ttId: parsed.data.titleId,
+      mediaType: parsed.data.mediaType
     });
     if (!result.ok)
       return response.status(409).json({ ok: false, code: result.code, error: "The rating queue changed on another device.", current: result.current });
-    raterEvents.publish(request.session.userId, result.queue.revision);
+    raterEvents.publish(request.session.userId, result.queue.revision, parsed.data.mediaType);
     response.json({ ok: true, ...result });
   });
 
@@ -182,10 +201,11 @@ export function RegisterApiRoutes(app, {
     const parsed = RaterQueueRestoreSchema.safeParse(request.body);
     if (!parsed.success)
       return Invalid(response);
-    const result = await store.replaceRaterQueue(request.session.userId, parsed.data, await readMoviePool(rootPath));
+    const mediaType = parsed.data.mediaType;
+    const result = await store.replaceRaterQueue(request.session.userId, parsed.data, mediaType, await ReadRequestedPool(rootPath, mediaType, readMoviePool, readTitlePool));
     if (!result.ok)
       return response.status(409).json({ ok: false, code: result.code, error: "The rating queue changed on another device.", current: result.current });
-    raterEvents.publish(request.session.userId, result.queue.revision);
+    raterEvents.publish(request.session.userId, result.queue.revision, mediaType);
     response.json({ ok: true, ...result });
   });
 
@@ -194,8 +214,8 @@ export function RegisterApiRoutes(app, {
     if (!parsed.success)
       return Invalid(response);
     const record = BuildNotSeenRecord(parsed.data);
-    const revision = await store.recordRating(request.session.userId, record);
-    await ReconcileRaterQueue(store, request.session.userId, rootPath, readMoviePool, raterEvents);
+    const revision = await store.recordRating(request.session.userId, record, parsed.data.mediaType);
+    await ReconcileRaterQueue(store, request.session.userId, parsed.data.mediaType, rootPath, readMoviePool, readTitlePool, raterEvents);
     response.json({ ok: true, titleId: record.ttId, revision });
   });
 
@@ -204,7 +224,7 @@ export function RegisterApiRoutes(app, {
     if (!parsed.success)
       return Invalid(response);
     const exclusion = BuildRecommendationExclusion(parsed.data);
-    const revision = await store.excludeRecommendation(request.session.userId, exclusion);
+    const revision = await store.excludeRecommendation(request.session.userId, exclusion, parsed.data.mediaType);
     response.json({ ok: true, exclusion, revision });
   });
 
@@ -245,25 +265,31 @@ export function RegisterApiRoutes(app, {
   });
 
   app.post("/api/rate", RequireCsrf, async (request, response) => {
+    const mediaType = ReadRequestMediaType(request, response);
+    if (!mediaType)
+      return;
     const cookie = await store.getSecret(request.session.userId, "imdb");
     const result = await submitImdbRating(request.body.titleId, request.body.rating, cookie);
     if (!result.payload?.ok)
       return SendResult(response, result);
-    const record = BuildSubmittedRatingRecord(request.body, result.payload);
-    const revision = await store.recordRating(request.session.userId, record);
-    await store.removeRecommendation(request.session.userId, { ...record, queueKey: RecommendationKey(record) });
-    await ReconcileRaterQueue(store, request.session.userId, rootPath, readMoviePool, raterEvents);
+    const record = BuildSubmittedRatingRecord({ ...request.body, mediaType }, result.payload);
+    const revision = await store.recordRating(request.session.userId, record, mediaType);
+    await store.removeRecommendation(request.session.userId, { ...record, queueKey: RecommendationKey(record) }, mediaType);
+    await ReconcileRaterQueue(store, request.session.userId, mediaType, rootPath, readMoviePool, readTitlePool, raterEvents);
     response.status(result.status).json({ ...result.payload, revision });
   });
 
   app.delete("/api/rate", RequireCsrf, async (request, response) => {
+    const mediaType = ReadRequestMediaType(request, response);
+    if (!mediaType)
+      return;
     const cookie = await store.getSecret(request.session.userId, "imdb");
     const result = await deleteImdbRating(request.body.titleId, cookie);
     if (!result.payload?.ok)
       return SendResult(response, result);
     const revision = request.body?.deferAccountState
       ? undefined
-      : await store.deleteRating(request.session.userId, result.payload.titleId);
+      : await store.deleteRating(request.session.userId, result.payload.titleId, mediaType);
     response.status(result.status).json({ ...result.payload, revision });
   });
 
@@ -279,7 +305,10 @@ export function RegisterApiRoutes(app, {
   });
 
   app.get("/api/ai/recommendations/queue", async (request, response) => {
-    const recommendations = await store.listRecommendationQueue(request.session.userId);
+    const mediaType = ReadRequestMediaType(request, response);
+    if (!mediaType)
+      return;
+    const recommendations = await store.listRecommendationQueue(request.session.userId, mediaType);
     response.json({ ok: true, recommendations, count: recommendations.length });
   });
 
@@ -293,9 +322,10 @@ export function RegisterApiRoutes(app, {
       why: { tasteMatch: "Added from the rating queue.", ratingEvidence: [] },
       addedAt: new Date().toISOString()
     });
-    const added = await store.appendRecommendationQueue(request.session.userId, [recommendation]);
-    const recommendations = await store.listRecommendationQueue(request.session.userId);
-    await ReconcileRaterQueue(store, request.session.userId, rootPath, readMoviePool, raterEvents);
+    const mediaType = parsed.data.mediaType;
+    const added = await store.appendRecommendationQueue(request.session.userId, [recommendation], mediaType);
+    const recommendations = await store.listRecommendationQueue(request.session.userId, mediaType);
+    await ReconcileRaterQueue(store, request.session.userId, mediaType, rootPath, readMoviePool, readTitlePool, raterEvents);
     response.json({
       ok: true,
       recommendation,
@@ -306,14 +336,17 @@ export function RegisterApiRoutes(app, {
   });
 
   app.post("/api/ai/recommendations", RequireCsrf, async (request, response) => {
+    const mediaType = ReadRequestMediaType(request, response);
+    if (!mediaType)
+      return;
     const options = await BuildOpenAiOptions(store, request.session.userId);
-    const queue = await store.listRecommendationQueue(request.session.userId);
-    const result = await generateAiRecommendations(rootPath, { ...request.body, ...options, queue });
+    const queue = await store.listRecommendationQueue(request.session.userId, mediaType);
+    const result = await generateAiRecommendations(rootPath, { ...request.body, ...options, queue, mediaType });
     if (!result.payload?.ok)
       return SendResult(response, result);
-    const added = await store.appendRecommendationQueue(request.session.userId, result.payload.recommendations);
-    const recommendations = await store.listRecommendationQueue(request.session.userId);
-    await ReconcileRaterQueue(store, request.session.userId, rootPath, readMoviePool, raterEvents);
+    const added = await store.appendRecommendationQueue(request.session.userId, result.payload.recommendations, mediaType);
+    const recommendations = await store.listRecommendationQueue(request.session.userId, mediaType);
+    await ReconcileRaterQueue(store, request.session.userId, mediaType, rootPath, readMoviePool, readTitlePool, raterEvents);
     response.status(result.status).json({
       ...result.payload,
       recommendations,
@@ -323,8 +356,11 @@ export function RegisterApiRoutes(app, {
   });
 
   app.get(/^\/api\/title\/(tt\d+)$/, async (request, response) => {
+    const mediaType = ReadRequestMediaType(request, response);
+    if (!mediaType)
+      return;
     const tmdbApiKey = await store.getSecret(request.session.userId, "tmdb");
-    SendResult(response, await GetTitleMetadata(request.params[0], { tmdbApiKey }));
+    SendResult(response, await GetTitleMetadata(request.params[0], { tmdbApiKey, mediaType }));
   });
 }
 
@@ -351,6 +387,7 @@ function BuildSubmittedRatingRecord(request, result) {
     title: String(request.title || "").trim().slice(0, 500),
     year: ReadYear(request.year),
     ttId: result.titleId,
+    mediaType: NormalizeMediaType(request.mediaType),
     at: ReadTimestamp(request.at, submittedAt),
     submitStatus: "submitted",
     submitError: "",
@@ -364,7 +401,8 @@ function BuildRaterDecision(request) {
     actionId: request.actionId,
     expectedRevision: request.expectedRevision,
     kind: request.kind,
-    ttId: request.titleId
+    ttId: request.titleId,
+    mediaType: request.mediaType
   };
   if (request.kind === "wishlist") {
     const recommendation = NormalizeRecommendationItem({
@@ -385,6 +423,7 @@ function BuildRaterDecision(request) {
     title: request.title,
     year: ReadYear(request.year),
     ttId: request.titleId,
+    mediaType: request.mediaType,
     at,
     submitStatus: request.kind === "rated" ? "pending" : "skipped",
     submitError: "",
@@ -400,6 +439,7 @@ function BuildNotSeenRecord(request) {
     title: String(request.title || "").trim().slice(0, 500),
     year: ReadYear(request.year),
     ttId: request.titleId,
+    mediaType: request.mediaType,
     at: ReadTimestamp(request.at, new Date().toISOString()),
     submitStatus: "skipped",
     submitError: "",
@@ -458,13 +498,26 @@ function Invalid(response) {
   return response.status(422).json({ ok: false, code: "INVALID_REQUEST", error: "The submitted data is invalid." });
 }
 
-async function ReconcileRaterQueue(store, userId, rootPath, readMoviePool, raterEvents) {
+async function ReconcileRaterQueue(store, userId, mediaType, rootPath, readMoviePool, readTitlePool, raterEvents) {
   if (typeof store.getRaterQueue !== "function")
     return null;
-  const queue = await store.getRaterQueue(userId, await readMoviePool(rootPath));
+  const queue = await store.getRaterQueue(userId, mediaType, await ReadRequestedPool(rootPath, mediaType, readMoviePool, readTitlePool));
   if (queue.changed)
-    raterEvents.publish(userId, queue.revision);
+    raterEvents.publish(userId, queue.revision, mediaType);
   return queue;
+}
+
+async function ReadRequestedPool(rootPath, mediaType, readMoviePool, readTitlePool) {
+  return mediaType === "movie" ? await readMoviePool(rootPath) : await readTitlePool(rootPath, mediaType);
+}
+
+function ReadRequestMediaType(request, response) {
+  const raw = request.body?.mediaType ?? request.query?.media ?? "movie";
+  const parsed = MediaTypeSchema.safeParse(raw);
+  if (parsed.success)
+    return parsed.data;
+  Invalid(response);
+  return "";
 }
 
 function PublicUser(user) {

@@ -1,14 +1,28 @@
+import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../shared/media.js";
+
 export function MergeAccountPayload(remoteValue, localValue) {
-  const remote = ReadObject(remoteValue);
-  const local = ReadObject(localValue);
+  const remote = NormalizeAccountPayload(remoteValue);
+  const local = NormalizeAccountPayload(localValue);
+  let merged = {
+    ...remote,
+    ...local,
+    media: remote.media
+  };
+  for (const mediaType of ["movie", "tv"])
+    merged = WriteMediaPayload(merged, mediaType, MergeMediaPayload(ReadMediaPayload(remote, mediaType), ReadMediaPayload(local, mediaType)));
+  return merged;
+}
+
+function MergeMediaPayload(remote, local) {
   const merged = {
     ...remote,
     ...local,
     ratings: MergeRecordMaps(remote.ratings, local.ratings),
     recommendationExclusions: MergeExclusions(remote.recommendationExclusions, local.recommendationExclusions),
-    letterboxd: NewestLetterboxdSnapshot(remote.letterboxd, local.letterboxd),
     history: MergeHistory(remote.history, local.history)
   };
+  if (remote.letterboxd || local.letterboxd)
+    merged.letterboxd = NewestLetterboxdSnapshot(remote.letterboxd, local.letterboxd);
   delete merged.queueIds;
   delete merged.signature;
   return merged;

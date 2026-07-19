@@ -1,29 +1,32 @@
 import { CreateQueueSeed, QueueSnapshot, ReconcileQueueIds, SameQueueIds } from "./rater-queue.mjs";
 import { ReadDatabaseSchema } from "./db/config.mjs";
+import { NormalizeMediaType, ReadMediaPayload, WriteMediaPayload } from "../shared/media.js";
 
 export function CreateRaterQueueStore(pool) {
   return {
-    async getRaterQueue(userId, moviePool) {
+    async getRaterQueue(userId, mediaTypeOrPool, maybePool) {
+      const { mediaType, titlePool } = ReadPoolArguments(mediaTypeOrPool, maybePool);
       return await WithTransaction(pool, async (client) => {
-        let queue = await ReadQueue(client, userId, true);
+        let queue = await ReadQueue(client, userId, mediaType, true);
         const state = await ReadState(client, userId, true);
-        const recommendations = await ReadRecommendationIds(client, userId);
+        const recommendations = await ReadRecommendationIds(client, userId, mediaType);
         if (!queue)
-          queue = await ReadQueue(client, userId, true);
+          queue = await ReadQueue(client, userId, mediaType, true);
         const seed = String(queue?.seed || CreateQueueSeed());
-        const legacyIds = queue ? queue.queue_ids : state.payload?.queueIds;
-        const unavailable = [...Object.keys(state.payload?.ratings || {}), ...recommendations];
-        const queueIds = ReconcileQueueIds(legacyIds, moviePool.ids, unavailable, seed);
-        const changed = !queue || queue.pool_version !== moviePool.version || !SameQueueIds(queue.queue_ids, queueIds);
+        const media = ReadMediaPayload(state.payload, mediaType);
+        const legacyIds = queue ? queue.queue_ids : media.queueIds;
+        const unavailable = [...Object.keys(media.ratings || {}), ...recommendations];
+        const queueIds = ReconcileQueueIds(legacyIds, titlePool.ids, unavailable, seed);
+        const changed = !queue || queue.pool_version !== titlePool.version || !SameQueueIds(queue.queue_ids, queueIds);
         if (!queue) {
           queue = (await client.query(
-            `INSERT INTO ${Qualified("rater_queues")} (user_id, pool_version, seed, queue_ids, revision, created_at, updated_at) VALUES ($1, $2, $3, $4::jsonb, 1, now(), now()) RETURNING pool_version, seed, queue_ids, revision`,
-            [userId, moviePool.version, seed, JSON.stringify(queueIds)]
+            `INSERT INTO ${Qualified("rater_queues")} (user_id, media_type, pool_version, seed, queue_ids, revision, created_at, updated_at) VALUES ($1, $2, $3, $4, $5::jsonb, 1, now(), now()) RETURNING pool_version, seed, queue_ids, revision`,
+            [userId, mediaType, titlePool.version, seed, JSON.stringify(queueIds)]
           )).rows[0];
         } else if (changed) {
           queue = (await client.query(
-            `UPDATE ${Qualified("rater_queues")} SET pool_version=$2, queue_ids=$3::jsonb, revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING pool_version, seed, queue_ids, revision`,
-            [userId, moviePool.version, JSON.stringify(queueIds)]
+            `UPDATE ${Qualified("rater_queues")} SET pool_version=$3, queue_ids=$4::jsonb, revision=revision+1, updated_at=now() WHERE user_id=$1 AND media_type=$2 RETURNING pool_version, seed, queue_ids, revision`,
+            [userId, mediaType, titlePool.version, JSON.stringify(queueIds)]
           )).rows[0];
         }
         return { ...QueueSnapshot(queue), changed };
@@ -31,28 +34,30 @@ export function CreateRaterQueueStore(pool) {
     },
 
     async commitRaterDecision(userId, decision) {
+      const mediaType = NormalizeMediaType(decision.mediaType);
       return await WithTransaction(pool, async (client) => {
-        const duplicate = await ReadAction(client, userId, decision.actionId);
+        const duplicate = await ReadAction(client, userId, mediaType, decision.actionId);
         if (duplicate)
-          return await BuildDuplicateResult(client, userId, duplicate);
-        const queue = await ReadQueue(client, userId, true);
-        const committedDuplicate = await ReadAction(client, userId, decision.actionId);
+          return await BuildDuplicateResult(client, userId, mediaType, duplicate);
+        const queue = await ReadQueue(client, userId, mediaType, true);
+        const committedDuplicate = await ReadAction(client, userId, mediaType, decision.actionId);
         if (committedDuplicate)
-          return await BuildDuplicateResult(client, userId, committedDuplicate);
+          return await BuildDuplicateResult(client, userId, mediaType, committedDuplicate);
         if (!queue)
           return { ok: false, code: "QUEUE_NOT_READY", current: QueueSnapshot(null) };
         const current = QueueSnapshot(queue);
         if (current.revision !== decision.expectedRevision || current.queueIds[0] !== decision.ttId)
           return { ok: false, code: "QUEUE_CONFLICT", current };
         const state = await ReadState(client, userId, true);
-        const previous = state.payload?.ratings?.[decision.ttId] || null;
-        const nextPayload = ApplyDecisionToPayload(state.payload, decision, previous);
+        const media = ReadMediaPayload(state.payload, mediaType);
+        const previous = media.ratings?.[decision.ttId] || null;
+        const nextPayload = ApplyDecisionToPayload(state.payload, mediaType, decision, previous);
         const stateRevision = decision.record
           ? await WriteStatePayload(client, userId, nextPayload)
           : Number(state.revision) || 0;
         if (decision.recommendation)
-          await InsertRecommendation(client, userId, decision.recommendation);
-        const nextQueue = await WriteQueue(client, userId, current.queueIds.slice(1));
+          await InsertRecommendation(client, userId, mediaType, decision.recommendation);
+        const nextQueue = await WriteQueue(client, userId, mediaType, current.queueIds.slice(1));
         const result = {
           ok: true,
           duplicate: false,
@@ -62,84 +67,90 @@ export function CreateRaterQueueStore(pool) {
           recommendation: decision.recommendation || null,
           queue: QueueSnapshot(nextQueue)
         };
-        await InsertAction(client, userId, decision, result);
+        await InsertAction(client, userId, mediaType, decision, result);
         return result;
       });
     },
 
     async commitRaterUndo(userId, request) {
+      const mediaType = NormalizeMediaType(request.mediaType);
       return await WithTransaction(pool, async (client) => {
-        const duplicate = await ReadAction(client, userId, request.actionId);
+        const duplicate = await ReadAction(client, userId, mediaType, request.actionId);
         if (duplicate)
-          return await BuildDuplicateResult(client, userId, duplicate);
-        const queue = await ReadQueue(client, userId, true);
-        const committedDuplicate = await ReadAction(client, userId, request.actionId);
+          return await BuildDuplicateResult(client, userId, mediaType, duplicate);
+        const queue = await ReadQueue(client, userId, mediaType, true);
+        const committedDuplicate = await ReadAction(client, userId, mediaType, request.actionId);
         if (committedDuplicate)
-          return await BuildDuplicateResult(client, userId, committedDuplicate);
+          return await BuildDuplicateResult(client, userId, mediaType, committedDuplicate);
         const current = QueueSnapshot(queue);
         const state = await ReadState(client, userId, true);
-        const history = Array.isArray(state.payload?.history) ? state.payload.history.slice(-200) : [];
+        const media = ReadMediaPayload(state.payload, mediaType);
+        const history = Array.isArray(media.history) ? media.history.slice(-200) : [];
         const last = history.at(-1);
         if (!queue || current.revision !== request.expectedRevision || last?.ttId !== request.ttId)
           return { ok: false, code: "QUEUE_CONFLICT", current };
-        const payload = { ...(state.payload || {}), ratings: { ...(state.payload?.ratings || {}) }, history: history.slice(0, -1) };
+        const mediaPayload = { ...media, ratings: { ...(media.ratings || {}) }, history: history.slice(0, -1) };
         if (last.previous)
-          payload.ratings[request.ttId] = last.previous;
+          mediaPayload.ratings[request.ttId] = last.previous;
         else
-          delete payload.ratings[request.ttId];
-        const stateRevision = await WriteStatePayload(client, userId, payload);
+          delete mediaPayload.ratings[request.ttId];
+        const stateRevision = await WriteStatePayload(client, userId, WriteMediaPayload(state.payload, mediaType, mediaPayload));
         const queueIds = last.previous
           ? current.queueIds
           : [request.ttId, ...current.queueIds.filter((ttId) => ttId !== request.ttId)];
-        const nextQueue = await WriteQueue(client, userId, queueIds);
+        const nextQueue = await WriteQueue(client, userId, mediaType, queueIds);
         const result = {
           ok: true,
           duplicate: false,
           stateRevision,
           record: last.previous || null,
-          previous: state.payload?.ratings?.[request.ttId] || null,
+          previous: media.ratings?.[request.ttId] || null,
           queue: QueueSnapshot(nextQueue)
         };
-        await InsertAction(client, userId, { ...request, kind: "undo" }, result);
+        await InsertAction(client, userId, mediaType, { ...request, kind: "undo" }, result);
         return result;
       });
     },
 
-    async replaceRaterQueue(userId, request, moviePool) {
+    async replaceRaterQueue(userId, request, mediaTypeOrPool, maybePool) {
+      const { mediaType, titlePool } = ReadPoolArguments(mediaTypeOrPool, maybePool);
       return await WithTransaction(pool, async (client) => {
-        const queue = await ReadQueue(client, userId, true);
+        const queue = await ReadQueue(client, userId, mediaType, true);
         const current = QueueSnapshot(queue);
         if (!queue || current.revision !== request.expectedRevision)
           return { ok: false, code: "QUEUE_CONFLICT", current };
         const state = await ReadState(client, userId, true);
-        const recommendations = await ReadRecommendationIds(client, userId);
-        const unavailable = [...Object.keys(state.payload?.ratings || {}), ...recommendations];
-        const queueIds = ReconcileQueueIds(request.queueIds, moviePool.ids, unavailable, queue.seed);
-        const nextQueue = await WriteQueue(client, userId, queueIds, moviePool.version);
+        const recommendations = await ReadRecommendationIds(client, userId, mediaType);
+        const media = ReadMediaPayload(state.payload, mediaType);
+        const unavailable = [...Object.keys(media.ratings || {}), ...recommendations];
+        const queueIds = ReconcileQueueIds(request.queueIds, titlePool.ids, unavailable, queue.seed);
+        const nextQueue = await WriteQueue(client, userId, mediaType, queueIds, titlePool.version);
         return { ok: true, queue: QueueSnapshot(nextQueue) };
       });
     }
   };
 }
 
-function ApplyDecisionToPayload(value, decision, previous) {
-  const payload = { ...(value || {}), ratings: { ...(value?.ratings || {}) } };
-  payload.ratings[decision.ttId] = decision.record;
-  const history = Array.isArray(value?.history) ? value.history.slice(-199) : [];
-  payload.history = [...history, { ttId: decision.ttId, previous }];
-  return payload;
+function ApplyDecisionToPayload(value, mediaType, decision, previous) {
+  const media = ReadMediaPayload(value, mediaType);
+  const mediaPayload = { ...media, ratings: { ...(media.ratings || {}) } };
+  mediaPayload.ratings[decision.ttId] = { ...decision.record, mediaType };
+  const history = Array.isArray(media.history) ? media.history.slice(-199) : [];
+  mediaPayload.history = [...history, { ttId: decision.ttId, previous }];
+  return WriteMediaPayload(value, mediaType, mediaPayload);
 }
 
-async function BuildDuplicateResult(client, userId, action) {
-  const queue = await ReadQueue(client, userId, false);
+async function BuildDuplicateResult(client, userId, mediaType, action) {
+  const queue = await ReadQueue(client, userId, mediaType, false);
   const state = await ReadState(client, userId, false);
+  const media = ReadMediaPayload(state.payload, mediaType);
   const saved = action.result || {};
   return {
     ...saved,
     ok: true,
     duplicate: true,
     stateRevision: Number(state.revision) || Number(saved.stateRevision) || 0,
-    record: state.payload?.ratings?.[action.tt_id] || saved.record || null,
+    record: media.ratings?.[action.tt_id] || saved.record || null,
     queue: QueueSnapshot(queue)
   };
 }
@@ -150,19 +161,19 @@ async function ReadState(client, userId, lock) {
   return result.rows[0] || { payload: {}, revision: 0 };
 }
 
-async function ReadQueue(client, userId, lock) {
+async function ReadQueue(client, userId, mediaType, lock) {
   const suffix = lock ? " FOR UPDATE" : "";
-  const result = await client.query(`SELECT pool_version, seed, queue_ids, revision FROM ${Qualified("rater_queues")} WHERE user_id=$1${suffix}`, [userId]);
+  const result = await client.query(`SELECT pool_version, seed, queue_ids, revision FROM ${Qualified("rater_queues")} WHERE user_id=$1 AND media_type=$2${suffix}`, [userId, mediaType]);
   return result.rows[0] || null;
 }
 
-async function ReadRecommendationIds(client, userId) {
-  const result = await client.query(`SELECT tt_id FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 AND tt_id <> ''`, [userId]);
+async function ReadRecommendationIds(client, userId, mediaType) {
+  const result = await client.query(`SELECT tt_id FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 AND media_type=$2 AND tt_id <> ''`, [userId, mediaType]);
   return result.rows.map((row) => row.tt_id);
 }
 
-async function ReadAction(client, userId, actionId) {
-  const result = await client.query(`SELECT tt_id, result FROM ${Qualified("rater_actions")} WHERE user_id=$1 AND action_id=$2`, [userId, actionId]);
+async function ReadAction(client, userId, mediaType, actionId) {
+  const result = await client.query(`SELECT tt_id, result FROM ${Qualified("rater_actions")} WHERE user_id=$1 AND media_type=$2 AND action_id=$3`, [userId, mediaType, actionId]);
   return result.rows[0] || null;
 }
 
@@ -174,26 +185,32 @@ async function WriteStatePayload(client, userId, payload) {
   return Number(result.rows[0]?.revision) || 0;
 }
 
-async function WriteQueue(client, userId, queueIds, poolVersion = null) {
+async function WriteQueue(client, userId, mediaType, queueIds, poolVersion = null) {
   const result = await client.query(
-    `UPDATE ${Qualified("rater_queues")} SET queue_ids=$2::jsonb, pool_version=COALESCE($3, pool_version), revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING pool_version, seed, queue_ids, revision`,
-    [userId, JSON.stringify(queueIds), poolVersion]
+    `UPDATE ${Qualified("rater_queues")} SET queue_ids=$3::jsonb, pool_version=COALESCE($4, pool_version), revision=revision+1, updated_at=now() WHERE user_id=$1 AND media_type=$2 RETURNING pool_version, seed, queue_ids, revision`,
+    [userId, mediaType, JSON.stringify(queueIds), poolVersion]
   );
   return result.rows[0];
 }
 
-async function InsertRecommendation(client, userId, item) {
+async function InsertRecommendation(client, userId, mediaType, item) {
   await client.query(
-    `INSERT INTO ${Qualified("recommendation_queue")} (user_id, item_key, tt_id, title, release_year, payload) VALUES ($1, $2, $3, $4, $5, $6::jsonb) ON CONFLICT DO NOTHING`,
-    [userId, item.queueKey, item.ttId, item.title, item.year || null, JSON.stringify(item)]
+    `INSERT INTO ${Qualified("recommendation_queue")} (user_id, media_type, item_key, tt_id, title, release_year, payload) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb) ON CONFLICT DO NOTHING`,
+    [userId, mediaType, item.queueKey, item.ttId, item.title, item.year || null, JSON.stringify({ ...item, mediaType })]
   );
 }
 
-async function InsertAction(client, userId, decision, result) {
+async function InsertAction(client, userId, mediaType, decision, result) {
   await client.query(
-    `INSERT INTO ${Qualified("rater_actions")} (user_id, action_id, kind, tt_id, result, created_at) VALUES ($1, $2, $3, $4, $5::jsonb, now())`,
-    [userId, decision.actionId, decision.kind, decision.ttId, JSON.stringify(result)]
+    `INSERT INTO ${Qualified("rater_actions")} (user_id, action_id, media_type, kind, tt_id, result, created_at) VALUES ($1, $2, $3, $4, $5, $6::jsonb, now())`,
+    [userId, decision.actionId, mediaType, decision.kind, decision.ttId, JSON.stringify(result)]
   );
+}
+
+function ReadPoolArguments(mediaTypeOrPool, maybePool) {
+  if (mediaTypeOrPool && typeof mediaTypeOrPool === "object")
+    return { mediaType: "movie", titlePool: mediaTypeOrPool };
+  return { mediaType: NormalizeMediaType(mediaTypeOrPool), titlePool: maybePool };
 }
 
 async function WithTransaction(pool, action) {

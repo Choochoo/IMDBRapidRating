@@ -42,6 +42,19 @@ test("movie cards show at most the top three actors", () => {
   assert.doesNotMatch(html, /Jon Voight/);
 });
 
+test("TV cards present series-specific run, season, episode, and episode-runtime facts", () => {
+  const show = { ttId: "tt0903747", title: "Breaking Bad", year: 2008, endYear: 2013, mediaType: "tv", runtimeMinutes: 47, genres: ["Crime", "Drama"] };
+  const html = RenderCard(show, 0, { seriesStatus: "Ended", seasonCount: 5, episodeCount: 62, episodeRuntimeMinutes: 48 });
+
+  assert.match(html, /class="series-details"/);
+  assert.match(html, /2008–2013/);
+  assert.match(html, /Ended/);
+  assert.match(html, /5 seasons/);
+  assert.match(html, /62 episodes/);
+  assert.match(html, /48 min episodes/);
+  assert.doesNotMatch(html, /class="pill">47 min/);
+});
+
 test("actor metadata updates an already-rendered movie card", () => {
   const names = { textContent: "" };
   const cast = { hidden: true, querySelector: () => names };

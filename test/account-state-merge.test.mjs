@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { MergeAccountPayload } from "../src/app/account-state-merge.js";
 import { RapidRaterApp } from "../src/app/rapid-rater-app.js";
+import { ReadMediaPayload } from "../shared/media.js";
 
 test("account conflicts preserve ratings made on both devices", () => {
   const remote = {
@@ -18,7 +19,7 @@ test("account conflicts preserve ratings made on both devices", () => {
   };
 
   const merged = MergeAccountPayload(remote, local);
-  assert.deepEqual(Object.keys(merged.ratings).sort(), ["tt0000001", "tt0000002"]);
+  assert.deepEqual(Object.keys(ReadMediaPayload(merged, "movie").ratings).sort(), ["tt0000001", "tt0000002"]);
   assert.equal(merged.queueIds, undefined);
 });
 
@@ -29,8 +30,8 @@ test("newest decision for the same IMDb title wins during a device conflict", ()
     ratings: { tt0074279: NotSeen("tt0074279", "2026-07-16T12:00:00.000Z") }
   });
 
-  assert.equal(merged.ratings.tt0074279.status, "notSeen");
-  assert.equal(merged.ratings.tt0074279.rating, null);
+  assert.equal(ReadMediaPayload(merged, "movie").ratings.tt0074279.status, "notSeen");
+  assert.equal(ReadMediaPayload(merged, "movie").ratings.tt0074279.rating, null);
 });
 
 test("device conflicts retain recommendation exclusions and the newest Letterboxd import", () => {
@@ -42,8 +43,8 @@ test("device conflicts retain recommendation exclusions and the newest Letterbox
     letterboxd: { sourceName: "old.zip", importedAt: "2026-07-16T09:00:00.000Z", items: [] }
   });
 
-  assert.equal(merged.recommendationExclusions.length, 2);
-  assert.equal(merged.letterboxd.sourceName, "new.zip");
+  assert.equal(ReadMediaPayload(merged, "movie").recommendationExclusions.length, 2);
+  assert.equal(ReadMediaPayload(merged, "movie").letterboxd.sourceName, "new.zip");
 });
 
 test("account sync merges a stale device snapshot and retries with the current revision", async () => {
@@ -53,7 +54,7 @@ test("account sync merges a stale device snapshot and retries with the current r
     AccountPayload: { ratings: { tt0000002: Record("tt0000002", 8, "2026-07-16T11:00:00.000Z") } },
     AccountRevision: 4,
     RatingsCsvText: "",
-    State: {},
+    State: { mediaType: "movie" },
     applied: null,
     toast: "",
     ApplyMergedAccountPayload(payload) { this.applied = payload; },
@@ -81,7 +82,7 @@ test("account sync merges a stale device snapshot and retries with the current r
   assert.equal(requests.length, 2);
   assert.equal(requests[0].revision, 4);
   assert.equal(requests[1].revision, 5);
-  assert.deepEqual(Object.keys(requests[1].payload.ratings).sort(), ["tt0000001", "tt0000002"]);
+  assert.deepEqual(Object.keys(ReadMediaPayload(requests[1].payload, "movie").ratings).sort(), ["tt0000001", "tt0000002"]);
   assert.equal(app.AccountRevision, 6);
   assert.match(app.toast, /combined and saved/i);
 });
@@ -108,8 +109,19 @@ test("an idle device refreshes its queue when another device saves", async () =>
 
   assert.equal(changed, true);
   assert.equal(app.AccountRevision, 8);
-  assert.equal(app.applied.ratings.tt0000003.rating, 9);
+  assert.equal(ReadMediaPayload(app.applied, "movie").ratings.tt0000003.rating, 9);
   assert.match(app.toast, /other device/i);
+});
+
+test("movie and TV conflicts merge inside separate media namespaces", () => {
+  const merged = MergeAccountPayload({
+    media: { movie: { ratings: { tt0000001: Record("tt0000001", 8, "2026-07-16T10:00:00.000Z") } }, tv: {} }
+  }, {
+    media: { movie: {}, tv: { ratings: { tt0000002: Record("tt0000002", 9, "2026-07-16T11:00:00.000Z") } } }
+  });
+
+  assert.deepEqual(Object.keys(ReadMediaPayload(merged, "movie").ratings), ["tt0000001"]);
+  assert.deepEqual(Object.keys(ReadMediaPayload(merged, "tv").ratings), ["tt0000002"]);
 });
 
 function Record(ttId, rating, at) {

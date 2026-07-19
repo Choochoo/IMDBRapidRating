@@ -8,6 +8,7 @@ export function BuildRatingRecord(movie, rating, status, liveConfigured) {
     title: movie.title,
     year: movie.year || "",
     ttId: movie.ttId,
+    mediaType: movie.mediaType === "tv" ? "tv" : "movie",
     at: new Date().toISOString(),
     ...InitialSubmitState(status, rating, liveConfigured)
   };
@@ -46,7 +47,8 @@ export function BuildRateRequest(record) {
     rating: record.rating,
     title: record.title || "",
     year: record.year || "",
-    at: record.at || new Date().toISOString()
+    at: record.at || new Date().toISOString(),
+    mediaType: record.mediaType === "tv" ? "tv" : "movie"
   };
 }
 
@@ -59,14 +61,14 @@ export function BuildAiPreferenceProfile(records, movieById, recommendationExclu
   };
 }
 
-export function ImportImdbCsv(text, ratings, movieById) {
+export function ImportImdbCsv(text, ratings, movieById, options = {}) {
   const rows = ParseCsv(text);
   if (!rows.length)
     return BuildImportResult(0, 0, 0, false);
   const indexes = ReadCsvIndexes(rows[0]);
   if (indexes.constIndex < 0)
     throw new Error("The CSV does not include a Const column.");
-  return SyncCsvRows(rows.slice(1), indexes, ratings, movieById);
+  return SyncCsvRows(rows.slice(1), indexes, ratings, movieById, options);
 }
 
 export function BuildCsvText(records) {
@@ -98,33 +100,50 @@ function ReadCsvIndexes(headers) {
     constIndex: normalized.indexOf("const"),
     ratingIndex: normalized.indexOf("your rating"),
     titleIndex: normalized.indexOf("title"),
+    titleTypeIndex: normalized.indexOf("title type"),
     yearIndex: normalized.indexOf("year"),
     dateIndex: normalized.indexOf("date rated")
   };
 }
 
-function SyncCsvRows(rows, indexes, ratings, movieById) {
-  const nextImported = BuildImportedRatings(rows, indexes, movieById);
+function SyncCsvRows(rows, indexes, ratings, movieById, options) {
+  const nextImported = BuildImportedRatings(rows, indexes, movieById, options);
   const removed = RemoveStaleImportedRatings(ratings, nextImported);
   const applied = ApplyImportedRatings(ratings, nextImported);
   return BuildImportResult(nextImported.size, applied, removed, Boolean(applied || removed));
 }
 
-function BuildImportedRatings(rows, indexes, movieById) {
+function BuildImportedRatings(rows, indexes, movieById, options) {
   const nextImported = new Map();
   for (const row of rows) {
-    const imported = BuildImportedRatingFromRow(row, indexes, movieById);
+    const imported = BuildImportedRatingFromRow(row, indexes, movieById, options);
     if (imported)
       nextImported.set(imported.ttId, imported);
   }
   return nextImported;
 }
 
-function BuildImportedRatingFromRow(row, indexes, movieById) {
+function BuildImportedRatingFromRow(row, indexes, movieById, options) {
   const ttId = (row[indexes.constIndex] || "").trim();
   if (!/^tt\d+$/.test(ttId))
     return null;
-  return BuildImportedRating(ttId, row, indexes, movieById.get(ttId));
+  if (!ShouldImportTitle(ttId, row, indexes, movieById, options))
+    return null;
+  return BuildImportedRating(ttId, row, indexes, movieById.get(ttId), options.mediaType);
+}
+
+function ShouldImportTitle(ttId, row, indexes, movieById, options) {
+  const mediaType = options.mediaType === "tv" ? "tv" : "movie";
+  if (movieById.has(ttId))
+    return true;
+  if (options.otherTitleIds?.has(ttId))
+    return false;
+  if (indexes.titleTypeIndex < 0)
+    return mediaType === "movie";
+  const titleType = String(row[indexes.titleTypeIndex] || "").toLowerCase().replace(/[^a-z]/g, "");
+  if (mediaType === "tv")
+    return titleType === "tvseries" || titleType === "tvminiseries";
+  return titleType === "movie";
 }
 
 function RemoveStaleImportedRatings(ratings, nextImported) {
@@ -157,13 +176,14 @@ function BuildImportResult(count, applied, removed, changed) {
   return { count, applied, removed, changed };
 }
 
-function BuildImportedRating(ttId, row, indexes, known) {
+function BuildImportedRating(ttId, row, indexes, known, mediaType) {
   return {
     status: "imported",
     rating: indexes.ratingIndex >= 0 ? ToNumber(row[indexes.ratingIndex]) : null,
     title: known?.title || row[indexes.titleIndex] || "",
     year: known?.year || ToNumber(row[indexes.yearIndex]) || "",
     ttId,
+    mediaType: mediaType === "tv" ? "tv" : "movie",
     at: row[indexes.dateIndex] || new Date().toISOString(),
     submitStatus: "imported",
     submitError: "",
@@ -172,13 +192,14 @@ function BuildImportedRating(ttId, row, indexes, known) {
 }
 
 function BuildCsvHeader() {
-  return ["Const", "Title", "Year", "Rating", "Status", "Submit Status", "Submit Error", "Submitted At", "Date Rated"];
+  return ["Const", "Title", "Media Type", "Year", "Rating", "Status", "Submit Status", "Submit Error", "Submitted At", "Date Rated"];
 }
 
 function ExportCsvRecord(record) {
   return [
     record.ttId,
     record.title || "",
+    record.mediaType || "movie",
     record.year || "",
     record.rating ?? "",
     record.status,

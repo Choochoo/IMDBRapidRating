@@ -57,11 +57,12 @@ function BuildPreferenceProfile(options) {
   const ratings = Array.isArray(profile.ratings) ? profile.ratings : [];
   if (ratings.length < 5)
     return Fail(422, "NOT_ENOUGH_RATINGS", "Import at least five rated IMDb rows before asking for recommendations.");
-  return Ok({ profile: BuildProfile(ratings, profile.exclusions, options.queue) });
+  return Ok({ profile: BuildProfile(ratings, profile.exclusions, options.queue, options.mediaType) });
 }
 
-function BuildProfile(ratings, exclusions, queue) {
+function BuildProfile(ratings, exclusions, queue, mediaType) {
   return {
+    mediaType: mediaType === "tv" ? "tv" : "movie",
     ratings: OptimizeRatings(ratings.map(NormalizeRating).filter(Boolean)),
     exclusions: NormalizeExclusions(exclusions),
     queue: NormalizeRecommendationQueue(queue).map(ToProfileMovie),
@@ -116,8 +117,11 @@ function BuildOpenAiInput(profile, options) {
 
 function BuildSystemPrompt(options) {
   const count = ReadRecommendationCount(options.count) || 9;
-  const scope = `Recommend ${count} movies the user has not rated.`;
-  const criteria = "Consider title, year, genre, and user rating together.";
+  const isTv = options.mediaType === "tv";
+  const scope = `Recommend ${count} ${isTv ? "TV series" : "movies"} the user has not rated.`;
+  const criteria = isTv
+    ? "Recommend whole series, not individual episodes or seasons. Consider title, premiere year, genre, series commitment, and user rating together."
+    : "Consider title, year, genre, and user rating together.";
   const exclusions = "Never recommend anything already present in profile.ratings, profile.queue, or profile.exclusions. The queue is the user's saved watchlist and exclusions are permanent do-not-recommend choices.";
   const why = "Explain the taste pattern and cite rating evidence from the user's data.";
   const format = "Use 2-4 evidence lines naming rated titles, ratings, genres, or eras.";
@@ -127,7 +131,7 @@ function BuildSystemPrompt(options) {
 function BuildRecommendationSchema(count) {
   return {
     type: "json_schema",
-    name: "movie_recommendations",
+    name: "title_recommendations",
     strict: true,
     schema: RecommendationSchema(count)
   };
@@ -189,11 +193,11 @@ function ParseRecommendationPayload(payload) {
 }
 
 function EnrichRecommendationPayload(rootPath, payload, profile) {
-  const movies = ReadMovieList(rootPath);
+  const titles = ReadTitleList(rootPath, profile.mediaType);
   const recommendations = ReadRecommendations(payload);
   const blocked = [...profile.ratings, ...profile.queue, ...profile.exclusions];
   const unique = [];
-  const enriched = recommendations.map((item) => EnrichRecommendation(item, movies));
+  const enriched = recommendations.map((item) => EnrichRecommendation(item, titles));
   for (const item of enriched) {
     if (blocked.some((existing) => SameRecommendation(existing, item)) || unique.some((existing) => SameRecommendation(existing, item)))
       continue;
@@ -202,12 +206,13 @@ function EnrichRecommendationPayload(rootPath, payload, profile) {
   return { ...payload, recommendations: NormalizeRecommendationQueue(unique) };
 }
 
-function ReadMovieList(rootPath) {
-  const filePath = path.join(rootPath, "data", "movies.json");
+function ReadTitleList(rootPath, mediaType = "movie") {
+  const filePath = path.join(rootPath, "data", mediaType === "tv" ? "shows.json" : "movies.json");
   if (!existsSync(filePath))
     return [];
   const payload = JSON.parse(readFileSync(filePath, "utf8"));
-  return Array.isArray(payload.movies) ? payload.movies : [];
+  const titles = payload.movies || payload.shows || payload.titles;
+  return Array.isArray(titles) ? titles : [];
 }
 
 function ReadRecommendations(payload) {

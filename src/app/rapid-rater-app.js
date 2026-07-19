@@ -28,6 +28,7 @@ import {
   UpdateActors,
   UpdatePoster,
   UpdateRecommendationPoster,
+  UpdateSeriesDetails,
   UpdateSynopsis,
   UpdateTrailerLink
 } from "./rendering.js";
@@ -46,11 +47,12 @@ import {
   SaveSelectedAiModel,
   SaveTmdbKeyFromDialog
 } from "./settings-workflows.js";
-import { BuildCheckedAiState, BuildCheckedLiveState, BuildState, BuildStoragePayload } from "./state.js";
+import { BuildCheckedAiState, BuildCheckedLiveState, BuildMediaState, BuildState, BuildStoragePayload } from "./state.js";
 import { BuildCompleteSummary, CountRatings } from "./stats.js";
 import { UndoRating } from "./undo-rating.js";
 import { EscapeHtml, FormatCount } from "./util.js";
-import { PathForView, ViewFromPathname } from "./view-routes.js";
+import { IsCanonicalViewPath, PathForView, RouteFromPathname } from "./view-routes.js";
+import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../shared/media.js";
 
 const DefaultRecommendationCount = 9;
 const StateConflictRetryCount = 4;
@@ -71,6 +73,7 @@ export class RapidRaterApp {
     this.RecommendationPostersCollapsed = this.ReadRecommendationPosterPreference();
     this.CollapsedRecommendationRows = new Set();
     this.State = BuildState();
+    this.Catalogs = {};
     this.AccountPayload = {};
     this.RatingsCsvText = "";
     this.AccountRevision = 0;
@@ -91,16 +94,20 @@ export class RapidRaterApp {
     this.SubmitQueuedIds = new Set();
     this.SubmitActiveIds = new Set();
     this.MetadataInFlight = new Set();
+    this.MediaSwitchToken = 0;
+    this.MediaSwitching = false;
     document.documentElement.style.setProperty("--anim", `${Config.animationMs}ms`);
   }
 
   Start() {
     this.BindEvents();
     this.UpdateRecommendationPosterVisibility();
-    const initialView = ViewFromPathname(window.location.pathname);
-    this.ShowView(initialView);
-    if (window.location.pathname === "/")
-      window.history.replaceState({ view: initialView }, "", PathForView(initialView));
+    const initialRoute = RouteFromPathname(window.location.pathname);
+    this.State.mediaType = initialRoute.mediaType;
+    this.UpdateMediaUx();
+    this.ShowView(initialRoute.view);
+    if (!IsCanonicalViewPath(window.location.pathname))
+      window.history.replaceState(initialRoute, "", PathForView(initialRoute.view, initialRoute.mediaType));
     this.BeginSession().catch((error) => this.ShowStartupError(error));
   }
 
@@ -112,8 +119,10 @@ export class RapidRaterApp {
     await this.OfferLegacyMigration();
     await this.RefreshLiveStatus();
     await this.RefreshAiStatus();
-    const data = await this.LoadMovieData();
-    this.ApplyMovieData(data, data.sourceLabel);
+    const data = await this.LoadMediaData(this.State.mediaType);
+    this.ApplyMovieData(data, data.sourceLabel, this.State.mediaType);
+    if (this.StateDirty)
+      await this.FlushStateSync();
     await this.LoadRaterQueue();
     await this.LoadSavedRatingsCsv();
     await this.RefreshRecommendationQueue({ force: true, silent: true });
@@ -149,7 +158,9 @@ export class RapidRaterApp {
     this.BindViewLink(this.Elements.tabRater, "rater");
     this.BindViewLink(this.Elements.tabAi, "ai");
     this.BindViewLink(this.Elements.tabSync, "sync");
-    window.addEventListener("popstate", () => this.ShowView(ViewFromPathname(window.location.pathname)));
+    this.Elements.switchMovies.addEventListener("click", () => this.NavigateToMedia("movie"));
+    this.Elements.switchTv.addEventListener("click", () => this.NavigateToMedia("tv"));
+    window.addEventListener("popstate", () => this.ApplyBrowserRoute().catch((error) => this.ShowStartupError(error)));
   }
 
   BindViewLink(link, view) {
@@ -162,10 +173,29 @@ export class RapidRaterApp {
   }
 
   NavigateToView(view) {
-    const path = PathForView(view);
+    const safeView = this.State.mediaType === "tv" && view === "sync" ? "rater" : view;
+    const path = PathForView(safeView, this.State.mediaType);
     if (window.location.pathname !== path)
-      window.history.pushState({ view }, "", path);
-    this.ShowView(view);
+      window.history.pushState({ view: safeView, mediaType: this.State.mediaType }, "", path);
+    this.ShowView(safeView);
+  }
+
+  NavigateToMedia(mediaType) {
+    if (mediaType === this.State.mediaType)
+      return;
+    if (this.State.locked || this.State.ai.loading || this.MediaSwitching)
+      return this.ShowToast("Finish the current action before switching sections.");
+    const view = this.State.activeView === "sync" ? "rater" : this.State.activeView;
+    const path = PathForView(view, mediaType);
+    window.history.pushState({ view, mediaType }, "", path);
+    this.ActivateMedia(mediaType, view).catch((error) => this.ShowStartupError(error));
+  }
+
+  async ApplyBrowserRoute() {
+    const route = RouteFromPathname(window.location.pathname);
+    if (route.mediaType !== this.State.mediaType)
+      return await this.ActivateMedia(route.mediaType, route.view);
+    this.ShowView(route.view);
   }
 
   BindToolbarEvents() {
@@ -383,6 +413,8 @@ export class RapidRaterApp {
   }
 
   ShowView(view) {
+    if (this.State.mediaType === "tv" && view === "sync")
+      view = "rater";
     this.State.activeView = view;
     document.body.classList.toggle("rater-active", view === "rater");
     document.body.classList.toggle("ai-active", view === "ai");
@@ -401,6 +433,38 @@ export class RapidRaterApp {
       this.UpdateRecommendationStatus();
     if (view === "sync")
       this.UpdateSyncView();
+  }
+
+  UpdateMediaUx() {
+    const isTv = this.State.mediaType === "tv";
+    document.body.classList.toggle("tv-mode", isTv);
+    document.title = `IMDb Rapid Rater — ${isTv ? "TV Shows" : "Movies"}`;
+    this.Elements.switchMovies.classList.toggle("active", !isTv);
+    this.Elements.switchMovies.setAttribute("aria-pressed", String(!isTv));
+    this.Elements.switchTv.classList.toggle("active", isTv);
+    this.Elements.switchTv.setAttribute("aria-pressed", String(isTv));
+    this.Elements.switchMovies.disabled = this.MediaSwitching;
+    this.Elements.switchTv.disabled = this.MediaSwitching;
+    this.Elements.brandMode.textContent = isTv ? "TV Shows" : "Movies";
+    this.Elements.viewTabs.setAttribute("aria-label", isTv ? "TV show views" : "Movie views");
+    this.Elements.tabRater.textContent = isTv ? "Rate Shows" : "Rate Movies";
+    this.Elements.tabAi.textContent = isTv ? "TV Watchlist" : "Movie Watchlist";
+    this.Elements.tabRater.href = PathForView("rater", this.State.mediaType);
+    this.Elements.tabAi.href = PathForView("ai", this.State.mediaType);
+    this.Elements.tabSync.href = PathForView("sync", "movie");
+    this.Elements.ratedLabel.textContent = isTv ? "Shows rated" : "Movies rated";
+    this.Elements.skipLabel.textContent = isTv ? "Not watched" : "Not seen";
+    this.Elements.poolLabel.textContent = isTv ? "Show pool" : "Movie pool";
+    this.Elements.recommendationTitle.textContent = isTv ? "TV Show Recommendations" : "Movie Recommendations";
+    this.Elements.recommendationDescription.textContent = isTv
+      ? "Fresh series picks shaped by your TV ratings and exclusions. Every batch is added to your saved TV watchlist."
+      : "Fresh movie picks shaped by your ratings and exclusions. Every batch is added to your saved movie watchlist.";
+    this.Elements.watchlistTitle.textContent = isTv ? "Saved TV watchlist" : "Saved movie watchlist";
+    this.Elements.emptyTitle.textContent = isTv ? "TV show pool exhausted" : "Movie pool exhausted";
+    this.Elements.touchNotSeen.textContent = isTv ? "Not watched" : "Not seen";
+    const shortcutCopy = this.Elements.ratingFooter.querySelector(".shortcut-copy span");
+    if (shortcutCopy)
+      shortcutCopy.textContent = `1-9 rate IMDb, 0 = 10/10. \` = ${isTv ? "not watched" : "not seen"}, Backspace = go back.`;
   }
 
   HandleKeyDown(event) {
@@ -477,20 +541,69 @@ export class RapidRaterApp {
     return `rate-${key}`;
   }
 
-  async LoadMovieData() {
-    const data = await this.FetchJson(Config.dataUrl).catch((error) => this.ThrowMovieDataError(error));
-    return { ...data, sourceLabel: DescribeSource(data, "movies.json") };
+  async ActivateMedia(mediaType, view = "rater") {
+    const token = ++this.MediaSwitchToken;
+    this.MediaSwitching = true;
+    this.AccountPayload = WriteMediaPayload(this.AccountPayload, this.State.mediaType, BuildStoragePayload(this.State));
+    this.RaterEvents?.close();
+    this.RaterEvents = null;
+    const saved = ReadMediaPayload(this.AccountPayload, mediaType);
+    const fresh = BuildMediaState();
+    Object.assign(this.State, BuildMediaState(), {
+      mediaType,
+      ratings: saved.ratings || {},
+      recommendationExclusions: saved.recommendationExclusions || [],
+      letterboxd: saved.letterboxd || fresh.letterboxd,
+      history: Array.isArray(saved.history) ? saved.history.slice(-200) : [],
+      metadata: {},
+      savedQueueIds: null,
+      queueRevision: 0,
+      queuePoolVersion: "",
+      queueReady: false,
+      locked: false
+    });
+    this.CollapsedRecommendationRows = this.ReadCollapsedRecommendationRows();
+    this.UpdateMediaUx();
+    this.ShowView(view);
+    try {
+      const data = await this.LoadMediaData(mediaType);
+      if (token !== this.MediaSwitchToken)
+        return;
+      this.ApplyMovieData(data, data.sourceLabel, mediaType);
+      if (this.StateDirty)
+        await this.FlushStateSync();
+      await this.LoadRaterQueue();
+      await this.RefreshRecommendationQueue({ force: true, silent: true });
+      await this.RefreshRaterQueue();
+      this.StartRaterEvents();
+    } finally {
+      if (token === this.MediaSwitchToken) {
+        this.MediaSwitching = false;
+        this.UpdateMediaUx();
+      }
+    }
+  }
+
+  async LoadMediaData(mediaType = this.State.mediaType) {
+    if (this.Catalogs[mediaType])
+      return this.Catalogs[mediaType];
+    const dataUrl = Config.dataUrls[mediaType];
+    const data = await this.FetchJson(dataUrl).catch((error) => this.ThrowMediaDataError(error, mediaType));
+    const fileName = mediaType === "tv" ? "shows.json" : "movies.json";
+    const catalog = { ...data, sourceLabel: DescribeSource(data, fileName) };
+    this.Catalogs[mediaType] = catalog;
+    return catalog;
   }
 
   async LoadRaterQueue() {
-    const payload = await this.FetchJson(Config.raterQueueUrl);
+    const payload = await this.FetchJson(this.MediaUrl(Config.raterQueueUrl));
     this.ApplyRaterQueueSnapshot(payload.queue, true);
   }
 
   async RefreshRaterQueue() {
     if (!this.User || !this.State.movies.length)
       return false;
-    const payload = await this.FetchJson(Config.raterQueueUrl);
+    const payload = await this.FetchJson(this.MediaUrl(Config.raterQueueUrl));
     const revision = Number(payload.queue?.revision) || 0;
     const changed = !this.State.queueReady || revision !== this.State.queueRevision
       || String(payload.queue?.poolVersion || "") !== this.State.queuePoolVersion;
@@ -504,6 +617,7 @@ export class RapidRaterApp {
       return false;
     try {
       const payload = await this.RequestJson(Config.raterQueueUrl, "PUT", {
+        mediaType: this.State.mediaType,
         expectedRevision: this.State.queueRevision,
         queueIds
       });
@@ -530,10 +644,11 @@ export class RapidRaterApp {
   StartRaterEvents() {
     if (this.RaterEvents || typeof EventSource === "undefined")
       return;
-    this.RaterEvents = new EventSource(Config.raterEventsUrl);
+    this.RaterEvents = new EventSource(this.MediaUrl(Config.raterEventsUrl));
     this.RaterEvents.addEventListener("queue", (event) => {
-      const revision = Number(JSON.parse(event.data || "{}").revision) || 0;
-      if (revision > this.State.queueRevision)
+      const update = JSON.parse(event.data || "{}");
+      const revision = Number(update.revision) || 0;
+      if (update.mediaType === this.State.mediaType && revision > this.State.queueRevision)
         this.RefreshRemoteState().catch(() => null);
     });
   }
@@ -550,8 +665,13 @@ export class RapidRaterApp {
     return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
   }
 
-  ThrowMovieDataError(error) {
-    throw new Error(`Real movie data is missing. Run npm run build:data, then restart the app. ${error.message}`);
+  ThrowMediaDataError(error, mediaType) {
+    const label = mediaType === "tv" ? "TV show" : "movie";
+    throw new Error(`Real ${label} data is missing. Run npm run build:data, then restart the app. ${error.message}`);
+  }
+
+  MediaUrl(url, mediaType = this.State.mediaType) {
+    return `${url}${url.includes("?") ? "&" : "?"}media=${mediaType}`;
   }
 
   async FetchJson(url, options = {}) {
@@ -579,7 +699,7 @@ export class RapidRaterApp {
   async LoadAccountState() {
     const account = await this.FetchJson("./api/account/state");
     ApplyAccountSettings(this.Settings, account.settings);
-    this.AccountPayload = account.payload || {};
+    this.AccountPayload = NormalizeAccountPayload(account.payload);
     this.RatingsCsvText = account.ratingsCsv || "";
     this.AccountRevision = Number(account.revision) || 0;
     this.StateDirty = false;
@@ -588,7 +708,7 @@ export class RapidRaterApp {
   async OfferLegacyMigration() {
     if (!HasLegacyBrowserData(this.LegacySettings))
       return;
-    const hasAccountData = Object.keys(this.AccountPayload?.ratings || {}).length > 0 || this.AccountRevision > 0;
+    const hasAccountData = ["movie", "tv"].some((mediaType) => Object.keys(ReadMediaPayload(this.AccountPayload, mediaType).ratings || {}).length > 0) || this.AccountRevision > 0;
     if (hasAccountData)
       return ClearLegacyBrowserData();
     const count = Object.keys(ReadLegacyState().ratings || {}).length;
@@ -601,7 +721,7 @@ export class RapidRaterApp {
     this.Elements.migrationDialog.hidden = true;
     if (!shouldImport)
       return ClearLegacyBrowserData();
-    this.AccountPayload = ReadLegacyState();
+    this.AccountPayload = NormalizeAccountPayload(ReadLegacyState());
     this.RatingsCsvText = ReadLegacyRatingsCsv();
     for (const [type, value] of [["imdb", this.LegacySettings.imdbCookie], ["tmdb", this.LegacySettings.tmdbApiKey], ["openai", this.LegacySettings.openAiApiKey]]) {
       if (value)
@@ -618,7 +738,7 @@ export class RapidRaterApp {
     const text = this.RatingsCsvText;
     if (!text)
       return;
-    const result = ImportImdbCsv(text, this.State.ratings, this.State.movieById);
+    const result = ImportImdbCsv(text, this.State.ratings, this.State.movieById, this.BuildImportOptions(this.State.mediaType));
     if (!result.changed)
       return;
     this.RebuildQueue();
@@ -644,16 +764,71 @@ export class RapidRaterApp {
       await this.RefreshAiModels().catch(() => null);
   }
 
-  ApplyMovieData(raw, sourceLabel) {
+  ApplyMovieData(raw, sourceLabel, mediaType = this.State.mediaType) {
     const movies = NormalizeMovieList(raw);
     if (!movies.length)
-      throw new Error("No valid tt-style movie IDs were found.");
-    this.State.movies = movies;
-    this.State.movieById = new Map(movies.map((movie) => [movie.ttId, movie]));
+      throw new Error(`No valid tt-style ${mediaType === "tv" ? "TV show" : "movie"} IDs were found.`);
+    const typedMovies = movies.map((movie) => ({ ...movie, mediaType }));
+    this.State.movies = typedMovies;
+    this.State.movieById = new Map(typedMovies.map((movie) => [movie.ttId, movie]));
     this.State.sourceLabel = sourceLabel || DescribeSource(raw, "custom data");
-    this.State.signature = MakeSignature(movies);
+    this.State.signature = MakeSignature(typedMovies);
+    this.Catalogs[mediaType] = { ...raw, sourceLabel, normalized: typedMovies, movieById: this.State.movieById };
+    if (mediaType === "tv")
+      this.RedistributeKnownTvRatings();
     this.RestoreLocalState();
     this.Render();
+  }
+
+  async EnsureCatalog(mediaType) {
+    const existing = this.Catalogs[mediaType];
+    if (existing?.movieById)
+      return existing;
+    const raw = existing || await this.LoadMediaData(mediaType);
+    const normalized = NormalizeMovieList(raw).map((title) => ({ ...title, mediaType }));
+    const catalog = { ...raw, normalized, movieById: new Map(normalized.map((title) => [title.ttId, title])) };
+    this.Catalogs[mediaType] = catalog;
+    return catalog;
+  }
+
+  BuildImportOptions(mediaType) {
+    const otherType = mediaType === "tv" ? "movie" : "tv";
+    const otherIds = this.Catalogs[otherType]?.movieById ? new Set(this.Catalogs[otherType].movieById.keys()) : null;
+    return { mediaType, otherTitleIds: otherIds };
+  }
+
+  RedistributeKnownTvRatings() {
+    const tvIds = new Set(this.Catalogs.tv?.movieById?.keys?.() || []);
+    if (!tvIds.size)
+      return;
+    const movie = ReadMediaPayload(this.AccountPayload, "movie");
+    const tv = ReadMediaPayload(this.AccountPayload, "tv");
+    const movieRatings = { ...(movie.ratings || {}) };
+    const tvRatings = { ...(tv.ratings || {}) };
+    const movieHistory = Array.isArray(movie.history) ? movie.history : [];
+    const tvHistory = Array.isArray(tv.history) ? tv.history : [];
+    let changed = false;
+    for (const [ttId, record] of Object.entries(movieRatings)) {
+      if (!tvIds.has(ttId))
+        continue;
+      tvRatings[ttId] = { ...record, mediaType: "tv" };
+      delete movieRatings[ttId];
+      changed = true;
+    }
+    if (!changed)
+      return;
+    const movedHistory = movieHistory.filter((item) => tvIds.has(item?.ttId));
+    this.AccountPayload = WriteMediaPayload(this.AccountPayload, "movie", {
+      ...movie,
+      ratings: movieRatings,
+      history: movieHistory.filter((item) => !tvIds.has(item?.ttId))
+    });
+    this.AccountPayload = WriteMediaPayload(this.AccountPayload, "tv", {
+      ...tv,
+      ratings: tvRatings,
+      history: [...tvHistory, ...movedHistory].slice(-200)
+    });
+    this.StateDirty = true;
   }
 
   RestoreLocalState() {
@@ -666,11 +841,16 @@ export class RapidRaterApp {
   }
 
   ReadStoredState() {
-    return this.AccountPayload || {};
+    return ReadMediaPayload(this.AccountPayload, this.State.mediaType);
+  }
+
+  UpdateActiveMediaPayload(partial) {
+    const current = this.ReadStoredState();
+    this.AccountPayload = WriteMediaPayload(this.AccountPayload, this.State.mediaType, { ...current, ...partial });
   }
 
   SaveLocalState() {
-    this.AccountPayload = BuildStoragePayload(this.State);
+    this.AccountPayload = WriteMediaPayload(this.AccountPayload, this.State.mediaType, BuildStoragePayload(this.State));
     this.StateDirty = true;
     window.clearTimeout(this.SyncTimer);
     this.SyncTimer = window.setTimeout(() => this.FlushStateSync().catch((error) => this.ShowToast(EscapeHtml(error.message))), 300);
@@ -695,7 +875,8 @@ export class RapidRaterApp {
         const result = await this.RequestJson("./api/account/state", "PUT", {
           payload: payloadBeingSaved,
           ratingsCsv: this.RatingsCsvText || "",
-          revision: this.AccountRevision
+          revision: this.AccountRevision,
+          mediaType: this.State.mediaType
         });
         this.AccountRevision = Number(result.revision);
         if (this.AccountPayload === payloadBeingSaved)
@@ -739,7 +920,7 @@ export class RapidRaterApp {
     const revision = Number(account.revision) || 0;
     if (revision <= this.AccountRevision)
       return false;
-    this.AccountPayload = account.payload || {};
+    this.AccountPayload = NormalizeAccountPayload(account.payload);
     this.RatingsCsvText = account.ratingsCsv || "";
     this.AccountRevision = revision;
     this.ApplyMergedAccountPayload(this.AccountPayload);
@@ -748,10 +929,11 @@ export class RapidRaterApp {
   }
 
   ApplyMergedAccountPayload(payload) {
-    this.State.ratings = payload.ratings || {};
-    this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(payload.recommendationExclusions);
-    this.State.letterboxd = NormalizeLetterboxdState(payload.letterboxd, this.State.movieById);
-    this.State.history = Array.isArray(payload.history) ? payload.history.slice(-200) : [];
+    const media = ReadMediaPayload(payload, this.State.mediaType);
+    this.State.ratings = media.ratings || {};
+    this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(media.recommendationExclusions);
+    this.State.letterboxd = NormalizeLetterboxdState(media.letterboxd, this.State.movieById);
+    this.State.history = Array.isArray(media.history) ? media.history.slice(-200) : [];
     this.RebuildQueue();
     this.Render();
     this.UpdateSyncView();
@@ -805,7 +987,7 @@ export class RapidRaterApp {
     this.Elements.sourceBadge.textContent = this.State.sourceLabel;
     if (!this.State.queueReady) {
       this.Elements.strip.innerHTML = "";
-      this.Elements.emptySummary.textContent = "Synchronizing your movie queue...";
+      this.Elements.emptySummary.textContent = `Synchronizing your ${this.State.mediaType === "tv" ? "TV show" : "movie"} queue...`;
       this.Elements.empty.hidden = false;
       return;
     }
@@ -865,7 +1047,7 @@ export class RapidRaterApp {
   }
 
   async FetchTitleMetadata(ttId) {
-    const payload = await this.FetchJson(`${Config.titleMetadataUrl}${ttId}`, this.BuildMetadataFetchOptions());
+    const payload = await this.FetchJson(this.MediaUrl(`${Config.titleMetadataUrl}${ttId}`), this.BuildMetadataFetchOptions());
     if (!payload.ok)
       throw new Error(payload.error || "Metadata request failed.");
     return {
@@ -873,6 +1055,10 @@ export class RapidRaterApp {
       synopsis: payload.synopsis || "To see the synopsis, set up a TMDB key.",
       actors: Array.isArray(payload.actors) ? payload.actors.slice(0, 3) : [],
       trailerUrl: payload.trailerUrl || "",
+      seriesStatus: payload.seriesStatus || "",
+      seasonCount: Number(payload.seasonCount) || 0,
+      episodeCount: Number(payload.episodeCount) || 0,
+      episodeRuntimeMinutes: Number(payload.episodeRuntimeMinutes) || 0,
       source: payload.source || ""
     };
   }
@@ -889,6 +1075,7 @@ export class RapidRaterApp {
       UpdateSynopsis(card, metadata);
       UpdateActors(card, metadata);
       UpdateTrailerLink(card, metadata);
+      UpdateSeriesDetails(card, this.State.movieById.get(ttId) || {}, metadata);
     }
     for (const recommendation of this.Elements.recommendationGrid.querySelectorAll(`[data-ttid="${ttId}"]`)) {
       UpdateRecommendationPoster(recommendation, metadata);
@@ -1017,6 +1204,7 @@ export class RapidRaterApp {
 
   async CommitActiveDecision(movie, rating, status) {
     const payload = await this.RequestJson(Config.raterDecisionUrl, "PUT", {
+      mediaType: this.State.mediaType,
       actionId: this.NewActionId(),
       expectedRevision: this.State.queueRevision,
       kind: status,
@@ -1047,11 +1235,10 @@ export class RapidRaterApp {
         this.State.history.push({ ttId: movie.ttId, previous });
     }
     this.AccountRevision = Math.max(this.AccountRevision, Number(payload.stateRevision) || 0);
-    this.AccountPayload = {
-      ...(this.AccountPayload || {}),
-      ratings: { ...(this.AccountPayload?.ratings || {}), ...(payload.record ? { [movie.ttId]: payload.record } : {}) },
+    this.UpdateActiveMediaPayload({
+      ratings: { ...this.State.ratings },
       history: this.State.history.slice(-200)
-    };
+    });
     this.ApplyRaterQueueSnapshot(payload.queue);
     this.UpdateStats();
     this.UpdateSyncView();
@@ -1063,7 +1250,7 @@ export class RapidRaterApp {
     await this.RefreshRemoteState().catch(() => null);
     this.State.locked = false;
     this.Render();
-    this.ShowToast(`<strong>Queue synchronized:</strong> ${EscapeHtml(error.message || "The movie changed on another device.")}`);
+    this.ShowToast(`<strong>Queue synchronized:</strong> ${EscapeHtml(error.message || "The active title changed on another device.")}`);
   }
 
   AnimateActiveCard(status) {
@@ -1076,7 +1263,7 @@ export class RapidRaterApp {
   }
 
   ShowRatingToast(movie, rating, status) {
-    const value = status === "rated" ? rating : "not seen";
+    const value = status === "rated" ? rating : this.State.mediaType === "tv" ? "not watched" : "not seen";
     this.ShowToast(`${EscapeHtml(movie.title)} <strong>${value}</strong>`);
   }
 
@@ -1091,6 +1278,7 @@ export class RapidRaterApp {
     const movie = this.State.queue[0];
     try {
       const payload = await this.RequestJson(Config.raterDecisionUrl, "PUT", {
+        mediaType: this.State.mediaType,
         actionId: this.NewActionId(),
         expectedRevision: this.State.queueRevision,
         kind: "wishlist",
@@ -1120,56 +1308,65 @@ export class RapidRaterApp {
     }
   }
 
-  EnqueueLiveSubmit(ttId) {
-    const record = this.State.ratings[ttId];
+  EnqueueLiveSubmit(ttId, mediaType = this.State.mediaType) {
+    const record = mediaType === this.State.mediaType
+      ? this.State.ratings[ttId]
+      : ReadMediaPayload(this.AccountPayload, mediaType).ratings?.[ttId];
     if (!CanSubmitLive(record, this.State.live.configured))
       return false;
     record.submitStatus = "pending";
     record.submitError = "";
-    const queued = this.QueueSubmitId(ttId);
+    const queued = this.QueueSubmitId(ttId, mediaType);
     this.UpdateStats();
     this.PumpSubmitQueue();
     return queued;
   }
 
-  QueueSubmitId(ttId) {
-    const isQueued = this.SubmitQueuedIds.has(ttId);
-    const isSubmitting = this.SubmitActiveIds.has(ttId);
+  SubmitKey(ttId, mediaType = this.State.mediaType) {
+    return `${mediaType}:${ttId}`;
+  }
+
+  QueueSubmitId(ttId, mediaType = this.State.mediaType) {
+    const key = this.SubmitKey(ttId, mediaType);
+    const isQueued = this.SubmitQueuedIds.has(key);
+    const isSubmitting = this.SubmitActiveIds.has(key);
     if (isQueued || isSubmitting)
       return false;
-    this.SubmitQueue.push(ttId);
-    this.SubmitQueuedIds.add(ttId);
+    this.SubmitQueue.push({ ttId, mediaType, key });
+    this.SubmitQueuedIds.add(key);
     return true;
   }
 
   async PumpSubmitQueue() {
     if (this.SubmitInFlight || !this.SubmitQueue.length)
       return;
-    const ttId = this.PopSubmitId();
-    const record = this.State.ratings[ttId];
+    const item = this.PopSubmitId();
+    const media = ReadMediaPayload(this.AccountPayload, item.mediaType);
+    const record = item.mediaType === this.State.mediaType ? this.State.ratings[item.ttId] : media.ratings?.[item.ttId];
     if (!CanSubmitLive(record, this.State.live.configured))
       return this.PumpSubmitQueue();
-    await this.SubmitRatingRecord(record);
+    await this.SubmitRatingRecord(record, item.mediaType);
   }
 
   PopSubmitId() {
-    const ttId = this.SubmitQueue.shift();
-    this.SubmitQueuedIds.delete(ttId);
-    return ttId;
+    const item = this.SubmitQueue.shift();
+    this.SubmitQueuedIds.delete(item.key);
+    return item;
   }
 
-  async SubmitRatingRecord(record) {
+  async SubmitRatingRecord(record, mediaType = this.State.mediaType) {
     this.SetSubmitInFlight(true);
-    this.SubmitActiveIds.add(record.ttId);
+    const key = this.SubmitKey(record.ttId, mediaType);
+    this.SubmitActiveIds.add(key);
     try {
-      const result = await this.PostLiveRating(record);
-      this.MarkSubmitSuccess(record.ttId, result.rating ?? record.rating, result.revision);
+      const result = await this.PostLiveRating({ ...record, mediaType });
+      this.MarkSubmitSuccess(record.ttId, result.rating ?? record.rating, result.revision, mediaType);
     } catch (error) {
-      this.MarkSubmitFailure(record.ttId, error.message || "IMDb submit failed.");
+      this.MarkSubmitFailure(record.ttId, error.message || "IMDb submit failed.", mediaType);
       if (/cookie|sign.?in|auth/i.test(error.message || ""))
         this.RequireImdbSignIn();
     }
-    this.SubmitActiveIds.delete(record.ttId);
+    this.SubmitActiveIds.delete(key);
     this.UpdateSyncView();
     this.ScheduleNextSubmit();
   }
@@ -1185,29 +1382,31 @@ export class RapidRaterApp {
   }
 
   BuildLiveRateRequest(record) {
-    return BuildRateRequest(record);
+    return BuildRateRequest({ ...record, mediaType: record?.mediaType || this.State.mediaType });
   }
 
-  MarkSubmitSuccess(ttId, rating, revision = 0) {
-    const current = this.State.ratings[ttId];
+  MarkSubmitSuccess(ttId, rating, revision = 0, mediaType = this.State.mediaType) {
+    const media = ReadMediaPayload(this.AccountPayload, mediaType);
+    const current = mediaType === this.State.mediaType ? this.State.ratings[ttId] : media.ratings?.[ttId];
     if (!current)
       return;
     Object.assign(current, { submitStatus: "submitted", submitError: "", submittedAt: new Date().toISOString(), imdbEchoRating: rating });
     this.AccountRevision = Math.max(this.AccountRevision, Number(revision) || 0);
-    this.AccountPayload = {
-      ...(this.AccountPayload || {}),
-      ratings: { ...(this.AccountPayload?.ratings || {}), [ttId]: current }
-    };
-    this.UpdateSyncView();
+    this.AccountPayload = WriteMediaPayload(this.AccountPayload, mediaType, { ...media, ratings: { ...(media.ratings || {}), [ttId]: current } });
+    if (mediaType === this.State.mediaType)
+      this.UpdateSyncView();
   }
 
-  MarkSubmitFailure(ttId, error) {
-    const current = this.State.ratings[ttId];
+  MarkSubmitFailure(ttId, error, mediaType = this.State.mediaType) {
+    const media = ReadMediaPayload(this.AccountPayload, mediaType);
+    const current = mediaType === this.State.mediaType ? this.State.ratings[ttId] : media.ratings?.[ttId];
     if (!current)
       return;
     Object.assign(current, { submitStatus: "failed", submitError: error, submittedAt: "" });
+    this.AccountPayload = WriteMediaPayload(this.AccountPayload, mediaType, { ...media, ratings: { ...(media.ratings || {}), [ttId]: current } });
     this.SaveLocalState();
-    this.UpdateSyncView();
+    if (mediaType === this.State.mediaType)
+      this.UpdateSyncView();
   }
 
   ScheduleNextSubmit() {
@@ -1381,9 +1580,12 @@ export class RapidRaterApp {
     if (!this.State.ai.configured)
       return this.ShowAiDialog();
     const count = this.ReadRecommendationCount();
+    const mediaType = this.State.mediaType;
     this.PendingRecommendationCount = count;
     this.SetAiLoading(true, count);
     const payload = await this.RequestRecommendations(count).finally(() => this.SetAiLoading(false, count));
+    if (mediaType !== this.State.mediaType)
+      return;
     this.RenderRecommendations(payload);
   }
 
@@ -1401,6 +1603,7 @@ export class RapidRaterApp {
   BuildRecommendationRequest(count = this.ReadRecommendationCount()) {
     return {
       count,
+      mediaType: this.State.mediaType,
       profile: BuildAiPreferenceProfile(this.State.ratings, this.State.movieById, this.State.recommendationExclusions)
     };
   }
@@ -1438,6 +1641,7 @@ export class RapidRaterApp {
       return null;
     return {
       ttId,
+      mediaType: this.State.mediaType,
       title,
       year: Number(value?.year || movie.year) || null,
       at: String(value?.at || new Date().toISOString()),
@@ -1472,7 +1676,7 @@ export class RapidRaterApp {
   SetAiLoading(value, count = this.PendingRecommendationCount) {
     this.State.ai.loading = value;
     this.SetAiControlsDisabled(value);
-    this.Elements.generateRecommendations.textContent = value ? "Finding movies..." : "Generate picks";
+    this.Elements.generateRecommendations.textContent = value ? `Finding ${this.State.mediaType === "tv" ? "shows" : "movies"}...` : "Generate picks";
     this.Elements.recommendationLoading.hidden = !value;
     window.clearInterval(this.AiLoadingTimer);
     if (!value) {
@@ -1564,7 +1768,7 @@ export class RapidRaterApp {
   }
 
   CollapsedRecommendationRowsStorageKey() {
-    return `${Config.recommendationRowsPreferenceKey}:${this.User?.id || "anonymous"}`;
+    return `${Config.recommendationRowsPreferenceKey}:${this.User?.id || "anonymous"}:${this.State.mediaType}`;
   }
 
   PruneCollapsedRecommendationRows(itemCount) {
@@ -1579,7 +1783,7 @@ export class RapidRaterApp {
   async RefreshRecommendationQueue(options = {}) {
     if (this.State.ai.loading && !options.force)
       return false;
-    const payload = await this.FetchJson(Config.recommendationQueueUrl);
+    const payload = await this.FetchJson(this.MediaUrl(Config.recommendationQueueUrl));
     const queue = this.NormalizeRecommendationQueue(payload.recommendations);
     const previous = this.RecommendationQueueSignature(this.State.recommendationQueue);
     const next = this.RecommendationQueueSignature(queue);
@@ -1655,6 +1859,7 @@ export class RapidRaterApp {
 
   async RestoreHistoryItem(last, movie) {
     const payload = await this.RequestJson(Config.raterUndoUrl, "PUT", {
+      mediaType: this.State.mediaType,
       actionId: this.NewActionId(),
       expectedRevision: this.State.queueRevision,
       titleId: movie.ttId
@@ -1665,11 +1870,10 @@ export class RapidRaterApp {
       delete this.State.ratings[last.ttId];
     this.State.history.pop();
     this.AccountRevision = Math.max(this.AccountRevision, Number(payload.stateRevision) || 0);
-    this.AccountPayload = {
-      ...(this.AccountPayload || {}),
+    this.UpdateActiveMediaPayload({
       ratings: { ...this.State.ratings },
       history: this.State.history.slice(-200)
-    };
+    });
     this.ApplyRaterQueueSnapshot(payload.queue);
     this.Render();
     this.UpdateSyncView();
@@ -1678,11 +1882,13 @@ export class RapidRaterApp {
   ShowComplete() {
     const counts = CountRatings(this.State.ratings);
     this.Elements.strip.innerHTML = "";
-    this.Elements.emptySummary.textContent = BuildCompleteSummary(counts);
+    this.Elements.emptySummary.textContent = BuildCompleteSummary(counts, this.State.mediaType);
     this.Elements.empty.hidden = false;
   }
 
   ReadSyncPlan() {
+    if (this.State.mediaType === "tv")
+      return { imdbCount: 0, letterboxdCount: 0, matched: 0, toImdb: [], toLetterboxd: [], conflicts: [], unmatched: [], watchedOnly: [] };
     return ReconcileCollections(this.State.ratings, this.State.letterboxd);
   }
 
@@ -1730,7 +1936,8 @@ export class RapidRaterApp {
 
   CanQueueSyncAction(action) {
     const ttId = action?.record?.ttId || action?.item?.ttId || "";
-    return Boolean(ttId) && !this.SubmitQueuedIds.has(ttId) && !this.SubmitActiveIds.has(ttId);
+    const key = this.SubmitKey(ttId);
+    return Boolean(ttId) && !this.SubmitQueuedIds.has(key) && !this.SubmitActiveIds.has(key);
   }
 
   RenderSyncConflicts(conflicts) {
@@ -1746,6 +1953,8 @@ export class RapidRaterApp {
   }
 
   async HandleLetterboxdFile(event) {
+    if (this.State.mediaType === "tv")
+      return;
     const file = this.TakeSelectedFile(event);
     if (!file)
       return;
@@ -1828,12 +2037,14 @@ export class RapidRaterApp {
   }
 
   IsRatingSave(parsed) {
-    if (parsed?.format === "imdb-rapid-rater-save" || parsed?.ratings || parsed?.state?.ratings)
+    if (parsed?.format === "imdb-rapid-rater-save" || parsed?.ratings || parsed?.state?.ratings || parsed?.state?.media)
       return true;
     return Array.isArray(parsed) && parsed.some((item) => this.IsRatingRecord(item));
   }
 
   async ImportRatingSave(parsed, fileName) {
+    if (parsed?.state?.media)
+      return await this.ImportAccountBackup(parsed.state, fileName);
     const source = this.ReadRatingSaveSource(parsed);
     const ratings = this.NormalizeSavedRatings(source.ratings);
     const exclusions = this.NormalizeRecommendationExclusions(source.recommendationExclusions);
@@ -1899,28 +2110,49 @@ export class RapidRaterApp {
       return;
     const text = await file.text();
     await this.SaveRatingsCsvText(text);
-    const result = ImportImdbCsv(text, this.State.ratings, this.State.movieById);
+    const [movieCatalog, tvCatalog] = await Promise.all([this.EnsureCatalog("movie"), this.EnsureCatalog("tv")]);
+    const catalogs = { movie: movieCatalog, tv: tvCatalog };
+    const results = {};
+    for (const mediaType of ["movie", "tv"]) {
+      const media = ReadMediaPayload(this.AccountPayload, mediaType);
+      const ratings = mediaType === this.State.mediaType ? this.State.ratings : { ...(media.ratings || {}) };
+      const otherType = mediaType === "movie" ? "tv" : "movie";
+      results[mediaType] = ImportImdbCsv(text, ratings, catalogs[mediaType].movieById, {
+        mediaType,
+        otherTitleIds: new Set(catalogs[otherType].movieById.keys())
+      });
+      this.AccountPayload = WriteMediaPayload(this.AccountPayload, mediaType, { ...media, ratings });
+    }
     this.RebuildQueue();
-    this.SaveLocalState();
+    this.StateDirty = true;
     await this.FlushStateSync();
     await this.RefreshRaterQueue();
     this.Render();
     this.UpdateSyncView();
-    this.ShowToast(this.BuildCsvSyncToast(result));
+    this.ShowToast(this.BuildCsvSyncToast(results));
   }
 
-  BuildCsvSyncToast(result) {
-    const count = FormatCount(result.count);
-    const applied = FormatCount(result.applied);
-    const removed = FormatCount(result.removed);
-    if (result.removed > 0)
-      return `Synced and saved <strong>${count}</strong> IMDb ratings. Added/refreshed <strong>${applied}</strong>, removed stale <strong>${removed}</strong>.`;
-    return `Synced and saved <strong>${count}</strong> IMDb ratings`;
+  async ImportAccountBackup(value, fileName) {
+    this.AccountPayload = NormalizeAccountPayload(value);
+    this.ApplyMergedAccountPayload(this.AccountPayload);
+    this.StateDirty = true;
+    await this.FlushStateSync();
+    await this.RefreshRaterQueue();
+    const movieCount = Object.keys(ReadMediaPayload(this.AccountPayload, "movie").ratings || {}).length;
+    const tvCount = Object.keys(ReadMediaPayload(this.AccountPayload, "tv").ratings || {}).length;
+    this.ShowToast(`Restored <strong>${FormatCount(movieCount)}</strong> movie and <strong>${FormatCount(tvCount)}</strong> TV records from ${EscapeHtml(fileName)}`);
+  }
+
+  BuildCsvSyncToast(results) {
+    const movieCount = FormatCount(results.movie?.count || 0);
+    const tvCount = FormatCount(results.tv?.count || 0);
+    const removed = Number(results.movie?.removed || 0) + Number(results.tv?.removed || 0);
+    const suffix = removed ? ` Removed <strong>${FormatCount(removed)}</strong> stale imported ratings.` : "";
+    return `Synced <strong>${movieCount}</strong> movie and <strong>${tvCount}</strong> TV ratings from IMDb.${suffix}`;
   }
 
   async SaveRatingsCsvText(text) {
     this.RatingsCsvText = text;
-    this.SaveLocalState();
     return { ok: true };
   }
 
@@ -1932,19 +2164,18 @@ export class RapidRaterApp {
 
   ExportCsv() {
     const csv = BuildCsvText(this.State.ratings);
-    this.Download("imdb-rapid-rater-export.csv", csv, "text/csv;charset=utf-8");
+    const suffix = this.State.mediaType === "tv" ? "tv-shows" : "movies";
+    this.Download(`imdb-rapid-rater-${suffix}-export.csv`, csv, "text/csv;charset=utf-8");
   }
 
   ExportJson() {
+    const active = { ...BuildStoragePayload(this.State), signature: this.State.signature, queueIds: Array.isArray(this.State.savedQueueIds) ? this.State.savedQueueIds : [] };
+    const accountPayload = WriteMediaPayload(this.AccountPayload, this.State.mediaType, active);
     const save = {
       format: "imdb-rapid-rater-save",
-      version: 4,
+      version: 5,
       exportedAt: new Date().toISOString(),
-      state: {
-        ...BuildStoragePayload(this.State),
-        signature: this.State.signature,
-        queueIds: Array.isArray(this.State.savedQueueIds) ? this.State.savedQueueIds : []
-      }
+      state: accountPayload
     };
     this.Download("imdb-rapid-rater-save.json", JSON.stringify(save, null, 2), "application/json;charset=utf-8");
   }
@@ -1962,7 +2193,7 @@ export class RapidRaterApp {
   ShowStartupError(error) {
     console.error(error);
     this.Elements.sourceBadge.textContent = "Load failed";
-    this.ShowToast(`Could not load movie data: ${EscapeHtml(error.message)}`);
+    this.ShowToast(`Could not load ${this.State.mediaType === "tv" ? "TV show" : "movie"} data: ${EscapeHtml(error.message)}`);
   }
 
   ShowToast(html) {

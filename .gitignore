@@ -6,5 +6,6 @@ settings.env
 .runtime/
 data/imdb-ratings.csv
 data/movies.json
+data/shows.json
 imdb-rapid-rater-export*.csv
 imdb-rapid-rater-export*.json

@@ -1,6 +1,6 @@
 # IMDb Rapid Rater
 
-IMDb Rapid Rater is an account-backed keyboard and touch rating website. It loads a shuffled queue of real IMDb movie IDs, shows three titles at a time on desktop or one on mobile, and writes ratings back to the connected IMDb account.
+IMDb Rapid Rater is an account-backed keyboard and touch rating website with distinct Movies and TV Shows sections. Each section has its own shuffled IMDb title queue, ratings history, progress, exclusions, and watchlist; both write ratings back to the connected IMDb account.
 
 Visitors can create their own account from the landing page. Public registration is enabled by default and can be stopped immediately by setting `PUBLIC_REGISTRATION_ENABLED=false`; existing users can still sign in.
 
@@ -8,13 +8,15 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 
 ## What It Does
 
-- Shows three large movie cards at a time.
-- Loads real movie IDs from IMDb's non-commercial datasets.
+- Switches the entire product between Movies and TV Shows, with separate URLs, queues, stats, histories, and watchlists.
+- Shows three large title cards at a time on desktop or one on mobile.
+- Loads real feature-film, TV-series, and TV-miniseries IDs from IMDb's non-commercial datasets. Episodes are intentionally excluded.
+- Presents series-native facts in TV mode, including run years, status, seasons, episodes, and episode runtime when TMDB metadata is available.
 - Enriches visible cards with poster and synopsis metadata from TMDB when configured.
 - Imports your IMDb ratings CSV so already-rated titles are removed from the queue.
 - Saves that ratings CSV in your account and auto-loads it on future visits.
-- Generates AI movie recommendations from a minimized ratings profile.
-- Saves an account-specific “Don’t recommend again” list and excludes those movies from future AI picks.
+- Generates movie or whole-series AI recommendations from the active section's minimized ratings profile.
+- Saves separate movie and TV “Don’t recommend again” lists and excludes those titles from future picks in the matching section.
 - Synchronizes ratings, queue progress, imports, and preferences through PostgreSQL.
 - Reconciles IMDb ratings with a Letterboxd export and builds a non-destructive union sync plan.
 - Encrypts IMDb connection data and API keys with AES-256-GCM before storing them.
@@ -32,7 +34,7 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 
 ## Automated Deployment
 
-Pushes to `main` run `.github/workflows/deploy-octopus.yml` on the self-hosted GitHub runner. The workflow validates the Node application, generates `data/movies.json`, packages the application, pushes it to the Octopus built-in feed, and deploys the `IMDBRapidRating` project to Production.
+Pushes to `main` run `.github/workflows/deploy-octopus.yml` on the self-hosted GitHub runner. The workflow validates the Node application, generates `data/movies.json` and `data/shows.json`, packages the application, pushes it to the Octopus built-in feed, and deploys the `IMDBRapidRating` project to Production.
 
 The Octopus project deploys to `C:\inetpub\wwwroot\IMDBRapidRating` and runs the Node server through the `IMDB Rapid Rating Server` startup task on port `5012`. Account data is stored in PostgreSQL, not in the deployment directory.
 
@@ -84,11 +86,11 @@ Port `5012` is the default.
 
 ## Account Data And Synchronization
 
-Ratings, imported CSV data, recent history, queue order, AI exclusions, and preferences are stored per account in PostgreSQL. The browser stores only an `HttpOnly` session cookie. Signing into the same account on another computer loads the synchronized save.
+Ratings, imported CSV data, recent history, queue order, AI exclusions, and preferences are stored per account in PostgreSQL. Movie and TV state is namespaced so actions in one section never alter the other. The browser stores only an `HttpOnly` session cookie. Signing into the same account on another computer loads the synchronized save.
 
-The Rapid Rater queue is server-authoritative. Each rating, not-seen choice, wishlist action, and undo includes the expected queue revision and advances only the current server-side head. Stale devices reload the canonical queue instead of merging or reshuffling it. Open devices receive queue revision events, with focus refresh and polling as fallbacks.
+Each Movies and TV Shows queue is independently server-authoritative. Every rating, not-seen/not-watched choice, wishlist action, and undo includes the expected queue revision and advances only the current section's server-side head. Stale devices reload the canonical queue instead of merging or reshuffling it. Open devices receive media-scoped queue revision events, with focus refresh and polling as fallbacks.
 
-Movie-pool builds include a SHA-256 identity. When the pool changes, the current remaining order is preserved, unavailable movies are removed, and newly eligible movies are appended deterministically instead of resetting the active choices.
+Movie- and TV-pool builds each include a SHA-256 identity. When either pool changes, its remaining order is preserved, unavailable titles are removed, and newly eligible titles are appended deterministically instead of resetting the active choices.
 
 Older browser-local saves are detected after the first sign-in and can be moved into the account once. Successful migration removes the old sensitive browser data.
 
@@ -96,8 +98,8 @@ Older browser-local saves are detected after the first sign-in and can be moved 
 
 - `1` through `9`: rate the active title and submit to IMDb when live mode is ready.
 - `0`: rate the active title `10/10`.
-- `` ` ``: mark the title as not seen without submitting an IMDb rating.
-- `Backspace` or `Delete`: go back to the previous movie.
+- `` ` ``: mark the title as not seen (Movies) or not watched (TV Shows) without submitting an IMDb rating.
+- `Backspace` or `Delete`: go back to the previous title in the active section.
 
 ## Import Existing IMDb Ratings
 
@@ -107,7 +109,7 @@ Older browser-local saves are detected after the first sign-in and can be moved 
 4. In Rapid Rater, click **Import IMDb CSV**.
 5. Select the exported CSV.
 
-The app reads the `Const` column, stores those IDs as `imported`, and removes them from the active queue so you do not rate duplicates.
+The app reads `Const` and `Title Type`, then routes movie ratings into Movies and whole-series/miniseries ratings into TV Shows. Episodes are not imported. Imported titles are removed only from the matching queue so you do not rate duplicates.
 
 An IMDb CSV contains ratings only. It does not include titles you marked **not seen** in Rapid Rater. Use the JSON save export described below to transfer those records.
 
@@ -123,7 +125,7 @@ IMDb does not provide a public CSV upload/import API. If you rate movies directl
 
 ## Sync IMDb And Letterboxd
 
-Open **Sync Movies** to use the signed-in account's PostgreSQL state as the hub between IMDb and Letterboxd.
+Open **Sync Movies** to use the signed-in account's PostgreSQL movie state as the hub between IMDb and Letterboxd. This workflow remains deliberately movie-only and is not shown in TV Shows mode because Letterboxd does not provide an equivalent whole-series sync model.
 
 1. Import the latest IMDb ratings CSV.
 2. Import the ZIP downloaded from Letterboxd's data export page. Individual `ratings.csv`, `watched.csv`, `diary.csv`, and `watchlist.csv` files are also accepted.
@@ -185,9 +187,9 @@ The header shows **Retry IMDb failures** when ratings failed before IMDb accepte
 
 ## AI Recommendations
 
-Open the **AI Recommendations** tab to generate movie picks from your saved IMDb ratings CSV. This feature sends only these fields to OpenAI:
+Open **Movie Watchlist** or **TV Watchlist** to generate picks from the active section's saved ratings. TV requests explicitly ask for whole series or miniseries, never individual episodes. This feature sends only these fields to OpenAI:
 
-- Movie title
+- Movie or series title
 - Release year
 - Genres
 - Your rating
@@ -197,21 +199,21 @@ No IMDb cookie, TMDB key, `tt` IDs, submit history, or raw CSV file is sent.
 
 Click **Set OpenAI Key** in the tab and paste an API key. Rapid Rater encrypts it in your account. The browser builds a minimized preference profile and sends it to the authenticated server endpoint. Returned recommendations include title, year, genres, and a structured explanation of why each pick fits.
 
-Recommendations are matched back to `data/movies.json` by title and year. When a match is found, the card includes rating buttons; rating one writes through the same IMDb proxy and account sync path. **Don't recommend again** saves that title and year in your synchronized account.
+Recommendations are matched against the active section's catalog (`data/movies.json` or `data/shows.json`) by title and year. When a match is found, the card includes rating buttons; rating one writes through the same IMDb proxy and account sync path. **Don't recommend again** saves that title and year only in the active section.
 
 By default, Rapid Rater calls OpenAI's Models API, filters available GPT text models, sorts them newest first, and selects two places behind the newest eligible model.
 
 Use the model dropdown in the AI Recommendations tab to choose a specific model. Choosing **Auto** returns to lag-based selection. The choice follows your account.
 
-## Generate Movie Data
+## Generate Movie And TV Data
 
-Rapid Rater does not include dummy movie data. Generate the real local movie queue before first run:
+Rapid Rater does not include dummy title data. Generate both real local queues before first run:
 
 ```powershell
 npm run build:data
 ```
 
-The generated `data/movies.json` file is ignored because it is derived from IMDb datasets.
+The generated `data/movies.json` and `data/shows.json` files are ignored because they are derived from IMDb datasets.
 
 The script downloads these files into `cache/`:
 
@@ -220,7 +222,8 @@ The script downloads these files into `cache/`:
 
 Default output:
 
-- Feature films only.
+- One feature-film catalog and one whole-series/miniseries catalog.
+- No TV episodes, shorts, videos, or individual seasons.
 - Non-adult titles only.
 - At least 2,500 IMDb votes.
 - No artificial title cap.
@@ -231,7 +234,7 @@ Custom generation:
 node scripts/build-movie-pool.mjs --minVotes=500 --minYear=1950
 ```
 
-Use `--limit=25000` only if you intentionally want a smaller local movie pool.
+Use `--limit=25000` only if you intentionally want smaller local movie and TV pools.
 
 Refresh cached IMDb TSV files:
 
@@ -248,7 +251,7 @@ src/app.js                 Browser entrypoint
 src/app/rapid-rater-app.js Browser app coordinator
 src/app/elements.js        DOM element lookup
 src/app/state.js           Initial app state builders
-src/app/movies.js          Movie data normalization
+src/app/movies.js          Movie and TV title data normalization
 src/app/rendering.js       Card and failure rendering
 src/app/browser-settings.js One-time legacy browser migration
 src/app/settings-workflows.js Browser-local settings workflows
@@ -262,7 +265,8 @@ db/migrations/             Versioned PostgreSQL schema migrations
 shared/                    Browser/server shared helpers
 scripts/server.mjs         Local server entrypoint
 scripts/build-movie-pool.mjs  IMDb dataset builder
-data/movies.json           Generated local queue, ignored
+data/movies.json           Generated movie queue, ignored
+data/shows.json            Generated TV-series queue, ignored
 cache/                     Downloaded IMDb TSV cache, ignored
 ```
 
@@ -273,6 +277,7 @@ Do not commit:
 - `.env.local`
 - `cache/`
 - `data/movies.json`
+- `data/shows.json`
 - Exported rating CSV/JSON files
 
 These are covered by `.gitignore`.

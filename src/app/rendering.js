@@ -54,6 +54,12 @@ export function UpdateTrailerLink(card, metadata) {
     link.removeAttribute("href");
 }
 
+export function UpdateSeriesDetails(card, movie, metadata) {
+  const details = card.querySelector(".series-details");
+  if (details)
+    details.innerHTML = RenderSeriesDetailsContent(movie, metadata);
+}
+
 export function RenderFailure(record) {
   const title = EscapeHtml(record.title || record.ttId);
   const error = EscapeHtml(record.submitError || "No error detail returned.");
@@ -111,11 +117,27 @@ export function ToneFromId(ttId) {
 function RenderCardBody(movie, index, metadata) {
   const synopsis = EscapeHtml(metadata.synopsis || "Loading synopsis...");
   const title = `<h2 class="title">${EscapeHtml(movie.title)}</h2>`;
-  const body = `${RenderMovieId(movie)}${title}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>`;
+  const series = movie.mediaType === "tv" ? `<div class="series-details">${RenderSeriesDetailsContent(movie, metadata)}</div>` : "";
+  const body = `${RenderMovieId(movie)}${title}${series}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>`;
   const wishlist = index === 0 ? `<button type="button" class="movie-wishlist-action" data-add-active-to-wishlist><span aria-hidden="true">&#9734;</span> Add to wishlist</button>` : "";
   const trailer = index === 0 ? RenderTrailerLink(metadata, "movie-trailer-link") : "";
   const actions = index === 0 ? `<div class="movie-card-actions">${trailer}${wishlist}</div>` : "";
   return `<div class="movie-body">${body}<div class="meta">${RenderMeta(movie)}</div>${actions}</div>`;
+}
+
+function RenderSeriesDetailsContent(show, metadata) {
+  const run = show.endYear ? `${show.year}–${show.endYear}` : `${show.year}–Present`;
+  const facts = [run];
+  if (metadata.seriesStatus)
+    facts.push(metadata.seriesStatus);
+  if (metadata.seasonCount)
+    facts.push(`${metadata.seasonCount} ${metadata.seasonCount === 1 ? "season" : "seasons"}`);
+  if (metadata.episodeCount)
+    facts.push(`${metadata.episodeCount} episodes`);
+  const runtime = metadata.episodeRuntimeMinutes || show.runtimeMinutes;
+  if (runtime)
+    facts.push(`${runtime} min episodes`);
+  return facts.map((fact) => `<span>${EscapeHtml(fact)}</span>`).join("");
 }
 
 function RenderActors(metadata) {
@@ -162,7 +184,7 @@ function RenderPoster(movie, metadata) {
 function RenderMeta(movie) {
   const rating = RenderRatingPill(movie);
   const votes = movie.numVotes ? `<span class="pill">${FormatCount(movie.numVotes)} votes</span>` : "";
-  const runtime = movie.runtimeMinutes ? `<span class="pill">${movie.runtimeMinutes} min</span>` : "";
+  const runtime = movie.mediaType !== "tv" && movie.runtimeMinutes ? `<span class="pill">${movie.runtimeMinutes} min</span>` : "";
   const genres = movie.genres.slice(0, 3).map((genre) => RenderGenrePill(genre)).join("");
   return `${rating}${votes}${runtime}${genres}`;
 }

@@ -8,9 +8,9 @@ export function CountRatings(ratings) {
   return counts;
 }
 
-export function BuildCompleteSummary(counts) {
+export function BuildCompleteSummary(counts, mediaType = "movie") {
   const rated = `${FormatCount(counts.rated)} rated`;
-  const skipped = `${FormatCount(counts.skipped)} not seen`;
+  const skipped = `${FormatCount(counts.skipped)} ${mediaType === "tv" ? "not watched" : "not seen"}`;
   const imported = `${FormatCount(counts.imported)} from CSV`;
   return `${rated}, ${skipped}, ${imported}.`;
 }

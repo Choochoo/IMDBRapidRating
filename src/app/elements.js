@@ -53,13 +53,24 @@ function BuildMobileElements() {
 
 function BuildViewElements() {
   return {
+    switchMovies: Element("switch-movies"),
+    switchTv: Element("switch-tv"),
+    brandMode: Element("brand-mode"),
+    viewTabs: Element("view-tabs"),
     tabRater: Element("tab-rater"),
     tabAi: Element("tab-ai"),
     tabSync: Element("tab-sync"),
     raterView: Element("rater-view"),
     recommendationView: Element("recommendation-view"),
     syncView: Element("sync-view"),
-    ratingFooter: Element("rating-footer")
+    ratingFooter: Element("rating-footer"),
+    recommendationTitle: Element("recommendation-title"),
+    recommendationDescription: Element("recommendation-description"),
+    watchlistTitle: Element("watchlist-title"),
+    emptyTitle: Element("empty-title"),
+    ratedLabel: Element("rated-label"),
+    skipLabel: Element("skip-label"),
+    poolLabel: Element("pool-label")
   };
 }
 

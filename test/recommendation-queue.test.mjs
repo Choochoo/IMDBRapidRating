@@ -207,11 +207,15 @@ test("collapsed recommendation rows persist per signed-in account", () => {
   try {
     const app = Object.create(RapidRaterApp.prototype);
     app.User = { id: "user-1" };
+    app.State = { mediaType: "movie" };
     app.CollapsedRecommendationRows = new Set(["row-0", "row-1"]);
     app.SaveCollapsedRecommendationRows();
 
     assert.deepEqual([...app.ReadCollapsedRecommendationRows()], ["row-0", "row-1"]);
     app.User = { id: "user-2" };
+    assert.deepEqual([...app.ReadCollapsedRecommendationRows()], []);
+    app.User = { id: "user-1" };
+    app.State.mediaType = "tv";
     assert.deepEqual([...app.ReadCollapsedRecommendationRows()], []);
   } finally {
     globalThis.localStorage = originalStorage;

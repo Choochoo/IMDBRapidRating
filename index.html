@@ -13,13 +13,19 @@
       <div class="header-main">
         <div class="brand">
           <span class="brand-mark">RR</span>
-          <span>IMDb Rapid Rater</span>
+          <span><b>IMDb Rapid Rater</b><small id="brand-mode">Movies</small></span>
         </div>
-        <nav class="view-tabs" aria-label="app views">
-          <a class="view-tab active" id="tab-rater" href="/rate">Rapid Rater</a>
-          <a class="view-tab" id="tab-ai" href="/wishlist">AI Picks</a>
-          <a class="view-tab" id="tab-sync" href="/sync">Sync Movies</a>
-        </nav>
+        <div class="primary-navigation">
+          <div class="media-switch" role="group" aria-label="Choose what to rate">
+            <button type="button" class="active" id="switch-movies" aria-pressed="true">Movies</button>
+            <button type="button" id="switch-tv" aria-pressed="false">TV Shows</button>
+          </div>
+          <nav class="view-tabs" id="view-tabs" aria-label="Movie views">
+            <a class="view-tab active" id="tab-rater" href="/movies/rate">Rate Movies</a>
+            <a class="view-tab" id="tab-ai" href="/movies/wishlist">Movie Watchlist</a>
+            <a class="view-tab" id="tab-sync" href="/movies/sync">Sync Movies</a>
+          </nav>
+        </div>
         <button type="button" class="mobile-header-toggle" id="mobile-header-toggle" aria-expanded="false" aria-controls="header-dashboard">
           <span>Tools &amp; setup</span>
           <span class="mobile-header-toggle-icon" aria-hidden="true"></span>
@@ -39,11 +45,11 @@
           <div class="stats" aria-label="rating progress">
             <div class="stat">
               <strong id="rated-count">0</strong>
-              <span>Rated</span>
+              <span id="rated-label">Movies rated</span>
             </div>
             <div class="stat">
               <strong id="skip-count">0</strong>
-              <span>Not seen</span>
+              <span id="skip-label">Not seen</span>
             </div>
             <div class="stat">
               <strong id="imported-count">0</strong>
@@ -59,7 +65,7 @@
             </div>
             <div class="stat">
               <strong id="pool-status">Ready</strong>
-              <span>Pool</span>
+              <span id="pool-label">Movie pool</span>
             </div>
           </div>
 
@@ -107,8 +113,8 @@
         <header class="recommendation-header">
           <div class="recommendation-heading-copy">
             <span class="recommendation-kicker">Curated for your taste</span>
-            <h1>AI Recommendations</h1>
-            <p>Fresh picks shaped by your ratings and exclusions. Every batch is added to your saved watchlist.</p>
+            <h1 id="recommendation-title">Movie Recommendations</h1>
+            <p id="recommendation-description">Fresh movie picks shaped by your ratings and exclusions. Every batch is added to your saved movie watchlist.</p>
           </div>
           <div class="recommendation-actions">
             <button type="button" id="configure-ai">Set OpenAI Key</button>
@@ -138,7 +144,7 @@
         </div>
         <div class="recommendation-list-toolbar">
           <div class="recommendation-list-copy">
-            <strong>Saved watchlist</strong>
+            <strong id="watchlist-title">Saved movie watchlist</strong>
             <div class="recommendation-status" id="recommendation-status" role="status">Import your IMDb CSV, then generate recommendations.</div>
           </div>
           <button type="button" class="recommendation-poster-toggle" id="toggle-recommendation-posters" aria-pressed="false">Hide posters</button>
@@ -262,7 +268,7 @@
 
     <div class="empty-state" id="empty-state" hidden>
       <div>
-        <h1>Movie pool exhausted</h1>
+        <h1 id="empty-title">Movie pool exhausted</h1>
         <p id="empty-summary"></p>
         <div class="empty-actions">
           <button type="button" class="file-action" id="empty-export-csv" title="Download your ratings as a spreadsheet">
@@ -281,7 +287,7 @@
       <div class="auth-shell">
         <div class="auth-intro">
           <div class="brand auth-brand"><span class="brand-mark">RR</span><span>IMDb Rapid Rater</span></div>
-          <h1 id="auth-title"><span>Rate faster.</span><span>Pick better movies.</span></h1>
+          <h1 id="auth-title"><span>Rate faster.</span><span>Pick better movies and shows.</span></h1>
           <p>Your ratings, queue, preferences, and encrypted service connections follow your account between computers.</p>
         </div>
         <div class="auth-card">

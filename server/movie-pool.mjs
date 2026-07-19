@@ -5,15 +5,20 @@ import path from "node:path";
 const Cache = new Map();
 
 export async function ReadMoviePool(rootPath) {
-  const filePath = path.join(rootPath, "data", "movies.json");
+  return await ReadTitlePool(rootPath, "movie");
+}
+
+export async function ReadTitlePool(rootPath, mediaType = "movie") {
+  const fileName = mediaType === "tv" ? "shows.json" : "movies.json";
+  const filePath = path.join(rootPath, "data", fileName);
   const file = await stat(filePath);
   const cached = Cache.get(filePath);
   if (cached?.modifiedAt === file.mtimeMs)
     return cached.value;
   const raw = JSON.parse(await readFile(filePath, "utf8"));
-  const ids = NormalizeMovieIds(raw);
+  const ids = NormalizeTitleIds(raw);
   if (!ids.length)
-    throw new Error("The movie pool does not contain any valid IMDb IDs.");
+    throw new Error(`The ${mediaType === "tv" ? "TV show" : "movie"} pool does not contain any valid IMDb IDs.`);
   const value = {
     ids,
     version: ReadPoolVersion(raw.poolVersion, ids)
@@ -26,14 +31,14 @@ export function CalculatePoolVersion(ids) {
   return createHash("sha256").update(ids.join("\n"), "utf8").digest("hex");
 }
 
-function NormalizeMovieIds(raw) {
-  const movies = Array.isArray(raw) ? raw : raw?.movies;
-  if (!Array.isArray(movies))
+function NormalizeTitleIds(raw) {
+  const titles = Array.isArray(raw) ? raw : raw?.movies || raw?.shows || raw?.titles;
+  if (!Array.isArray(titles))
     return [];
   const seen = new Set();
   const ids = [];
-  for (const movie of movies) {
-    const ttId = String(movie?.ttId || movie?.tconst || movie?.id || "").trim();
+  for (const title of titles) {
+    const ttId = String(title?.ttId || title?.tconst || title?.id || "").trim();
     if (!/^tt\d+$/.test(ttId) || seen.has(ttId))
       continue;
     seen.add(ttId);

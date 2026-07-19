@@ -114,16 +114,16 @@ test("a successful IMDb rating is committed to account state by the same request
   const store = {
     findUserByEmail: async () => user,
     getSecret: async () => "cookie",
-    recordRating: async (userId, record) => {
-      recorded = { userId, record };
+    recordRating: async (userId, record, mediaType) => {
+      recorded = { userId, record, mediaType };
       return 17;
     },
-    deleteRating: async (userId, ttId) => {
-      deleted = { userId, ttId };
+    deleteRating: async (userId, ttId, mediaType) => {
+      deleted = { userId, ttId, mediaType };
       return 18;
     },
-    removeRecommendation: async (userId, value) => {
-      removedRecommendation = { userId, value };
+    removeRecommendation: async (userId, value, mediaType) => {
+      removedRecommendation = { userId, value, mediaType };
       return 1;
     }
   };
@@ -150,6 +150,7 @@ test("a successful IMDb rating is committed to account state by the same request
     title: "Grumpy Old Men",
     year: 1993,
     ttId: "tt0107050",
+    mediaType: "movie",
     at: "2026-07-16T20:00:00.000Z",
     submitStatus: "submitted",
     submitError: "",
@@ -157,6 +158,7 @@ test("a successful IMDb rating is committed to account state by the same request
     imdbEchoRating: 8
   });
   assert.equal(removedRecommendation.userId, user.id);
+  assert.equal(removedRecommendation.mediaType, "movie");
   assert.equal(removedRecommendation.value.ttId, "tt0107050");
   assert.equal(removedRecommendation.value.queueKey, "grumpy old men|1993");
 
@@ -165,7 +167,7 @@ test("a successful IMDb rating is committed to account state by the same request
     .send({ titleId: "tt0107050" })
     .expect(200);
   assert.equal(removed.body.revision, 18);
-  assert.deepEqual(deleted, { userId: user.id, ttId: "tt0107050" });
+  assert.deepEqual(deleted, { userId: user.id, ttId: "tt0107050", mediaType: "movie" });
 });
 
 test("not-seen decisions are committed directly to account state", async () => {
@@ -173,8 +175,8 @@ test("not-seen decisions are committed directly to account state", async () => {
   let recorded = null;
   const store = {
     findUserByEmail: async () => user,
-    recordRating: async (userId, record) => {
-      recorded = { userId, record };
+    recordRating: async (userId, record, mediaType) => {
+      recorded = { userId, record, mediaType };
       return 23;
     }
   };
@@ -198,6 +200,7 @@ test("not-seen decisions are committed directly to account state", async () => {
     title: "Speed",
     year: 1994,
     ttId: "tt0111257",
+    mediaType: "movie",
     at: "2026-07-16T21:00:00.000Z",
     submitStatus: "skipped",
     submitError: "",
@@ -211,7 +214,8 @@ test("rater decisions require the current queue head and return the canonical ne
   let received = null;
   const store = {
     findUserByEmail: async () => user,
-    getRaterQueue: async (_userId, moviePool) => {
+    getRaterQueue: async (_userId, mediaType, moviePool) => {
+      assert.equal(mediaType, "movie");
       assert.equal(moviePool, TestMoviePool);
       return initialQueue;
     },
@@ -249,10 +253,40 @@ test("rater decisions require the current queue head and return the canonical ne
     .expect(200);
 
   assert.equal(received.ttId, "tt0113277");
+  assert.equal(received.mediaType, "movie");
   assert.equal(received.expectedRevision, 12);
   assert.equal(received.record.submitStatus, "pending");
   assert.equal(response.body.queue.revision, 13);
   assert.deepEqual(response.body.queue.queueIds, ["tt0083190"]);
+});
+
+test("the TV queue route selects the independent TV catalog and queue namespace", async () => {
+  const user = { id: "95c3cf3e-c6d8-4ba5-aec1-53f5870a6279", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const tvPool = { ids: ["tt0903747"], version: "tv-pool-v1" };
+  let received = null;
+  const store = {
+    findUserByEmail: async () => user,
+    getRaterQueue: async (userId, mediaType, titlePool) => {
+      received = { userId, mediaType, titlePool };
+      return { revision: 3, poolVersion: titlePool.version, queueIds: titlePool.ids };
+    }
+  };
+  const agent = request.agent(BuildTestApp(store, {
+    readTitlePool: async (_rootPath, mediaType) => {
+      assert.equal(mediaType, "tv");
+      return tvPool;
+    }
+  }));
+  const anonymous = await agent.get("/api/auth/session").expect(200);
+  await agent.post("/api/auth/login")
+    .set("x-csrf-token", anonymous.body.csrfToken)
+    .send({ email: user.email, password: "correct horse battery staple" })
+    .expect(200);
+
+  const response = await agent.get("/api/rater/queue?media=tv").expect(200);
+
+  assert.deepEqual(received, { userId: user.id, mediaType: "tv", titlePool: tvPool });
+  assert.deepEqual(response.body.queue.queueIds, ["tt0903747"]);
 });
 
 test("generated picks append to the saved per-user recommendation queue", async () => {
