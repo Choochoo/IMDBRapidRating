@@ -49,7 +49,7 @@ import {
 import { BuildCheckedAiState, BuildCheckedLiveState, BuildState, BuildStoragePayload } from "./state.js";
 import { BuildCompleteSummary, CountRatings } from "./stats.js";
 import { UndoRating } from "./undo-rating.js";
-import { EscapeHtml, FormatCount, Shuffle } from "./util.js";
+import { EscapeHtml, FormatCount } from "./util.js";
 import { PathForView, ViewFromPathname } from "./view-routes.js";
 
 const DefaultRecommendationCount = 9;
@@ -80,6 +80,7 @@ export class RapidRaterApp {
     this.SyncPromise = Promise.resolve();
     this.StateDirty = false;
     this.AccountRefreshTimer = 0;
+    this.RaterEvents = null;
     this.Initialized = false;
     this.ToastTimer = 0;
     this.AiLoadingTimer = 0;
@@ -113,8 +114,11 @@ export class RapidRaterApp {
     await this.RefreshAiStatus();
     const data = await this.LoadMovieData();
     this.ApplyMovieData(data, data.sourceLabel);
+    await this.LoadRaterQueue();
     await this.LoadSavedRatingsCsv();
     await this.RefreshRecommendationQueue({ force: true, silent: true });
+    await this.RefreshRaterQueue();
+    this.StartRaterEvents();
     this.StartAccountRefresh();
     this.RequireImdbSignIn();
   }
@@ -373,6 +377,7 @@ export class RapidRaterApp {
 
   async SignOut() {
     await this.FlushStateSync().catch(() => null);
+    this.RaterEvents?.close();
     await this.RequestJson("./api/auth/logout", "POST", {});
     window.location.reload();
   }
@@ -477,6 +482,74 @@ export class RapidRaterApp {
     return { ...data, sourceLabel: DescribeSource(data, "movies.json") };
   }
 
+  async LoadRaterQueue() {
+    const payload = await this.FetchJson(Config.raterQueueUrl);
+    this.ApplyRaterQueueSnapshot(payload.queue, true);
+  }
+
+  async RefreshRaterQueue() {
+    if (!this.User || !this.State.movies.length)
+      return false;
+    const payload = await this.FetchJson(Config.raterQueueUrl);
+    const revision = Number(payload.queue?.revision) || 0;
+    const changed = !this.State.queueReady || revision !== this.State.queueRevision
+      || String(payload.queue?.poolVersion || "") !== this.State.queuePoolVersion;
+    if (changed)
+      this.ApplyRaterQueueSnapshot(payload.queue, true);
+    return changed;
+  }
+
+  async ReplaceRaterQueue(queueIds) {
+    if (!Array.isArray(queueIds) || !this.State.queueReady)
+      return false;
+    try {
+      const payload = await this.RequestJson(Config.raterQueueUrl, "PUT", {
+        expectedRevision: this.State.queueRevision,
+        queueIds
+      });
+      this.ApplyRaterQueueSnapshot(payload.queue, true);
+      return true;
+    } catch (error) {
+      if (error?.payload?.current)
+        this.ApplyRaterQueueSnapshot(error.payload.current, true);
+      throw error;
+    }
+  }
+
+  ApplyRaterQueueSnapshot(snapshot, render = false) {
+    const queueIds = Array.isArray(snapshot?.queueIds) ? snapshot.queueIds.map(String) : [];
+    this.State.savedQueueIds = queueIds;
+    this.State.queueRevision = Number(snapshot?.revision) || 0;
+    this.State.queuePoolVersion = String(snapshot?.poolVersion || "");
+    this.State.queueReady = this.State.queueRevision > 0;
+    this.RebuildQueue();
+    if (render)
+      this.Render();
+  }
+
+  StartRaterEvents() {
+    if (this.RaterEvents || typeof EventSource === "undefined")
+      return;
+    this.RaterEvents = new EventSource(Config.raterEventsUrl);
+    this.RaterEvents.addEventListener("queue", (event) => {
+      const revision = Number(JSON.parse(event.data || "{}").revision) || 0;
+      if (revision > this.State.queueRevision)
+        this.RefreshRemoteState().catch(() => null);
+    });
+  }
+
+  NewActionId() {
+    if (globalThis.crypto?.randomUUID)
+      return globalThis.crypto.randomUUID();
+    const bytes = globalThis.crypto?.getRandomValues?.(new Uint8Array(16));
+    if (!bytes)
+      throw new Error("This browser cannot create a safe queue action identifier.");
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    const hex = [...bytes].map((value) => value.toString(16).padStart(2, "0"));
+    return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+  }
+
   ThrowMovieDataError(error) {
     throw new Error(`Real movie data is missing. Run npm run build:data, then restart the app. ${error.message}`);
   }
@@ -550,6 +623,7 @@ export class RapidRaterApp {
       return;
     this.RebuildQueue();
     this.SaveLocalState();
+    await this.FlushStateSync();
     this.Render();
   }
 
@@ -579,10 +653,6 @@ export class RapidRaterApp {
     this.State.sourceLabel = sourceLabel || DescribeSource(raw, "custom data");
     this.State.signature = MakeSignature(movies);
     this.RestoreLocalState();
-    const hasSavedQueue = Array.isArray(this.State.savedQueueIds);
-    this.RebuildQueue();
-    if (!hasSavedQueue)
-      this.SaveLocalState();
     this.Render();
   }
 
@@ -592,7 +662,7 @@ export class RapidRaterApp {
     this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(saved.recommendationExclusions);
     this.State.letterboxd = NormalizeLetterboxdState(saved.letterboxd, this.State.movieById);
     this.State.history = Array.isArray(saved.history) ? saved.history : [];
-    this.State.savedQueueIds = saved.signature === this.State.signature && Array.isArray(saved.queueIds) ? saved.queueIds : null;
+    this.State.savedQueueIds = null;
   }
 
   ReadStoredState() {
@@ -656,11 +726,10 @@ export class RapidRaterApp {
   }
 
   async RefreshRemoteState() {
-    const [accountChanged, queueChanged] = await Promise.all([
-      this.RefreshAccountStateFromServer(),
-      this.RefreshRecommendationQueue()
-    ]);
-    return accountChanged || queueChanged;
+    const accountChanged = await this.RefreshAccountStateFromServer().catch(() => false);
+    const recommendationChanged = await this.RefreshRecommendationQueue().catch(() => false);
+    const queueChanged = await this.RefreshRaterQueue().catch(() => false);
+    return accountChanged || recommendationChanged || queueChanged;
   }
 
   async RefreshAccountStateFromServer() {
@@ -683,7 +752,6 @@ export class RapidRaterApp {
     this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(payload.recommendationExclusions);
     this.State.letterboxd = NormalizeLetterboxdState(payload.letterboxd, this.State.movieById);
     this.State.history = Array.isArray(payload.history) ? payload.history.slice(-200) : [];
-    this.State.savedQueueIds = payload.signature === this.State.signature && Array.isArray(payload.queueIds) ? payload.queueIds : null;
     this.RebuildQueue();
     this.Render();
     this.UpdateSyncView();
@@ -692,9 +760,7 @@ export class RapidRaterApp {
   RebuildQueue() {
     const activeIds = this.BuildUnavailableRatingIds();
     const queuedIds = new Set();
-    const savedQueue = this.BuildSavedQueue(activeIds, queuedIds);
-    const freshQueue = this.State.movies.filter((movie) => !activeIds.has(movie.ttId) && !queuedIds.has(movie.ttId));
-    this.State.queue = savedQueue.concat(Shuffle(freshQueue));
+    this.State.queue = this.BuildSavedQueue(activeIds, queuedIds);
   }
 
   BuildUnavailableRatingIds() {
@@ -737,6 +803,12 @@ export class RapidRaterApp {
   Render() {
     this.UpdateStats();
     this.Elements.sourceBadge.textContent = this.State.sourceLabel;
+    if (!this.State.queueReady) {
+      this.Elements.strip.innerHTML = "";
+      this.Elements.emptySummary.textContent = "Synchronizing your movie queue...";
+      this.Elements.empty.hidden = false;
+      return;
+    }
     if (!this.State.queue.length) {
       this.ShowComplete();
       return;
@@ -837,7 +909,7 @@ export class RapidRaterApp {
   }
 
   UpdatePoolStatus() {
-    this.Elements.poolStatus.textContent = this.State.queue.length ? "Ready" : "Empty";
+    this.Elements.poolStatus.textContent = !this.State.queueReady ? "Syncing" : this.State.queue.length ? "Ready" : "Empty";
   }
 
   UpdateLiveBadge(counts) {
@@ -936,35 +1008,62 @@ export class RapidRaterApp {
   }
 
   MarkActive(rating, status) {
-    if (this.State.locked || !this.State.queue.length)
+    if (this.State.locked || !this.State.queue.length || !this.State.queueReady)
       return;
     this.State.locked = true;
-    const movie = this.State.queue[0];
-    this.SaveRating(movie, rating, status);
-    this.AnimateActiveCard(status);
-    this.ShowRatingToast(movie, rating, status);
-    window.setTimeout(() => this.AdvanceQueue(), Config.animationMs);
+    this.CommitActiveDecision(this.State.queue[0], rating, status)
+      .catch((error) => this.RecoverFromDecisionError(error));
   }
 
-  SaveRating(movie, rating, status) {
-    const previous = this.State.ratings[movie.ttId] || null;
-    this.State.ratings[movie.ttId] = BuildRatingRecord(movie, rating, status, this.State.live.configured);
-    this.State.history.push({ ttId: movie.ttId, previous });
+  async CommitActiveDecision(movie, rating, status) {
+    const payload = await this.RequestJson(Config.raterDecisionUrl, "PUT", {
+      actionId: this.NewActionId(),
+      expectedRevision: this.State.queueRevision,
+      kind: status,
+      titleId: movie.ttId,
+      title: movie.title,
+      year: movie.year || "",
+      genres: Array.isArray(movie.genres) ? movie.genres : [],
+      rating,
+      at: new Date().toISOString()
+    });
+    this.ApplyCommittedDecision(payload, movie);
     if (status === "rated")
       this.EnqueueLiveSubmit(movie.ttId);
-    else
-      this.PersistNotSeen(this.State.ratings[movie.ttId]);
+    this.AnimateActiveCard(status);
+    this.ShowRatingToast(movie, rating, status);
+    window.setTimeout(() => {
+      this.State.locked = false;
+      this.Render();
+    }, Config.animationMs);
   }
 
-  PersistNotSeen(record) {
-    const request = {
-      titleId: record.ttId,
-      title: record.title || "",
-      year: record.year || "",
-      at: record.at || new Date().toISOString()
+  ApplyCommittedDecision(payload, movie) {
+    const previous = payload.previous ?? this.State.ratings[movie.ttId] ?? null;
+    if (payload.record) {
+      this.State.ratings[movie.ttId] = payload.record;
+      const last = this.State.history.at(-1);
+      if (last?.ttId !== movie.ttId)
+        this.State.history.push({ ttId: movie.ttId, previous });
+    }
+    this.AccountRevision = Math.max(this.AccountRevision, Number(payload.stateRevision) || 0);
+    this.AccountPayload = {
+      ...(this.AccountPayload || {}),
+      ratings: { ...(this.AccountPayload?.ratings || {}), ...(payload.record ? { [movie.ttId]: payload.record } : {}) },
+      history: this.State.history.slice(-200)
     };
-    this.RequestJson(Config.notSeenUrl, "PUT", request, { keepalive: true })
-      .catch((error) => this.ShowToast(`<strong>Not seen was not saved:</strong> ${EscapeHtml(error.message)}`));
+    this.ApplyRaterQueueSnapshot(payload.queue);
+    this.UpdateStats();
+    this.UpdateSyncView();
+  }
+
+  async RecoverFromDecisionError(error) {
+    if (error?.payload?.current)
+      this.ApplyRaterQueueSnapshot(error.payload.current);
+    await this.RefreshRemoteState().catch(() => null);
+    this.State.locked = false;
+    this.Render();
+    this.ShowToast(`<strong>Queue synchronized:</strong> ${EscapeHtml(error.message || "The movie changed on another device.")}`);
   }
 
   AnimateActiveCard(status) {
@@ -981,13 +1080,6 @@ export class RapidRaterApp {
     this.ShowToast(`${EscapeHtml(movie.title)} <strong>${value}</strong>`);
   }
 
-  AdvanceQueue() {
-    this.State.queue.shift();
-    this.PersistStateNow();
-    this.State.locked = false;
-    this.Render();
-  }
-
   async AddActiveMovieToWishlist(button) {
     if (this.State.locked || !this.State.queue.length)
       return false;
@@ -998,21 +1090,28 @@ export class RapidRaterApp {
     button.textContent = "Adding...";
     const movie = this.State.queue[0];
     try {
-      const payload = await this.RequestJson(Config.recommendationQueueUrl, "PUT", {
-        ttId: movie.ttId,
+      const payload = await this.RequestJson(Config.raterDecisionUrl, "PUT", {
+        actionId: this.NewActionId(),
+        expectedRevision: this.State.queueRevision,
+        kind: "wishlist",
+        titleId: movie.ttId,
         title: movie.title,
         year: movie.year || "",
         genres: Array.isArray(movie.genres) ? movie.genres : []
       });
       this.State.recommendationQueue = this.NormalizeRecommendationQueue(payload.recommendations);
-      this.RemoveWishlistedMoviesFromRatingQueue();
-      this.PersistStateNow();
+      this.ApplyRaterQueueSnapshot(payload.queue);
       this.RenderRecommendationQueue();
       this.UpdateRecommendationStatus();
       this.Render();
-      const message = Number(payload.addedCount) > 0 ? "added to your wishlist" : "is already in your wishlist";
+      const message = payload.duplicate ? "is already in your wishlist" : "added to your wishlist";
       this.ShowToast(`<strong>${EscapeHtml(movie.title)}</strong> ${message}`);
       return true;
+    } catch (error) {
+      if (error?.payload?.current)
+        this.ApplyRaterQueueSnapshot(error.payload.current, true);
+      await this.RefreshRemoteState().catch(() => null);
+      throw error;
     } finally {
       this.State.locked = false;
       button.disabled = false;
@@ -1028,7 +1127,6 @@ export class RapidRaterApp {
     record.submitStatus = "pending";
     record.submitError = "";
     const queued = this.QueueSubmitId(ttId);
-    this.SaveLocalState();
     this.UpdateStats();
     this.PumpSubmitQueue();
     return queued;
@@ -1065,7 +1163,7 @@ export class RapidRaterApp {
     this.SubmitActiveIds.add(record.ttId);
     try {
       const result = await this.PostLiveRating(record);
-      this.MarkSubmitSuccess(record.ttId, result.rating ?? record.rating);
+      this.MarkSubmitSuccess(record.ttId, result.rating ?? record.rating, result.revision);
     } catch (error) {
       this.MarkSubmitFailure(record.ttId, error.message || "IMDb submit failed.");
       if (/cookie|sign.?in|auth/i.test(error.message || ""))
@@ -1090,12 +1188,16 @@ export class RapidRaterApp {
     return BuildRateRequest(record);
   }
 
-  MarkSubmitSuccess(ttId, rating) {
+  MarkSubmitSuccess(ttId, rating, revision = 0) {
     const current = this.State.ratings[ttId];
     if (!current)
       return;
     Object.assign(current, { submitStatus: "submitted", submitError: "", submittedAt: new Date().toISOString(), imdbEchoRating: rating });
-    this.SaveLocalState();
+    this.AccountRevision = Math.max(this.AccountRevision, Number(revision) || 0);
+    this.AccountPayload = {
+      ...(this.AccountPayload || {}),
+      ratings: { ...(this.AccountPayload?.ratings || {}), [ttId]: current }
+    };
     this.UpdateSyncView();
   }
 
@@ -1551,16 +1653,26 @@ export class RapidRaterApp {
     await UndoRating(this);
   }
 
-  RestoreHistoryItem(last, movie) {
-    if (last.previous)
-      this.State.ratings[last.ttId] = last.previous;
+  async RestoreHistoryItem(last, movie) {
+    const payload = await this.RequestJson(Config.raterUndoUrl, "PUT", {
+      actionId: this.NewActionId(),
+      expectedRevision: this.State.queueRevision,
+      titleId: movie.ttId
+    });
+    if (payload.record)
+      this.State.ratings[last.ttId] = payload.record;
     else
       delete this.State.ratings[last.ttId];
-    const isAlreadyQueued = this.State.queue.some((queued) => queued.ttId === movie.ttId);
-    if (!isAlreadyQueued)
-      this.State.queue.unshift(movie);
-    this.SaveLocalState();
+    this.State.history.pop();
+    this.AccountRevision = Math.max(this.AccountRevision, Number(payload.stateRevision) || 0);
+    this.AccountPayload = {
+      ...(this.AccountPayload || {}),
+      ratings: { ...this.State.ratings },
+      history: this.State.history.slice(-200)
+    };
+    this.ApplyRaterQueueSnapshot(payload.queue);
     this.Render();
+    this.UpdateSyncView();
   }
 
   ShowComplete() {
@@ -1662,6 +1774,8 @@ export class RapidRaterApp {
     }
     this.RebuildQueue();
     this.SaveLocalState();
+    await this.FlushStateSync();
+    await this.RefreshRaterQueue();
     this.UpdateStats();
     this.UpdateSyncView();
     this.ShowToast(`Queued <strong>${FormatCount(queued)}</strong> Letterboxd ratings for IMDb`);
@@ -1719,14 +1833,14 @@ export class RapidRaterApp {
     return Array.isArray(parsed) && parsed.some((item) => this.IsRatingRecord(item));
   }
 
-  ImportRatingSave(parsed, fileName) {
+  async ImportRatingSave(parsed, fileName) {
     const source = this.ReadRatingSaveSource(parsed);
     const ratings = this.NormalizeSavedRatings(source.ratings);
     const exclusions = this.NormalizeRecommendationExclusions(source.recommendationExclusions);
     const letterboxd = NormalizeLetterboxdState(source.letterboxd, this.State.movieById);
     if (!Object.keys(ratings).length && !exclusions.length && !letterboxd.items.length)
       throw new Error("The selected JSON file does not contain any Rapid Rater records.");
-    this.ApplyImportedRatingSave(source, ratings);
+    await this.ApplyImportedRatingSave(source, ratings);
     const counts = CountRatings(ratings);
     this.ShowToast(`Restored <strong>${FormatCount(Object.keys(ratings).length)}</strong> records and <strong>${FormatCount(exclusions.length)}</strong> AI exclusions from ${EscapeHtml(fileName)}, including <strong>${FormatCount(counts.skipped)}</strong> not seen`);
   }
@@ -1762,16 +1876,19 @@ export class RapidRaterApp {
     return validStatus && /^tt\d+$/.test(String(record?.ttId || "").trim());
   }
 
-  ApplyImportedRatingSave(source, ratings) {
+  async ApplyImportedRatingSave(source, ratings) {
     this.State.ratings = source.merge ? { ...this.State.ratings, ...ratings } : ratings;
     if (!source.merge) {
       this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(source.recommendationExclusions);
       this.State.letterboxd = NormalizeLetterboxdState(source.letterboxd, this.State.movieById);
     }
     this.State.history = source.merge ? this.State.history : source.history.slice(-200);
-    this.State.savedQueueIds = source.signature === this.State.signature ? source.queueIds : null;
     this.RebuildQueue();
     this.SaveLocalState();
+    await this.FlushStateSync();
+    await this.RefreshRaterQueue();
+    if (Array.isArray(source.queueIds))
+      await this.ReplaceRaterQueue(source.queueIds);
     this.Render();
     this.UpdateSyncView();
   }
@@ -1785,6 +1902,8 @@ export class RapidRaterApp {
     const result = ImportImdbCsv(text, this.State.ratings, this.State.movieById);
     this.RebuildQueue();
     this.SaveLocalState();
+    await this.FlushStateSync();
+    await this.RefreshRaterQueue();
     this.Render();
     this.UpdateSyncView();
     this.ShowToast(this.BuildCsvSyncToast(result));
@@ -1819,9 +1938,13 @@ export class RapidRaterApp {
   ExportJson() {
     const save = {
       format: "imdb-rapid-rater-save",
-      version: 3,
+      version: 4,
       exportedAt: new Date().toISOString(),
-      state: BuildStoragePayload(this.State)
+      state: {
+        ...BuildStoragePayload(this.State),
+        signature: this.State.signature,
+        queueIds: Array.isArray(this.State.savedQueueIds) ? this.State.savedQueueIds : []
+      }
     };
     this.Download("imdb-rapid-rater-save.json", JSON.stringify(save, null, 2), "application/json;charset=utf-8");
   }

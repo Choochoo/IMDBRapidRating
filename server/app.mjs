@@ -8,6 +8,7 @@ import { CreateDatabase } from "./db/client.mjs";
 import { ReadDatabaseSchema } from "./db/config.mjs";
 import { RunMigrations } from "./db/migrate.mjs";
 import { RegisterApiRoutes } from "./routes.mjs";
+import { CreateRaterEvents } from "./rater-events.mjs";
 
 const BuiltInAllowedOrigins = [
   "http://ourfilmclub.duckdns.org",
@@ -36,7 +37,8 @@ export async function CreateApp(rootPath) {
   }));
   app.use(VerifyOrigin);
   const store = CreateAccountStore({ db, pool });
-  RegisterApiRoutes(app, { store, pool, rootPath });
+  const raterEvents = CreateRaterEvents();
+  RegisterApiRoutes(app, { store, pool, rootPath, raterEvents });
   RegisterStaticRoutes(app, rootPath);
   app.use((error, request, response, _next) => {
     console.error(`${request.method} ${request.path} failed:`, error.message);

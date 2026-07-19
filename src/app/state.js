@@ -6,7 +6,10 @@ export function BuildState() {
     live: BuildLiveState(),
     ai: BuildAiState(),
     locked: false,
-    savedQueueIds: null
+    savedQueueIds: null,
+    queueRevision: 0,
+    queuePoolVersion: "",
+    queueReady: false
   };
 }
 
@@ -35,12 +38,10 @@ export function BuildCheckedAiState(status) {
 
 export function BuildStoragePayload(state) {
   return {
-    signature: state.signature,
     ratings: state.ratings,
     recommendationExclusions: state.recommendationExclusions || [],
     letterboxd: state.letterboxd || BuildLetterboxdState(),
-    history: state.history.slice(-200),
-    queueIds: state.queue.map((movie) => movie.ttId)
+    history: state.history.slice(-200)
   };
 }
 

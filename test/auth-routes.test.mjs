@@ -200,6 +200,53 @@ test("not-seen decisions are committed directly to account state", async () => {
   });
 });
 
+test("rater decisions require the current queue head and return the canonical next queue", async () => {
+  const user = { id: "d3039098-ed05-4740-bc99-b929927b0dd7", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const initialQueue = { revision: 12, poolVersion: "pool-v1", queueIds: ["tt0113277", "tt0083190"] };
+  let received = null;
+  const store = {
+    findUserByEmail: async () => user,
+    getRaterQueue: async () => initialQueue,
+    commitRaterDecision: async (_userId, decision) => {
+      received = decision;
+      return {
+        ok: true,
+        duplicate: false,
+        stateRevision: 21,
+        record: decision.record,
+        previous: null,
+        queue: { revision: 13, poolVersion: "pool-v1", queueIds: ["tt0083190"] }
+      };
+    }
+  };
+  const agent = request.agent(BuildTestApp(store));
+  const anonymous = await agent.get("/api/auth/session").expect(200);
+  const login = await agent.post("/api/auth/login")
+    .set("x-csrf-token", anonymous.body.csrfToken)
+    .send({ email: user.email, password: "correct horse battery staple" })
+    .expect(200);
+
+  const response = await agent.put("/api/rater/decision")
+    .set("x-csrf-token", login.body.csrfToken)
+    .send({
+      actionId: "4dd7a964-024b-441b-a83c-174cdf53f4db",
+      expectedRevision: 12,
+      kind: "rated",
+      titleId: "tt0113277",
+      title: "Heat",
+      year: 1995,
+      rating: 9,
+      at: "2026-07-19T19:00:00.000Z"
+    })
+    .expect(200);
+
+  assert.equal(received.ttId, "tt0113277");
+  assert.equal(received.expectedRevision, 12);
+  assert.equal(received.record.submitStatus, "pending");
+  assert.equal(response.body.queue.revision, 13);
+  assert.deepEqual(response.body.queue.queueIds, ["tt0083190"]);
+});
+
 test("generated picks append to the saved per-user recommendation queue", async () => {
   const user = { id: "3accb042-54e8-4e14-8eb5-8444d10433b4", email: "jared@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   const existing = { queueKey: "heat|1995", ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"], why: { tasteMatch: "Crime" } };

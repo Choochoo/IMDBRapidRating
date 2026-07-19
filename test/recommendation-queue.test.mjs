@@ -80,12 +80,30 @@ test("active rating movie moves into the saved wishlist", async () => {
   const app = Object.create(RapidRaterApp.prototype);
   const heat = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime", "Drama"] };
   const thief = { ttId: "tt0083190", title: "Thief", year: 1981, genres: ["Crime"] };
-  app.State = { queue: [heat, thief], recommendationQueue: [], locked: false };
+  app.State = {
+    movies: [heat, thief],
+    movieById: new Map([[heat.ttId, heat], [thief.ttId, thief]]),
+    queue: [heat, thief],
+    savedQueueIds: [heat.ttId, thief.ttId],
+    queueRevision: 7,
+    queuePoolVersion: "pool-v1",
+    queueReady: true,
+    ratings: {},
+    recommendationQueue: [],
+    locked: false
+  };
+  app.NewActionId = () => "5d226a99-19c4-463a-9f0f-cbe9d717a641";
   app.RequestJson = async (url, method, body) => {
-    assert.equal(url, "./api/ai/recommendations/queue");
+    assert.equal(url, "./api/rater/decision");
     assert.equal(method, "PUT");
-    assert.deepEqual(body, heat);
-    return { ok: true, recommendations: [{ ...heat, queueKey: "heat|1995" }], addedCount: 1 };
+    assert.equal(body.expectedRevision, 7);
+    assert.equal(body.kind, "wishlist");
+    assert.equal(body.titleId, heat.ttId);
+    return {
+      ok: true,
+      recommendations: [{ ...heat, queueKey: "heat|1995" }],
+      queue: { revision: 8, poolVersion: "pool-v1", queueIds: [thief.ttId] }
+    };
   };
   let persisted = 0;
   let rendered = 0;
@@ -111,7 +129,7 @@ test("active rating movie moves into the saved wishlist", async () => {
   assert.deepEqual(app.State.queue.map((movie) => movie.ttId), ["tt0083190"]);
   assert.deepEqual(app.State.recommendationQueue.map((movie) => movie.ttId), ["tt0113277"]);
   assert.equal(app.State.locked, false);
-  assert.equal(persisted, 1);
+  assert.equal(persisted, 0);
   assert.equal(rendered, 1);
   assert.equal(recommendationRendered, 1);
   assert.match(toast, /added to your wishlist/);

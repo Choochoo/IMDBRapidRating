@@ -6,6 +6,7 @@ import { DeleteImdbRating, GetImdbStatus, SubmitImdbRating } from "./imdb-rating
 import { GetTitleMetadata } from "./title-metadata.mjs";
 import { HasEncryptionKey } from "./security/secrets.mjs";
 import { NormalizeRecommendationItem, RecommendationKey } from "./recommendation-queue.mjs";
+import { ReadMoviePool } from "./movie-pool.mjs";
 
 const StateSchema = z.object({
   payload: z.record(z.string(), z.unknown()),
@@ -30,6 +31,29 @@ const RecommendationQueueItemSchema = z.object({
   year: z.union([z.string(), z.number()]).optional(),
   genres: z.array(z.string().trim().min(1).max(100)).max(30).default([])
 });
+const RaterDecisionSchema = z.object({
+  actionId: z.string().uuid(),
+  expectedRevision: z.number().int().positive(),
+  kind: z.enum(["rated", "notSeen", "wishlist"]),
+  titleId: z.string().trim().regex(/^tt\d+$/),
+  title: z.string().trim().min(1).max(500),
+  year: z.union([z.string(), z.number()]).optional(),
+  genres: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
+  rating: z.number().int().min(1).max(10).nullable().optional(),
+  at: z.string().optional()
+}).superRefine((value, context) => {
+  if (value.kind === "rated" && !Number.isInteger(value.rating))
+    context.addIssue({ code: "custom", path: ["rating"], message: "A rating is required." });
+});
+const RaterUndoSchema = z.object({
+  actionId: z.string().uuid(),
+  expectedRevision: z.number().int().positive(),
+  titleId: z.string().trim().regex(/^tt\d+$/)
+});
+const RaterQueueRestoreSchema = z.object({
+  expectedRevision: z.number().int().positive(),
+  queueIds: z.array(z.string().trim().regex(/^tt\d+$/)).max(100_000)
+});
 const SecretSchema = z.object({ value: z.string().trim().min(1).max(64 * 1024) });
 const PreferencesSchema = z.object({
   openAiModel: z.string().trim().max(160),
@@ -43,7 +67,8 @@ export function RegisterApiRoutes(app, {
   rootPath,
   submitImdbRating = SubmitImdbRating,
   deleteImdbRating = DeleteImdbRating,
-  generateAiRecommendations = GenerateAiRecommendations
+  generateAiRecommendations = GenerateAiRecommendations,
+  raterEvents = { subscribe() {}, publish() {} }
 }) {
   app.get("/health", async (_request, response) => {
     await pool.query("SELECT 1");
@@ -108,7 +133,59 @@ export function RegisterApiRoutes(app, {
     const result = await store.saveState(request.session.userId, parsed.data.payload, parsed.data.ratingsCsv, parsed.data.revision);
     if (!result.ok)
       return response.status(409).json({ ok: false, code: "STATE_CONFLICT", error: "Your account changed in another browser.", current: result.current });
+    await ReconcileRaterQueue(store, request.session.userId, rootPath, raterEvents);
     response.json({ ok: true, revision: result.revision });
+  });
+
+  app.get("/api/rater/queue", async (request, response) => {
+    const queue = await store.getRaterQueue(request.session.userId, await ReadMoviePool(rootPath));
+    response.json({ ok: true, queue });
+  });
+
+  app.get("/api/rater/events", async (request, response) => {
+    raterEvents.subscribe(request.session.userId, request, response);
+  });
+
+  app.put("/api/rater/decision", RequireCsrf, async (request, response) => {
+    const parsed = RaterDecisionSchema.safeParse(request.body);
+    if (!parsed.success)
+      return Invalid(response);
+    const moviePool = await ReadMoviePool(rootPath);
+    await store.getRaterQueue(request.session.userId, moviePool);
+    const decision = BuildRaterDecision(parsed.data);
+    const committed = await store.commitRaterDecision(request.session.userId, decision);
+    if (!committed.ok)
+      return response.status(409).json({ ok: false, code: committed.code, error: "The rating queue changed on another device.", current: committed.current });
+    raterEvents.publish(request.session.userId, committed.queue.revision);
+    if (decision.kind === "wishlist")
+      committed.recommendations = await store.listRecommendationQueue(request.session.userId);
+    response.json({ ok: true, ...committed });
+  });
+
+  app.put("/api/rater/undo", RequireCsrf, async (request, response) => {
+    const parsed = RaterUndoSchema.safeParse(request.body);
+    if (!parsed.success)
+      return Invalid(response);
+    const result = await store.commitRaterUndo(request.session.userId, {
+      actionId: parsed.data.actionId,
+      expectedRevision: parsed.data.expectedRevision,
+      ttId: parsed.data.titleId
+    });
+    if (!result.ok)
+      return response.status(409).json({ ok: false, code: result.code, error: "The rating queue changed on another device.", current: result.current });
+    raterEvents.publish(request.session.userId, result.queue.revision);
+    response.json({ ok: true, ...result });
+  });
+
+  app.put("/api/rater/queue", RequireCsrf, async (request, response) => {
+    const parsed = RaterQueueRestoreSchema.safeParse(request.body);
+    if (!parsed.success)
+      return Invalid(response);
+    const result = await store.replaceRaterQueue(request.session.userId, parsed.data, await ReadMoviePool(rootPath));
+    if (!result.ok)
+      return response.status(409).json({ ok: false, code: result.code, error: "The rating queue changed on another device.", current: result.current });
+    raterEvents.publish(request.session.userId, result.queue.revision);
+    response.json({ ok: true, ...result });
   });
 
   app.put("/api/account/not-seen", RequireCsrf, async (request, response) => {
@@ -117,6 +194,7 @@ export function RegisterApiRoutes(app, {
       return Invalid(response);
     const record = BuildNotSeenRecord(parsed.data);
     const revision = await store.recordRating(request.session.userId, record);
+    await ReconcileRaterQueue(store, request.session.userId, rootPath, raterEvents);
     response.json({ ok: true, titleId: record.ttId, revision });
   });
 
@@ -173,6 +251,7 @@ export function RegisterApiRoutes(app, {
     const record = BuildSubmittedRatingRecord(request.body, result.payload);
     const revision = await store.recordRating(request.session.userId, record);
     await store.removeRecommendation(request.session.userId, { ...record, queueKey: RecommendationKey(record) });
+    await ReconcileRaterQueue(store, request.session.userId, rootPath, raterEvents);
     response.status(result.status).json({ ...result.payload, revision });
   });
 
@@ -181,7 +260,9 @@ export function RegisterApiRoutes(app, {
     const result = await deleteImdbRating(request.body.titleId, cookie);
     if (!result.payload?.ok)
       return SendResult(response, result);
-    const revision = await store.deleteRating(request.session.userId, result.payload.titleId);
+    const revision = request.body?.deferAccountState
+      ? undefined
+      : await store.deleteRating(request.session.userId, result.payload.titleId);
     response.status(result.status).json({ ...result.payload, revision });
   });
 
@@ -213,6 +294,7 @@ export function RegisterApiRoutes(app, {
     });
     const added = await store.appendRecommendationQueue(request.session.userId, [recommendation]);
     const recommendations = await store.listRecommendationQueue(request.session.userId);
+    await ReconcileRaterQueue(store, request.session.userId, rootPath, raterEvents);
     response.json({
       ok: true,
       recommendation,
@@ -230,6 +312,7 @@ export function RegisterApiRoutes(app, {
       return SendResult(response, result);
     const added = await store.appendRecommendationQueue(request.session.userId, result.payload.recommendations);
     const recommendations = await store.listRecommendationQueue(request.session.userId);
+    await ReconcileRaterQueue(store, request.session.userId, rootPath, raterEvents);
     response.status(result.status).json({
       ...result.payload,
       recommendations,
@@ -273,6 +356,40 @@ function BuildSubmittedRatingRecord(request, result) {
     submittedAt,
     imdbEchoRating: result.rating
   };
+}
+
+function BuildRaterDecision(request) {
+  const base = {
+    actionId: request.actionId,
+    expectedRevision: request.expectedRevision,
+    kind: request.kind,
+    ttId: request.titleId
+  };
+  if (request.kind === "wishlist") {
+    const recommendation = NormalizeRecommendationItem({
+      ttId: request.titleId,
+      title: request.title,
+      year: ReadYear(request.year) || null,
+      genres: request.genres,
+      source: "rating-system",
+      why: { tasteMatch: "Added from the rating queue.", ratingEvidence: [] },
+      addedAt: new Date().toISOString()
+    });
+    return { ...base, recommendation };
+  }
+  const at = ReadTimestamp(request.at, new Date().toISOString());
+  const record = {
+    status: request.kind,
+    rating: request.kind === "rated" ? request.rating : null,
+    title: request.title,
+    year: ReadYear(request.year),
+    ttId: request.titleId,
+    at,
+    submitStatus: request.kind === "rated" ? "pending" : "skipped",
+    submitError: "",
+    submittedAt: ""
+  };
+  return { ...base, record };
 }
 
 function BuildNotSeenRecord(request) {
@@ -338,6 +455,15 @@ function SendResult(response, result) {
 
 function Invalid(response) {
   return response.status(422).json({ ok: false, code: "INVALID_REQUEST", error: "The submitted data is invalid." });
+}
+
+async function ReconcileRaterQueue(store, userId, rootPath, raterEvents) {
+  if (typeof store.getRaterQueue !== "function")
+    return null;
+  const queue = await store.getRaterQueue(userId, await ReadMoviePool(rootPath));
+  if (queue.changed)
+    raterEvents.publish(userId, queue.revision);
+  return queue;
 }
 
 function PublicUser(user) {

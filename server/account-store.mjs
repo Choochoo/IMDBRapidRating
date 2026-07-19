@@ -3,9 +3,11 @@ import { and, eq, sql } from "drizzle-orm";
 import { UserPreferences, UserSecrets, Users, UserStates } from "./db/schema.mjs";
 import { ReadDatabaseSchema } from "./db/config.mjs";
 import { DecryptSecret, EncryptSecret } from "./security/secrets.mjs";
+import { CreateRaterQueueStore } from "./rater-queue-store.mjs";
 
 export function CreateAccountStore({ db, pool }) {
   return {
+    ...CreateRaterQueueStore(pool),
     async findUserByEmail(email) {
       const rows = await db.select().from(Users).where(sql`lower(${Users.email}) = ${NormalizeEmail(email)}`).limit(1);
       return rows[0] || null;

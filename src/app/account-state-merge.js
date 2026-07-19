@@ -1,15 +1,17 @@
 export function MergeAccountPayload(remoteValue, localValue) {
   const remote = ReadObject(remoteValue);
   const local = ReadObject(localValue);
-  return {
+  const merged = {
     ...remote,
     ...local,
     ratings: MergeRecordMaps(remote.ratings, local.ratings),
     recommendationExclusions: MergeExclusions(remote.recommendationExclusions, local.recommendationExclusions),
     letterboxd: NewestLetterboxdSnapshot(remote.letterboxd, local.letterboxd),
-    history: MergeHistory(remote.history, local.history),
-    queueIds: MergeUniqueStrings(local.queueIds, remote.queueIds)
+    history: MergeHistory(remote.history, local.history)
   };
+  delete merged.queueIds;
+  delete merged.signature;
+  return merged;
 }
 
 export function MergeRecordMaps(remoteValue, localValue) {
@@ -76,11 +78,6 @@ function MergeHistory(remoteValue, localValue) {
     merged.set(`${item.ttId}|${JSON.stringify(item.previous ?? null)}`, item);
   }
   return [...merged.values()].slice(-200);
-}
-
-function MergeUniqueStrings(primaryValue, secondaryValue) {
-  const values = [...ReadArray(primaryValue), ...ReadArray(secondaryValue)].map(String).filter(Boolean);
-  return [...new Set(values)];
 }
 
 function ReadTime(value) {

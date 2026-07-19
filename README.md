@@ -86,6 +86,10 @@ Port `5012` is the default.
 
 Ratings, imported CSV data, recent history, queue order, AI exclusions, and preferences are stored per account in PostgreSQL. The browser stores only an `HttpOnly` session cookie. Signing into the same account on another computer loads the synchronized save.
 
+The Rapid Rater queue is server-authoritative. Each rating, not-seen choice, wishlist action, and undo includes the expected queue revision and advances only the current server-side head. Stale devices reload the canonical queue instead of merging or reshuffling it. Open devices receive queue revision events, with focus refresh and polling as fallbacks.
+
+Movie-pool builds include a SHA-256 identity. When the pool changes, the current remaining order is preserved, unavailable movies are removed, and newly eligible movies are appended deterministically instead of resetting the active choices.
+
 Older browser-local saves are detected after the first sign-in and can be moved into the account once. Successful migration removes the old sensitive browser data.
 
 ## Keyboard
@@ -111,7 +115,7 @@ The imported CSV is saved in your account. On future visits from any signed-in c
 
 Uploading a fresh IMDb CSV resyncs CSV-owned entries. Rapid Rater removes old `imported` records that are no longer in the new CSV, adds or refreshes records that are in the new CSV, and preserves ratings created in the app.
 
-Rating actions update synchronized account data after IMDb confirms the write. Failed writes do not count as successfully submitted.
+Rating decisions and queue progress are committed together before the IMDb write runs in the background. IMDb success or failure then updates the same synchronized rating record; failed writes do not count as successfully submitted.
 
 If a rating was already submitted to IMDb, `Backspace` or `Delete` removes or restores the IMDb rating before restoring the card locally. If IMDb rejects the reversal, local state is left unchanged so the browser does not drift out of sync.
 
@@ -252,6 +256,8 @@ src/app/rating-records.js  Rating, retry, CSV helpers
 src/app/stats.js           Rating counters and summaries
 src/app/util.js            Shared browser utilities
 server/                    Authenticated API, database, and IMDb proxy modules
+server/rater-queue-store.mjs Authoritative queue transactions and conflict checks
+server/rater-events.mjs    Cross-device queue revision event stream
 db/migrations/             Versioned PostgreSQL schema migrations
 shared/                    Browser/server shared helpers
 scripts/server.mjs         Local server entrypoint

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream, existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -228,6 +229,7 @@ function CompareMovies(left, right) {
 function BuildPayload(movies) {
   return {
     generatedAt: new Date().toISOString(),
+    poolVersion: createHash("sha256").update(movies.map((movie) => movie.ttId).join("\n"), "utf8").digest("hex"),
     source: BuildSourceMetadata(),
     movies
   };

@@ -19,7 +19,7 @@ test("account conflicts preserve ratings made on both devices", () => {
 
   const merged = MergeAccountPayload(remote, local);
   assert.deepEqual(Object.keys(merged.ratings).sort(), ["tt0000001", "tt0000002"]);
-  assert.deepEqual(merged.queueIds, ["tt0000001", "tt0000003", "tt0000002"]);
+  assert.equal(merged.queueIds, undefined);
 });
 
 test("newest decision for the same IMDb title wins during a device conflict", () => {

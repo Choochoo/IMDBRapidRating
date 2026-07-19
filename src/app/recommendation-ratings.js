@@ -90,6 +90,7 @@ function SaveLocalRating(app, request, payload) {
   const previous = app.State.ratings[movie.ttId] || null;
   app.State.ratings[movie.ttId] = BuildRatingRecord(movie, movie.rating, "rated", app.State.live.configured);
   MarkSubmitSuccess(app.State.ratings[movie.ttId], payload);
+  app.AccountRevision = Math.max(app.AccountRevision, Number(payload.revision) || 0);
   return FinishLocalRating(app, movie, previous);
 }
 

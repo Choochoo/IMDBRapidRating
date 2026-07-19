@@ -18,12 +18,12 @@ async function UndoLatestRating(app) {
   if (!movie || BlockActiveSubmit(app, last.ttId))
     return;
   if (CancelQueuedSubmit(app, last.ttId))
-    return RestoreUndo(app, last, movie, BuildUndoMessage(null, null, movie));
+    return await RestoreUndo(app, last, movie, BuildUndoMessage(null, null, movie));
   const current = app.State.ratings[last.ttId];
   const liveUndoDone = await TryUndoLiveRating(app, last, current);
   if (!liveUndoDone)
     return;
-  RestoreUndo(app, last, movie, BuildUndoMessage(current, last.previous, movie));
+  await RestoreUndo(app, last, movie, BuildUndoMessage(current, last.previous, movie));
 }
 
 function BlockActiveSubmit(app, ttId) {
@@ -74,18 +74,19 @@ function ShouldRestorePreviousLive(previous) {
 }
 
 async function RestorePreviousLiveRating(app, previous) {
-  await app.PostJson(Config.rateUrl, app.BuildLiveRateRequest(previous), "IMDb undo restore failed.");
+  const result = await app.PostJson(Config.rateUrl, app.BuildLiveRateRequest(previous), "IMDb undo restore failed.");
+  app.AccountRevision = Math.max(app.AccountRevision, Number(result.revision) || 0);
   return true;
 }
 
 async function DeleteLiveRating(app, ttId) {
-  await app.RequestJson(Config.rateUrl, "DELETE", { titleId: ttId });
+  const result = await app.RequestJson(Config.rateUrl, "DELETE", { titleId: ttId, deferAccountState: true });
+  app.AccountRevision = Math.max(app.AccountRevision, Number(result.revision) || 0);
   return true;
 }
 
-function RestoreUndo(app, last, movie, message) {
-  app.State.history.pop();
-  app.RestoreHistoryItem(last, movie);
+async function RestoreUndo(app, last, movie, message) {
+  await app.RestoreHistoryItem(last, movie);
   app.ShowToast(message);
 }
 

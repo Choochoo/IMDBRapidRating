@@ -37,6 +37,25 @@ export const RecommendationQueue = AppSchema.table("recommendation_queue", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull()
 }, (table) => [uniqueIndex("recommendation_queue_user_item_unique").on(table.userId, table.itemKey)]);
 
+export const RaterQueues = AppSchema.table("rater_queues", {
+  userId: uuid("user_id").primaryKey().references(() => Users.id, { onDelete: "cascade" }),
+  poolVersion: varchar("pool_version", { length: 64 }).notNull(),
+  seed: varchar("seed", { length: 128 }).notNull(),
+  queueIds: jsonb("queue_ids").notNull().default([]),
+  revision: integer("revision").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull()
+});
+
+export const RaterActions = AppSchema.table("rater_actions", {
+  userId: uuid("user_id").notNull().references(() => Users.id, { onDelete: "cascade" }),
+  actionId: uuid("action_id").notNull(),
+  kind: varchar("kind", { length: 32 }).notNull(),
+  ttId: varchar("tt_id", { length: 32 }).notNull(),
+  result: jsonb("result").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull()
+}, (table) => [uniqueIndex("rater_actions_user_action_unique").on(table.userId, table.actionId)]);
+
 export const UserSecrets = AppSchema.table("user_secrets", {
   userId: uuid("user_id").notNull().references(() => Users.id, { onDelete: "cascade" }),
   secretType: varchar("secret_type", { length: 32 }).notNull(),
