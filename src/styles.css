@@ -185,8 +185,24 @@ body.sync-active .app-header {
 }
 
 .view-tab {
-  border-color: rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+  min-height: 34px;
+  padding: 0 12px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.view-tab:hover {
+  border-color: #556270;
+  background: #26303b;
+  color: var(--text);
 }
 
 .view-tab.active {

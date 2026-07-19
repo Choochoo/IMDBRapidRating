@@ -52,7 +52,11 @@ export function RegisterStaticRoutes(app, rootPath) {
   app.get("/vendor/bootstrap.min.css", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/bootstrap/dist/css/bootstrap.min.css")));
   app.get("/vendor/fflate.js", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/fflate/esm/browser.js")));
   app.get("/favicon.svg", (_request, response) => response.sendFile(path.join(rootPath, "favicon.svg")));
-  app.get("/", (_request, response) => response.sendFile(path.join(rootPath, "index.html")));
+  app.get(["/", "/rate", "/wishlist", "/sync"], (request, response) => {
+    if (request.path !== "/" && request.path.endsWith("/"))
+      return response.redirect(308, request.path.replace(/\/+$/, ""));
+    response.sendFile(path.join(rootPath, "index.html"));
+  });
 }
 
 export function VerifyOrigin(request, response, next) {

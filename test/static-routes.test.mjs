@@ -19,3 +19,22 @@ test("browser can load the local ZIP implementation without a CDN", async () => 
   assert.match(response.text, /function unzipSync/);
   assert.match(response.headers["content-type"], /javascript/);
 });
+
+test("each top-level view has a refreshable browser route", async () => {
+  const app = express();
+  RegisterStaticRoutes(app, process.cwd());
+
+  for (const path of ["/rate", "/wishlist", "/sync"]) {
+    const response = await request(app).get(path).expect(200);
+    assert.match(response.text, /<title>IMDb Rapid Rater<\/title>/);
+    assert.match(response.headers["content-type"], /html/);
+  }
+});
+
+test("trailing slashes redirect to asset-safe view URLs", async () => {
+  const app = express();
+  RegisterStaticRoutes(app, process.cwd());
+
+  const response = await request(app).get("/wishlist/").expect(308);
+  assert.equal(response.headers.location, "/wishlist");
+});

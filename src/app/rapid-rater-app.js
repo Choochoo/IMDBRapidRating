@@ -49,6 +49,7 @@ import { BuildCheckedAiState, BuildCheckedLiveState, BuildState, BuildStoragePay
 import { BuildCompleteSummary, CountRatings } from "./stats.js";
 import { UndoRating } from "./undo-rating.js";
 import { EscapeHtml, FormatCount, Shuffle } from "./util.js";
+import { PathForView, ViewFromPathname } from "./view-routes.js";
 
 const DefaultRecommendationCount = 9;
 const StateConflictRetryCount = 4;
@@ -94,7 +95,10 @@ export class RapidRaterApp {
   Start() {
     this.BindEvents();
     this.UpdateRecommendationPosterVisibility();
-    this.ShowView(this.State.activeView);
+    const initialView = ViewFromPathname(window.location.pathname);
+    this.ShowView(initialView);
+    if (window.location.pathname === "/")
+      window.history.replaceState({ view: initialView }, "", PathForView(initialView));
     this.BeginSession().catch((error) => this.ShowStartupError(error));
   }
 
@@ -137,9 +141,26 @@ export class RapidRaterApp {
   }
 
   BindViewEvents() {
-    this.Elements.tabRater.addEventListener("click", () => this.ShowView("rater"));
-    this.Elements.tabAi.addEventListener("click", () => this.ShowView("ai"));
-    this.Elements.tabSync.addEventListener("click", () => this.ShowView("sync"));
+    this.BindViewLink(this.Elements.tabRater, "rater");
+    this.BindViewLink(this.Elements.tabAi, "ai");
+    this.BindViewLink(this.Elements.tabSync, "sync");
+    window.addEventListener("popstate", () => this.ShowView(ViewFromPathname(window.location.pathname)));
+  }
+
+  BindViewLink(link, view) {
+    link.addEventListener("click", (event) => {
+      if (event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
+        return;
+      event.preventDefault();
+      this.NavigateToView(view);
+    });
+  }
+
+  NavigateToView(view) {
+    const path = PathForView(view);
+    if (window.location.pathname !== path)
+      window.history.pushState({ view }, "", path);
+    this.ShowView(view);
   }
 
   BindToolbarEvents() {
