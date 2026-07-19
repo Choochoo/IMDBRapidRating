@@ -21,19 +21,24 @@ export async function GetTitleMetadata(titleId, options = {}) {
 }
 
 async function LoadTitleMetadata(titleId, options) {
-  const tmdb = await FetchTmdbMetadata(titleId, options).catch(() => null);
-  const titlePage = await FetchTitlePageMetadata(titleId).catch(() => null);
-  const suggestion = await FetchSuggestionMetadata(titleId).catch(() => null);
+  const [tmdb, titlePage, suggestion] = await Promise.all([
+    FetchTmdbMetadata(titleId, options).catch(() => null),
+    FetchTitlePageMetadata(titleId).catch(() => null),
+    FetchSuggestionMetadata(titleId).catch(() => null)
+  ]);
   return {
     titleId,
     posterUrl: tmdb?.posterUrl || titlePage?.posterUrl || suggestion?.posterUrl || "",
     synopsis: tmdb?.synopsis || titlePage?.synopsis || "",
+    actors: FirstActorList(tmdb?.actors, titlePage?.actors, suggestion?.actors),
     source: tmdb?.source || titlePage?.source || suggestion?.source || ""
   };
 }
 
 function ShouldUseCachedMetadata(metadata, options) {
   if (!metadata)
+    return false;
+  if (!Array.isArray(metadata.actors))
     return false;
   if (metadata.synopsis && metadata.posterUrl)
     return true;
@@ -48,10 +53,11 @@ async function FetchTmdbMetadata(titleId, options) {
   if (!response.ok)
     throw new Error(`TMDB returned HTTP ${response.status}.`);
   const payload = await response.json();
-  const item = FindTmdbResult(payload);
-  if (!item)
+  const result = FindTmdbResult(payload);
+  if (!result)
     throw new Error("TMDB did not find this IMDb title.");
-  return BuildTmdbMetadata(item);
+  const actors = await FetchTmdbActors(result.mediaType, result.item.id, apiKey).catch(() => []);
+  return BuildTmdbMetadata(result.item, actors);
 }
 
 function BuildTmdbFindUrl(titleId, apiKey) {
@@ -84,13 +90,31 @@ function IsTmdbBearerToken(apiKey) {
 function FindTmdbResult(payload) {
   const movies = Array.isArray(payload?.movie_results) ? payload.movie_results : [];
   const shows = Array.isArray(payload?.tv_results) ? payload.tv_results : [];
-  return movies[0] || shows[0] || null;
+  if (movies[0])
+    return { item: movies[0], mediaType: "movie" };
+  if (shows[0])
+    return { item: shows[0], mediaType: "tv" };
+  return null;
 }
 
-function BuildTmdbMetadata(item) {
+async function FetchTmdbActors(mediaType, id, apiKey) {
+  if (!Number.isInteger(Number(id)))
+    return [];
+  const params = new URLSearchParams({ language: "en-US" });
+  if (!IsTmdbBearerToken(apiKey))
+    params.set("api_key", apiKey);
+  const response = await fetch(`${TmdbApiUrl}/${mediaType}/${id}/credits?${params}`, { headers: BuildTmdbHeaders(apiKey) });
+  if (!response.ok)
+    throw new Error(`TMDB credits returned HTTP ${response.status}.`);
+  const payload = await response.json();
+  return ReadActorNames(payload?.cast);
+}
+
+function BuildTmdbMetadata(item, actors) {
   return {
     posterUrl: BuildTmdbPosterUrl(item.poster_path),
     synopsis: CleanMetadataText(item.overview || ""),
+    actors: ReadActorNames(actors),
     source: "tmdb"
   };
 }
@@ -109,6 +133,7 @@ async function FetchTitlePageMetadata(titleId) {
   return {
     posterUrl: NormalizeImageUrl(jsonLd?.image || ""),
     synopsis: CleanMetadataText(jsonLd?.description || ""),
+    actors: ReadActorNames(jsonLd?.actor),
     source: "imdb-title-page"
   };
 }
@@ -122,8 +147,32 @@ async function FetchSuggestionMetadata(titleId) {
   return {
     posterUrl: NormalizeImageUrl(item?.i?.imageUrl || ""),
     synopsis: "",
+    actors: ReadActorNames(String(item?.s || "").split(",")),
     source: "imdb-suggestion"
   };
+}
+
+export function ReadActorNames(value) {
+  const actors = Array.isArray(value) ? value : value ? [value] : [];
+  const names = [];
+  for (const actor of actors) {
+    const rawName = actor && typeof actor === "object" ? actor.name : actor;
+    const name = CleanMetadataText(rawName);
+    if (name && !names.includes(name))
+      names.push(name);
+    if (names.length === 3)
+      break;
+  }
+  return names;
+}
+
+function FirstActorList(...values) {
+  for (const value of values) {
+    const actors = ReadActorNames(value);
+    if (actors.length)
+      return actors;
+  }
+  return [];
 }
 
 function BuildSuggestionUrl(titleId) {

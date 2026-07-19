@@ -32,6 +32,17 @@ export function UpdateSynopsis(card, metadata) {
     synopsis.textContent = metadata.synopsis || "To see the synopsis, set up a TMDB key.";
 }
 
+export function UpdateActors(card, metadata) {
+  const cast = card.querySelector(".movie-cast");
+  if (!cast)
+    return;
+  const actors = ReadActors(metadata);
+  cast.hidden = actors.length === 0;
+  const names = cast.querySelector("span");
+  if (names)
+    names.textContent = actors.join(" · ");
+}
+
 export function RenderFailure(record) {
   const title = EscapeHtml(record.title || record.ttId);
   const error = EscapeHtml(record.submitError || "No error detail returned.");
@@ -89,9 +100,22 @@ export function ToneFromId(ttId) {
 function RenderCardBody(movie, index, metadata, queueLength) {
   const synopsis = EscapeHtml(metadata.synopsis || "Loading synopsis...");
   const title = `<h2 class="title">${EscapeHtml(movie.title)}</h2>`;
-  const body = `${RenderPosition(movie, index, queueLength)}${title}<p class="synopsis">${synopsis}</p>`;
+  const body = `${RenderPosition(movie, index, queueLength)}${title}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>`;
   const wishlist = index === 0 ? `<button type="button" class="movie-wishlist-action" data-add-active-to-wishlist><span aria-hidden="true">&#9734;</span> Add to wishlist</button>` : "";
   return `<div class="movie-body">${body}<div class="meta">${RenderMeta(movie)}</div>${wishlist}</div>`;
+}
+
+function RenderActors(metadata) {
+  const actors = ReadActors(metadata);
+  const hidden = actors.length ? "" : " hidden";
+  return `<p class="movie-cast"${hidden}><strong>Starring</strong><span>${EscapeHtml(actors.join(" · "))}</span></p>`;
+}
+
+function ReadActors(metadata) {
+  return (Array.isArray(metadata?.actors) ? metadata.actors : [])
+    .map((actor) => String(actor || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .slice(0, 3);
 }
 
 function RenderPosition(movie, index, queueLength) {

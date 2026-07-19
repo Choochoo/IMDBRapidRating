@@ -1284,6 +1284,32 @@ body.sync-active .app-header {
   line-height: 1.05;
 }
 
+.movie-cast {
+  display: flex;
+  min-width: 0;
+  margin: -2px 0 12px;
+  align-items: baseline;
+  gap: 8px;
+  color: #c9d2dc;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.movie-cast strong {
+  flex: 0 0 auto;
+  color: #f5d28b;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.movie-cast span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .synopsis {
   display: -webkit-box;
   min-height: 84px;

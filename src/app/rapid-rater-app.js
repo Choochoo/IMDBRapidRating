@@ -25,6 +25,7 @@ import {
   RenderRecommendationCard,
   RenderRecommendationEmpty,
   RenderRecommendationSkeletons,
+  UpdateActors,
   UpdatePoster,
   UpdateRecommendationPoster,
   UpdateSynopsis
@@ -763,6 +764,7 @@ export class RapidRaterApp {
     return {
       posterUrl: "",
       synopsis: "To see the synopsis, set up a TMDB key.",
+      actors: [],
       source: ""
     };
   }
@@ -774,6 +776,7 @@ export class RapidRaterApp {
     return {
       posterUrl: payload.posterUrl || "",
       synopsis: payload.synopsis || "To see the synopsis, set up a TMDB key.",
+      actors: Array.isArray(payload.actors) ? payload.actors.slice(0, 3) : [],
       source: payload.source || ""
     };
   }
@@ -788,6 +791,7 @@ export class RapidRaterApp {
     if (card) {
       UpdatePoster(card, metadata);
       UpdateSynopsis(card, metadata);
+      UpdateActors(card, metadata);
     }
     for (const recommendation of this.Elements.recommendationGrid.querySelectorAll(`[data-ttid="${ttId}"]`))
       UpdateRecommendationPoster(recommendation, metadata);

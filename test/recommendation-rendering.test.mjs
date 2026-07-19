@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { RenderCard, RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons } from "../src/app/rendering.js";
+import { RenderCard, RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons, UpdateActors } from "../src/app/rendering.js";
 
 test("recommendation loading renders eight cinematic placeholders", () => {
   const html = RenderRecommendationSkeletons(8);
@@ -28,4 +28,24 @@ test("only the active rating card offers the wishlist action", () => {
   assert.match(active, /data-add-active-to-wishlist/);
   assert.match(active, /Add to wishlist/);
   assert.doesNotMatch(preview, /data-add-active-to-wishlist/);
+});
+
+test("movie cards show at most the top three actors", () => {
+  const movie = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"] };
+  const html = RenderCard(movie, 0, { actors: ["Al Pacino", "Robert De Niro", "Val Kilmer", "Jon Voight"] }, 3);
+
+  assert.match(html, /Starring/);
+  assert.match(html, /Al Pacino · Robert De Niro · Val Kilmer/);
+  assert.doesNotMatch(html, /Jon Voight/);
+});
+
+test("actor metadata updates an already-rendered movie card", () => {
+  const names = { textContent: "" };
+  const cast = { hidden: true, querySelector: () => names };
+  const card = { querySelector: (selector) => selector === ".movie-cast" ? cast : null };
+
+  UpdateActors(card, { actors: ["Al Pacino", "Robert De Niro", "Val Kilmer"] });
+
+  assert.equal(cast.hidden, false);
+  assert.equal(names.textContent, "Al Pacino · Robert De Niro · Val Kilmer");
 });
