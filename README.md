@@ -242,13 +242,14 @@ Default output:
 - One feature-film catalog and one whole-series/miniseries catalog.
 - No TV episodes, shorts, videos, or individual seasons.
 - Non-adult titles only.
-- At least 2,500 IMDb votes.
+- At least 2,500 IMDb votes for older titles.
+- At least 100 IMDb votes for titles dated in the current or previous calendar year.
 - No artificial title cap.
 
 Custom generation:
 
 ```powershell
-node scripts/build-movie-pool.mjs --minVotes=500 --minYear=1950
+node scripts/build-movie-pool.mjs --minVotes=500 --recentMinVotes=50 --recentYears=1 --minYear=1950
 ```
 
 Use `--limit=25000` only if you intentionally want smaller local movie and TV pools.

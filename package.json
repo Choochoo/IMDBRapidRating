@@ -8,7 +8,7 @@
     "db:migrate": "node scripts/migrate.mjs",
     "user:create": "node scripts/create-user.mjs",
     "key:generate": "node scripts/generate-key.mjs",
-    "build:data": "node scripts/build-movie-pool.mjs --minVotes=2500",
+    "build:data": "node scripts/build-movie-pool.mjs --minVotes=2500 --recentMinVotes=100 --recentYears=1",
     "build:origins": "node scripts/enrich-title-origins.mjs",
     "check": "node scripts/check-syntax.mjs",
     "test": "node --test"

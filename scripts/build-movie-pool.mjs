@@ -6,6 +6,7 @@ import readline from "node:readline";
 import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
 import zlib from "node:zlib";
+import { IsVoteCountEligible, MinimumVoteCount } from "./title-pool-policy.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CacheDir = path.join(RootPath, "cache");
@@ -22,7 +23,7 @@ await mkdir(DataDir, { recursive: true });
 await DownloadDataset(Files.basics);
 await DownloadDataset(Files.ratings);
 
-console.log(`Reading ratings with at least ${Options.minVotes.toLocaleString()} votes...`);
+console.log(`Reading ratings with at least ${MinimumVoteCount(Options).toLocaleString()} votes...`);
 const Ratings = await ReadRatings(path.join(CacheDir, Files.ratings));
 console.log(`Kept ${Ratings.size.toLocaleString()} rated titles.`);
 console.log("Reading title basics and building separate movie and TV series pools...");
@@ -87,7 +88,7 @@ function ReadRatingRow(columns, header) {
   const hasValidVoteCount = Number.isFinite(numVotes);
   if (!tconst || !hasValidRating || !hasValidVoteCount)
     return null;
-  if (numVotes < Options.minVotes)
+  if (numVotes < MinimumVoteCount(Options))
     return null;
   return { tconst, averageRating, numVotes };
 }
@@ -141,7 +142,7 @@ function BuildTitle(columns, header, rating, tconst, mediaType) {
   const startYear = ParseNullableInt(columns[header.startYear]);
   const title = CleanValue(columns[header.primaryTitle]);
   const hasValidYear = IsValidYear(startYear);
-  if (!hasValidYear || !title)
+  if (!hasValidYear || !title || !IsVoteCountEligible(startYear, rating.numVotes, Options))
     return null;
   return BuildTitlePayload(columns, header, rating, tconst, startYear, title, mediaType);
 }
@@ -183,11 +184,16 @@ function MakeHeaderMap(columns) {
 
 function ReadOptions() {
   const args = ReadArgs();
+  const currentYear = new Date().getFullYear();
+  const recentYears = ReadNumber(args, "recentYears", 1);
   return {
     limit: ReadOptionalNumber(args, "limit"),
     minVotes: ReadNumber(args, "minVotes", 2500),
+    recentMinVotes: ReadNumber(args, "recentMinVotes", 100),
+    recentYears,
+    recentYearCutoff: currentYear - recentYears,
     minYear: ReadNumber(args, "minYear", 1900),
-    maxYear: ReadNumber(args, "maxYear", new Date().getFullYear() + 1),
+    maxYear: ReadNumber(args, "maxYear", currentYear + 1),
     refresh: args.get("refresh") === "true"
   };
 }
@@ -270,6 +276,9 @@ function BuildSourceFilters(mediaType) {
     titleTypes: mediaType === "tv" ? ["tvSeries", "tvMiniSeries"] : ["movie"],
     isAdult: false,
     minVotes: Options.minVotes,
+    recentMinVotes: Options.recentMinVotes,
+    recentYears: Options.recentYears,
+    recentYearCutoff: Options.recentYearCutoff,
     minYear: Options.minYear,
     maxYear: Options.maxYear,
     limit: Options.limit
