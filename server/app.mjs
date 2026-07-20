@@ -52,7 +52,7 @@ export function RegisterStaticRoutes(app, rootPath) {
   app.get("/vendor/bootstrap.min.css", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/bootstrap/dist/css/bootstrap.min.css")));
   app.get("/vendor/fflate.js", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/fflate/esm/browser.js")));
   app.get("/favicon.svg", (_request, response) => response.sendFile(path.join(rootPath, "favicon.svg")));
-  app.get(["/", "/rate", "/wishlist", "/sync", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"], (request, response) => {
+  app.get(["/", "/login", "/rate", "/wishlist", "/sync", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"], (request, response) => {
     if (request.path !== "/" && request.path.endsWith("/"))
       return response.redirect(308, request.path.replace(/\/+$/, ""));
     response.sendFile(path.join(rootPath, "index.html"));

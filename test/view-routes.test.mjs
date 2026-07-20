@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { IsCanonicalViewPath, MediaTypeFromPathname, PathForView, RouteFromPathname, ViewFromPathname } from "../src/app/view-routes.js";
+import { IsCanonicalViewPath, IsLoginPath, LoginPath, MediaTypeFromPathname, PathForView, RouteFromPathname, ViewFromPathname } from "../src/app/view-routes.js";
 
 test("top-level URLs map to the correct app views", () => {
   assert.equal(ViewFromPathname("/rate"), "rater");
@@ -21,4 +21,11 @@ test("app views map back to stable browser URLs", () => {
   assert.equal(PathForView("sync", "tv"), "/tv/rate");
   assert.equal(IsCanonicalViewPath("/tv/wishlist"), true);
   assert.equal(IsCanonicalViewPath("/rate"), false);
+});
+
+test("login has one refreshable browser URL", () => {
+  assert.equal(LoginPath, "/login");
+  assert.equal(IsLoginPath("/login"), true);
+  assert.equal(IsLoginPath("/login/"), true);
+  assert.equal(IsLoginPath("/movies/rate"), false);
 });

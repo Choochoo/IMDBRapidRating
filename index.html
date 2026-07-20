@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/vendor/bootstrap.min.css">
     <link rel="stylesheet" href="/src/styles.css">
   </head>
-  <body class="rater-active">
+  <body>
     <header class="app-header">
       <div class="header-main">
         <div class="brand">
@@ -238,7 +238,7 @@
       </div>
     </section>
 
-    <footer class="footer d-none d-md-grid" id="rating-footer">
+    <footer class="footer" id="rating-footer" hidden>
       <div class="shortcut-panel">
         <div class="shortcut-copy">
           <strong>Keyboard shortcuts</strong>
@@ -264,7 +264,7 @@
       <p>Information courtesy of IMDb (https://www.imdb.com). Used with permission.</p>
     </footer>
 
-    <nav class="mobile-rating-bar d-md-none" id="mobile-rating-bar" aria-label="Touch rating controls">
+    <nav class="mobile-rating-bar" id="mobile-rating-bar" aria-label="Touch rating controls" hidden>
       <div class="mobile-rating-buttons">
         <button type="button" data-touch-rating="1">1</button><button type="button" data-touch-rating="2">2</button>
         <button type="button" data-touch-rating="3">3</button><button type="button" data-touch-rating="4">4</button>

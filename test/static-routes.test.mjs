@@ -48,7 +48,7 @@ test("each top-level view has a refreshable browser route", async () => {
   const app = express();
   RegisterStaticRoutes(app, process.cwd());
 
-  for (const path of ["/rate", "/wishlist", "/sync", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"]) {
+  for (const path of ["/login", "/rate", "/wishlist", "/sync", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"]) {
     const response = await request(app).get(path).expect(200);
     assert.match(response.text, /<title>IMDb Rapid Rater<\/title>/);
     assert.match(response.text, /<base href="\/">/);

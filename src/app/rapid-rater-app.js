@@ -51,7 +51,7 @@ import { BuildCheckedAiState, BuildCheckedLiveState, BuildMediaState, BuildState
 import { BuildCompleteSummary, CountRatings } from "./stats.js";
 import { UndoRating } from "./undo-rating.js";
 import { EscapeHtml, FormatCount } from "./util.js";
-import { IsCanonicalViewPath, PathForView, RouteFromPathname } from "./view-routes.js";
+import { IsCanonicalViewPath, IsLoginPath, LoginPath, PathForView, RouteFromPathname } from "./view-routes.js";
 import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../shared/media.js";
 import { NormalizeTitleFilters } from "../../shared/title-filters.js";
 import { NormalizeRecommendationBasis } from "../../shared/recommendation-basis.js";
@@ -204,8 +204,8 @@ export class RapidRaterApp {
     const route = RouteFromPathname(window.location.pathname);
     if (!this.User) {
       this.PendingRoute = route;
-      if (window.location.pathname !== "/")
-        window.history.replaceState({}, "", "/");
+      if (!IsLoginPath(window.location.pathname))
+        window.history.replaceState({}, "", LoginPath);
       return;
     }
     if (route.mediaType !== this.State.mediaType)
@@ -335,7 +335,8 @@ export class RapidRaterApp {
     this.Elements.signupForm.addEventListener("submit", (event) => this.HandleSignup(event));
     this.Elements.showLogin.addEventListener("click", () => this.ShowAuthPanel("login"));
     this.Elements.showSignup.addEventListener("click", () => this.ShowAuthPanel("signup"));
-    this.Elements.signOut.addEventListener("click", () => this.SignOut());
+    this.Elements.signOut.addEventListener("click", () => this.SignOut()
+      .catch((error) => this.ShowToast(EscapeHtml(error.message || "Could not sign out."))));
   }
 
   BindMobileEvents() {
@@ -412,8 +413,8 @@ export class RapidRaterApp {
   }
 
   ShowAuthLanding(registrationEnabled = true) {
-    if (window.location.pathname !== "/")
-      window.history.replaceState({}, "", "/");
+    if (!IsLoginPath(window.location.pathname))
+      window.history.replaceState({}, "", LoginPath);
     document.body.classList.remove("tv-mode");
     document.title = "IMDb Rapid Rater";
     this.Elements.authLanding.hidden = false;
@@ -454,10 +455,19 @@ export class RapidRaterApp {
   }
 
   async SignOut() {
-    await this.FlushStateSync().catch(() => null);
-    this.RaterEvents?.close();
-    await this.RequestJson("/api/auth/logout", "POST", {});
-    window.location.reload();
+    this.Elements.signOut.disabled = true;
+    try {
+      await this.FlushStateSync().catch(() => null);
+      this.RaterEvents?.close();
+      await this.RequestJson("/api/auth/logout", "POST", {}).catch((error) => {
+        if (error?.status !== 401)
+          throw error;
+      });
+      window.location.assign(LoginPath);
+    } catch (error) {
+      this.Elements.signOut.disabled = false;
+      throw error;
+    }
   }
 
   ShowView(view) {

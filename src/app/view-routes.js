@@ -1,4 +1,5 @@
 const SuffixByView = Object.freeze({ rater: "rate", ai: "wishlist", sync: "sync" });
+export const LoginPath = "/login";
 
 export function PathForView(view, mediaType = "movie") {
   const media = mediaType === "tv" ? "tv" : "movies";
@@ -27,6 +28,10 @@ export function RouteFromPathname(pathname) {
 export function IsCanonicalViewPath(pathname) {
   const path = NormalizePath(pathname);
   return /^\/(movies|tv)\/(rate|wishlist|sync)$/.test(path) && !(path === "/tv/sync");
+}
+
+export function IsLoginPath(pathname) {
+  return NormalizePath(pathname) === LoginPath;
 }
 
 function NormalizePath(value) {

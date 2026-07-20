@@ -49,6 +49,26 @@ test("email login establishes an authenticated session and CSRF protects account
   assert.deepEqual(saved.payload, { ratings: {} });
 });
 
+test("logout destroys the authenticated session", async () => {
+  const user = { id: "40c9da79-e7d1-4357-947a-85b1e21b1a75", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const agent = request.agent(BuildTestApp({
+    findUserByEmail: async () => user
+  }));
+  const anonymous = await agent.get("/api/auth/session").expect(200);
+  const login = await agent.post("/api/auth/login")
+    .set("x-csrf-token", anonymous.body.csrfToken)
+    .send({ email: user.email, password: "correct horse battery staple" })
+    .expect(200);
+
+  await agent.post("/api/auth/logout")
+    .set("x-csrf-token", login.body.csrfToken)
+    .send({})
+    .expect(200);
+
+  const session = await agent.get("/api/auth/session").expect(200);
+  assert.equal(session.body.authenticated, false);
+});
+
 test("public registration validates input, creates account data, and signs the user in", async () => {
   const users = new Map();
   const store = {
