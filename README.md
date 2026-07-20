@@ -59,7 +59,7 @@ Configure these Octopus project variables before the first account-backed deploy
 
 Use a dedicated PostgreSQL database/user with access only to the `imdb_rapid_rater` schema. The deployment writes the runtime values to an ACL-restricted file, installs production dependencies, and applies migrations before starting the scheduled task.
 
-`RapidRater.AppOrigin` is the primary browser origin. Additional trusted browser origins can be supplied through `RapidRater.AllowedOrigins`; the deployment writes them to the `APP_ALLOWED_ORIGINS` runtime setting. The repository contains no deployment-specific hostnames or addresses.
+`RapidRater.AppOrigin` is the primary browser origin. Same-origin requests are accepted from the host serving the current request, while additional trusted browser origins can be supplied through `RapidRater.AllowedOrigins`; the deployment writes them to the `APP_ALLOWED_ORIGINS` runtime setting. The repository contains no deployment-specific hostnames or addresses.
 
 An existing IIS reverse-proxy site can be integrated by configuring these optional Octopus project variables:
 

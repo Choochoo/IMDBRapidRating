@@ -69,11 +69,13 @@ export function VerifyOrigin(request, response, next) {
 }
 
 export function ReadAllowedOrigins(request) {
-  const configured = [process.env.APP_ORIGIN, ...(process.env.APP_ALLOWED_ORIGINS || "").split(",")]
+  const configured = [
+    `${request.protocol}://${request.get("host")}`,
+    process.env.APP_ORIGIN,
+    ...(process.env.APP_ALLOWED_ORIGINS || "").split(",")
+  ]
     .map((value) => String(value || "").trim())
     .filter(Boolean);
-  if (!configured.length)
-    configured.push(`${request.protocol}://${request.get("host")}`);
   return new Set(configured.map(NormalizeOrigin).filter(Boolean));
 }
 

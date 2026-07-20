@@ -51,7 +51,7 @@ test("HTTP origins do not upgrade assets to HTTPS-only security contexts", () =>
   assert.equal(Object.hasOwn(httpsOptions, "originAgentCluster"), false);
 });
 
-test("configured primary and additional HTTP origins are accepted", async () => {
+test("same-origin requests and configured additional origins are accepted", async () => {
   const previousOrigin = process.env.APP_ORIGIN;
   const previousAllowed = process.env.APP_ALLOWED_ORIGINS;
   process.env.APP_ORIGIN = "http://app.example.test:5012/";
@@ -64,6 +64,11 @@ test("configured primary and additional HTTP origins are accepted", async () => 
     await request(app).post("/write").set("Origin", "http://app.example.test:5012").expect(204);
     await request(app).post("/write").set("Origin", "http://alternate.example.test:5012").expect(204);
     await request(app).post("/write").set("Origin", "https://example.test").expect(204);
+    await request(app)
+      .post("/write")
+      .set("Host", "ourfilmclub.duckdns.org:5012")
+      .set("Origin", "http://ourfilmclub.duckdns.org:5012")
+      .expect(204);
     await request(app).post("/write").set("Origin", "http://evil.example").expect(403);
   } finally {
     RestoreEnvironment("APP_ORIGIN", previousOrigin);
