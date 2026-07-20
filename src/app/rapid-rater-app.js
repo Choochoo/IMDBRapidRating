@@ -457,13 +457,14 @@ export class RapidRaterApp {
   async SignOut() {
     this.Elements.signOut.disabled = true;
     try {
-      await this.FlushStateSync().catch(() => null);
+      window.clearTimeout(this.SyncTimer);
+      window.clearInterval(this.AccountRefreshTimer);
       this.RaterEvents?.close();
       await this.RequestJson("/api/auth/logout", "POST", {}).catch((error) => {
         if (error?.status !== 401)
           throw error;
       });
-      window.location.assign(LoginPath);
+      window.location.replace(LoginPath);
     } catch (error) {
       this.Elements.signOut.disabled = false;
       throw error;
