@@ -47,7 +47,7 @@ One-time setup:
   -ApiKey "<Octopus API key>"
 ```
 
-The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add a `TMDB_BUILD_API_KEY` Actions secret to enrich the generated catalogs with production-country and original-language metadata. Deployment fails before packaging when this secret is missing or when enrichment produces no usable origin metadata, preventing an apparently successful release with empty country and language filters.
+The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add `TMDB_BUILD_API_KEY` and `POSTGRES_CONNECTION_STRING` Actions secrets to enrich the generated catalogs with production-country and original-language metadata and persist those lookups in the application database. Deployment fails before packaging when either secret is missing or when enrichment produces no usable origin metadata, preventing an apparently successful release with empty country and language filters.
 
 Configure these Octopus project variables before the first account-backed deployment. Mark the first three as sensitive:
 
@@ -240,7 +240,7 @@ $env:TMDB_BUILD_API_KEY = "<TMDB v3 API key or read access token>"
 npm run build:origins
 ```
 
-The enrichment is resumable. Results, including titles TMDB could not match, are checkpointed in the ignored `cache/tmdb-title-origins.json` file. `TMDB_ORIGIN_CONCURRENCY` can be set from `1` to `24` and defaults to `12`. Re-run `build:origins` after generating fresh IMDb catalogs; cached titles are reused.
+The enrichment is resumable. Results, including titles TMDB could not match, are stored in PostgreSQL and reused by later builds. The ignored `cache/tmdb-title-origins.json` file remains a local checkpoint and is imported into PostgreSQL when it contains records not already in the database. `TMDB_ORIGIN_CONCURRENCY` can be set from `1` to `24` and defaults to `12`. Re-run `build:origins` after generating fresh IMDb catalogs; only titles missing from the database cache are sent to TMDB.
 
 The script downloads these files into `cache/`:
 
@@ -294,6 +294,7 @@ src/app/util.js            Shared browser utilities
 server/                    Authenticated API, database, and IMDb proxy modules
 server/rater-queue-store.mjs Authoritative queue transactions and conflict checks
 server/rater-events.mjs    Cross-device queue revision event stream
+server/title-origin-cache.mjs PostgreSQL TMDB-origin cache
 db/migrations/             Versioned PostgreSQL schema migrations
 shared/                    Browser/server shared helpers
 scripts/server.mjs         Local server entrypoint

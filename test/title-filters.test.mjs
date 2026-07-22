@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { FilterTitlePool } from "../server/movie-pool.mjs";
-import { ValidateCatalogOriginCoverage } from "../scripts/enrich-title-origins.mjs";
+import { BuildPendingTitles, ValidateCatalogOriginCoverage } from "../scripts/enrich-title-origins.mjs";
 import {
   CountActiveTitleFilters,
   IsTitleAllowed,
@@ -28,6 +28,7 @@ test("year, country, language, Bollywood, and unknown-origin filters compose", V
 test("TMDB origin normalization combines TV origin and production countries", VerifyTmdbOriginNormalization);
 test("filtered title pools get a distinct identity without mutating the catalog", VerifyFilteredTitlePool);
 test("origin enrichment refuses to publish catalogs without usable metadata", VerifyCatalogOriginCoverage);
+test("origin enrichment only queues titles missing from its persistent cache", VerifyOriginPendingTitles);
 
 function VerifyTitleFilterNormalization() {
   const input = BuildTitleFilterInput();
@@ -118,6 +119,18 @@ function BuildOriginCoverageFixtures() {
     [TvId]: { mediaType: TvMediaType, status: MatchedStatus, originCountries: [KoreaCountry], originalLanguage: KoreanLanguage }
   };
   return { catalogs, cache };
+}
+
+function VerifyOriginPendingTitles() {
+  const catalogs = [
+    { mediaType: MovieMediaType, titles: [{ ttId: MovieId }, { ttId: ThirdTitleId }] },
+    { mediaType: TvMediaType, titles: [{ ttId: TvId }] }
+  ];
+  const cache = {
+    [MovieId]: { mediaType: MovieMediaType, status: MatchedStatus },
+    [TvId]: { mediaType: TvMediaType, status: "not-found" }
+  };
+  assert.deepEqual(BuildPendingTitles(catalogs, cache), [{ ttId: ThirdTitleId, mediaType: MovieMediaType }]);
 }
 
 function Title(year, originCountries, originalLanguage) {

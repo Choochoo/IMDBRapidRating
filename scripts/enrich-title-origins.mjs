@@ -2,6 +2,9 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { CreateDatabase } from "../server/db/client.mjs";
+import { RunMigrations } from "../server/db/migrate.mjs";
+import { CreateTitleOriginCacheStore } from "../server/title-origin-cache.mjs";
 import { NormalizeTmdbOrigin } from "../shared/title-filters.js";
 import { LoadLocalEnv } from "../server/env.mjs";
 
@@ -36,13 +39,26 @@ async function Main() {
   if (!apiKey)
     throw new Error("TMDB_BUILD_API_KEY is required to enrich title origins.");
   const catalogs = await ReadCatalogs();
-  const cache = await ReadCache();
-  const pending = BuildPendingTitles(catalogs, cache);
-  console.log(`Origin cache has ${Object.keys(cache).length.toLocaleString()} titles; ${pending.length.toLocaleString()} need TMDB lookup.`);
-  await EnrichPendingTitles(pending, cache, apiKey);
-  ValidateCatalogOriginCoverage(catalogs, cache);
-  await WriteCache(cache);
-  await WriteCatalogs(catalogs, cache);
+  const localCache = await ReadCache();
+  const { pool } = CreateDatabase();
+  try {
+    await RunMigrations(pool);
+    const originStore = CreateTitleOriginCacheStore(pool);
+    const titleReferences = BuildTitleReferences(catalogs);
+    const databaseCache = await originStore.read(titleReferences);
+    const localImports = BuildLocalCacheImports(titleReferences, localCache, databaseCache);
+    if (localImports.length)
+      await originStore.upsert(localImports);
+    const cache = { ...localCache, ...databaseCache };
+    const pending = BuildPendingTitles(catalogs, cache);
+    console.log(`PostgreSQL origin cache has ${Object.keys(databaseCache).length.toLocaleString()} catalog titles; imported ${localImports.length.toLocaleString()} local entries; ${pending.length.toLocaleString()} need TMDB lookup.`);
+    await EnrichPendingTitles(pending, cache, apiKey, originStore);
+    ValidateCatalogOriginCoverage(catalogs, cache);
+    await WriteCache(cache);
+    await WriteCatalogs(catalogs, cache);
+  } finally {
+    await pool.end();
+  }
 }
 
 async function ReadCatalogs() {
@@ -67,7 +83,20 @@ async function ReadCache() {
   }
 }
 
-function BuildPendingTitles(catalogs, cache) {
+function BuildTitleReferences(catalogs) {
+  return catalogs.flatMap((catalog) => catalog.titles.map((title) => ({ ttId: title.ttId, mediaType: catalog.mediaType })));
+}
+
+function BuildLocalCacheImports(titleReferences, localCache, databaseCache) {
+  return titleReferences.flatMap((item) => {
+    if (IsReusableCacheEntry(databaseCache[item.ttId], item.mediaType))
+      return [];
+    const entry = localCache[item.ttId];
+    return IsReusableCacheEntry(entry, item.mediaType) ? [{ ttId: item.ttId, ...entry }] : [];
+  });
+}
+
+export function BuildPendingTitles(catalogs, cache) {
   return catalogs.flatMap((catalog) => BuildCatalogPendingTitles(catalog, cache));
 }
 
@@ -81,37 +110,53 @@ function BuildCatalogPendingTitles(catalog, cache) {
   return pending;
 }
 
-async function EnrichPendingTitles(pending, cache, apiKey) {
+async function EnrichPendingTitles(pending, cache, apiKey, originStore) {
   const concurrency = ReadConcurrency();
   const workerCount = Math.min(concurrency, Math.max(1, pending.length));
-  const state = { nextIndex: 0, completed: 0, checkpoint: Promise.resolve() };
-  const workers = Array.from({ length: workerCount }, () => RunOriginWorker(pending, cache, apiKey, state));
+  const state = { nextIndex: 0, completed: 0, checkpoint: Promise.resolve(), pendingEntries: [] };
+  const workers = Array.from({ length: workerCount }, () => RunOriginWorker(pending, cache, apiKey, originStore, state));
   await Promise.all(workers);
   await state.checkpoint;
+  await FlushCheckpoint(cache, originStore, state);
 }
 
-async function RunOriginWorker(pending, cache, apiKey, state) {
+async function RunOriginWorker(pending, cache, apiKey, originStore, state) {
   while (state.nextIndex < pending.length) {
     const item = pending[state.nextIndex++];
-    await EnrichTitle(item, cache, apiKey);
+    const entry = await EnrichTitle(item, cache, apiKey);
+    if (entry)
+      state.pendingEntries.push({ ttId: item.ttId, ...entry });
     state.completed++;
-    await WriteCheckpointIfNeeded(pending.length, cache, state);
+    await WriteCheckpointIfNeeded(pending.length, cache, originStore, state);
   }
 }
 
 async function EnrichTitle(item, cache, apiKey) {
   try {
-    cache[item.ttId] = await FetchTitleOrigin(item, apiKey);
+    const entry = await FetchTitleOrigin(item, apiKey);
+    cache[item.ttId] = entry;
+    return entry;
   } catch (error) {
     console.warn(`${item.ttId} origin lookup failed: ${error.message}`);
+    return null;
   }
 }
 
-async function WriteCheckpointIfNeeded(total, cache, state) {
+async function WriteCheckpointIfNeeded(total, cache, originStore, state) {
   if (state.completed % CheckpointInterval !== 0)
     return;
   console.log(`Resolved ${state.completed.toLocaleString()} of ${total.toLocaleString()} origin lookups.`);
-  state.checkpoint = state.checkpoint.then(() => WriteCache(cache));
+  await FlushCheckpoint(cache, originStore, state);
+}
+
+async function FlushCheckpoint(cache, originStore, state) {
+  const entries = state.pendingEntries.splice(0);
+  if (!entries.length)
+    return;
+  state.checkpoint = state.checkpoint.then(async () => {
+    await originStore.upsert(entries);
+    await WriteCache(cache);
+  });
   await state.checkpoint;
 }
 

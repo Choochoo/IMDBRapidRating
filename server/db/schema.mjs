@@ -59,6 +59,17 @@ export const RaterActions = AppSchema.table("rater_actions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull()
 }, (table) => [uniqueIndex("rater_actions_user_action_unique").on(table.userId, table.actionId)]);
 
+export const TitleOriginCache = AppSchema.table("title_origin_cache", {
+  ttId: varchar("tt_id", { length: 32 }).notNull(),
+  mediaType: varchar("media_type", { length: 16 }).notNull(),
+  status: varchar("status", { length: 16 }).notNull(),
+  tmdbId: integer("tmdb_id"),
+  originCountries: jsonb("origin_countries").notNull().default([]),
+  originalLanguage: varchar("original_language", { length: 16 }).notNull().default(""),
+  checkedAt: timestamp("checked_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull()
+}, (table) => [primaryKey({ columns: [table.ttId, table.mediaType] })]);
+
 export const UserSecrets = AppSchema.table("user_secrets", {
   userId: uuid("user_id").notNull().references(() => Users.id, { onDelete: "cascade" }),
   secretType: varchar("secret_type", { length: 32 }).notNull(),
