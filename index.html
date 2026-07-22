@@ -141,7 +141,7 @@
 
         </div>
 
-        <section class="failure-panel alert alert-danger d-grid" id="failure-panel" hidden>
+        <section class="failure-panel alert alert-danger" id="failure-panel" hidden>
           <div class="failure-header">
             <strong>IMDb write failures</strong>
             <button type="button" class="btn btn-sm btn-outline-danger" id="failure-retry">Retry IMDb failures</button>
@@ -315,8 +315,12 @@
           <span class="key wide" data-shortcut="undo">Backspace</span>
         </div>
       </div>
-      <p>Information courtesy of IMDb (https://www.imdb.com). Used with permission.</p>
-      <p>This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability is provided by JustWatch through TMDB.</p>
+      <section class="data-credits" aria-labelledby="data-credits-title">
+        <h2 id="data-credits-title">Data credits</h2>
+        <p>Information courtesy of IMDb (https://www.imdb.com). Used with permission.</p>
+        <a class="tmdb-credit" href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer"><img src="/src/assets/tmdb-logo.svg" alt="The Movie Database (TMDB)"></a>
+        <p>This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability is provided by JustWatch through TMDB.</p>
+      </section>
     </footer>
 
     <nav class="mobile-rating-bar" id="mobile-rating-bar" aria-label="Touch rating controls" hidden>

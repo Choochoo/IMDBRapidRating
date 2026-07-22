@@ -586,6 +586,7 @@ button.connection-status:hover {
 }
 
 .failure-panel {
+  display: grid;
   gap: 8px;
 }
 

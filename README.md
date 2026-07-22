@@ -106,7 +106,7 @@ Port `5012` is the default.
 
 Ratings, imported CSV data, recent history, queue order, AI exclusions, and preferences are stored per account in PostgreSQL. Movie and TV state is namespaced so actions in one section never alter the other. The browser stores only an `HttpOnly` session cookie. Signing into the same account on another computer loads the synchronized save.
 
-Each Movies and TV Shows queue is independently server-authoritative. Every rating, not-seen/not-watched choice, wishlist action, and undo includes the expected queue revision and advances only the current section's server-side head. Stale devices reload the canonical queue instead of merging or reshuffling it. Open devices receive media-scoped queue revision events, with focus refresh and polling as fallbacks.
+Each Movies and TV Shows queue is independently server-authoritative. Every rating, not-seen/not-watched choice, watchlist action, and undo includes the expected queue revision and advances only the current section's server-side head. Stale devices reload the canonical queue instead of merging or reshuffling it. Open devices receive media-scoped queue revision events, with focus refresh and polling as fallbacks.
 
 Filters are also independent for Movies and TV Shows. Open **Filters** beside the progress counters to choose a year range or exclude production countries and original languages. **Hide Bollywood** is intentionally labeled as an approximation: it hides Indian productions whose TMDB original language is Hindi. Filtered titles stay untouched and return to the queue when the filter is removed. Titles with no origin metadata remain included by default.
 
@@ -199,7 +199,7 @@ IMDB_DRY_RUN=true
 
 IMDb page metadata is inconsistent for this use case. For reliable posters, synopsis text, cast, trailers, series details, and streaming availability, click **Set TMDB Key** in the app header and paste a TMDB API key. It is encrypted in your account. Get a v3 API key or read access token from [TMDB API Getting Started](https://developer.themoviedb.org/reference/getting-started).
 
-Rapid Rater looks up only the three visible titles by IMDb ID through TMDB. The normalized fields used by the app and the complete TMDB details response already fetched for each title are stored in PostgreSQL. Movie metadata is refreshed after 30 days; an active TV series is refreshed after 7 days so season and episode counts can change. Ended-series metadata uses the 30-day interval.
+The deployment build preloads stable TMDB title metadata for the generated movie and TV catalogs. It saves the normalized fields used by the app plus the complete details response in PostgreSQL. At runtime, only visible titles that are missing or stale are requested. Movie metadata is refreshed after 30 days; an active TV series is refreshed after 7 days so season and episode counts can change. Ended-series metadata uses the 30-day interval.
 
 After the TMDB title ID is known, Rapid Rater loads the configured country's watch-provider results (currently `US`). Streaming results are stored by country for 12 hours. Fresh results are served directly from PostgreSQL; stale results are shown immediately and refreshed in the background. Provider logos and categories appear below the synopsis on the active poster card. TMDB provides a regional viewing-options page, not direct Netflix/Hulu deep links.
 
@@ -247,7 +247,7 @@ $env:TMDB_BUILD_API_KEY = "<TMDB v3 API key or read access token>"
 npm run build:origins
 ```
 
-The enrichment is resumable. Results, including titles TMDB could not match, are stored in the shared PostgreSQL title-metadata cache and reused by later builds. The ignored `cache/tmdb-title-origins.json` file remains a local checkpoint and is imported into PostgreSQL when it contains records not already in the database. `TMDB_ORIGIN_CONCURRENCY` can be set from `1` to `24` and defaults to `12`. Re-run `build:origins` after generating fresh IMDb catalogs; only titles missing origin results from the database cache are sent to TMDB. This build never requests streaming availability for the entire catalog; runtime loads it only for visible cards.
+The enrichment is resumable. Matched titles are complete when `metadata_checked_at` is populated; previously cached origin-only rows are automatically backfilled, and their known TMDB IDs avoid another IMDb-to-TMDB find request. Newly matched titles save the details response already needed for origin data instead of discarding it. Titles TMDB could not match are also checkpointed so later builds do not repeat them. The ignored `cache/tmdb-title-origins.json` file remains a lightweight local origin checkpoint and is imported when PostgreSQL lacks the record. `TMDB_ORIGIN_CONCURRENCY` can be set from `1` to `24` and defaults to `12`. This build never requests streaming availability for the entire catalog; runtime loads providers only for visible cards.
 
 The script downloads these files into `cache/`:
 
@@ -307,7 +307,7 @@ db/migrations/             Versioned PostgreSQL schema migrations
 shared/                    Browser/server shared helpers
 scripts/server.mjs         Local server entrypoint
 scripts/build-movie-pool.mjs  IMDb dataset builder
-scripts/enrich-title-origins.mjs Build-time TMDB origin enrichment
+scripts/enrich-title-origins.mjs Resumable build-time TMDB title metadata and origin enrichment
 shared/title-filters.js     Shared normalization and filter rules
 data/movies.json           Generated movie queue, ignored
 data/shows.json            Generated TV-series queue, ignored

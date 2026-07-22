@@ -350,7 +350,7 @@ test("generated picks append to the saved per-user recommendation queue", async 
   assert.deepEqual(response.body.recommendations, [existing, generated]);
 });
 
-test("a rating-system movie can be added directly to the saved wishlist", async () => {
+test("a rating-system movie can be added directly to the saved watchlist", async () => {
   const user = { id: "c95c1ff0-325f-4f64-a763-669403435215", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   const queue = [];
   let appended = null;

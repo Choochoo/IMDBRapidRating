@@ -64,12 +64,14 @@ jobs:
         run: npm run build:data
         shell: powershell
 
-      - name: Enrich production origins
+      - name: Enrich title metadata
         env:
           TMDB_BUILD_API_KEY: ${{ secrets.TMDB_BUILD_API_KEY }}
         run: |
           npm run build:origins
-          if ($LASTEXITCODE -ne 0) { throw 'TMDB origin enrichment failed.' }
+          if ($LASTEXITCODE -ne 0) {
+            throw 'TMDB metadata enrichment failed.'
+          }
         shell: powershell
 
       - name: Stage deployment package

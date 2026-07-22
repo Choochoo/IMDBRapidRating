@@ -23,3 +23,13 @@ test("rating controls start hidden without competing display utilities", async (
   assert.doesNotMatch(footer, /\bd-(?:none|md-grid|md-none)\b/);
   assert.doesNotMatch(mobileBar, /\bd-(?:none|md-grid|md-none)\b/);
 });
+
+test("the visible data-credits section includes required TMDB and JustWatch attribution", VerifyDataCredits);
+
+async function VerifyDataCredits() {
+  const html = await readFile("index.html", "utf8");
+  assert.match(html, /<section class="data-credits"/);
+  assert.match(html, /src="\/src\/assets\/tmdb-logo\.svg"/);
+  assert.match(html, /This product uses the TMDB API but is not endorsed or certified by TMDB\./);
+  assert.match(html, /Streaming availability is provided by JustWatch through TMDB\./);
+}

@@ -213,7 +213,7 @@ export class EventBindingsFeature {
   }
 
   ShowWishlistError(error) {
-    this.ShowToast(`<strong>Wishlist was not updated:</strong> ${EscapeHtml(error.message)}`);
+    this.ShowToast(`<strong>Watchlist was not updated:</strong> ${EscapeHtml(error.message)}`);
   }
 
   ToggleRecommendationPosters() {

@@ -2,130 +2,81 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { CreateTitleMetadataStore } from "../server/title-metadata-store.mjs";
 
+const MovieMediaType = "movie";
+const TvMediaType = "tv";
+const MovieTitleId = "tt0000001";
+const TvTitleId = "tt0000002";
+const Country = "US";
 const CheckedAt = "2026-07-22T12:34:56.000Z";
+const DatabaseRow = Object.freeze({ tt_id: MovieTitleId, media_type: MovieMediaType, status: "matched", tmdb_id: 101, origin_countries: [Country], original_language: "en", checked_at: CheckedAt, poster_url: "https://image.tmdb.org/poster.jpg", synopsis: "A movie.", actors: ["Actor One"], trailer_url: "", series_status: "", season_count: 0, episode_count: 0, episode_runtime_minutes: 0, metadata_source: "tmdb", source_payload: { id: 101, title: "A movie" }, metadata_checked_at: CheckedAt, streaming_availability: {} });
+const OriginEntry = Object.freeze({ ttId: MovieTitleId, mediaType: MovieMediaType, status: "matched", tmdbId: 101, originCountries: [Country], originalLanguage: "en", checkedAt: CheckedAt });
+const MetadataEntry = Object.freeze({ titleId: MovieTitleId, mediaType: MovieMediaType, tmdbId: 101, originCountries: [Country], originalLanguage: "en", posterUrl: "https://image.tmdb.org/poster.jpg", synopsis: "A movie.", actors: ["Actor One"], source: "tmdb", sourcePayload: { id: 101, title: "A movie", credits: { cast: [] } }, metadataCheckedAt: CheckedAt });
+const Availability = Object.freeze({ country: Country, fetchedAt: CheckedAt, watchUrl: "https://www.themoviedb.org/movie/101/watch", providers: [] });
 
-test("PostgreSQL metadata cache reads only requested movie and TV title IDs", async () => {
-  const calls = [];
-  const pool = {
-    async query(sql, parameters) {
-      calls.push({ sql, parameters });
-      return {
-        rows: parameters[0] === "movie" ? [{
-          tt_id: "tt0000001",
-          media_type: "movie",
-          status: "matched",
-          tmdb_id: 101,
-          origin_countries: ["US"],
-          original_language: "en",
-          checked_at: CheckedAt,
-          poster_url: "https://image.tmdb.org/poster.jpg",
-          synopsis: "A movie.",
-          actors: ["Actor One"],
-          trailer_url: "",
-          series_status: "",
-          season_count: 0,
-          episode_count: 0,
-          episode_runtime_minutes: 0,
-          metadata_source: "tmdb",
-          source_payload: { id: 101, title: "A movie" },
-          metadata_checked_at: CheckedAt,
-          streaming_availability: {}
-        }] : []
-      };
-    }
-  };
-  const store = CreateTitleMetadataStore(pool);
+test("PostgreSQL metadata cache reads only requested movie and TV title IDs", VerifyTargetedReads);
+test("PostgreSQL metadata cache upserts origin checkpoint batches", VerifyOriginUpsert);
+test("hydration-state reads remain lightweight and expose the metadata checkpoint", VerifyHydrationStateRead);
+test("metadata batches preserve richer TMDB rows and retain null fallback freshness", VerifyMetadataBatchUpsert);
+test("PostgreSQL metadata cache stores country availability", VerifyStreamingUpdate);
 
-  const cache = await store.read([
-    { ttId: "tt0000001", mediaType: "movie" },
-    { ttId: "tt0000001", mediaType: "movie" },
-    { ttId: "tt0000002", mediaType: "tv" }
-  ]);
+async function VerifyTargetedReads() {
+  const recording = CreateReadPool();
+  const cache = await CreateTitleMetadataStore(recording.pool).read([{ ttId: MovieTitleId, mediaType: MovieMediaType }, { ttId: MovieTitleId, mediaType: MovieMediaType }, { ttId: TvTitleId, mediaType: TvMediaType }]);
+  assert.equal(cache[MovieTitleId].tmdbId, 101);
+  assert.equal(cache[MovieTitleId].synopsis, "A movie.");
+  assert.deepEqual(cache[MovieTitleId].actors, ["Actor One"]);
+  assert.equal(cache[MovieTitleId].sourcePayload.id, 101);
+  assert.deepEqual(recording.calls.map((call) => call.parameters), [[MovieMediaType, [MovieTitleId]], [TvMediaType, [TvTitleId]]]);
+}
 
-  assert.equal(cache.tt0000001.tmdbId, 101);
-  assert.equal(cache.tt0000001.synopsis, "A movie.");
-  assert.deepEqual(cache.tt0000001.actors, ["Actor One"]);
-  assert.equal(cache.tt0000001.sourcePayload.id, 101);
-  assert.equal(calls.length, 2);
-  assert.deepEqual(calls[0].parameters, ["movie", ["tt0000001"]]);
-  assert.deepEqual(calls[1].parameters, ["tv", ["tt0000002"]]);
-});
-
-test("PostgreSQL metadata cache upserts origin checkpoint batches", async () => {
-  const calls = [];
-  const pool = {
-    async query(sql, parameters) {
-      calls.push({ sql, parameters });
-      return { rows: [], rowCount: 1 };
-    }
-  };
-  const store = CreateTitleMetadataStore(pool);
-
-  const count = await store.upsertOrigins([{
-    ttId: "tt0000001",
-    mediaType: "movie",
-    status: "matched",
-    tmdbId: 101,
-    originCountries: ["US"],
-    originalLanguage: "en",
-    checkedAt: CheckedAt
-  }]);
-
+async function VerifyOriginUpsert() {
+  const recording = CreateWritePool();
+  const count = await CreateTitleMetadataStore(recording.pool).upsertOrigins([OriginEntry]);
   assert.equal(count, 1);
-  assert.match(calls[0].sql, /ON CONFLICT \(tt_id, media_type\) DO UPDATE/);
-  assert.equal(JSON.parse(calls[0].parameters[0])[0].tmdb_id, 101);
-});
+  assert.match(recording.calls[0].sql, /ON CONFLICT \(tt_id, media_type\) DO UPDATE/);
+  assert.equal(JSON.parse(recording.calls[0].parameters[0])[0].tmdb_id, 101);
+}
 
-test("origin builds avoid loading heavy title and streaming payload columns", async () => {
+async function VerifyHydrationStateRead() {
+  const recording = CreateReadPool();
+  const cache = await CreateTitleMetadataStore(recording.pool).readHydrationState([{ ttId: MovieTitleId, mediaType: MovieMediaType }]);
+  assert.equal(cache[MovieTitleId].metadataCheckedAt, CheckedAt);
+  assert.match(recording.calls[0].sql, /metadata_checked_at/);
+  assert.doesNotMatch(recording.calls[0].sql, /source_payload|streaming_availability|poster_url/);
+}
+
+async function VerifyMetadataBatchUpsert() {
+  const recording = CreateWritePool();
+  const fallback = { ...MetadataEntry, source: "imdb-title-page", sourcePayload: {}, metadataCheckedAt: "" };
+  await CreateTitleMetadataStore(recording.pool).upsertMetadataBatch([MetadataEntry, fallback]);
+  const records = JSON.parse(recording.calls[0].parameters[0]);
+  assert.equal(records[0].synopsis, "A movie.");
+  assert.equal(records[0].source_payload.id, 101);
+  assert.equal(records[1].metadata_checked_at, null);
+  assert.match(recording.calls[0].sql, /metadata_source <> 'tmdb' OR EXCLUDED\.metadata_source = 'tmdb'/);
+}
+
+async function VerifyStreamingUpdate() {
+  const recording = CreateWritePool();
+  await CreateTitleMetadataStore(recording.pool).updateStreaming(MovieTitleId, MovieMediaType, Country, Availability);
+  assert.match(recording.calls[0].sql, /jsonb_set/);
+  assert.deepEqual(JSON.parse(recording.calls[0].parameters[3]), Availability);
+}
+
+function CreateReadPool() {
   const calls = [];
-  const pool = {
-    async query(sql, parameters) {
-      calls.push({ sql, parameters });
-      return { rows: [{
-        tt_id: "tt0000001",
-        media_type: "movie",
-        status: "matched",
-        tmdb_id: 101,
-        origin_countries: ["US"],
-        original_language: "en",
-        checked_at: CheckedAt
-      }] };
-    }
-  };
+  const pool = { query: async (sql, parameters) => {
+    calls.push({ sql, parameters });
+    return { rows: parameters[0] === MovieMediaType ? [DatabaseRow] : [] };
+  } };
+  return { calls, pool };
+}
 
-  const cache = await CreateTitleMetadataStore(pool).readOrigins([{ ttId: "tt0000001", mediaType: "movie" }]);
-
-  assert.equal(cache.tt0000001.status, "matched");
-  assert.doesNotMatch(calls[0].sql, /source_payload|streaming_availability|poster_url/);
-});
-
-test("PostgreSQL metadata cache stores normalized title metadata and country availability", async () => {
+function CreateWritePool() {
   const calls = [];
-  const pool = {
-    async query(sql, parameters) {
-      calls.push({ sql, parameters });
-      return { rows: [], rowCount: 1 };
-    }
-  };
-  const store = CreateTitleMetadataStore(pool);
-  const metadata = {
-    titleId: "tt0000001",
-    mediaType: "movie",
-    tmdbId: 101,
-    posterUrl: "https://image.tmdb.org/poster.jpg",
-    synopsis: "A movie.",
-    actors: ["Actor One"],
-    source: "tmdb",
-    sourcePayload: { id: 101, title: "A movie", credits: { cast: [] } },
-    metadataCheckedAt: CheckedAt
-  };
-  const availability = { country: "US", fetchedAt: CheckedAt, watchUrl: "https://www.themoviedb.org/movie/101/watch", providers: [] };
-
-  await store.upsertMetadata(metadata);
-  await store.updateStreaming(metadata.titleId, metadata.mediaType, "US", availability);
-
-  assert.equal(JSON.parse(calls[0].parameters[0]).synopsis, "A movie.");
-  assert.equal(JSON.parse(calls[0].parameters[0]).source_payload.id, 101);
-  assert.match(calls[1].sql, /jsonb_set/);
-  assert.deepEqual(JSON.parse(calls[1].parameters[3]), availability);
-});
+  const pool = { query: async (sql, parameters) => {
+    calls.push({ sql, parameters });
+    return { rows: [], rowCount: 1 };
+  } };
+  return { calls, pool };
+}

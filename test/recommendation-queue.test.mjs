@@ -92,7 +92,7 @@ test("browser queue removal matches by IMDb ID or normalized title and year", ()
   assert.deepEqual(app.State.recommendationQueue.map((item) => item.ttId), ["tt0083190"]);
 });
 
-test("rating queue rebuild excludes movies already saved to the wishlist", () => {
+test("rating queue rebuild excludes movies already saved to the watchlist", () => {
   const app = Object.create(RapidRaterApp.prototype);
   const movies = [
     { ttId: "tt0113277", title: "Heat" },
@@ -112,7 +112,7 @@ test("rating queue rebuild excludes movies already saved to the wishlist", () =>
   assert.deepEqual(app.State.queue.map((movie) => movie.ttId), ["tt0369339"]);
 });
 
-test("active rating movie moves into the saved wishlist", async () => {
+test("active rating movie moves into the saved watchlist", async () => {
   const app = Object.create(RapidRaterApp.prototype);
   const heat = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime", "Drama"] };
   const thief = { ttId: "tt0083190", title: "Thief", year: 1981, genres: ["Crime"] };
@@ -153,7 +153,7 @@ test("active rating movie moves into the saved wishlist", async () => {
   const classes = new Set();
   const button = {
     disabled: false,
-    innerHTML: "<span>☆</span> Add to wishlist",
+    innerHTML: "<span>☆</span> Add to watchlist",
     textContent: "",
     classList: {
       add: (value) => classes.add(value),
@@ -168,7 +168,7 @@ test("active rating movie moves into the saved wishlist", async () => {
   assert.equal(persisted, 0);
   assert.equal(rendered, 1);
   assert.equal(recommendationRendered, 1);
-  assert.match(toast, /added to your wishlist/);
+  assert.match(toast, /added to your watchlist/);
   assert.equal(button.disabled, false);
   assert.equal(classes.has("saving"), false);
 });

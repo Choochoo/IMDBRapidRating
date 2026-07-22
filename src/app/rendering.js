@@ -129,7 +129,7 @@ function RenderCardBody(movie, index, metadata) {
   const series = movie.mediaType === "tv" ? `<div class="series-details">${RenderSeriesDetailsContent(movie, metadata)}</div>` : "";
   const streaming = index === 0 ? RenderStreamingAvailability(metadata.streamingAvailability) : "";
   const body = `${RenderMovieId(movie)}${title}${series}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>${streaming}`;
-  const wishlist = index === 0 ? `<button type="button" class="movie-wishlist-action btn btn-primary" data-add-active-to-wishlist><span aria-hidden="true">&#9734;</span> Add to wishlist</button>` : "";
+  const wishlist = index === 0 ? `<button type="button" class="movie-wishlist-action btn btn-primary" data-add-active-to-wishlist><span aria-hidden="true">&#9734;</span> Add to watchlist</button>` : "";
   const trailer = index === 0 ? RenderTrailerLink(metadata, "movie-trailer-link") : "";
   const actions = index === 0 ? `<div class="movie-card-actions d-grid">${trailer}${wishlist}</div>` : "";
   return `<div class="movie-body">${body}<div class="meta d-flex flex-wrap">${RenderMeta(movie)}</div>${actions}</div>`;
@@ -146,6 +146,12 @@ function RenderStreamingAvailabilityContent(availability) {
     return "";
   const country = /^[A-Z]{2}$/.test(String(availability.country || "")) ? availability.country : "US";
   const providers = Array.isArray(availability.providers) ? availability.providers : [];
+  const groups = RenderStreamingProviderGroups(providers);
+  const empty = groups ? "" : `<p class="streaming-empty">No watching options are currently listed.</p>`;
+  return `${RenderStreamingHeading(country, availability)}${groups}${empty}${RenderStreamingFooter(availability.watchUrl)}`;
+}
+
+function RenderStreamingProviderGroups(providers) {
   const groups = [
     RenderStreamingProviderGroup("Stream", "subscription", providers),
     RenderStreamingProviderGroup("Free", "free", providers),
@@ -153,20 +159,28 @@ function RenderStreamingAvailabilityContent(availability) {
     RenderStreamingProviderGroup("Rent", "rent", providers),
     RenderStreamingProviderGroup("Buy", "buy", providers)
   ].filter(Boolean).join("");
-  const empty = groups ? "" : `<p class="streaming-empty">No watching options are currently listed.</p>`;
-  const watchUrl = ReadWebUrl(availability.watchUrl);
+  return groups;
+}
+
+function RenderStreamingHeading(country, availability) {
+  const refreshing = availability.refreshing ? `<span class="streaming-refreshing">Refreshing</span>` : "";
+  return `<div class="streaming-heading"><div><span>Where to watch</span><strong>${EscapeHtml(country)}</strong></div>${refreshing}</div>`;
+}
+
+function RenderStreamingFooter(value) {
+  const watchUrl = ReadWebUrl(value);
   const link = watchUrl ? `<a class="streaming-watch-link" href="${EscapeHtml(watchUrl)}" target="_blank" rel="noopener noreferrer">View all watching options</a>` : "";
-  const stale = availability.stale ? `<span class="streaming-refreshing">Refreshing</span>` : "";
-  return `<div class="streaming-heading"><div><span>Where to watch</span><strong>${EscapeHtml(country)}</strong></div>${stale}</div>${groups}${empty}<div class="streaming-footer">${link}<small>Streaming data provided by <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a> via TMDB.</small></div>`;
+  return `<div class="streaming-footer">${link}<small>Streaming data provided by <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a> via TMDB.</small></div>`;
 }
 
 function RenderStreamingProviderGroup(label, type, providers) {
-  const matches = providers.filter((provider) => provider?.type === type && provider?.name).slice(0, 4);
+  const matchingProviders = providers.filter((provider) => provider?.type === type && provider?.name);
+  const matches = matchingProviders.slice(0, 4);
   if (!matches.length)
     return "";
-  const total = providers.filter((provider) => provider?.type === type && provider?.name).length;
   const chips = matches.map(RenderStreamingProvider).join("");
-  const overflow = total > matches.length ? `<span class="streaming-provider-more">+${total - matches.length} more</span>` : "";
+  const overflowCount = matchingProviders.length - matches.length;
+  const overflow = overflowCount ? `<span class="streaming-provider-more">+${overflowCount} more</span>` : "";
   return `<div class="streaming-provider-group"><span>${EscapeHtml(label)}</span><div class="streaming-provider-list">${chips}${overflow}</div></div>`;
 }
 
@@ -223,12 +237,11 @@ function ReadTrailerUrl(metadata) {
 }
 
 function ReadWebUrl(value) {
-  try {
-    const url = new URL(String(value || ""));
-    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
-  } catch {
+  const rawUrl = String(value || "");
+  if (!URL.canParse(rawUrl))
     return "";
-  }
+  const url = new URL(rawUrl);
+  return ["http:", "https:"].includes(url.protocol) ? url.href : "";
 }
 
 function RenderMovieId(movie) {

@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
+import { rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BuildUserDataPath, EnsureUserDataParent, MigrateLegacyFile } from "./user-data.mjs";
@@ -10,54 +10,114 @@ const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const CachePath = BuildTitleMetadataCachePath();
 const TmdbApiUrl = "https://api.themoviedb.org/3";
 const TmdbImageUrl = "https://image.tmdb.org/t/p/w342";
+const MovieMediaType = "movie";
+const TvMediaType = "tv";
+const TmdbLanguage = "en-US";
+const TmdbSource = "tmdb";
 const DefaultStreamingCountry = "US";
 const MovieMetadataTtlMilliseconds = 30 * 24 * 60 * 60 * 1000;
 const ActiveTvMetadataTtlMilliseconds = 7 * 24 * 60 * 60 * 1000;
+const PrivateMetadataFields = Object.freeze(["status", "checkedAt", "sourcePayload", "streamingByCountry"]);
+const MetadataRefreshes = new Map();
 let CacheWriteTimer;
 const MetadataCache = LoadMetadataCache();
 const StreamingAvailabilityService = CreateStreamingAvailabilityService();
 
 export async function GetTitleMetadata(titleId, options = {}) {
-  const mediaType = options.mediaType === "tv" ? "tv" : "movie";
+  const mediaType = options.mediaType === TvMediaType ? TvMediaType : MovieMediaType;
   const databaseMetadata = await ReadDatabaseMetadata(options.metadataStore, titleId, mediaType);
   const mergedCache = MergeCachedMetadata(databaseMetadata, MetadataCache[titleId], mediaType);
-  const shouldMigrateLocalCache = Boolean(mergedCache && !mergedCache.metadataCheckedAt && HasMetadataPayload(mergedCache));
+  const shouldMigrateLocalCache = ShouldStampLegacyTmdbMetadata(mergedCache);
   const cached = shouldMigrateLocalCache ? { ...mergedCache, metadataCheckedAt: new Date().toISOString() } : mergedCache;
   const useCached = ShouldUseCachedMetadata(cached, options);
-  const metadata = useCached
-    ? cached
-    : await LoadTitleMetadata(titleId, { ...options, mediaType }, cached);
+  const metadata = useCached ? cached : await LoadTitleMetadataOnce(titleId, { ...options, mediaType }, cached);
   if (!useCached || shouldMigrateLocalCache || (!databaseMetadata?.metadataCheckedAt && metadata?.metadataCheckedAt))
     await PersistMetadata(metadata, options.metadataStore);
   const streamingAvailability = await ResolveStreamingAvailability(metadata, options);
   return Ok(BuildPublicMetadata(metadata, streamingAvailability));
 }
 
+function ShouldStampLegacyTmdbMetadata(metadata) {
+  return Boolean(metadata && metadata.source === TmdbSource && !metadata.metadataCheckedAt && HasMetadataPayload(metadata));
+}
+
+function LoadTitleMetadataOnce(titleId, options, cached) {
+  const sourceKind = ReadTmdbApiKey(options) ? TmdbSource : "fallback";
+  const key = `${options.mediaType}:${titleId}:${sourceKind}`;
+  return ReadOrCreateMetadataRefresh(key, () => LoadTitleMetadata(titleId, options, cached));
+}
+
+function ReadOrCreateMetadataRefresh(key, load) {
+  if (MetadataRefreshes.has(key))
+    return MetadataRefreshes.get(key);
+  const refresh = Promise.resolve().then(load).finally(() => MetadataRefreshes.delete(key));
+  MetadataRefreshes.set(key, refresh);
+  return refresh;
+}
+
 async function LoadTitleMetadata(titleId, options, cached = {}) {
-  const [tmdb, titlePage, suggestion] = await Promise.all([
-    FetchTmdbMetadata(titleId, options, cached).catch(() => null),
-    FetchTitlePageMetadata(titleId).catch(() => null),
-    FetchSuggestionMetadata(titleId).catch(() => null)
-  ]);
+  const [tmdb, titlePage, suggestion] = await LoadMetadataSources(titleId, options, cached);
+  return {
+    ...BuildMetadataIdentity(titleId, options, tmdb, cached),
+    ...BuildVisualMetadata(tmdb, cached, titlePage, suggestion),
+    ...BuildSeriesMetadata(tmdb, cached),
+    ...BuildOriginMetadata(tmdb, cached),
+    ...BuildMetadataProvenance(tmdb, cached, titlePage, suggestion),
+    streamingByCountry: IsRecord(cached?.streamingByCountry) ? cached.streamingByCountry : {}
+  };
+}
+
+function LoadMetadataSources(titleId, options, cached) {
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  return Promise.all([FetchTmdbMetadata(titleId, options, cached).catch(() => null), FetchTitlePageMetadata(titleId, fetchImpl).catch(() => null), FetchSuggestionMetadata(titleId, fetchImpl).catch(() => null)]);
+}
+
+function BuildMetadataIdentity(titleId, options, tmdb, cached) {
   return {
     titleId,
-    mediaType: options.mediaType === "tv" ? "tv" : "movie",
-    tmdbId: Number(tmdb?.tmdbId || cached?.tmdbId) || null,
+    mediaType: options.mediaType === TvMediaType ? TvMediaType : MovieMediaType,
+    tmdbId: Number(tmdb?.tmdbId || cached?.tmdbId) || null
+  };
+}
+
+function BuildVisualMetadata(tmdb, cached, titlePage, suggestion) {
+  return {
     posterUrl: tmdb?.posterUrl || cached?.posterUrl || titlePage?.posterUrl || suggestion?.posterUrl || "",
     synopsis: tmdb?.synopsis || cached?.synopsis || titlePage?.synopsis || "",
     actors: FirstActorList(tmdb?.actors, cached?.actors, titlePage?.actors, suggestion?.actors),
-    trailerUrl: FirstTrailerUrl(tmdb?.trailerUrl, cached?.trailerUrl, titlePage?.trailerUrl),
+    trailerUrl: FirstTrailerUrl(tmdb?.trailerUrl, cached?.trailerUrl, titlePage?.trailerUrl)
+  };
+}
+
+function BuildSeriesMetadata(tmdb, cached) {
+  return {
     seriesStatus: tmdb?.seriesStatus || cached?.seriesStatus || "",
     seasonCount: Number(tmdb?.seasonCount || cached?.seasonCount) || 0,
     episodeCount: Number(tmdb?.episodeCount || cached?.episodeCount) || 0,
-    episodeRuntimeMinutes: Number(tmdb?.episodeRuntimeMinutes || cached?.episodeRuntimeMinutes) || 0,
-    originCountries: Array.isArray(tmdb?.originCountries) ? tmdb.originCountries : Array.isArray(cached?.originCountries) ? cached.originCountries : [],
-    originalLanguage: tmdb?.originalLanguage || cached?.originalLanguage || "",
-    source: tmdb?.source || cached?.source || titlePage?.source || suggestion?.source || "",
-    sourcePayload: IsRecord(tmdb?.sourcePayload) ? tmdb.sourcePayload : IsRecord(cached?.sourcePayload) ? cached.sourcePayload : {},
-    metadataCheckedAt: new Date().toISOString(),
-    streamingByCountry: IsRecord(cached?.streamingByCountry) ? cached.streamingByCountry : {}
+    episodeRuntimeMinutes: Number(tmdb?.episodeRuntimeMinutes || cached?.episodeRuntimeMinutes) || 0
   };
+}
+
+function BuildOriginMetadata(tmdb, cached) {
+  const cachedOrigins = Array.isArray(cached?.originCountries) ? cached.originCountries : [];
+  return {
+    originCountries: Array.isArray(tmdb?.originCountries) ? tmdb.originCountries : cachedOrigins,
+    originalLanguage: tmdb?.originalLanguage || cached?.originalLanguage || ""
+  };
+}
+
+function BuildMetadataProvenance(tmdb, cached, titlePage, suggestion) {
+  return {
+    source: tmdb?.source || cached?.source || titlePage?.source || suggestion?.source || "",
+    sourcePayload: ReadPreferredSourcePayload(tmdb, cached),
+    metadataCheckedAt: tmdb ? new Date().toISOString() : cached?.metadataCheckedAt || ""
+  };
+}
+
+function ReadPreferredSourcePayload(primary, fallback) {
+  if (IsRecord(primary?.sourcePayload))
+    return primary.sourcePayload;
+  return IsRecord(fallback?.sourcePayload) ? fallback.sourcePayload : {};
 }
 
 function ShouldUseCachedMetadata(metadata, options) {
@@ -67,51 +127,54 @@ function ShouldUseCachedMetadata(metadata, options) {
     return false;
   if (typeof metadata.trailerUrl !== "string")
     return false;
-  if (options.mediaType === "tv" && (metadata.mediaType !== "tv" || !("seriesStatus" in metadata)))
+  if (options.mediaType === TvMediaType && (metadata.mediaType !== TvMediaType || !("seriesStatus" in metadata)))
     return false;
   if (!ReadTmdbApiKey(options))
     return true;
-  if (!metadata.synopsis || !metadata.posterUrl)
+  if (metadata.source !== TmdbSource || !metadata.metadataCheckedAt)
     return false;
-  if (!metadata.metadataCheckedAt)
-    return true;
+  return IsMetadataFresh(metadata);
+}
+
+function IsMetadataFresh(metadata) {
   const checkedAt = new Date(metadata.metadataCheckedAt);
   const seriesStatus = String(metadata.seriesStatus || "").toLowerCase();
-  const ttl = metadata.mediaType === "tv" && !["ended", "canceled"].includes(seriesStatus)
-    ? ActiveTvMetadataTtlMilliseconds
-    : MovieMetadataTtlMilliseconds;
+  const isActiveSeries = metadata.mediaType === TvMediaType && !["ended", "canceled"].includes(seriesStatus);
+  const ttl = isActiveSeries ? ActiveTvMetadataTtlMilliseconds : MovieMetadataTtlMilliseconds;
   const age = Date.now() - checkedAt.getTime();
   return Number.isFinite(age) && age >= 0 && age < ttl;
 }
 
 function HasMetadataPayload(metadata) {
-  return Boolean(
-    metadata?.metadataCheckedAt
-    || metadata?.posterUrl
-    || metadata?.synopsis
-    || metadata?.trailerUrl
-    || metadata?.source
-    || (Array.isArray(metadata?.actors) && metadata.actors.length)
-  );
+  const hasActors = Array.isArray(metadata?.actors) && metadata.actors.length;
+  return Boolean(metadata?.metadataCheckedAt || metadata?.posterUrl || metadata?.synopsis || metadata?.trailerUrl || metadata?.source || hasActors);
 }
 
 async function FetchTmdbMetadata(titleId, options, cached) {
   const apiKey = ReadTmdbApiKey(options);
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
   if (!apiKey)
     throw new Error("TMDB_API_KEY is not configured.");
   const knownTmdbId = Number(cached?.tmdbId);
-  if (Number.isInteger(knownTmdbId) && knownTmdbId > 0) {
-    const extras = await FetchTmdbExtras(options.mediaType, knownTmdbId, apiKey);
-    return BuildTmdbMetadata(extras, extras, options.mediaType, knownTmdbId);
-  }
-  const response = await fetch(BuildTmdbFindUrl(titleId, apiKey), { headers: BuildTmdbHeaders(apiKey) });
+  if (Number.isInteger(knownTmdbId) && knownTmdbId > 0)
+    return FetchKnownTmdbMetadata(options.mediaType, knownTmdbId, apiKey, fetchImpl);
+  return FetchFoundTmdbMetadata(titleId, options.mediaType, apiKey, fetchImpl);
+}
+
+async function FetchKnownTmdbMetadata(mediaType, tmdbId, apiKey, fetchImpl) {
+  const extras = await FetchTmdbExtras(mediaType, tmdbId, apiKey, fetchImpl);
+  return BuildTmdbMetadata(extras, extras, mediaType, tmdbId);
+}
+
+async function FetchFoundTmdbMetadata(titleId, mediaType, apiKey, fetchImpl) {
+  const response = await fetchImpl(BuildTmdbFindUrl(titleId, apiKey), { headers: BuildTmdbHeaders(apiKey) });
   if (!response.ok)
     throw new Error(`TMDB returned HTTP ${response.status}.`);
   const payload = await response.json();
-  const result = FindTmdbResult(payload, options.mediaType);
+  const result = FindTmdbResult(payload, mediaType);
   if (!result)
     throw new Error("TMDB did not find this IMDb title.");
-  const extras = await FetchTmdbExtras(result.mediaType, result.item.id, apiKey).catch(() => ({ actors: [], trailerUrl: "" }));
+  const extras = await FetchTmdbExtras(result.mediaType, result.item.id, apiKey, fetchImpl);
   return BuildTmdbMetadata(result.item, extras, result.mediaType, Number(result.item.id));
 }
 
@@ -121,7 +184,7 @@ function BuildTmdbFindUrl(titleId, apiKey) {
 }
 
 function BuildTmdbFindParams(apiKey) {
-  const params = new URLSearchParams({ external_source: "imdb_id", language: "en-US" });
+  const params = new URLSearchParams({ external_source: "imdb_id", language: TmdbLanguage });
   if (!IsTmdbBearerToken(apiKey))
     params.set("api_key", apiKey);
   return params;
@@ -145,58 +208,98 @@ function IsTmdbBearerToken(apiKey) {
 function FindTmdbResult(payload, expectedMediaType) {
   const movies = Array.isArray(payload?.movie_results) ? payload.movie_results : [];
   const shows = Array.isArray(payload?.tv_results) ? payload.tv_results : [];
-  if (expectedMediaType === "tv" && shows[0])
-    return { item: shows[0], mediaType: "tv" };
-  if (expectedMediaType === "movie" && movies[0])
-    return { item: movies[0], mediaType: "movie" };
+  if (expectedMediaType === TvMediaType && shows[0])
+    return { item: shows[0], mediaType: TvMediaType };
+  if (expectedMediaType === MovieMediaType && movies[0])
+    return { item: movies[0], mediaType: MovieMediaType };
   if (movies[0])
-    return { item: movies[0], mediaType: "movie" };
+    return { item: movies[0], mediaType: MovieMediaType };
   if (shows[0])
-    return { item: shows[0], mediaType: "tv" };
+    return { item: shows[0], mediaType: TvMediaType };
   return null;
 }
 
-async function FetchTmdbExtras(mediaType, id, apiKey) {
+async function FetchTmdbExtras(mediaType, id, apiKey, fetchImpl = globalThis.fetch) {
   if (!Number.isInteger(Number(id)))
     return { actors: [], trailerUrl: "" };
-  const params = new URLSearchParams({ language: "en-US", append_to_response: "credits,videos" });
+  const params = new URLSearchParams({ language: TmdbLanguage, append_to_response: "credits,videos" });
   if (!IsTmdbBearerToken(apiKey))
     params.set("api_key", apiKey);
-  const response = await fetch(`${TmdbApiUrl}/${mediaType}/${id}?${params}`, { headers: BuildTmdbHeaders(apiKey) });
+  const response = await fetchImpl(`${TmdbApiUrl}/${mediaType}/${id}?${params}`, { headers: BuildTmdbHeaders(apiKey) });
   if (!response.ok)
     throw new Error(`TMDB details returned HTTP ${response.status}.`);
   const payload = await response.json();
+  return NormalizeTmdbDetails(mediaType, payload);
+}
+
+export function NormalizeTmdbDetails(mediaType, payload) {
+  return {
+    ...NormalizeTmdbCoreDetails(payload),
+    ...NormalizeTmdbSeriesDetails(payload),
+    sourcePayload: IsRecord(payload) ? payload : {},
+    ...NormalizeTmdbOrigin(mediaType, null, payload)
+  };
+}
+
+function NormalizeTmdbCoreDetails(payload) {
   return {
     poster_path: payload?.poster_path || "",
     overview: CleanMetadataText(payload?.overview || ""),
     original_language: NormalizeLanguageCode(payload?.original_language),
     actors: ReadActorNames(payload?.credits?.cast),
-    trailerUrl: PickTmdbTrailerUrl(payload?.videos?.results),
-    seriesStatus: CleanMetadataText(payload?.status || ""),
-    seasonCount: Number(payload?.number_of_seasons) || 0,
-    episodeCount: Number(payload?.number_of_episodes) || 0,
-    episodeRuntimeMinutes: ReadEpisodeRuntime(payload),
-    sourcePayload: payload,
-    ...NormalizeTmdbOrigin(mediaType, null, payload)
+    trailerUrl: PickTmdbTrailerUrl(payload?.videos?.results)
   };
 }
 
-function BuildTmdbMetadata(item, extras, mediaType, tmdbId) {
+function NormalizeTmdbSeriesDetails(payload) {
+  return {
+    seriesStatus: CleanMetadataText(payload?.status || ""),
+    seasonCount: Number(payload?.number_of_seasons) || 0,
+    episodeCount: Number(payload?.number_of_episodes) || 0,
+    episodeRuntimeMinutes: ReadEpisodeRuntime(payload)
+  };
+}
+
+export function BuildTmdbMetadata(item, extras, mediaType, tmdbId) {
   return {
     mediaType,
     tmdbId: Number(tmdbId) || null,
+    ...BuildTmdbCoreMetadata(item, extras),
+    ...BuildTmdbSeriesMetadata(extras),
+    ...BuildTmdbOriginMetadata(item, extras),
+    source: TmdbSource,
+    sourcePayload: ReadTmdbSourcePayload(item, extras)
+  };
+}
+
+function ReadTmdbSourcePayload(item, extras) {
+  if (IsRecord(extras.sourcePayload))
+    return extras.sourcePayload;
+  return IsRecord(item) ? item : {};
+}
+
+function BuildTmdbCoreMetadata(item, extras) {
+  return {
     posterUrl: BuildTmdbPosterUrl(extras.poster_path || item.poster_path),
     synopsis: CleanMetadataText(extras.overview || item.overview || ""),
     actors: ReadActorNames(extras.actors),
-    trailerUrl: NormalizeTrailerUrl(extras.trailerUrl),
+    trailerUrl: NormalizeTrailerUrl(extras.trailerUrl)
+  };
+}
+
+function BuildTmdbSeriesMetadata(extras) {
+  return {
     seriesStatus: extras.seriesStatus || "",
     seasonCount: Number(extras.seasonCount) || 0,
     episodeCount: Number(extras.episodeCount) || 0,
-    episodeRuntimeMinutes: Number(extras.episodeRuntimeMinutes) || 0,
+    episodeRuntimeMinutes: Number(extras.episodeRuntimeMinutes) || 0
+  };
+}
+
+function BuildTmdbOriginMetadata(item, extras) {
+  return {
     originCountries: Array.isArray(extras.originCountries) ? extras.originCountries : [],
-    originalLanguage: extras.originalLanguage || NormalizeLanguageCode(item.original_language),
-    source: "tmdb",
-    sourcePayload: IsRecord(extras.sourcePayload) ? extras.sourcePayload : IsRecord(item) ? item : {}
+    originalLanguage: extras.originalLanguage || NormalizeLanguageCode(item.original_language)
   };
 }
 
@@ -211,8 +314,8 @@ function BuildTmdbPosterUrl(posterPath) {
   return cleanPath.startsWith("/") ? `${TmdbImageUrl}${cleanPath}` : "";
 }
 
-async function FetchTitlePageMetadata(titleId) {
-  const response = await fetch(`https://www.imdb.com/title/${titleId}/`, { headers: BuildTitleHeaders() });
+async function FetchTitlePageMetadata(titleId, fetchImpl = globalThis.fetch) {
+  const response = await fetchImpl(`https://www.imdb.com/title/${titleId}/`, { headers: BuildTitleHeaders() });
   const html = await response.text();
   if (!response.ok || !html)
     throw new Error(`IMDb title page returned HTTP ${response.status}.`);
@@ -226,8 +329,8 @@ async function FetchTitlePageMetadata(titleId) {
   };
 }
 
-async function FetchSuggestionMetadata(titleId) {
-  const response = await fetch(BuildSuggestionUrl(titleId), { headers: BuildSuggestionHeaders() });
+async function FetchSuggestionMetadata(titleId, fetchImpl = globalThis.fetch) {
+  const response = await fetchImpl(BuildSuggestionUrl(titleId), { headers: BuildSuggestionHeaders() });
   if (!response.ok)
     throw new Error(`IMDb suggestion endpoint returned HTTP ${response.status}.`);
   const payload = await response.json();
@@ -266,12 +369,11 @@ export function PickTmdbTrailerUrl(value) {
 }
 
 export function NormalizeTrailerUrl(value) {
-  try {
-    const url = new URL(String(value || ""));
-    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
-  } catch {
+  const rawUrl = String(value || "");
+  if (!URL.canParse(rawUrl))
     return "";
-  }
+  const url = new URL(rawUrl);
+  return ["http:", "https:"].includes(url.protocol) ? url.href : "";
 }
 
 function ScoreTmdbTrailer(video) {
@@ -335,33 +437,69 @@ function MergeCachedMetadata(databaseMetadata, localMetadata, mediaType) {
   return {
     ...local,
     ...database,
+    ...BuildMergedIdentity(database, local, mediaType),
+    ...BuildMergedVisualMetadata(database, local),
+    ...BuildMergedSeriesMetadata(database, local),
+    ...BuildMergedProvenance(database, local),
+    streamingByCountry: MergeStreamingCountries(database, local)
+  };
+}
+
+function BuildMergedIdentity(database, local, mediaType) {
+  return {
     titleId: database.titleId || local.titleId || "",
     mediaType,
     tmdbId: Number(database.tmdbId || local.tmdbId) || null,
+    originCountries: ReadMergedOrigins(database, local),
+    originalLanguage: database.originalLanguage || local.originalLanguage || ""
+  };
+}
+
+function BuildMergedVisualMetadata(database, local) {
+  return {
     posterUrl: database.posterUrl || local.posterUrl || "",
     synopsis: database.synopsis || local.synopsis || "",
     actors: FirstActorList(database.actors, local.actors),
-    trailerUrl: FirstTrailerUrl(database.trailerUrl, local.trailerUrl),
+    trailerUrl: FirstTrailerUrl(database.trailerUrl, local.trailerUrl)
+  };
+}
+
+function BuildMergedSeriesMetadata(database, local) {
+  return {
     seriesStatus: database.seriesStatus || local.seriesStatus || "",
     seasonCount: Number(database.seasonCount || local.seasonCount) || 0,
     episodeCount: Number(database.episodeCount || local.episodeCount) || 0,
-    episodeRuntimeMinutes: Number(database.episodeRuntimeMinutes || local.episodeRuntimeMinutes) || 0,
-    originCountries: Array.isArray(database.originCountries) && database.originCountries.length ? database.originCountries : Array.isArray(local.originCountries) ? local.originCountries : [],
-    originalLanguage: database.originalLanguage || local.originalLanguage || "",
+    episodeRuntimeMinutes: Number(database.episodeRuntimeMinutes || local.episodeRuntimeMinutes) || 0
+  };
+}
+
+function BuildMergedProvenance(database, local) {
+  const databasePayload = IsRecord(database.sourcePayload) && Object.keys(database.sourcePayload).length;
+  return {
     source: database.source || local.source || "",
     metadataCheckedAt: database.metadataCheckedAt || local.metadataCheckedAt || "",
-    sourcePayload: IsRecord(database.sourcePayload) && Object.keys(database.sourcePayload).length ? database.sourcePayload : IsRecord(local.sourcePayload) ? local.sourcePayload : {},
-    streamingByCountry: {
-      ...(IsRecord(local.streamingByCountry) ? local.streamingByCountry : {}),
-      ...(IsRecord(database.streamingByCountry) ? database.streamingByCountry : {})
-    }
+    sourcePayload: databasePayload ? database.sourcePayload : ReadLocalSourcePayload(local)
   };
+}
+
+function ReadLocalSourcePayload(metadata) {
+  return IsRecord(metadata.sourcePayload) ? metadata.sourcePayload : {};
+}
+
+function ReadMergedOrigins(database, local) {
+  if (Array.isArray(database.originCountries) && database.originCountries.length)
+    return database.originCountries;
+  return Array.isArray(local.originCountries) ? local.originCountries : [];
+}
+
+function MergeStreamingCountries(database, local) {
+  return { ...(IsRecord(local.streamingByCountry) ? local.streamingByCountry : {}), ...(IsRecord(database.streamingByCountry) ? database.streamingByCountry : {}) };
 }
 
 async function PersistMetadata(metadata, store) {
   if (!metadata?.titleId)
     return;
-  MetadataCache[metadata.titleId] = metadata;
+  MetadataCache[metadata.titleId] = BuildLocalMetadataEntry(metadata);
   ScheduleCacheWrite();
   if (!store?.upsertMetadata)
     return;
@@ -372,6 +510,12 @@ async function PersistMetadata(metadata, store) {
   }
 }
 
+function BuildLocalMetadataEntry(metadata) {
+  const entry = { ...metadata };
+  delete entry.sourcePayload;
+  return entry;
+}
+
 async function ResolveStreamingAvailability(metadata, options) {
   const country = NormalizeStreamingCountry(options.streamingCountry || DefaultStreamingCountry);
   const cached = IsRecord(metadata?.streamingByCountry) ? metadata.streamingByCountry[country] : null;
@@ -379,22 +523,26 @@ async function ResolveStreamingAvailability(metadata, options) {
   if (!service?.get)
     return cached || null;
   try {
-    return await service.get({
-      mediaType: metadata.mediaType,
-      tmdbId: metadata.tmdbId,
-      apiKey: ReadTmdbApiKey(options),
-      country,
-      cached,
-      persist: (availability) => PersistStreamingAvailability(metadata, country, availability, options.metadataStore)
-    });
+    return await service.get(BuildStreamingRequest(metadata, options, country, cached));
   } catch (error) {
     console.warn(`${metadata.titleId} streaming availability failed: ${error.message}`);
     return cached ? { ...cached, stale: true } : null;
   }
 }
 
+function BuildStreamingRequest(metadata, options, country, cached) {
+  return {
+    mediaType: metadata.mediaType,
+    tmdbId: metadata.tmdbId,
+    apiKey: ReadTmdbApiKey(options),
+    country,
+    cached,
+    persist: (availability) => PersistStreamingAvailability(metadata, country, availability, options.metadataStore)
+  };
+}
+
 async function PersistStreamingAvailability(metadata, country, availability, store) {
-  const current = MetadataCache[metadata.titleId] || metadata;
+  const current = BuildLocalMetadataEntry(MetadataCache[metadata.titleId] || metadata);
   current.streamingByCountry = { ...(IsRecord(current.streamingByCountry) ? current.streamingByCountry : {}), [country]: availability };
   MetadataCache[metadata.titleId] = current;
   ScheduleCacheWrite();
@@ -408,7 +556,9 @@ async function PersistStreamingAvailability(metadata, country, availability, sto
 }
 
 function BuildPublicMetadata(metadata, streamingAvailability) {
-  const { status: _status, checkedAt: _checkedAt, sourcePayload: _sourcePayload, streamingByCountry: _streamingByCountry, ...payload } = metadata;
+  const payload = { ...metadata };
+  for (const field of PrivateMetadataFields)
+    delete payload[field];
   return { ok: true, ...payload, streamingAvailability };
 }
 
@@ -498,7 +648,9 @@ function ScheduleCacheWrite() {
 
 async function WriteMetadataCache() {
   EnsureUserDataParent(CachePath);
-  await writeFile(CachePath, `${JSON.stringify(MetadataCache, null, 2)}\n`, "utf8");
+  const temporaryPath = `${CachePath}.tmp`;
+  await writeFile(temporaryPath, `${JSON.stringify(MetadataCache, null, 2)}\n`, "utf8");
+  await rename(temporaryPath, CachePath);
 }
 
 function BuildTitleMetadataCachePath() {

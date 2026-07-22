@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { RenderCard, RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons, UpdateActors, UpdateStreamingAvailability, UpdateTrailerLink } from "../src/app/rendering.js";
 
+const Heat = Object.freeze({ ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"] });
+const StreamingAvailability = Object.freeze({ country: "US", watchUrl: "https://www.themoviedb.org/movie/949/watch?locale=US", providers: [{ type: "subscription", id: 8, name: "Netflix", logoPath: "/netflix.jpg" }, { type: "rent", id: 2, name: "Apple TV", logoPath: "/apple.jpg" }] });
+
 test("recommendation loading renders eight cinematic placeholders", () => {
   const html = RenderRecommendationSkeletons(8);
   assert.equal((html.match(/recommendation-skeleton/g) || []).length, 8);
@@ -20,13 +23,13 @@ test("empty recommendation queue explains how to add picks", () => {
   assert.match(RenderRecommendationEmpty(), /watchlist is empty/);
 });
 
-test("only the active rating card offers the wishlist action", () => {
+test("only the active rating card offers the watchlist action", () => {
   const movie = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"], imdbRating: 8.3, numVotes: 700000 };
   const active = RenderCard(movie, 0, {});
   const preview = RenderCard(movie, 1, {});
 
   assert.match(active, /data-add-active-to-wishlist/);
-  assert.match(active, /Add to wishlist/);
+  assert.match(active, /Add to watchlist/);
   assert.doesNotMatch(preview, /data-add-active-to-wishlist/);
   assert.doesNotMatch(active, /1\s*\/\s*3/);
   assert.doesNotMatch(preview, /2\s*\/\s*3/);
@@ -35,25 +38,17 @@ test("only the active rating card offers the wishlist action", () => {
   assert.doesNotMatch(preview, /data-streaming-availability/);
 });
 
-test("the active card shows categorized streaming logos and attribution below its synopsis", () => {
-  const movie = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"] };
-  const streamingAvailability = {
-    country: "US",
-    watchUrl: "https://www.themoviedb.org/movie/949/watch?locale=US",
-    providers: [
-      { type: "subscription", id: 8, name: "Netflix", logoPath: "/netflix.jpg" },
-      { type: "rent", id: 2, name: "Apple TV", logoPath: "/apple.jpg" }
-    ]
-  };
-  const html = RenderCard(movie, 0, { synopsis: "A crime saga.", streamingAvailability });
+test("the active card shows categorized streaming logos and attribution below its synopsis", VerifyStreamingCard);
 
+function VerifyStreamingCard() {
+  const html = RenderCard(Heat, 0, { synopsis: "A crime saga.", streamingAvailability: StreamingAvailability });
   assert.ok(html.indexOf("A crime saga.") < html.indexOf("Where to watch"));
   assert.match(html, /https:\/\/image\.tmdb\.org\/t\/p\/w92\/netflix\.jpg/);
   assert.match(html, />Stream</);
   assert.match(html, />Rent</);
   assert.match(html, /View all watching options/);
   assert.match(html, /JustWatch/);
-});
+}
 
 test("streaming metadata updates an active card after its API response arrives", () => {
   const container = { hidden: true, innerHTML: "" };
@@ -113,7 +108,7 @@ test("the active rater card renders a safe external trailer link", () => {
   assert.match(html, /target="_blank" rel="noopener noreferrer"/);
 });
 
-test("wishlist cards receive their trailer link when metadata arrives", () => {
+test("watchlist cards receive their trailer link when metadata arrives", () => {
   const attributes = new Map();
   const link = {
     hidden: true,

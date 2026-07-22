@@ -3,6 +3,9 @@ import { RenderCard, UpdateActors, UpdatePoster, UpdateRecommendationPoster, Upd
 import { CountRatings } from "../stats.js";
 
 const MissingSynopsis = "To see the synopsis, set up a TMDB key.";
+const StreamingRefreshAttempts = new Map();
+const MaximumStreamingRefreshAttempts = 4;
+const StreamingRefreshDelayMilliseconds = 750;
 
 export class CatalogViewFeature {
   Render() {
@@ -102,6 +105,27 @@ export class CatalogViewFeature {
     if (card)
       this.ApplyCardMetadata(card, ttId, metadata);
     this.ApplyRecommendationMetadata(selector, metadata);
+    this.ScheduleStreamingRefresh(ttId, metadata.streamingAvailability);
+  }
+
+  ScheduleStreamingRefresh(ttId, availability) {
+    if (!availability?.refreshing)
+      return StreamingRefreshAttempts.delete(ttId);
+    const attempt = (StreamingRefreshAttempts.get(ttId) || 0) + 1;
+    if (attempt > MaximumStreamingRefreshAttempts)
+      return;
+    StreamingRefreshAttempts.set(ttId, attempt);
+    this.QueueStreamingRefresh(ttId, StreamingRefreshDelayMilliseconds * attempt);
+  }
+
+  QueueStreamingRefresh(ttId, delay) {
+    globalThis.setTimeout(() => this.RefreshStreamingMetadata(ttId), delay);
+  }
+
+  async RefreshStreamingMetadata(ttId) {
+    const metadata = await this.FetchTitleMetadata(ttId).catch(() => null);
+    if (metadata)
+      this.ApplyTitleMetadata(ttId, metadata);
   }
 
   BuildTitleSelector(ttId) {

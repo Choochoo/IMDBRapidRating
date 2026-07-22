@@ -1,5 +1,7 @@
 const TmdbApiUrl = "https://api.themoviedb.org/3";
 const DefaultCountry = "US";
+const MovieMediaType = "movie";
+const TvMediaType = "tv";
 export const StreamingAvailabilityTtlMilliseconds = 12 * 60 * 60 * 1000;
 const ProviderTypes = Object.freeze([
   ["subscription", "flatrate"],
@@ -10,51 +12,70 @@ const ProviderTypes = Object.freeze([
 ]);
 const SupportedProviderTypes = new Set(ProviderTypes.map(([type]) => type));
 
-export function CreateStreamingAvailabilityService({
-  fetchImpl = globalThis.fetch,
-  now = () => new Date(),
-  ttlMilliseconds = StreamingAvailabilityTtlMilliseconds
-} = {}) {
-  const refreshes = new Map();
-  return {
-    async get({ mediaType, tmdbId, apiKey, country = DefaultCountry, cached, persist = async () => {} }) {
-      const region = NormalizeCountry(country);
-      const normalizedCached = NormalizeCachedAvailability(cached, region);
-      if (IsStreamingAvailabilityFresh(normalizedCached, now(), ttlMilliseconds))
-        return { ...normalizedCached, stale: false };
-      if (!Number.isInteger(Number(tmdbId)) || !String(apiKey || "").trim())
-        return normalizedCached ? { ...normalizedCached, stale: true } : null;
-      const refreshKey = `${mediaType}:${tmdbId}:${region}`;
-      const refresh = ReadOrCreateRefresh(refreshes, refreshKey, async () => {
-        const availability = await FetchTmdbWatchProviders(mediaType, tmdbId, apiKey, region, { fetchImpl, now });
-        await persist(availability);
-        return { ...availability, stale: false };
-      });
-      if (!normalizedCached)
-        return await refresh;
-      refresh.catch(() => null);
-      return { ...normalizedCached, stale: true };
-    }
+export function CreateStreamingAvailabilityService(options = {}) {
+  const context = {
+    fetchImpl: options.fetchImpl || globalThis.fetch,
+    now: options.now || (() => new Date()),
+    ttlMilliseconds: options.ttlMilliseconds || StreamingAvailabilityTtlMilliseconds,
+    refreshes: new Map()
   };
+  return { get: (request) => GetStreamingAvailability(context, request) };
+}
+
+function GetStreamingAvailability(context, request) {
+  const region = NormalizeCountry(request.country || DefaultCountry);
+  const cached = NormalizeCachedAvailability(request.cached, region);
+  if (IsStreamingAvailabilityFresh(cached, context.now(), context.ttlMilliseconds))
+    return { ...cached, stale: false, refreshing: false };
+  if (!CanRefreshAvailability(request))
+    return cached ? { ...cached, stale: true, refreshing: false } : null;
+  return ResolveAvailabilityRefresh(context, request, region, cached);
+}
+
+function CanRefreshAvailability(request) {
+  return Number.isInteger(Number(request.tmdbId)) && Boolean(String(request.apiKey || "").trim());
+}
+
+function ResolveAvailabilityRefresh(context, request, region, cached) {
+  const key = `${request.mediaType}:${request.tmdbId}:${region}`;
+  const refresh = ReadOrCreateRefresh(context.refreshes, key, () => RefreshAvailability(context, request, region));
+  if (!cached)
+    return refresh;
+  refresh.catch(() => null);
+  return { ...cached, stale: true, refreshing: true };
+}
+
+async function RefreshAvailability(context, request, region) {
+  const availability = await FetchTmdbWatchProviders(request.mediaType, request.tmdbId, request.apiKey, region, context);
+  const persist = request.persist || (async () => {});
+  await persist(availability);
+  return { ...availability, stale: false, refreshing: false };
 }
 
 export async function FetchTmdbWatchProviders(mediaType, tmdbId, apiKey, country = DefaultCountry, { fetchImpl = globalThis.fetch, now = () => new Date() } = {}) {
-  const normalizedMediaType = mediaType === "tv" ? "tv" : "movie";
+  const normalizedMediaType = mediaType === TvMediaType ? TvMediaType : MovieMediaType;
   const region = NormalizeCountry(country);
+  const request = BuildWatchProviderRequest(normalizedMediaType, tmdbId, apiKey);
+  const response = await fetchImpl(request.url, { headers: request.headers });
+  if (!response.ok)
+    throw new Error(`TMDB watch providers returned HTTP ${response.status}.`);
+  const payload = await response.json();
+  return BuildAvailability(payload?.results?.[region], region, now());
+}
+
+function BuildWatchProviderRequest(mediaType, tmdbId, apiKey) {
   const params = new URLSearchParams();
   if (!IsTmdbBearerToken(apiKey))
     params.set("api_key", apiKey);
   const query = params.size ? `?${params}` : "";
-  const response = await fetchImpl(`${TmdbApiUrl}/${normalizedMediaType}/${encodeURIComponent(tmdbId)}/watch/providers${query}`, {
-    headers: BuildTmdbHeaders(apiKey)
-  });
-  if (!response.ok)
-    throw new Error(`TMDB watch providers returned HTTP ${response.status}.`);
-  const payload = await response.json();
-  const availability = payload?.results?.[region] || {};
+  return { url: `${TmdbApiUrl}/${mediaType}/${encodeURIComponent(tmdbId)}/watch/providers${query}`, headers: BuildTmdbHeaders(apiKey) };
+}
+
+function BuildAvailability(value, region, fetchedAt) {
+  const availability = value || {};
   return {
     country: region,
-    fetchedAt: now().toISOString(),
+    fetchedAt: fetchedAt.toISOString(),
     watchUrl: NormalizeHttpUrl(availability.link),
     providers: NormalizeAvailabilityProviders(availability)
   };
@@ -63,19 +84,15 @@ export async function FetchTmdbWatchProviders(mediaType, tmdbId, apiKey, country
 export function NormalizeWatchProviders(type, providers) {
   if (!SupportedProviderTypes.has(type))
     return [];
-  return (Array.isArray(providers) ? providers : []).flatMap((provider) => {
-    const id = Number(provider?.provider_id);
-    const name = String(provider?.provider_name || "").replace(/\s+/g, " ").trim();
-    if (!Number.isInteger(id) || id < 1 || !name)
-      return [];
-    return [{
-      type,
-      id,
-      name,
-      logoPath: NormalizeLogoPath(provider?.logo_path),
-      displayPriority: Math.max(0, Number(provider?.display_priority) || 0)
-    }];
-  });
+  return (Array.isArray(providers) ? providers : []).flatMap((provider) => NormalizeWatchProvider(type, provider));
+}
+
+function NormalizeWatchProvider(type, provider) {
+  const id = Number(provider?.provider_id);
+  const name = String(provider?.provider_name || "").replace(/\s+/g, " ").trim();
+  if (!Number.isInteger(id) || id < 1 || !name)
+    return [];
+  return [{ type, id, name, logoPath: NormalizeLogoPath(provider?.logo_path), displayPriority: Math.max(0, Number(provider?.display_priority) || 0) }];
 }
 
 export function IsStreamingAvailabilityFresh(availability, currentTime = new Date(), ttlMilliseconds = StreamingAvailabilityTtlMilliseconds) {
@@ -95,18 +112,18 @@ function NormalizeAvailabilityProviders(availability) {
 function NormalizeCachedAvailability(value, country) {
   if (!value || typeof value !== "object" || Array.isArray(value))
     return null;
-  const providers = Array.isArray(value.providers) ? value.providers.flatMap((provider) => NormalizeWatchProviders(provider?.type, [{
-    provider_id: provider?.id,
-    provider_name: provider?.name,
-    logo_path: provider?.logoPath,
-    display_priority: provider?.displayPriority
-  }])) : [];
+  const providers = Array.isArray(value.providers) ? value.providers.flatMap(NormalizeCachedProvider) : [];
   return {
     country,
     fetchedAt: String(value.fetchedAt || ""),
     watchUrl: NormalizeHttpUrl(value.watchUrl),
     providers
   };
+}
+
+function NormalizeCachedProvider(provider) {
+  const value = { provider_id: provider?.id, provider_name: provider?.name, logo_path: provider?.logoPath, display_priority: provider?.displayPriority };
+  return NormalizeWatchProviders(provider?.type, [value]);
 }
 
 function ReadOrCreateRefresh(refreshes, key, load) {
@@ -128,12 +145,11 @@ function NormalizeLogoPath(value) {
 }
 
 function NormalizeHttpUrl(value) {
-  try {
-    const url = new URL(String(value || ""));
-    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
-  } catch {
+  const rawUrl = String(value || "");
+  if (!URL.canParse(rawUrl))
     return "";
-  }
+  const url = new URL(rawUrl);
+  return ["http:", "https:"].includes(url.protocol) ? url.href : "";
 }
 
 function BuildTmdbHeaders(apiKey) {

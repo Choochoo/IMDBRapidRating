@@ -144,7 +144,7 @@ export class RatingWorkflowFeature {
     this.RenderRecommendationQueue();
     this.UpdateRecommendationStatus();
     this.Render();
-    const message = payload.duplicate ? "is already in your wishlist" : "added to your wishlist";
+    const message = payload.duplicate ? "is already in your watchlist" : "added to your watchlist";
     this.ShowToast(`<strong>${EscapeHtml(movie.title)}</strong> ${message}`);
     return true;
   }

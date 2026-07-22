@@ -128,9 +128,10 @@ function VerifyOriginPendingTitles() {
   ];
   const cache = {
     [MovieId]: { mediaType: MovieMediaType, status: MatchedStatus },
+    [ThirdTitleId]: { mediaType: MovieMediaType, status: MatchedStatus, tmdbId: 303, metadataCheckedAt: "2026-07-22T12:00:00.000Z" },
     [TvId]: { mediaType: TvMediaType, status: "not-found" }
   };
-  assert.deepEqual(BuildPendingTitles(catalogs, cache), [{ ttId: ThirdTitleId, mediaType: MovieMediaType }]);
+  assert.deepEqual(BuildPendingTitles(catalogs, cache), [{ ttId: MovieId, mediaType: MovieMediaType }]);
 }
 
 function Title(year, originCountries, originalLanguage) {

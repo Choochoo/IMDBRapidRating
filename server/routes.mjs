@@ -72,19 +72,7 @@ const PreferencesSchema = z.object({
 });
 const SecretTypes = new Set(["imdb", "tmdb", "openai"]);
 
-export function RegisterApiRoutes(app, {
-  store,
-  pool,
-  rootPath,
-  submitImdbRating = SubmitImdbRating,
-  deleteImdbRating = DeleteImdbRating,
-  generateAiRecommendations = GenerateAiRecommendations,
-  readMoviePool = ReadMoviePool,
-  readTitlePool = ReadTitlePool,
-  titleMetadataStore,
-  streamingAvailabilityService,
-  raterEvents = { subscribe() {}, publish() {} }
-}) {
+export function RegisterApiRoutes(app, { store, pool, rootPath, submitImdbRating = SubmitImdbRating, deleteImdbRating = DeleteImdbRating, generateAiRecommendations = GenerateAiRecommendations, readMoviePool = ReadMoviePool, readTitlePool = ReadTitlePool, titleMetadataStore, streamingAvailabilityService, raterEvents = { subscribe() {}, publish() {} } }) {
   const metadataStore = titleMetadataStore || CreateTitleMetadataStore(pool);
   app.get("/health", async (_request, response) => {
     await pool.query("SELECT 1");
@@ -359,17 +347,15 @@ export function RegisterApiRoutes(app, {
     });
   });
 
-  app.get(/^\/api\/title\/(tt\d+)$/, async (request, response) => {
+  app.get(/^\/api\/title\/(tt\d{1,30})$/, async (request, response) => {
     const mediaType = ReadRequestMediaType(request, response);
     if (!mediaType)
       return;
+    const titleId = request.params[0];
+    if (!await IsCatalogTitle(rootPath, mediaType, titleId, readMoviePool, readTitlePool))
+      return UnknownTitle(response);
     const tmdbApiKey = await store.getSecret(request.session.userId, "tmdb");
-    SendResult(response, await GetTitleMetadata(request.params[0], {
-      tmdbApiKey,
-      mediaType,
-      metadataStore,
-      streamingAvailabilityService
-    }));
+    SendResult(response, await GetTitleMetadata(titleId, { tmdbApiKey, mediaType, metadataStore, streamingAvailabilityService }));
   });
 }
 
@@ -522,6 +508,15 @@ async function ReconcileRaterQueue(store, userId, mediaType, rootPath, readMovie
 
 async function ReadRequestedPool(rootPath, mediaType, readMoviePool, readTitlePool) {
   return mediaType === "movie" ? await readMoviePool(rootPath) : await readTitlePool(rootPath, mediaType);
+}
+
+async function IsCatalogTitle(rootPath, mediaType, titleId, readMoviePool, readTitlePool) {
+  const pool = await ReadRequestedPool(rootPath, mediaType, readMoviePool, readTitlePool);
+  return pool.ids.includes(titleId);
+}
+
+function UnknownTitle(response) {
+  return response.status(404).json({ ok: false, code: "TITLE_NOT_FOUND", error: "The requested title is not in this catalog." });
 }
 
 function ReadRequestMediaType(request, response) {

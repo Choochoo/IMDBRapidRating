@@ -508,7 +508,17 @@
   }
 
   .footer {
-    display: none;
+    display: grid;
+    padding-top: 12px;
+    padding-bottom: 18px;
+  }
+
+  .footer .shortcut-panel {
+    display: none !important;
+  }
+
+  .data-credits {
+    max-width: none;
   }
 
   .cookie-actions button {

@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { CreateDatabase } from "../server/db/client.mjs";
 import { RunMigrations } from "../server/db/migrate.mjs";
 import { CreateTitleMetadataStore } from "../server/title-metadata-store.mjs";
+import { BuildTmdbMetadata, NormalizeTmdbDetails } from "../server/title-metadata.mjs";
 import { NormalizeTmdbOrigin } from "../shared/title-filters.js";
 import { LoadLocalEnv } from "../server/env.mjs";
 
@@ -38,27 +39,42 @@ async function Main() {
   const apiKey = ReadApiKey();
   if (!apiKey)
     throw new Error("TMDB_BUILD_API_KEY is required to enrich title origins.");
-  const catalogs = await ReadCatalogs();
-  const localCache = await ReadCache();
   const { pool } = CreateDatabase();
   try {
-    await RunMigrations(pool);
-    const originStore = CreateTitleMetadataStore(pool);
-    const titleReferences = BuildTitleReferences(catalogs);
-    const databaseCache = await originStore.readOrigins(titleReferences);
-    const localImports = BuildLocalCacheImports(titleReferences, localCache, databaseCache);
-    if (localImports.length)
-      await originStore.upsertOrigins(localImports);
-    const cache = { ...localCache, ...databaseCache };
-    const pending = BuildPendingTitles(catalogs, cache);
-    console.log(`PostgreSQL origin cache has ${Object.keys(databaseCache).length.toLocaleString()} catalog titles; imported ${localImports.length.toLocaleString()} local entries; ${pending.length.toLocaleString()} need TMDB lookup.`);
-    await EnrichPendingTitles(pending, cache, apiKey, originStore);
-    ValidateCatalogOriginCoverage(catalogs, cache);
-    await WriteCache(cache);
-    await WriteCatalogs(catalogs, cache);
+    await RunEnrichment(pool, apiKey);
   } finally {
     await pool.end();
   }
+}
+
+async function RunEnrichment(pool, apiKey) {
+  await RunMigrations(pool);
+  const state = await BuildEnrichmentState(pool);
+  ReportEnrichmentState(state);
+  await EnrichPendingTitles(state.pending, state.cache, apiKey, state.store);
+  ValidateCatalogOriginCoverage(state.catalogs, state.cache);
+  await WriteCache(state.cache);
+  await WriteCatalogs(state.catalogs, state.cache);
+}
+
+async function BuildEnrichmentState(pool) {
+  const catalogs = await ReadCatalogs();
+  const localCache = await ReadCache();
+  const store = CreateTitleMetadataStore(pool);
+  const titleReferences = BuildTitleReferences(catalogs);
+  const databaseCache = await store.readHydrationState(titleReferences);
+  const localImports = BuildLocalCacheImports(titleReferences, localCache, databaseCache);
+  if (localImports.length)
+    await store.upsertOrigins(localImports);
+  const cache = { ...localCache, ...databaseCache };
+  return { catalogs, store, databaseCache, localImports, cache, pending: BuildPendingTitles(catalogs, cache) };
+}
+
+function ReportEnrichmentState(state) {
+  const cachedCount = Object.keys(state.databaseCache).length.toLocaleString();
+  const importedCount = state.localImports.length.toLocaleString();
+  const pendingCount = state.pending.length.toLocaleString();
+  console.log(`PostgreSQL metadata cache has ${cachedCount} catalog titles; imported ${importedCount} local origins; ${pendingCount} need full TMDB metadata.`);
 }
 
 async function ReadCatalogs() {
@@ -103,7 +119,7 @@ export function BuildPendingTitles(catalogs, cache) {
 function BuildCatalogPendingTitles(catalog, cache) {
   const pending = [];
   for (const title of catalog.titles) {
-    if (IsReusableCacheEntry(cache[title.ttId], catalog.mediaType))
+    if (IsFullyHydratedCacheEntry(cache[title.ttId], catalog.mediaType))
       continue;
     pending.push({ ttId: title.ttId, mediaType: catalog.mediaType });
   }
@@ -133,11 +149,11 @@ async function RunOriginWorker(pending, cache, apiKey, originStore, state) {
 
 async function EnrichTitle(item, cache, apiKey) {
   try {
-    const entry = await FetchTitleOrigin(item, apiKey);
-    cache[item.ttId] = entry;
+    const entry = await FetchTitleMetadata(item, cache[item.ttId], apiKey);
+    cache[item.ttId] = BuildOriginCacheEntry(entry);
     return entry;
   } catch (error) {
-    console.warn(`${item.ttId} origin lookup failed: ${error.message}`);
+    console.warn(`${item.ttId} metadata lookup failed: ${error.message}`);
     return null;
   }
 }
@@ -154,25 +170,57 @@ async function FlushCheckpoint(cache, originStore, state) {
   if (!entries.length)
     return;
   state.checkpoint = state.checkpoint.then(async () => {
-    await originStore.upsertOrigins(entries);
+    await PersistCheckpointEntries(originStore, entries);
     await WriteCache(cache);
   });
   await state.checkpoint;
 }
 
-async function FetchTitleOrigin(item, apiKey) {
-  const find = await FetchTmdbJson(BuildFindUrl(item.ttId, apiKey), apiKey);
-  const result = PickFindResult(find, item.mediaType);
+async function PersistCheckpointEntries(store, entries) {
+  const metadata = entries.filter((entry) => entry.status === MatchedStatus);
+  const origins = entries.filter((entry) => entry.status === NotFoundStatus);
+  await store.upsertMetadataBatch(metadata);
+  await store.upsertOrigins(origins);
+}
+
+async function FetchTitleMetadata(item, cached, apiKey) {
+  const result = await ResolveTmdbResult(item, cached, apiKey);
   const checkedAt = new Date().toISOString();
   if (!result)
     return { mediaType: item.mediaType, status: NotFoundStatus, tmdbId: null, originCountries: [], originalLanguage: "", checkedAt };
   const details = await FetchTmdbJson(BuildDetailsUrl(item.mediaType, result.id, apiKey), apiKey);
+  const origin = BuildMatchedOrigin(item, result, details, checkedAt);
+  const extras = NormalizeTmdbDetails(item.mediaType, details);
+  return { titleId: item.ttId, ...origin, ...BuildTmdbMetadata(details, extras, item.mediaType, result.id), metadataCheckedAt: checkedAt };
+}
+
+async function ResolveTmdbResult(item, cached, apiKey) {
+  const knownTmdbId = Number(cached?.tmdbId);
+  if (Number.isInteger(knownTmdbId) && knownTmdbId > 0)
+    return { id: knownTmdbId };
+  const find = await FetchTmdbJson(BuildFindUrl(item.ttId, apiKey), apiKey);
+  return PickFindResult(find, item.mediaType);
+}
+
+function BuildMatchedOrigin(item, result, details, checkedAt) {
   return {
     mediaType: item.mediaType,
     status: MatchedStatus,
     tmdbId: Number(result.id),
     ...NormalizeTmdbOrigin(item.mediaType, result, details),
     checkedAt
+  };
+}
+
+function BuildOriginCacheEntry(entry) {
+  return {
+    mediaType: entry.mediaType,
+    status: entry.status,
+    tmdbId: entry.tmdbId,
+    originCountries: entry.originCountries,
+    originalLanguage: entry.originalLanguage,
+    checkedAt: entry.checkedAt,
+    metadataCheckedAt: entry.metadataCheckedAt || ""
   };
 }
 
@@ -229,7 +277,7 @@ function BuildFindUrl(ttId, apiKey) {
 }
 
 function BuildDetailsUrl(mediaType, id, apiKey) {
-  const params = new URLSearchParams({ language: EnglishLanguage });
+  const params = new URLSearchParams({ language: EnglishLanguage, append_to_response: "credits,videos" });
   AddApiKey(params, apiKey);
   return `${TmdbApiUrl}/${mediaType}/${encodeURIComponent(id)}?${params}`;
 }
@@ -252,6 +300,14 @@ function IsBearerToken(value) {
 
 function IsReusableCacheEntry(entry, mediaType) {
   return entry?.mediaType === mediaType && [MatchedStatus, NotFoundStatus].includes(entry?.status);
+}
+
+function IsFullyHydratedCacheEntry(entry, mediaType) {
+  if (!IsReusableCacheEntry(entry, mediaType))
+    return false;
+  if (entry.status === NotFoundStatus)
+    return true;
+  return Number.isInteger(Number(entry.tmdbId)) && Boolean(entry.metadataCheckedAt);
 }
 
 export function ValidateCatalogOriginCoverage(catalogs, cache) {
