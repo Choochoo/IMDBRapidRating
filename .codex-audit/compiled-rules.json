@@ -1,0 +1,258 @@
+{
+  "counts_by_engine": {
+    "ai-semantic": 30,
+    "ast-symbol-query": 1,
+    "compiler-analyzer": 2,
+    "formatter-linter": 2
+  },
+  "generated_at": "2026-07-22T20:02:33Z",
+  "plan_hash": "b4024a459a5008e544a1ed168fe5ebe52d0fd2a1c32876739e352477a16dbd2b",
+  "rules": [
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "a85f332306b49ca66e8fc116b3e8a5f85c8fff0902e84d418d2bd8c2e5bbd295",
+      "rule_id": "AUDIT-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "medium",
+      "rule_hash": "11dc7421dc2287476069c2092e201da1032fdfc56b318a8722a4f2691b42c9b4",
+      "rule_id": "GIT-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "medium",
+      "rule_hash": "171aa64e25cb78752907018ff307e8210a1c914d97d1827177de8f756a6f7744",
+      "rule_id": "VAR-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "b7aca835ffaa423008dcfbfdf106f6b4fc5cb4acd2e14a0f414d8977d338e337",
+      "rule_id": "EXCEPTION-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "2be7d240fa56c71770aa932264d8ac7836e5f688003606945ef9a6bd08257bce",
+      "rule_id": "COMMENT-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "medium",
+      "rule_hash": "457d1d4fd8b20acb8149cf570af8ca005a0715176f2c896bd4e8367f236ad17d",
+      "rule_id": "CONDITION-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "4918ae91ea5a374ec08a8e55a56880d73893025d9841f24be44a9bd2d8aa81ae",
+      "rule_id": "FLOW-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "d92b3f4d1262a3111b68774a2497d6816203dfaecd798a5a7bd860bcbdc349cb",
+      "rule_id": "NAME-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "78ace96fa242cdd23cf0308d95083362f353abc41a89b9280fdfb72ecdc7f9be",
+      "rule_id": "KNOCKOUT-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "4e85e8bf86cd663a4d9492690a891486c68d386a559718e2b9ab0b6b5b9e9950",
+      "rule_id": "MUTABILITY-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "medium",
+      "rule_hash": "5df88a428d545b9a683013475488d4915748948ec74c0e42765dbca1ed45e2d6",
+      "rule_id": "FUNCTION-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "657d37fdccbd6f66c4ed883bf7ad2f188fd889aaa24c08b8e26ba589cdbc5f00",
+      "rule_id": "DEADCODE-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "09fada23bc971bf51f2dc74dc6af89b48a3eba1a89f52137ee00dc842efb93bc",
+      "rule_id": "ASYNC-01"
+    },
+    {
+      "engine": "compiler-analyzer",
+      "review_required": false,
+      "risk": "low",
+      "rule_hash": "56a4df9361f95684127cefa10f50fc8d48d23eb46d2b4afe3736042613eb75a5",
+      "rule_id": "NULLABLE-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "aec1c06e5ca523fcc8c93e1c994d8c35ae67ea2394ac2bb2dc3e549af62cc67f",
+      "rule_id": "TYPE-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "04c0418e677e09b8ffa0d89ed7b116602dd9108e70e773d68da04673c07142e6",
+      "rule_id": "MODEL-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "00505bd05ec049f13459cd1480b9f2f9fa8d0e3da86905b562d587809085f1aa",
+      "rule_id": "CONTROLLER-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "medium",
+      "rule_hash": "1eeb7b68f5227fa272b29c85e3af42d8a25593bb5e5ad5c7a78be996b4c42144",
+      "rule_id": "NAMESPACE-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "medium",
+      "rule_hash": "fcb41b74822685601c2a5e250fab13c967a9d18d6bbd9a89b5ad2fc249213b21",
+      "rule_id": "COLLECTION-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "0325109ffe6a48047c8595b128f420b64cb1b3baed8e35ae7cc9950897478880",
+      "rule_id": "REGION-01"
+    },
+    {
+      "engine": "formatter-linter",
+      "review_required": false,
+      "risk": "medium",
+      "rule_hash": "ff6b197b4fa473b395620eab46f3dacd2c1f01793a8de8285baded1aff2f0f30",
+      "rule_id": "FORMAT-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "57504da133dc655dbb11d4852d87a4cc2619f90d895c9bcdaf88b9405c9bc942",
+      "rule_id": "TERNARY-01"
+    },
+    {
+      "engine": "compiler-analyzer",
+      "review_required": false,
+      "risk": "low",
+      "rule_hash": "2a7774eaf1f957030c96715d39fd355684ce0e7567cd908d736766dd90d0c790",
+      "rule_id": "NULLABLE-02"
+    },
+    {
+      "engine": "formatter-linter",
+      "review_required": false,
+      "risk": "low",
+      "rule_hash": "5aab8521b7a0beaeffe0f3172aec354ce442ef427f0997e675cb8ba365654b21",
+      "rule_id": "FORMAT-02"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "medium",
+      "rule_hash": "f1978d83dba3e626e616f8b8c22e374db663867bc830f68509047d7963fb7a3d",
+      "rule_id": "PARAMETER-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "medium",
+      "rule_hash": "b11a5e54d01606d134934d3eff2439bd5a30d5b4c2907b971c14df37685b9da0",
+      "rule_id": "DATABASE-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "medium",
+      "rule_hash": "ac7377c9efbe5206dc05e63c76c2cb7efb4b5bdd15b87a2a5a7c11c8a1535f30",
+      "rule_id": "TYPE-02"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "6852dfb7197e991b772b65b8dd49dfd587fb337232c3be60142ad9d50900a34e",
+      "rule_id": "READABILITY-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "8861c0d24eb3b36a4b2dfc708a6bd2c15b71d81eca3ca1ae19fef188b92ed28e",
+      "rule_id": "CALL-01"
+    },
+    {
+      "engine": "ast-symbol-query",
+      "review_required": false,
+      "risk": "medium",
+      "rule_hash": "0ba97894d51cff5ee6c2d8c43cdfd2cfee34880f020f7bba38c50fa98a156114",
+      "rule_id": "LINQ-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "ab19e93316265d6d02b2d2ed50e6287fab3316004c9e943896b862bc74ab26f3",
+      "rule_id": "OPTIMIZATION-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "4e777936f7ffb8220c6959010c7749a750ed5c07791bfb0c764fe2ccc997c738",
+      "rule_id": "CONSTANT-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "007375dda066feeed05353ee83aa7fa8ed37481b53112c17b8be6896698c8ff8",
+      "rule_id": "DESIGN-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "low",
+      "rule_hash": "8befe5fd576c6f194073f4356eb44ff112286a495992fce4b3868ab499f6990f",
+      "rule_id": "FILE-01"
+    },
+    {
+      "engine": "ai-semantic",
+      "review_required": true,
+      "risk": "medium",
+      "rule_hash": "ea13ed261e9accae89c0c020c9b94ef676dd2c917cd6ccfcff79dbf23396e91d",
+      "rule_id": "SCOPE-01"
+    }
+  ],
+  "version": 1
+}

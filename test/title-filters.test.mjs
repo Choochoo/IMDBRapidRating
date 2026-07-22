@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { FilterTitlePool } from "../server/movie-pool.mjs";
-import { BuildPendingTitles, ValidateCatalogOriginCoverage } from "../scripts/enrich-title-origins.mjs";
+import { BuildPendingTitles, FetchTmdbJson, ValidateCatalogOriginCoverage, ValidateHydrationComplete } from "../scripts/enrich-title-origins.mjs";
 import {
   CountActiveTitleFilters,
   IsTitleAllowed,
@@ -15,6 +15,9 @@ const ThirdTitleId = "tt0000003";
 const MovieMediaType = "movie";
 const TvMediaType = "tv";
 const MatchedStatus = "matched";
+const NotFoundStatus = "not-found";
+const TestUrl = "https://example.test";
+const TestApiKey = "key";
 const UsCountry = "US";
 const KoreaCountry = "KR";
 const IndiaCountry = "IN";
@@ -29,6 +32,9 @@ test("TMDB origin normalization combines TV origin and production countries", Ve
 test("filtered title pools get a distinct identity without mutating the catalog", VerifyFilteredTitlePool);
 test("origin enrichment refuses to publish catalogs without usable metadata", VerifyCatalogOriginCoverage);
 test("origin enrichment only queues titles missing from its persistent cache", VerifyOriginPendingTitles);
+test("origin enrichment expires negative cache entries and rejects unresolved catalogs", VerifyIncompleteHydration);
+test("TMDB enrichment does not retry permanent client errors", VerifyPermanentTmdbFailure);
+test("TMDB enrichment retries transient server errors", VerifyTransientTmdbFailure);
 
 function VerifyTitleFilterNormalization() {
   const input = BuildTitleFilterInput();
@@ -105,7 +111,7 @@ function BuildCatalogTitles() {
 function VerifyCatalogOriginCoverage() {
   const { catalogs, cache } = BuildOriginCoverageFixtures();
   assert.doesNotThrow(() => ValidateCatalogOriginCoverage(catalogs, cache));
-  const missingTvMetadata = { ...cache, [TvId]: { mediaType: TvMediaType, status: "not-found" } };
+  const missingTvMetadata = { ...cache, [TvId]: { mediaType: TvMediaType, status: NotFoundStatus } };
   assert.throws(() => ValidateCatalogOriginCoverage(catalogs, missingTvMetadata), /no usable tv metadata/);
 }
 
@@ -129,9 +135,40 @@ function VerifyOriginPendingTitles() {
   const cache = {
     [MovieId]: { mediaType: MovieMediaType, status: MatchedStatus },
     [ThirdTitleId]: { mediaType: MovieMediaType, status: MatchedStatus, tmdbId: 303, metadataCheckedAt: "2026-07-22T12:00:00.000Z" },
-    [TvId]: { mediaType: TvMediaType, status: "not-found" }
+    [TvId]: { mediaType: TvMediaType, status: NotFoundStatus, checkedAt: new Date().toISOString() }
   };
   assert.deepEqual(BuildPendingTitles(catalogs, cache), [{ ttId: MovieId, mediaType: MovieMediaType }]);
+}
+
+function VerifyIncompleteHydration() {
+  const catalogs = [{ mediaType: MovieMediaType, titles: [{ ttId: MovieId }] }];
+  const cache = { [MovieId]: { mediaType: MovieMediaType, status: NotFoundStatus, checkedAt: "2020-01-01T00:00:00.000Z" } };
+  assert.deepEqual(BuildPendingTitles(catalogs, cache), [{ ttId: MovieId, mediaType: MovieMediaType }]);
+  assert.throws(() => ValidateHydrationComplete(catalogs, cache), /left 1 catalog titles unresolved/);
+}
+
+async function VerifyPermanentTmdbFailure() {
+  const state = { requests: 0, delays: [] };
+  const fetchImpl = async () => { state.requests++; return ErrorResponse(401); };
+  await assert.rejects(() => FetchTmdbJson(TestUrl, TestApiKey, fetchImpl, (delay) => state.delays.push(delay)), /HTTP 401/);
+  assert.equal(state.requests, 1);
+  assert.deepEqual(state.delays, []);
+}
+
+async function VerifyTransientTmdbFailure() {
+  const state = { requests: 0, delays: [] };
+  const fetchImpl = async () => ++state.requests < 3 ? ErrorResponse(503) : JsonResponse({ ok: true });
+  const result = await FetchTmdbJson(TestUrl, TestApiKey, fetchImpl, (delay) => state.delays.push(delay));
+  assert.deepEqual(result, { ok: true });
+  assert.deepEqual(state.delays, [500, 1000]);
+}
+
+function ErrorResponse(status) {
+  return { ok: false, status, headers: { get: () => "" } };
+}
+
+function JsonResponse(payload) {
+  return { ok: true, status: 200, json: async () => payload };
 }
 
 function Title(year, originCountries, originalLanguage) {

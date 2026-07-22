@@ -6,9 +6,10 @@ import { RegisterApiRoutes } from "../server/routes.mjs";
 
 const ValidTitleId = "tt0113277";
 const InvalidTitleId = "tt9999999";
-const CachedMetadata = Object.freeze({
+const MovieMediaType = "movie";
+const CachedMetadataData = {
   titleId: ValidTitleId,
-  mediaType: "movie",
+  mediaType: MovieMediaType,
   tmdbId: 949,
   posterUrl: "poster",
   synopsis: "synopsis",
@@ -18,28 +19,31 @@ const CachedMetadata = Object.freeze({
   sourcePayload: { id: 949 },
   metadataCheckedAt: new Date().toISOString(),
   streamingByCountry: {}
-});
+};
+const CachedMetadata = Object.freeze(CachedMetadataData);
 
 test("title metadata requests are limited to the selected catalog", VerifyCatalogValidation);
 
 async function VerifyCatalogValidation() {
   const state = { reads: 0 };
   const app = BuildApp(state);
-  await request(app).get(`/api/title/${InvalidTitleId}?media=movie`).expect(404);
+  await request(app).get(`/api/title/${InvalidTitleId}?media=${MovieMediaType}`).expect(404);
   assert.equal(state.reads, 0);
-  const response = await request(app).get(`/api/title/${ValidTitleId}?media=movie`).expect(200);
+  const response = await request(app).get(`/api/title/${ValidTitleId}?media=${MovieMediaType}`).expect(200);
   assert.equal(response.body.titleId, ValidTitleId);
   assert.equal(state.reads, 1);
 }
 
 function BuildApp(state) {
   const app = express();
-  app.use((requestMessage, _response, next) => {
-    requestMessage.session = { userId: "user-1", email: "user@example.com" };
-    next();
-  });
+  app.use(AddSession);
   RegisterApiRoutes(app, BuildDependencies(state));
   return app;
+}
+
+function AddSession(requestMessage, _response, next) {
+  requestMessage.session = { userId: "user-1", email: "user@example.com" };
+  next();
 }
 
 function BuildDependencies(state) {

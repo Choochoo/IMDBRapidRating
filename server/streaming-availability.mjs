@@ -1,21 +1,24 @@
-const TmdbApiUrl = "https://api.themoviedb.org/3";
+import { AddTmdbApiKey, BuildTmdbHeaders, TmdbApiUrl } from "./tmdb-request.mjs";
+
 const DefaultCountry = "US";
 const MovieMediaType = "movie";
 const TvMediaType = "tv";
 export const StreamingAvailabilityTtlMilliseconds = 12 * 60 * 60 * 1000;
-const ProviderTypes = Object.freeze([
+const ProviderTypeEntries = [
   ["subscription", "flatrate"],
   ["free", "free"],
   ["ads", "ads"],
   ["rent", "rent"],
   ["buy", "buy"]
-]);
+];
+const ProviderTypes = Object.freeze(ProviderTypeEntries);
 const SupportedProviderTypes = new Set(ProviderTypes.map(([type]) => type));
 
 export function CreateStreamingAvailabilityService(options = {}) {
   const context = {
     fetchImpl: options.fetchImpl || globalThis.fetch,
     now: options.now || (() => new Date()),
+    reportError: options.reportError || ReportAvailabilityRefreshFailure,
     ttlMilliseconds: options.ttlMilliseconds || StreamingAvailabilityTtlMilliseconds,
     refreshes: new Map()
   };
@@ -41,14 +44,14 @@ function ResolveAvailabilityRefresh(context, request, region, cached) {
   const refresh = ReadOrCreateRefresh(context.refreshes, key, () => RefreshAvailability(context, request, region));
   if (!cached)
     return refresh;
-  refresh.catch(() => null);
+  refresh.catch((error) => context.reportError(error, request));
   return { ...cached, stale: true, refreshing: true };
 }
 
 async function RefreshAvailability(context, request, region) {
   const availability = await FetchTmdbWatchProviders(request.mediaType, request.tmdbId, request.apiKey, region, context);
-  const persist = request.persist || (async () => {});
-  await persist(availability);
+  if (request.persist)
+    await request.persist(availability);
   return { ...availability, stale: false, refreshing: false };
 }
 
@@ -65,8 +68,7 @@ export async function FetchTmdbWatchProviders(mediaType, tmdbId, apiKey, country
 
 function BuildWatchProviderRequest(mediaType, tmdbId, apiKey) {
   const params = new URLSearchParams();
-  if (!IsTmdbBearerToken(apiKey))
-    params.set("api_key", apiKey);
+  AddTmdbApiKey(params, apiKey);
   const query = params.size ? `?${params}` : "";
   return { url: `${TmdbApiUrl}/${mediaType}/${encodeURIComponent(tmdbId)}/watch/providers${query}`, headers: BuildTmdbHeaders(apiKey) };
 }
@@ -152,13 +154,6 @@ function NormalizeHttpUrl(value) {
   return ["http:", "https:"].includes(url.protocol) ? url.href : "";
 }
 
-function BuildTmdbHeaders(apiKey) {
-  const headers = { accept: "application/json" };
-  if (IsTmdbBearerToken(apiKey))
-    headers.authorization = `Bearer ${apiKey}`;
-  return headers;
-}
-
-function IsTmdbBearerToken(value) {
-  return String(value || "").includes(".");
+function ReportAvailabilityRefreshFailure(error, request) {
+  console.warn(`${request.mediaType}:${request.tmdbId} streaming refresh failed: ${error.message}`);
 }

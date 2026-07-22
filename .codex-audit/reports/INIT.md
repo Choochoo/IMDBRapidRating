@@ -1,15 +1,14 @@
 # Repository Audit Initialization
 
-- Generated: 2026-07-22T18:55:52Z
-- Total tracked files: 114
-- Total files in audit scope: 17
-- Excluded file count: 108
+- Generated: 2026-07-22T20:02:26Z
+- Total tracked files: 143
+- Total files in audit scope: 24
+- Excluded file count: 123
 - Total normalized rules: 35
-- Total applicable file/rule checks: 540
+- Total applicable file/rule checks: 759
 
 ## Exclusion Reasons
-- configured exclude pattern: 1
-- outside change audit scope: 107
+- outside change audit scope: 123
 
 ## Rule Flags
 - AUDIT-01 docs/engineering/CODING_STANDARDS.md:3 - possibly-vague

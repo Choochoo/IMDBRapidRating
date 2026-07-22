@@ -1,9 +1,8 @@
 import { Config } from "../config.js";
-import { RenderCard, UpdateActors, UpdatePoster, UpdateRecommendationPoster, UpdateSeriesDetails, UpdateStreamingAvailability, UpdateSynopsis, UpdateTrailerLink } from "../rendering.js";
+import { MissingSynopsis, RenderCard, UpdateActors, UpdatePoster, UpdateRecommendationPoster, UpdateSeriesDetails, UpdateStreamingAvailability, UpdateSynopsis, UpdateTrailerLink } from "../rendering.js";
 import { CountRatings } from "../stats.js";
 
-const MissingSynopsis = "To see the synopsis, set up a TMDB key.";
-const StreamingRefreshAttempts = new Map();
+const StreamingRefreshStates = new Map();
 const MaximumStreamingRefreshAttempts = 4;
 const StreamingRefreshDelayMilliseconds = 750;
 
@@ -42,27 +41,33 @@ export class CatalogViewFeature {
 
   EnrichVisibleMovies(movies) {
     for (const movie of movies)
-      this.EnrichTitleMetadata(movie.ttId);
+      this.EnrichTitleMetadata(movie.ttId, true);
   }
 
-  EnrichTitleMetadata(ttId) {
+  EnrichTitleMetadata(ttId, includeStreaming = false) {
     if (!/^tt\d+$/.test(ttId || ""))
       return;
-    if (this.State.metadata[ttId])
-      return this.ApplyTitleMetadata(ttId, this.State.metadata[ttId]);
-    if (!this.MetadataInFlight.has(ttId))
-      this.QueueMetadataRequest(ttId);
+    const cached = this.State.metadata[ttId];
+    if (cached && (!includeStreaming || cached.streamingRequested))
+      return this.ApplyTitleMetadata(ttId, cached);
+    const requestKey = BuildMetadataRequestKey(ttId, includeStreaming);
+    if (!this.MetadataInFlight.has(requestKey))
+      this.QueueMetadataRequest(ttId, includeStreaming);
   }
 
-  QueueMetadataRequest(ttId) {
-    this.MetadataInFlight.add(ttId);
-    this.FetchAndApplyMetadata(ttId);
+  QueueMetadataRequest(ttId, includeStreaming) {
+    const requestKey = BuildMetadataRequestKey(ttId, includeStreaming);
+    this.MetadataInFlight.add(requestKey);
+    this.FetchAndApplyMetadata(ttId, includeStreaming, requestKey);
   }
 
-  async FetchAndApplyMetadata(ttId) {
-    const metadata = await this.FetchTitleMetadata(ttId).catch(() => this.BuildMissingMetadata());
-    this.ApplyTitleMetadata(ttId, metadata);
-    this.MetadataInFlight.delete(ttId);
+  async FetchAndApplyMetadata(ttId, includeStreaming, requestKey) {
+    const metadata = await this.FetchTitleMetadata(ttId, includeStreaming).catch(() => null);
+    if (metadata)
+      this.ApplyTitleMetadata(ttId, metadata);
+    else if (!this.State.metadata[ttId])
+      this.ApplyTitleMetadata(ttId, this.BuildMissingMetadata());
+    this.MetadataInFlight.delete(requestKey);
   }
 
   BuildMissingMetadata() {
@@ -76,14 +81,15 @@ export class CatalogViewFeature {
     };
   }
 
-  async FetchTitleMetadata(ttId) {
-    const payload = await this.FetchJson(this.MediaUrl(`${Config.titleMetadataUrl}${ttId}`), {});
+  async FetchTitleMetadata(ttId, includeStreaming = false) {
+    const suffix = includeStreaming ? "?streaming=1" : "";
+    const payload = await this.FetchJson(this.MediaUrl(`${Config.titleMetadataUrl}${ttId}${suffix}`), {});
     if (!payload.ok)
       throw new Error(payload.error || "Metadata request failed.");
-    return this.BuildTitleMetadata(payload);
+    return this.BuildTitleMetadata(payload, includeStreaming);
   }
 
-  BuildTitleMetadata(payload) {
+  BuildTitleMetadata(payload, includeStreaming = false) {
     return {
       posterUrl: payload.posterUrl || "",
       synopsis: payload.synopsis || MissingSynopsis,
@@ -94,38 +100,75 @@ export class CatalogViewFeature {
       episodeCount: Number(payload.episodeCount) || 0,
       episodeRuntimeMinutes: Number(payload.episodeRuntimeMinutes) || 0,
       streamingAvailability: payload.streamingAvailability && typeof payload.streamingAvailability === "object" ? payload.streamingAvailability : null,
+      streamingRequested: includeStreaming,
       source: payload.source || ""
     };
   }
 
   ApplyTitleMetadata(ttId, metadata) {
-    this.State.metadata[ttId] = metadata;
+    const applied = PreserveStreamingMetadata(this.State.metadata[ttId], metadata);
+    this.State.metadata[ttId] = applied;
+    this.ScheduleStreamingRefresh(ttId, applied.streamingAvailability);
     const selector = this.BuildTitleSelector(ttId);
     const card = this.Elements.strip.querySelector(selector);
     if (card)
-      this.ApplyCardMetadata(card, ttId, metadata);
-    this.ApplyRecommendationMetadata(selector, metadata);
-    this.ScheduleStreamingRefresh(ttId, metadata.streamingAvailability);
+      this.ApplyCardMetadata(card, ttId, applied);
+    this.ApplyRecommendationMetadata(selector, applied);
   }
 
   ScheduleStreamingRefresh(ttId, availability) {
     if (!availability?.refreshing)
-      return StreamingRefreshAttempts.delete(ttId);
-    const attempt = (StreamingRefreshAttempts.get(ttId) || 0) + 1;
-    if (attempt > MaximumStreamingRefreshAttempts)
+      return this.ClearStreamingRefresh(ttId);
+    const state = ReadStreamingRefreshState(ttId);
+    if (state.timer || state.inFlight)
       return;
-    StreamingRefreshAttempts.set(ttId, attempt);
-    this.QueueStreamingRefresh(ttId, StreamingRefreshDelayMilliseconds * attempt);
+    state.attempts++;
+    if (state.attempts > MaximumStreamingRefreshAttempts)
+      return this.StopStreamingRefresh(ttId, availability);
+    state.timer = this.QueueStreamingRefresh(ttId, StreamingRefreshDelayMilliseconds * state.attempts);
   }
 
   QueueStreamingRefresh(ttId, delay) {
-    globalThis.setTimeout(() => this.RefreshStreamingMetadata(ttId), delay);
+    return globalThis.setTimeout(() => this.BeginStreamingRefresh(ttId), delay);
   }
 
-  async RefreshStreamingMetadata(ttId) {
-    const metadata = await this.FetchTitleMetadata(ttId).catch(() => null);
-    if (metadata)
-      this.ApplyTitleMetadata(ttId, metadata);
+  BeginStreamingRefresh(ttId) {
+    const state = StreamingRefreshStates.get(ttId);
+    if (!state || state.inFlight)
+      return;
+    state.timer = null;
+    state.inFlight = true;
+    return this.RefreshStreamingMetadata(ttId, state);
+  }
+
+  ClearStreamingRefresh(ttId) {
+    const state = StreamingRefreshStates.get(ttId);
+    if (state?.timer)
+      globalThis.clearTimeout(state.timer);
+    StreamingRefreshStates.delete(ttId);
+  }
+
+  StopStreamingRefresh(ttId, availability) {
+    availability.refreshing = false;
+    this.ClearStreamingRefresh(ttId);
+  }
+
+  async RefreshStreamingMetadata(ttId, refreshState = ReadStreamingRefreshState(ttId)) {
+    const metadata = await this.FetchTitleMetadata(ttId, true).catch(() => null);
+    if (StreamingRefreshStates.get(ttId) !== refreshState)
+      return;
+    refreshState.inFlight = false;
+    if (!metadata)
+      return this.StopFailedStreamingRefresh(ttId);
+    this.ApplyTitleMetadata(ttId, metadata);
+  }
+
+  StopFailedStreamingRefresh(ttId) {
+    const metadata = this.State.metadata[ttId];
+    if (!metadata?.streamingAvailability)
+      return this.ClearStreamingRefresh(ttId);
+    metadata.streamingAvailability.refreshing = false;
+    this.ApplyTitleMetadata(ttId, metadata);
   }
 
   BuildTitleSelector(ttId) {
@@ -147,4 +190,23 @@ export class CatalogViewFeature {
       UpdateTrailerLink(recommendation, metadata);
     }
   }
+}
+
+function ReadStreamingRefreshState(ttId) {
+  const existing = StreamingRefreshStates.get(ttId);
+  if (existing)
+    return existing;
+  const state = { attempts: 0, timer: null, inFlight: false };
+  StreamingRefreshStates.set(ttId, state);
+  return state;
+}
+
+function BuildMetadataRequestKey(ttId, includeStreaming) {
+  return `${ttId}:${includeStreaming ? "streaming" : "metadata"}`;
+}
+
+function PreserveStreamingMetadata(current, incoming) {
+  if (!current?.streamingRequested || incoming.streamingRequested)
+    return incoming;
+  return { ...incoming, streamingAvailability: current.streamingAvailability, streamingRequested: true };
 }

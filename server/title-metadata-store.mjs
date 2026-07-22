@@ -10,8 +10,53 @@ const SupportedMediaTypes = new Set(["movie", "tv"]);
 const OriginSelectFields = "tt_id, media_type, status, tmdb_id, origin_countries, original_language, checked_at";
 const HydrationSelectFields = `${OriginSelectFields}, metadata_checked_at`;
 const SelectFields = `${HydrationSelectFields}, poster_url, synopsis, actors, trailer_url, series_status, season_count, episode_count, episode_runtime_minutes, metadata_source, source_payload, streaming_availability`;
-const OriginUpsertSql = `INSERT INTO %TABLE% (tt_id, media_type, status, tmdb_id, origin_countries, original_language, checked_at, updated_at) SELECT item.tt_id, item.media_type, item.status, item.tmdb_id, item.origin_countries, item.original_language, item.checked_at, now() FROM jsonb_to_recordset($1::jsonb) AS item(tt_id varchar(32), media_type varchar(16), status varchar(16), tmdb_id integer, origin_countries jsonb, original_language varchar(16), checked_at timestamptz) ON CONFLICT (tt_id, media_type) DO UPDATE SET status=EXCLUDED.status, tmdb_id=EXCLUDED.tmdb_id, origin_countries=EXCLUDED.origin_countries, original_language=EXCLUDED.original_language, checked_at=EXCLUDED.checked_at, updated_at=now()`;
-const MetadataUpsertSql = `INSERT INTO %TABLE% (tt_id, media_type, status, tmdb_id, origin_countries, original_language, checked_at, poster_url, synopsis, actors, trailer_url, series_status, season_count, episode_count, episode_runtime_minutes, metadata_source, source_payload, metadata_checked_at, updated_at) SELECT item.tt_id, item.media_type, CASE WHEN item.tmdb_id IS NULL THEN '${MetadataOnlyStatus}' ELSE '${MatchedStatus}' END, item.tmdb_id, item.origin_countries, item.original_language, COALESCE(item.metadata_checked_at, now()), item.poster_url, item.synopsis, item.actors, item.trailer_url, item.series_status, item.season_count, item.episode_count, item.episode_runtime_minutes, item.metadata_source, item.source_payload, item.metadata_checked_at, now() FROM jsonb_to_recordset($1::jsonb) AS item(tt_id varchar(32), media_type varchar(16), tmdb_id integer, origin_countries jsonb, original_language varchar(16), poster_url text, synopsis text, actors jsonb, trailer_url text, series_status text, season_count integer, episode_count integer, episode_runtime_minutes integer, metadata_source varchar(32), source_payload jsonb, metadata_checked_at timestamptz) ON CONFLICT (tt_id, media_type) DO UPDATE SET status=CASE WHEN EXCLUDED.tmdb_id IS NOT NULL THEN '${MatchedStatus}' WHEN title_metadata_cache.status IN ('${MatchedStatus}', '${NotFoundStatus}') THEN title_metadata_cache.status ELSE EXCLUDED.status END, tmdb_id=COALESCE(EXCLUDED.tmdb_id, title_metadata_cache.tmdb_id), origin_countries=CASE WHEN EXCLUDED.tmdb_id IS NULL THEN title_metadata_cache.origin_countries ELSE EXCLUDED.origin_countries END, original_language=CASE WHEN EXCLUDED.tmdb_id IS NULL THEN title_metadata_cache.original_language ELSE EXCLUDED.original_language END, checked_at=CASE WHEN EXCLUDED.tmdb_id IS NULL THEN title_metadata_cache.checked_at ELSE EXCLUDED.checked_at END, poster_url=EXCLUDED.poster_url, synopsis=EXCLUDED.synopsis, actors=EXCLUDED.actors, trailer_url=EXCLUDED.trailer_url, series_status=EXCLUDED.series_status, season_count=EXCLUDED.season_count, episode_count=EXCLUDED.episode_count, episode_runtime_minutes=EXCLUDED.episode_runtime_minutes, metadata_source=EXCLUDED.metadata_source, source_payload=EXCLUDED.source_payload, metadata_checked_at=EXCLUDED.metadata_checked_at, updated_at=now() WHERE title_metadata_cache.metadata_source <> '${TmdbSource}' OR EXCLUDED.metadata_source = '${TmdbSource}'`;
+const OriginUpsertSql = `
+INSERT INTO %TABLE% (tt_id, media_type, status, tmdb_id, origin_countries, original_language, checked_at, updated_at)
+SELECT item.tt_id, item.media_type, item.status, item.tmdb_id, item.origin_countries, item.original_language, item.checked_at, now()
+FROM jsonb_to_recordset($1::jsonb) AS item(tt_id varchar(32), media_type varchar(16), status varchar(16), tmdb_id integer, origin_countries jsonb, original_language varchar(16), checked_at timestamptz)
+ON CONFLICT (tt_id, media_type) DO UPDATE SET
+  status=EXCLUDED.status,
+  tmdb_id=EXCLUDED.tmdb_id,
+  origin_countries=EXCLUDED.origin_countries,
+  original_language=EXCLUDED.original_language,
+  checked_at=EXCLUDED.checked_at,
+  updated_at=now()`;
+const MetadataUpsertSql = `
+INSERT INTO %TABLE% (
+  tt_id, media_type, status, tmdb_id, origin_countries, original_language, checked_at, poster_url, synopsis, actors, trailer_url,
+  series_status, season_count, episode_count, episode_runtime_minutes, metadata_source, source_payload, metadata_checked_at, updated_at)
+SELECT
+  item.tt_id, item.media_type, CASE WHEN item.tmdb_id IS NULL THEN '${MetadataOnlyStatus}' ELSE '${MatchedStatus}' END, item.tmdb_id,
+  item.origin_countries, item.original_language, COALESCE(item.metadata_checked_at, now()), item.poster_url, item.synopsis, item.actors,
+  item.trailer_url, item.series_status, item.season_count, item.episode_count, item.episode_runtime_minutes, item.metadata_source,
+  item.source_payload, item.metadata_checked_at, now()
+FROM jsonb_to_recordset($1::jsonb) AS item(
+  tt_id varchar(32), media_type varchar(16), tmdb_id integer, origin_countries jsonb, original_language varchar(16), poster_url text,
+  synopsis text, actors jsonb, trailer_url text, series_status text, season_count integer, episode_count integer,
+  episode_runtime_minutes integer, metadata_source varchar(32), source_payload jsonb, metadata_checked_at timestamptz)
+ON CONFLICT (tt_id, media_type) DO UPDATE SET
+  status=CASE
+    WHEN EXCLUDED.tmdb_id IS NOT NULL THEN '${MatchedStatus}'
+    WHEN title_metadata_cache.status IN ('${MatchedStatus}', '${NotFoundStatus}') THEN title_metadata_cache.status
+    ELSE EXCLUDED.status
+  END,
+  tmdb_id=COALESCE(EXCLUDED.tmdb_id, title_metadata_cache.tmdb_id),
+  origin_countries=CASE WHEN EXCLUDED.tmdb_id IS NULL THEN title_metadata_cache.origin_countries ELSE EXCLUDED.origin_countries END,
+  original_language=CASE WHEN EXCLUDED.tmdb_id IS NULL THEN title_metadata_cache.original_language ELSE EXCLUDED.original_language END,
+  checked_at=CASE WHEN EXCLUDED.tmdb_id IS NULL THEN title_metadata_cache.checked_at ELSE EXCLUDED.checked_at END,
+  poster_url=EXCLUDED.poster_url,
+  synopsis=EXCLUDED.synopsis,
+  actors=EXCLUDED.actors,
+  trailer_url=EXCLUDED.trailer_url,
+  series_status=EXCLUDED.series_status,
+  season_count=EXCLUDED.season_count,
+  episode_count=EXCLUDED.episode_count,
+  episode_runtime_minutes=EXCLUDED.episode_runtime_minutes,
+  metadata_source=EXCLUDED.metadata_source,
+  source_payload=EXCLUDED.source_payload,
+  metadata_checked_at=EXCLUDED.metadata_checked_at,
+  updated_at=now()
+WHERE title_metadata_cache.metadata_source <> '${TmdbSource}' OR EXCLUDED.metadata_source = '${TmdbSource}'`;
 
 export function CreateTitleMetadataStore(pool) {
   return {

@@ -355,7 +355,8 @@ export function RegisterApiRoutes(app, { store, pool, rootPath, submitImdbRating
     if (!await IsCatalogTitle(rootPath, mediaType, titleId, readMoviePool, readTitlePool))
       return UnknownTitle(response);
     const tmdbApiKey = await store.getSecret(request.session.userId, "tmdb");
-    SendResult(response, await GetTitleMetadata(titleId, { tmdbApiKey, mediaType, metadataStore, streamingAvailabilityService }));
+    const includeStreaming = request.query.streaming === "1";
+    SendResult(response, await GetTitleMetadata(titleId, { tmdbApiKey, mediaType, metadataStore, streamingAvailabilityService, includeStreaming }));
   });
 }
 

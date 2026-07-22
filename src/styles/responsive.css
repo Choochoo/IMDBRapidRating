@@ -50,21 +50,6 @@
     overflow: hidden;
   }
 
-  .header-main {
-    grid-template-columns: minmax(360px, 1fr) auto;
-    gap: 10px 14px;
-  }
-
-  .view-tabs {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  .header-actions {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
   .recommendation-header {
     flex-direction: column;
   }
@@ -186,10 +171,6 @@
   .brand-mark {
     width: 32px;
     height: 32px;
-  }
-
-  .brand > span:last-child {
-    display: none;
   }
 
   .media-selector {
@@ -514,7 +495,7 @@
   }
 
   .footer .shortcut-panel {
-    display: none !important;
+    display: none;
   }
 
   .data-credits {

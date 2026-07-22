@@ -1,6 +1,8 @@
 import { EscapeHtml, FormatCount } from "./util.js";
 import { IsCsvSyncFailure } from "./rating-records.js";
 
+export const MissingSynopsis = "To see the synopsis, set up a TMDB key.";
+
 export function RenderCard(movie, index, metadata) {
   const tone = ToneFromId(movie.ttId);
   const className = index === 0 ? "movie-card card active" : "movie-card card";
@@ -28,7 +30,7 @@ export function UpdateRecommendationPoster(card, metadata) {
 export function UpdateSynopsis(card, metadata) {
   const synopsis = card.querySelector(".synopsis");
   if (synopsis)
-    synopsis.textContent = metadata.synopsis || "To see the synopsis, set up a TMDB key.";
+    synopsis.textContent = metadata.synopsis || MissingSynopsis;
 }
 
 export function UpdateActors(card, metadata) {

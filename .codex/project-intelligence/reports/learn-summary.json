@@ -1,9 +1,11 @@
 {
+  "cache_hit": false,
   "confirmed": 0,
   "conflicted": 0,
+  "index_fingerprint": "0c74ff1f004f76d0ac5926878875e9d738925f69e7b6ba93d899fc3475911176",
   "inferred": 0,
   "knowledge_records": 12,
   "projects": 1,
   "state": "C:\\Users\\Jared\\source\\repos\\MovieRatingProject\\.codex\\project-intelligence",
-  "symbols": 1345
+  "symbols": 1370
 }

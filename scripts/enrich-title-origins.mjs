@@ -6,6 +6,7 @@ import { CreateDatabase } from "../server/db/client.mjs";
 import { RunMigrations } from "../server/db/migrate.mjs";
 import { CreateTitleMetadataStore } from "../server/title-metadata-store.mjs";
 import { BuildTmdbMetadata, NormalizeTmdbDetails } from "../server/title-metadata.mjs";
+import { AddTmdbApiKey, BuildTmdbHeaders, TmdbApiUrl } from "../server/tmdb-request.mjs";
 import { NormalizeTmdbOrigin } from "../shared/title-filters.js";
 import { LoadLocalEnv } from "../server/env.mjs";
 
@@ -13,17 +14,21 @@ const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const DataDir = path.join(RootPath, "data");
 const CacheDir = path.join(RootPath, "cache");
 const CachePath = path.join(CacheDir, "tmdb-title-origins.json");
-const TmdbApiUrl = "https://api.themoviedb.org/3";
 const MatchedStatus = "matched";
 const NotFoundStatus = "not-found";
 const RetryAttempts = 5;
 const RetryMaximumMilliseconds = 15_000;
 const RetryBaseMilliseconds = 500;
+const NegativeCacheTtlMilliseconds = 30 * 24 * 60 * 60 * 1000;
 const CheckpointInterval = 250;
 const DefaultConcurrency = 12;
 const TextEncoding = "utf8";
 const TvMediaType = "tv";
 const EnglishLanguage = "en-US";
+const UnauthorizedStatus = 401;
+const ForbiddenStatus = 403;
+const TooManyRequestsStatus = 429;
+const ServerErrorStatus = 500;
 const CatalogDefinitions = [
   { mediaType: "movie", fileName: "movies.json", collectionKey: "movies" },
   { mediaType: TvMediaType, fileName: "shows.json", collectionKey: "shows" }
@@ -52,6 +57,7 @@ async function RunEnrichment(pool, apiKey) {
   const state = await BuildEnrichmentState(pool);
   ReportEnrichmentState(state);
   await EnrichPendingTitles(state.pending, state.cache, apiKey, state.store);
+  ValidateHydrationComplete(state.catalogs, state.cache);
   ValidateCatalogOriginCoverage(state.catalogs, state.cache);
   await WriteCache(state.cache);
   await WriteCatalogs(state.catalogs, state.cache);
@@ -94,7 +100,9 @@ async function ReadCache() {
   try {
     const payload = JSON.parse(await readFile(CachePath, TextEncoding));
     return payload && typeof payload === "object" ? payload : {};
-  } catch {
+  } catch (error) {
+    if (error?.code !== "ENOENT")
+      console.warn(`TMDB origin cache read failed at ${CachePath}: ${error.message}`);
     return {};
   }
 }
@@ -153,6 +161,8 @@ async function EnrichTitle(item, cache, apiKey) {
     cache[item.ttId] = BuildOriginCacheEntry(entry);
     return entry;
   } catch (error) {
+    if (error.abortEnrichment)
+      throw error;
     console.warn(`${item.ttId} metadata lookup failed: ${error.message}`);
     return null;
   }
@@ -231,39 +241,47 @@ function PickFindResult(payload, mediaType) {
   return values[0] || null;
 }
 
-async function FetchTmdbJson(url, apiKey) {
+export async function FetchTmdbJson(url, apiKey, fetchImpl = globalThis.fetch, delayImpl = Delay) {
   let lastError;
   for (let attempt = 0; attempt < RetryAttempts; attempt++) {
-    const result = await RequestTmdbAttempt(url, apiKey, attempt);
+    const result = await RequestTmdbAttempt(url, apiKey, attempt, fetchImpl);
     if (Object.hasOwn(result, "payload"))
       return result.payload;
     lastError = result.error;
+    if (!result.retryable)
+      throw lastError;
     if (attempt < RetryAttempts - 1)
-      await Delay(result.delay);
+      await delayImpl(result.delay);
   }
   throw lastError || new Error("TMDB request failed.");
 }
 
-async function RequestTmdbAttempt(url, apiKey, attempt) {
+async function RequestTmdbAttempt(url, apiKey, attempt, fetchImpl) {
   try {
-    const response = await fetch(url, { headers: BuildHeaders(apiKey) });
+    const response = await fetchImpl(url, { headers: BuildTmdbHeaders(apiKey) });
     if (response.ok)
       return { payload: await response.json() };
     return BuildFailedRequest(response, attempt);
   } catch (error) {
-    return { error, delay: BuildRetryDelay(attempt) };
+    return { error, retryable: true, delay: BuildRetryDelay(attempt) };
   }
 }
 
 function BuildFailedRequest(response, attempt) {
-  const error = new Error(`TMDB returned HTTP ${response.status}`);
-  if (response.status !== 429 && response.status < 500)
-    return { error, delay: BuildRetryDelay(attempt) };
+  const error = BuildTmdbHttpError(response.status);
+  if (response.status !== TooManyRequestsStatus && response.status < ServerErrorStatus)
+    return { error, retryable: false, delay: 0 };
   const retryAfter = Number(response.headers.get("retry-after"));
   const hasRetryAfter = Number.isFinite(retryAfter) && retryAfter > 0;
   if (!hasRetryAfter)
-    return { error, delay: BuildRetryDelay(attempt) };
-  return { error, delay: retryAfter * 1000 };
+    return { error, retryable: true, delay: BuildRetryDelay(attempt) };
+  return { error, retryable: true, delay: retryAfter * 1000 };
+}
+
+function BuildTmdbHttpError(status) {
+  const error = new Error(`TMDB returned HTTP ${status}`);
+  error.abortEnrichment = status === UnauthorizedStatus || status === ForbiddenStatus;
+  return error;
 }
 
 function BuildRetryDelay(attempt) {
@@ -272,30 +290,14 @@ function BuildRetryDelay(attempt) {
 
 function BuildFindUrl(ttId, apiKey) {
   const params = new URLSearchParams({ external_source: "imdb_id", language: EnglishLanguage });
-  AddApiKey(params, apiKey);
+  AddTmdbApiKey(params, apiKey);
   return `${TmdbApiUrl}/find/${encodeURIComponent(ttId)}?${params}`;
 }
 
 function BuildDetailsUrl(mediaType, id, apiKey) {
   const params = new URLSearchParams({ language: EnglishLanguage, append_to_response: "credits,videos" });
-  AddApiKey(params, apiKey);
+  AddTmdbApiKey(params, apiKey);
   return `${TmdbApiUrl}/${mediaType}/${encodeURIComponent(id)}?${params}`;
-}
-
-function AddApiKey(params, apiKey) {
-  if (!IsBearerToken(apiKey))
-    params.set("api_key", apiKey);
-}
-
-function BuildHeaders(apiKey) {
-  const headers = { accept: "application/json" };
-  if (!IsBearerToken(apiKey))
-    return headers;
-  return { ...headers, authorization: `Bearer ${apiKey}` };
-}
-
-function IsBearerToken(value) {
-  return String(value || "").includes(".");
 }
 
 function IsReusableCacheEntry(entry, mediaType) {
@@ -306,8 +308,20 @@ function IsFullyHydratedCacheEntry(entry, mediaType) {
   if (!IsReusableCacheEntry(entry, mediaType))
     return false;
   if (entry.status === NotFoundStatus)
-    return true;
+    return IsFreshNegativeCacheEntry(entry);
   return Number.isInteger(Number(entry.tmdbId)) && Boolean(entry.metadataCheckedAt);
+}
+
+function IsFreshNegativeCacheEntry(entry) {
+  const age = Date.now() - Date.parse(entry.checkedAt || "");
+  return Number.isFinite(age) && age >= 0 && age < NegativeCacheTtlMilliseconds;
+}
+
+export function ValidateHydrationComplete(catalogs, cache) {
+  const unresolved = BuildPendingTitles(catalogs, cache);
+  if (!unresolved.length)
+    return;
+  throw new Error(`TMDB metadata enrichment left ${unresolved.length.toLocaleString()} catalog titles unresolved; the saved checkpoint can resume them on the next run.`);
 }
 
 export function ValidateCatalogOriginCoverage(catalogs, cache) {

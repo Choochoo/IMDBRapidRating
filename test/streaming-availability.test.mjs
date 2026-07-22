@@ -6,6 +6,11 @@ const MovieMediaType = "movie";
 const Country = "US";
 const ApiKey = "api-key";
 const TmdbId = 101;
+const SubscriptionType = "subscription";
+const NetflixName = "Netflix";
+const NetflixLogoPath = "/netflix.jpg";
+const AppleTvName = "Apple TV";
+const AppleTvLogoPath = "/apple.jpg";
 const Now = new Date("2026-07-22T12:00:00.000Z");
 const FreshAvailability = Object.freeze({ country: Country, fetchedAt: "2026-07-22T06:00:00.000Z", watchUrl: "", providers: [] });
 const StaleAvailability = Object.freeze({ country: Country, fetchedAt: "2026-07-20T06:00:00.000Z", watchUrl: "", providers: [] });
@@ -26,10 +31,18 @@ async function VerifyWatchProviderFetch() {
 }
 
 function VerifyProviderNormalization() {
-  const providers = [{ provider_id: 8, provider_name: " Netflix ", logo_path: "/netflix.jpg", display_priority: 1 }, { provider_id: 0, provider_name: "Invalid" }, { provider_id: 9, provider_name: "", logo_path: "/blank.jpg" }, { provider_id: 10, provider_name: "Unsafe Logo", logo_path: "/../secret" }];
-  const expected = [{ type: "subscription", id: 8, name: "Netflix", logoPath: "/netflix.jpg", displayPriority: 1 }, { type: "subscription", id: 10, name: "Unsafe Logo", logoPath: "", displayPriority: 0 }];
-  assert.deepEqual(NormalizeWatchProviders("subscription", providers), expected);
-  assert.deepEqual(NormalizeWatchProviders("unknown", [{ provider_id: 8, provider_name: "Netflix" }]), []);
+  const providers = [
+    { provider_id: 8, provider_name: ` ${NetflixName} `, logo_path: NetflixLogoPath, display_priority: 1 },
+    { provider_id: 0, provider_name: "Invalid" },
+    { provider_id: 9, provider_name: "", logo_path: "/blank.jpg" },
+    { provider_id: 10, provider_name: "Unsafe Logo", logo_path: "/../secret" }
+  ];
+  const expected = [
+    { type: SubscriptionType, id: 8, name: NetflixName, logoPath: NetflixLogoPath, displayPriority: 1 },
+    { type: SubscriptionType, id: 10, name: "Unsafe Logo", logoPath: "", displayPriority: 0 }
+  ];
+  assert.deepEqual(NormalizeWatchProviders(SubscriptionType, providers), expected);
+  assert.deepEqual(NormalizeWatchProviders("unknown", [{ provider_id: 8, provider_name: NetflixName }]), []);
 }
 
 async function VerifyFreshAvailability() {
@@ -57,14 +70,15 @@ async function VerifyStaleRefresh() {
 }
 
 async function VerifyFailedRefresh() {
-  const state = { persisted: false };
-  const service = CreateStreamingAvailabilityService({ fetchImpl: async () => ({ ok: false, status: 503 }), now: () => Now });
+  const state = { persisted: false, errors: [] };
+  const service = CreateStreamingAvailabilityService({ fetchImpl: async () => ({ ok: false, status: 503 }), now: () => Now, reportError: (error) => state.errors.push(error) });
   const request = { ...BuildRequest(StaleAvailability), persist: async () => { state.persisted = true; } };
   const result = await service.get(request);
   await WaitForTurn();
   assert.equal(result.stale, true);
   assert.equal(result.refreshing, true);
   assert.equal(state.persisted, false);
+  assert.match(state.errors[0].message, /HTTP 503/);
 }
 
 async function VerifyKeylessStaleAvailability() {
@@ -86,7 +100,14 @@ function CreateProviderFetch(calls) {
 }
 
 function BuildProviderPayload() {
-  const options = { link: "https://www.themoviedb.org/movie/101/watch?locale=US", flatrate: [Provider(8, "Netflix", "/netflix.jpg", 1)], free: [Provider(2, "Freevee", "/freevee.jpg", 3)], ads: [Provider(3, "Tubi", "/tubi.jpg", 2)], rent: [Provider(10, "Apple TV", "/apple.jpg", 4)], buy: [Provider(10, "Apple TV", "/apple.jpg", 4)] };
+  const options = {
+    link: "https://www.themoviedb.org/movie/101/watch?locale=US",
+    flatrate: [Provider(8, NetflixName, NetflixLogoPath, 1)],
+    free: [Provider(2, "Freevee", "/freevee.jpg", 3)],
+    ads: [Provider(3, "Tubi", "/tubi.jpg", 2)],
+    rent: [Provider(10, AppleTvName, AppleTvLogoPath, 4)],
+    buy: [Provider(10, AppleTvName, AppleTvLogoPath, 4)]
+  };
   return { results: { [Country]: options } };
 }
 

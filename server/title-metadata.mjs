@@ -5,10 +5,10 @@ import { fileURLToPath } from "node:url";
 import { BuildUserDataPath, EnsureUserDataParent, MigrateLegacyFile } from "./user-data.mjs";
 import { NormalizeLanguageCode, NormalizeTmdbOrigin } from "../shared/title-filters.js";
 import { CreateStreamingAvailabilityService } from "./streaming-availability.mjs";
+import { AddTmdbApiKey, BuildTmdbHeaders, TmdbApiUrl } from "./tmdb-request.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CachePath = BuildTitleMetadataCachePath();
-const TmdbApiUrl = "https://api.themoviedb.org/3";
 const TmdbImageUrl = "https://image.tmdb.org/t/p/w342";
 const MovieMediaType = "movie";
 const TvMediaType = "tv";
@@ -33,7 +33,7 @@ export async function GetTitleMetadata(titleId, options = {}) {
   const metadata = useCached ? cached : await LoadTitleMetadataOnce(titleId, { ...options, mediaType }, cached);
   if (!useCached || shouldMigrateLocalCache || (!databaseMetadata?.metadataCheckedAt && metadata?.metadataCheckedAt))
     await PersistMetadata(metadata, options.metadataStore);
-  const streamingAvailability = await ResolveStreamingAvailability(metadata, options);
+  const streamingAvailability = options.includeStreaming ? await ResolveStreamingAvailability(metadata, options) : null;
   return Ok(BuildPublicMetadata(metadata, streamingAvailability));
 }
 
@@ -67,9 +67,24 @@ async function LoadTitleMetadata(titleId, options, cached = {}) {
   };
 }
 
-function LoadMetadataSources(titleId, options, cached) {
+async function LoadMetadataSources(titleId, options, cached) {
   const fetchImpl = options.fetchImpl || globalThis.fetch;
-  return Promise.all([FetchTmdbMetadata(titleId, options, cached).catch(() => null), FetchTitlePageMetadata(titleId, fetchImpl).catch(() => null), FetchSuggestionMetadata(titleId, fetchImpl).catch(() => null)]);
+  const tmdb = ReadTmdbApiKey(options) ? FetchTmdbMetadata(titleId, options, cached) : Promise.resolve(null);
+  const sources = [{ name: "TMDB", promise: tmdb }, { name: "IMDb title page", promise: FetchTitlePageMetadata(titleId, fetchImpl) }, { name: "IMDb suggestion", promise: FetchSuggestionMetadata(titleId, fetchImpl) }];
+  const results = await Promise.allSettled(sources.map((source) => source.promise));
+  ReportMetadataSourceFailures(titleId, sources, results);
+  return results.map(ReadSettledMetadata);
+}
+
+function ReportMetadataSourceFailures(titleId, sources, results) {
+  for (let index = 0; index < results.length; index++) {
+    if (results[index].status === "rejected")
+      console.warn(`${titleId} ${sources[index].name} metadata failed: ${results[index].reason?.message || results[index].reason}`);
+  }
+}
+
+function ReadSettledMetadata(result) {
+  return result.status === "fulfilled" ? result.value : null;
 }
 
 function BuildMetadataIdentity(titleId, options, tmdb, cached) {
@@ -185,46 +200,26 @@ function BuildTmdbFindUrl(titleId, apiKey) {
 
 function BuildTmdbFindParams(apiKey) {
   const params = new URLSearchParams({ external_source: "imdb_id", language: TmdbLanguage });
-  if (!IsTmdbBearerToken(apiKey))
-    params.set("api_key", apiKey);
+  AddTmdbApiKey(params, apiKey);
   return params;
-}
-
-function BuildTmdbHeaders(apiKey) {
-  const headers = { "accept": "application/json" };
-  if (IsTmdbBearerToken(apiKey))
-    headers.authorization = `Bearer ${apiKey}`;
-  return headers;
 }
 
 function ReadTmdbApiKey(options) {
   return String(options?.tmdbApiKey || "").trim();
 }
 
-function IsTmdbBearerToken(apiKey) {
-  return String(apiKey || "").includes(".");
-}
-
 function FindTmdbResult(payload, expectedMediaType) {
-  const movies = Array.isArray(payload?.movie_results) ? payload.movie_results : [];
-  const shows = Array.isArray(payload?.tv_results) ? payload.tv_results : [];
-  if (expectedMediaType === TvMediaType && shows[0])
-    return { item: shows[0], mediaType: TvMediaType };
-  if (expectedMediaType === MovieMediaType && movies[0])
-    return { item: movies[0], mediaType: MovieMediaType };
-  if (movies[0])
-    return { item: movies[0], mediaType: MovieMediaType };
-  if (shows[0])
-    return { item: shows[0], mediaType: TvMediaType };
-  return null;
+  const values = expectedMediaType === TvMediaType ? payload?.tv_results : payload?.movie_results;
+  if (!Array.isArray(values) || !values[0])
+    return null;
+  return { item: values[0], mediaType: expectedMediaType };
 }
 
 async function FetchTmdbExtras(mediaType, id, apiKey, fetchImpl = globalThis.fetch) {
   if (!Number.isInteger(Number(id)))
     return { actors: [], trailerUrl: "" };
   const params = new URLSearchParams({ language: TmdbLanguage, append_to_response: "credits,videos" });
-  if (!IsTmdbBearerToken(apiKey))
-    params.set("api_key", apiKey);
+  AddTmdbApiKey(params, apiKey);
   const response = await fetchImpl(`${TmdbApiUrl}/${mediaType}/${id}?${params}`, { headers: BuildTmdbHeaders(apiKey) });
   if (!response.ok)
     throw new Error(`TMDB details returned HTTP ${response.status}.`);
@@ -379,9 +374,12 @@ export function NormalizeTrailerUrl(value) {
 function ScoreTmdbTrailer(video) {
   const type = String(video?.type || "").toLowerCase();
   const name = String(video?.name || "").toLowerCase();
-  return (type === "trailer" ? 100 : type === "teaser" ? 50 : 0)
-    + (video?.official ? 25 : 0)
-    + (name.includes("official") ? 10 : 0);
+  let score = { trailer: 100, teaser: 50 }[type] || 0;
+  if (video?.official)
+    score += 25;
+  if (name.includes("official"))
+    score += 10;
+  return score;
 }
 
 function ReadImdbTrailerUrl(value) {
@@ -631,19 +629,24 @@ function DecodeHtmlEntities(value) {
 }
 
 function LoadMetadataCache() {
+  if (!existsSync(CachePath))
+    return {};
   try {
-    if (!existsSync(CachePath))
-      return {};
     const parsed = JSON.parse(readFileSync(CachePath, "utf8"));
     return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
+  } catch (error) {
+    console.warn(`Title metadata cache read failed at ${CachePath}: ${error.message}`);
     return {};
   }
 }
 
 function ScheduleCacheWrite() {
   clearTimeout(CacheWriteTimer);
-  CacheWriteTimer = setTimeout(() => WriteMetadataCache().catch(() => null), 500);
+  CacheWriteTimer = setTimeout(() => WriteMetadataCache().catch(ReportMetadataCacheWriteFailure), 500);
+}
+
+function ReportMetadataCacheWriteFailure(error) {
+  console.warn(`Title metadata cache write failed at ${CachePath}: ${error.message}`);
 }
 
 async function WriteMetadataCache() {

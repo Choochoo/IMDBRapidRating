@@ -8,9 +8,58 @@ const MovieTitleId = "tt0000001";
 const TvTitleId = "tt0000002";
 const Country = "US";
 const CheckedAt = "2026-07-22T12:34:56.000Z";
-const DatabaseRow = Object.freeze({ tt_id: MovieTitleId, media_type: MovieMediaType, status: "matched", tmdb_id: 101, origin_countries: [Country], original_language: "en", checked_at: CheckedAt, poster_url: "https://image.tmdb.org/poster.jpg", synopsis: "A movie.", actors: ["Actor One"], trailer_url: "", series_status: "", season_count: 0, episode_count: 0, episode_runtime_minutes: 0, metadata_source: "tmdb", source_payload: { id: 101, title: "A movie" }, metadata_checked_at: CheckedAt, streaming_availability: {} });
-const OriginEntry = Object.freeze({ ttId: MovieTitleId, mediaType: MovieMediaType, status: "matched", tmdbId: 101, originCountries: [Country], originalLanguage: "en", checkedAt: CheckedAt });
-const MetadataEntry = Object.freeze({ titleId: MovieTitleId, mediaType: MovieMediaType, tmdbId: 101, originCountries: [Country], originalLanguage: "en", posterUrl: "https://image.tmdb.org/poster.jpg", synopsis: "A movie.", actors: ["Actor One"], source: "tmdb", sourcePayload: { id: 101, title: "A movie", credits: { cast: [] } }, metadataCheckedAt: CheckedAt });
+const MatchedStatus = "matched";
+const EnglishLanguage = "en";
+const PosterUrl = "https://image.tmdb.org/poster.jpg";
+const Synopsis = "A movie.";
+const ActorName = "Actor One";
+const TmdbSource = "tmdb";
+const DatabaseRowData = {
+  tt_id: MovieTitleId,
+  media_type: MovieMediaType,
+  status: MatchedStatus,
+  tmdb_id: 101,
+  origin_countries: [Country],
+  original_language: EnglishLanguage,
+  checked_at: CheckedAt,
+  poster_url: PosterUrl,
+  synopsis: Synopsis,
+  actors: [ActorName],
+  trailer_url: "",
+  series_status: "",
+  season_count: 0,
+  episode_count: 0,
+  episode_runtime_minutes: 0,
+  metadata_source: TmdbSource,
+  source_payload: { id: 101, title: Synopsis },
+  metadata_checked_at: CheckedAt,
+  streaming_availability: {}
+};
+const OriginEntryData = {
+  ttId: MovieTitleId,
+  mediaType: MovieMediaType,
+  status: MatchedStatus,
+  tmdbId: 101,
+  originCountries: [Country],
+  originalLanguage: EnglishLanguage,
+  checkedAt: CheckedAt
+};
+const MetadataEntryData = {
+  titleId: MovieTitleId,
+  mediaType: MovieMediaType,
+  tmdbId: 101,
+  originCountries: [Country],
+  originalLanguage: EnglishLanguage,
+  posterUrl: PosterUrl,
+  synopsis: Synopsis,
+  actors: [ActorName],
+  source: TmdbSource,
+  sourcePayload: { id: 101, title: Synopsis, credits: { cast: [] } },
+  metadataCheckedAt: CheckedAt
+};
+const DatabaseRow = Object.freeze(DatabaseRowData);
+const OriginEntry = Object.freeze(OriginEntryData);
+const MetadataEntry = Object.freeze(MetadataEntryData);
 const Availability = Object.freeze({ country: Country, fetchedAt: CheckedAt, watchUrl: "https://www.themoviedb.org/movie/101/watch", providers: [] });
 
 test("PostgreSQL metadata cache reads only requested movie and TV title IDs", VerifyTargetedReads);
@@ -23,8 +72,8 @@ async function VerifyTargetedReads() {
   const recording = CreateReadPool();
   const cache = await CreateTitleMetadataStore(recording.pool).read([{ ttId: MovieTitleId, mediaType: MovieMediaType }, { ttId: MovieTitleId, mediaType: MovieMediaType }, { ttId: TvTitleId, mediaType: TvMediaType }]);
   assert.equal(cache[MovieTitleId].tmdbId, 101);
-  assert.equal(cache[MovieTitleId].synopsis, "A movie.");
-  assert.deepEqual(cache[MovieTitleId].actors, ["Actor One"]);
+  assert.equal(cache[MovieTitleId].synopsis, Synopsis);
+  assert.deepEqual(cache[MovieTitleId].actors, [ActorName]);
   assert.equal(cache[MovieTitleId].sourcePayload.id, 101);
   assert.deepEqual(recording.calls.map((call) => call.parameters), [[MovieMediaType, [MovieTitleId]], [TvMediaType, [TvTitleId]]]);
 }

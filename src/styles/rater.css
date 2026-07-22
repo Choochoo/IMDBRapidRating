@@ -441,6 +441,8 @@
 }
 
 .shortcut-panel {
+  display: flex;
+  align-items: center;
   gap: 14px;
   min-width: 0;
 }
