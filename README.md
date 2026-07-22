@@ -48,7 +48,7 @@ One-time setup:
   -ApiKey "<Octopus API key>"
 ```
 
-The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add a `TMDB_BUILD_API_KEY` Actions secret to enrich the generated catalogs with production-country and original-language metadata. The PostgreSQL connection string is not stored in GitHub: the internal self-hosted runner must inherit `POSTGRES_CONNECTION_STRING`, or inherit `IMDB_RAPID_RATER_HOME` pointing to an ACL-protected directory containing `settings.env`. The runner must have internal network access to PostgreSQL. Deployment fails before packaging when enrichment cannot use the database or produces no usable origin metadata.
+The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add `POSTGRES_CONNECTION_STRING` and `TMDB_BUILD_API_KEY` Actions repository secrets so the build can cache title metadata in PostgreSQL and enrich the generated catalogs with production-country and original-language metadata. The self-hosted runner must have internal network access to PostgreSQL. Deployment fails before packaging when enrichment cannot use the database or produces no usable origin metadata.
 
 Configure these Octopus project variables before the first account-backed deployment. Mark the first three as sensitive:
 
@@ -60,7 +60,7 @@ Configure these Octopus project variables before the first account-backed deploy
 
 Use a dedicated PostgreSQL database/user with access only to the `imdb_rapid_rater` schema. The deployment writes the runtime values to an ACL-restricted file, installs production dependencies, and applies migrations before starting the scheduled task.
 
-For build-time origin enrichment, configure the self-hosted GitHub Actions runner service locally with either `POSTGRES_CONNECTION_STRING` or `IMDB_RAPID_RATER_HOME`. Restart the runner service after changing its environment. Keeping the settings directory outside the checked-out repository prevents checkout cleanup from deleting it and keeps the internal database credential out of GitHub.
+For build-time origin enrichment, configure the `POSTGRES_CONNECTION_STRING` Actions repository secret with a dedicated PostgreSQL account that can access the `imdb_rapid_rater` schema.
 
 `RapidRater.AppOrigin` is the primary browser origin. Same-origin requests are accepted from the host serving the current request, while additional trusted browser origins can be supplied through `RapidRater.AllowedOrigins`; the deployment writes them to the `APP_ALLOWED_ORIGINS` runtime setting. The repository contains no deployment-specific hostnames or addresses.
 

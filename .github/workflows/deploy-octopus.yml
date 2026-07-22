@@ -31,8 +31,12 @@ jobs:
 
       - name: Validate deployment credentials
         env:
+          POSTGRES_CONNECTION_STRING: ${{ secrets.POSTGRES_CONNECTION_STRING }}
           TMDB_BUILD_API_KEY: ${{ secrets.TMDB_BUILD_API_KEY }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:POSTGRES_CONNECTION_STRING)) {
+            throw 'POSTGRES_CONNECTION_STRING is required. Add it as a GitHub Actions repository secret before deploying.'
+          }
           if ([string]::IsNullOrWhiteSpace($env:TMDB_BUILD_API_KEY)) {
             throw 'TMDB_BUILD_API_KEY is required. Add it as a GitHub Actions repository secret before deploying.'
           }
@@ -66,6 +70,7 @@ jobs:
 
       - name: Enrich title metadata
         env:
+          POSTGRES_CONNECTION_STRING: ${{ secrets.POSTGRES_CONNECTION_STRING }}
           TMDB_BUILD_API_KEY: ${{ secrets.TMDB_BUILD_API_KEY }}
         run: |
           npm run build:origins
