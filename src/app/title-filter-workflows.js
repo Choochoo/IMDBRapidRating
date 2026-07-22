@@ -132,9 +132,10 @@ function RenderOptionList(container, counts, selected, type) {
 
 function BuildOption(option, checked, type) {
   const label = document.createElement("label");
-  label.className = "filter-option";
+  label.className = "filter-option form-check";
   const input = document.createElement("input");
   input.type = "checkbox";
+  input.className = "form-check-input";
   input.checked = checked;
   input.dataset[type === "country" ? "filterCountry" : "filterLanguage"] = option.code;
   const name = document.createElement("span");

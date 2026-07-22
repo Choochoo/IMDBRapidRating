@@ -47,7 +47,7 @@ One-time setup:
   -ApiKey "<Octopus API key>"
 ```
 
-The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add a `TMDB_BUILD_API_KEY` Actions secret to enrich the generated catalogs with production-country and original-language metadata. Deployment still succeeds without it, but only year filtering is available until an enriched catalog is deployed.
+The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add a `TMDB_BUILD_API_KEY` Actions secret to enrich the generated catalogs with production-country and original-language metadata. Deployment fails before packaging when this secret is missing or when enrichment produces no usable origin metadata, preventing an apparently successful release with empty country and language filters.
 
 Configure these Octopus project variables before the first account-backed deployment. Mark the first three as sensitive:
 
@@ -87,6 +87,7 @@ npm run user:create -- you@example.com
 ```powershell
 cd path\to\MovieRatingProject
 npm run build:data
+npm run build
 npm start
 ```
 
@@ -272,10 +273,15 @@ node scripts/build-movie-pool.mjs --refresh
 ## File Structure
 
 ```text
-index.html                 App shell
-src/styles.css             UI styling
+index.html                 App shell and browser-route markup
+vite.config.js             Production frontend build
+tsconfig.json              Frontend type-checking foundation
+src/styles.css             Ordered stylesheet entrypoint
+src/styles/                Foundation, workspace, rater, dialog, and responsive styles
 src/app.js                 Browser entrypoint
-src/app/rapid-rater-app.js Browser app coordinator
+src/app/rapid-rater-app.js Browser lifecycle and cross-feature coordinator
+src/app/features/          Account sync, rendering, rating, recommendation, and transfer features
+src/app/feature-methods.js Collision-safe feature composition
 src/app/elements.js        DOM element lookup
 src/app/state.js           Initial app state builders
 src/app/movies.js          Movie and TV title data normalization

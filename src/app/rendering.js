@@ -3,7 +3,7 @@ import { IsCsvSyncFailure } from "./rating-records.js";
 
 export function RenderCard(movie, index, metadata) {
   const tone = ToneFromId(movie.ttId);
-  const className = index === 0 ? "movie-card active" : "movie-card";
+  const className = index === 0 ? "movie-card card active" : "movie-card card";
   const id = EscapeHtml(movie.ttId);
   const opening = `<article class="${className}" data-ttid="${id}" style="--tone: ${tone};">`;
   return `${opening}${RenderPoster(movie, metadata)}${RenderCardBody(movie, index, metadata)}</article>`;
@@ -84,16 +84,16 @@ export function RenderRecommendationCard(item, index = 0) {
   const genres = RenderRecommendationGenres(item);
   const eyebrow = `<div class="recommendation-card-kicker"><span>Pick ${String(index + 1).padStart(2, "0")}</span><span>Matched to you</span></div>`;
   const body = `${eyebrow}${heading}${genres}${RenderRecommendationWhy(item)}${RenderRecommendationActions(item)}`;
-  const content = `<div class="recommendation-card-body">${body}</div>`;
+  const content = `<div class="recommendation-card-body d-flex flex-column">${body}</div>`;
   const tone = ToneFromId(item.ttId || item.title || String(index));
-  return `<article class="recommendation-card" style="--card-index:${index};--tone:${tone}"${RenderRecommendationData(item)}>${RenderRecommendationPoster(item)}${content}</article>`;
+  return `<article class="recommendation-card card" style="--card-index:${index};--tone:${tone}"${RenderRecommendationData(item)}>${RenderRecommendationPoster(item)}${content}</article>`;
 }
 
 export function RenderRecommendationSkeletons(count = 9) {
   return Array.from({ length: count }, (_, index) => `
-    <article class="recommendation-card recommendation-skeleton" aria-hidden="true" style="--card-index:${index}">
+    <article class="recommendation-card recommendation-skeleton card" aria-hidden="true" style="--card-index:${index}">
       <div class="recommendation-poster skeleton-block"></div>
-      <div class="recommendation-card-body">
+      <div class="recommendation-card-body d-flex flex-column">
         <div class="skeleton-line skeleton-kicker"></div>
         <div class="skeleton-line skeleton-title"></div>
         <div class="skeleton-pills"><span></span><span></span><span></span></div>
@@ -119,10 +119,10 @@ function RenderCardBody(movie, index, metadata) {
   const title = `<h2 class="title">${EscapeHtml(movie.title)}</h2>`;
   const series = movie.mediaType === "tv" ? `<div class="series-details">${RenderSeriesDetailsContent(movie, metadata)}</div>` : "";
   const body = `${RenderMovieId(movie)}${title}${series}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>`;
-  const wishlist = index === 0 ? `<button type="button" class="movie-wishlist-action" data-add-active-to-wishlist><span aria-hidden="true">&#9734;</span> Add to wishlist</button>` : "";
+  const wishlist = index === 0 ? `<button type="button" class="movie-wishlist-action btn btn-primary" data-add-active-to-wishlist><span aria-hidden="true">&#9734;</span> Add to wishlist</button>` : "";
   const trailer = index === 0 ? RenderTrailerLink(metadata, "movie-trailer-link") : "";
-  const actions = index === 0 ? `<div class="movie-card-actions">${trailer}${wishlist}</div>` : "";
-  return `<div class="movie-body">${body}<div class="meta">${RenderMeta(movie)}</div>${actions}</div>`;
+  const actions = index === 0 ? `<div class="movie-card-actions d-grid">${trailer}${wishlist}</div>` : "";
+  return `<div class="movie-body">${body}<div class="meta d-flex flex-wrap">${RenderMeta(movie)}</div>${actions}</div>`;
 }
 
 function RenderSeriesDetailsContent(show, metadata) {
@@ -137,7 +137,7 @@ function RenderSeriesDetailsContent(show, metadata) {
   const runtime = metadata.episodeRuntimeMinutes || show.runtimeMinutes;
   if (runtime)
     facts.push(`${runtime} min episodes`);
-  return facts.map((fact) => `<span>${EscapeHtml(fact)}</span>`).join("");
+  return facts.map((fact) => `<span class="badge rounded-pill">${EscapeHtml(fact)}</span>`).join("");
 }
 
 function RenderActors(metadata) {
@@ -157,7 +157,7 @@ function RenderTrailerLink(metadata, className) {
   const url = ReadTrailerUrl(metadata);
   const hidden = url ? "" : " hidden";
   const href = url ? ` href="${EscapeHtml(url)}"` : "";
-  return `<a class="${className}" data-trailer-link${href} target="_blank" rel="noopener noreferrer"${hidden}><span aria-hidden="true">&#9654;</span> Watch trailer</a>`;
+  return `<a class="${className} btn btn-outline-info" data-trailer-link${href} target="_blank" rel="noopener noreferrer"${hidden}><span aria-hidden="true">&#9654;</span> Watch trailer</a>`;
 }
 
 function ReadTrailerUrl(metadata) {
@@ -183,8 +183,8 @@ function RenderPoster(movie, metadata) {
 
 function RenderMeta(movie) {
   const rating = RenderRatingPill(movie);
-  const votes = movie.numVotes ? `<span class="pill">${FormatCount(movie.numVotes)} votes</span>` : "";
-  const runtime = movie.mediaType !== "tv" && movie.runtimeMinutes ? `<span class="pill">${movie.runtimeMinutes} min</span>` : "";
+  const votes = movie.numVotes ? `<span class="badge rounded-pill text-bg-dark border">${FormatCount(movie.numVotes)} votes</span>` : "";
+  const runtime = movie.mediaType !== "tv" && movie.runtimeMinutes ? `<span class="badge rounded-pill text-bg-dark border">${movie.runtimeMinutes} min</span>` : "";
   const genres = movie.genres.slice(0, 3).map((genre) => RenderGenrePill(genre)).join("");
   return `${rating}${votes}${runtime}${genres}`;
 }
@@ -192,7 +192,7 @@ function RenderMeta(movie) {
 function RenderRatingPill(movie) {
   if (!movie.imdbRating)
     return "";
-  return `<span class="pill">${EscapeHtml(movie.imdbRating.toFixed(1))} IMDb</span>`;
+  return `<span class="badge rounded-pill text-bg-dark border">${EscapeHtml(movie.imdbRating.toFixed(1))} IMDb</span>`;
 }
 
 function FailureKind(record) {
@@ -212,7 +212,7 @@ function RenderModelOption(model) {
 function RenderRecommendationGenres(item) {
   const genres = Array.isArray(item.genres) ? item.genres : [];
   const pills = genres.slice(0, 4).map((genre) => RenderGenrePill(genre)).join("");
-  return `<div class="meta">${pills}</div>`;
+  return `<div class="meta d-flex flex-wrap">${pills}</div>`;
 }
 
 function RenderRecommendationPoster(item) {
@@ -227,18 +227,18 @@ function RenderRecommendationRating(item) {
 }
 
 function RenderRecommendationActions(item) {
-  const exclusion = `<button type="button" class="recommendation-exclusion" data-recommendation-exclusion>Don't recommend again</button>`;
+  const exclusion = `<button type="button" class="recommendation-exclusion btn btn-sm btn-outline-secondary" data-recommendation-exclusion>Don't recommend again</button>`;
   const trailer = RenderTrailerLink({}, "recommendation-trailer-link");
-  return `<div class="recommendation-card-actions">${RenderRecommendationRating(item)}${trailer}${exclusion}</div>`;
+  return `<div class="recommendation-card-actions d-grid">${RenderRecommendationRating(item)}${trailer}${exclusion}</div>`;
 }
 
 function RenderRatingButtons() {
   const buttons = Array.from({ length: 10 }, (_, index) => RenderRatingButton(index + 1)).join("");
-  return `<div class="recommendation-rate-buttons">${buttons}</div>`;
+  return `<div class="recommendation-rate-buttons d-grid">${buttons}</div>`;
 }
 
 function RenderRatingButton(rating) {
-  return `<button type="button" data-recommendation-rating="${rating}">${rating}</button>`;
+  return `<button type="button" class="btn btn-sm btn-outline-secondary" data-recommendation-rating="${rating}">${rating}</button>`;
 }
 
 function RenderRecommendationYear(item) {
@@ -261,9 +261,9 @@ function RenderRecommendationWhy(item) {
 function RenderRatingEvidence(why) {
   const evidence = Array.isArray(why.ratingEvidence) ? why.ratingEvidence : [];
   const items = evidence.slice(0, 4).map((line) => `<li>${EscapeHtml(line)}</li>`).join("");
-  return items ? `<ul class="recommendation-evidence">${items}</ul>` : "";
+  return items ? `<ul class="recommendation-evidence d-grid">${items}</ul>` : "";
 }
 
 function RenderGenrePill(genre) {
-  return `<span class="pill">${EscapeHtml(genre)}</span>`;
+  return `<span class="badge rounded-pill text-bg-dark border">${EscapeHtml(genre)}</span>`;
 }

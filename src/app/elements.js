@@ -16,24 +16,48 @@ export function BuildElements() {
 
 function BuildAccountElements() {
   return {
+    ...BuildAuthVisibilityElements(),
+    ...BuildLoginElements(),
+    ...BuildSignupElements(),
+    ...BuildMigrationElements()
+  };
+}
+
+function BuildAuthVisibilityElements() {
+  return {
     accountBadge: Element("account-badge"),
     signOut: Element("sign-out"),
     authLanding: Element("auth-landing"),
     loginPanel: Element("login-panel"),
     signupPanel: Element("signup-panel"),
     showLogin: Element("show-login"),
-    showSignup: Element("show-signup"),
+    showSignup: Element("show-signup")
+  };
+}
+
+function BuildLoginElements() {
+  return {
     loginForm: Element("login-form"),
     loginEmail: Element("login-email"),
     loginPassword: Element("login-password"),
     loginError: Element("login-error"),
-    loginSubmit: Element("login-submit"),
+    loginSubmit: Element("login-submit")
+  };
+}
+
+function BuildSignupElements() {
+  return {
     signupForm: Element("signup-form"),
     signupEmail: Element("signup-email"),
     signupPassword: Element("signup-password"),
     signupConfirmation: Element("signup-confirmation"),
     signupError: Element("signup-error"),
-    signupSubmit: Element("signup-submit"),
+    signupSubmit: Element("signup-submit")
+  };
+}
+
+function BuildMigrationElements() {
+  return {
     migrationDialog: Element("migration-dialog"),
     migrationSummary: Element("migration-summary"),
     migrationImport: Element("migration-import"),
@@ -53,19 +77,37 @@ function BuildMobileElements() {
 
 function BuildViewElements() {
   return {
+    ...BuildNavigationElements(),
+    ...BuildViewSectionElements(),
+    ...BuildViewCopyElements()
+  };
+}
+
+function BuildNavigationElements() {
+  return {
     switchMovies: Element("switch-movies"),
     switchTv: Element("switch-tv"),
     brandMode: Element("brand-mode"),
     viewTabs: Element("view-tabs"),
     tabRater: Element("tab-rater"),
     tabAi: Element("tab-ai"),
-    tabSync: Element("tab-sync"),
+    tabSync: Element("tab-sync")
+  };
+}
+
+function BuildViewSectionElements() {
+  return {
     raterView: Element("rater-view"),
     recommendationView: Element("recommendation-view"),
     syncView: Element("sync-view"),
     ratingFooter: Element("rating-footer"),
     recommendationTitle: Element("recommendation-title"),
-    recommendationDescription: Element("recommendation-description"),
+    recommendationDescription: Element("recommendation-description")
+  };
+}
+
+function BuildViewCopyElements() {
+  return {
     watchlistTitle: Element("watchlist-title"),
     emptyTitle: Element("empty-title"),
     ratedLabel: Element("rated-label"),
@@ -87,9 +129,29 @@ function BuildCounterElements() {
 
 function BuildStatusElements() {
   return {
+    ...BuildConnectionStatusElements(),
+    ...BuildFailureStatusElements()
+  };
+}
+
+function BuildConnectionStatusElements() {
+  return {
     configureFilters: Element("configure-filters"),
+    dataMenu: Element("data-menu"),
+    connectionMenu: Element("connection-menu"),
+    connectionSummary: Element("connection-summary"),
+    connectionSummaryLabel: Element("connection-summary-label"),
     sourceBadge: Element("source-badge"),
+    sourceStatusRow: Element("source-status-row"),
     liveBadge: Element("live-badge"),
+    liveStatusRow: Element("live-status-row"),
+    imdbStatusLabel: Element("imdb-status-label"),
+    tmdbStatusLabel: Element("tmdb-status-label")
+  };
+}
+
+function BuildFailureStatusElements() {
+  return {
     retryFailed: Element("retry-failed"),
     failureRetry: Element("failure-retry"),
     failurePanel: Element("failure-panel"),
@@ -115,12 +177,25 @@ function BuildFileElements() {
 
 function BuildSyncElements() {
   return {
+    ...BuildSyncActionElements(),
+    ...BuildSyncCountElements(),
+    ...BuildSyncDetailElements()
+  };
+}
+
+function BuildSyncActionElements() {
+  return {
     syncImportImdb: Element("sync-import-imdb"),
     syncImportLetterboxd: Element("sync-import-letterboxd"),
     syncToImdb: Element("sync-to-imdb"),
     syncToLetterboxd: Element("sync-to-letterboxd"),
     syncStatus: Element("sync-status"),
-    syncSource: Element("sync-source"),
+    syncSource: Element("sync-source")
+  };
+}
+
+function BuildSyncCountElements() {
+  return {
     syncImdbCount: Element("sync-imdb-count"),
     syncLetterboxdCount: Element("sync-letterboxd-count"),
     syncMatchedCount: Element("sync-matched-count"),
@@ -128,7 +203,12 @@ function BuildSyncElements() {
     syncToLetterboxdCount: Element("sync-to-letterboxd-count"),
     syncConflictCount: Element("sync-conflict-count"),
     syncUnmatchedCount: Element("sync-unmatched-count"),
-    syncWatchedOnlyCount: Element("sync-watched-only-count"),
+    syncWatchedOnlyCount: Element("sync-watched-only-count")
+  };
+}
+
+function BuildSyncDetailElements() {
+  return {
     syncConflictList: Element("sync-conflict-list"),
     syncUnmatchedList: Element("sync-unmatched-list")
   };
@@ -144,10 +224,23 @@ function BuildCookieElements() {
 
 function BuildFilterElements() {
   return {
+    ...BuildFilterDialogElements(),
+    ...BuildFilterInputElements(),
+    ...BuildFilterActionElements()
+  };
+}
+
+function BuildFilterDialogElements() {
+  return {
     filtersDialog: Element("filters-dialog"),
     filtersTitle: Element("filters-title"),
     filtersDescription: Element("filters-description"),
-    filtersClose: Element("filters-close"),
+    filtersClose: Element("filters-close")
+  };
+}
+
+function BuildFilterInputElements() {
+  return {
     filterMinYear: Element("filter-min-year"),
     filterMaxYear: Element("filter-max-year"),
     filterCountryOptions: Element("filter-country-options"),
@@ -156,7 +249,12 @@ function BuildFilterElements() {
     filterIncludeUnknown: Element("filter-include-unknown"),
     filterOriginNote: Element("filter-origin-note"),
     filterPreview: Element("filter-preview"),
-    filterError: Element("filter-error"),
+    filterError: Element("filter-error")
+  };
+}
+
+function BuildFilterActionElements() {
+  return {
     filtersReset: Element("filters-reset"),
     filtersApply: Element("filters-apply")
   };

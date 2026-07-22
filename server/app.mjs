@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 import connectPgSimple from "connect-pg-simple";
 import express from "express";
@@ -10,41 +11,69 @@ import { RunMigrations } from "./db/migrate.mjs";
 import { RegisterApiRoutes } from "./routes.mjs";
 import { CreateRaterEvents } from "./rater-events.mjs";
 
+const ProductionEnvironment = "production";
+const DistributionDirectory = "dist";
+const IndexFileName = "index.html";
+const HttpsSource = "https:";
+const SelfSource = "'self'";
+const RootRoute = "/";
+const AllowedOriginProtocols = Object.freeze(["http:", HttpsSource]);
+const FrontendRoutes = Object.freeze([RootRoute, "/login", "/rate", "/wishlist", "/sync", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"]);
+const PostgresSessionStore = connectPgSimple(session);
+
 export async function CreateApp(rootPath) {
-  const sessionSecret = ReadSessionSecret();
   const { pool, db } = CreateDatabase();
   await RunMigrations(pool);
-  const app = express();
-  const secureCookie = /^https:/i.test(process.env.APP_ORIGIN || "");
-  app.disable("x-powered-by");
-  app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS || 1));
-  app.use(helmet(BuildHelmetOptions(secureCookie)));
-  app.use(express.json({ limit: "12mb", type: "application/json" }));
-  const PgStore = connectPgSimple(session);
-  app.use(session({
-    name: secureCookie ? "__Host-rapid-rater" : "rapid-rater.sid",
-    secret: sessionSecret,
-    store: new PgStore({ pool, schemaName: ReadDatabaseSchema(), tableName: "user_sessions" }),
-    resave: false,
-    saveUninitialized: false,
-    rolling: true,
-    cookie: { httpOnly: true, secure: secureCookie, sameSite: "lax", path: "/", maxAge: 30 * 24 * 60 * 60 * 1000 }
-  }));
-  app.use(VerifyOrigin);
+  const app = BuildExpressApp(pool);
   const store = CreateAccountStore({ db, pool });
   const raterEvents = CreateRaterEvents();
   RegisterApiRoutes(app, { store, pool, rootPath, raterEvents });
   RegisterStaticRoutes(app, rootPath);
-  app.use((error, request, response, _next) => {
-    console.error(`${request.method} ${request.path} failed:`, error.message);
-    response.status(500).json({ ok: false, code: "SERVER_ERROR", error: "The server could not complete the request." });
-  });
+  app.use(HandleAppError);
   return { app, pool, store };
 }
 
+function BuildExpressApp(pool) {
+  const secureCookie = /^https:/i.test(process.env.APP_ORIGIN || "");
+  const app = express();
+  app.disable("x-powered-by");
+  app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS || 1));
+  app.use(helmet(BuildHelmetOptions(secureCookie)));
+  app.use(express.json({ limit: "12mb", type: "application/json" }));
+  app.use(session(BuildSessionOptions(pool, secureCookie)));
+  app.use(VerifyOrigin);
+  return app;
+}
+
+function BuildSessionOptions(pool, secureCookie) {
+  return {
+    name: secureCookie ? "__Host-rapid-rater" : "rapid-rater.sid",
+    secret: ReadSessionSecret(),
+    store: new PostgresSessionStore({ pool, schemaName: ReadDatabaseSchema(), tableName: "user_sessions" }),
+    resave: false,
+    saveUninitialized: false,
+    rolling: true,
+    cookie: { httpOnly: true, secure: secureCookie, sameSite: "lax", path: RootRoute, maxAge: 30 * 24 * 60 * 60 * 1000 }
+  };
+}
+
+function HandleAppError(error, request, response, _next) {
+  console.error(`${request.method} ${request.path} failed:`, error.message);
+  response.status(500).json({ ok: false, code: "SERVER_ERROR", error: "The server could not complete the request." });
+}
+
 export function RegisterStaticRoutes(app, rootPath) {
+  const builtIndex = path.join(rootPath, DistributionDirectory, IndexFileName);
+  const useBuiltClient = process.env.NODE_ENV === ProductionEnvironment && existsSync(builtIndex);
+  const indexPath = useBuiltClient ? builtIndex : path.join(rootPath, IndexFileName);
+  app.use("/assets", express.static(path.join(rootPath, DistributionDirectory, "assets"), { index: false, immutable: true, maxAge: "1y" }));
   app.use("/src", express.static(path.join(rootPath, "src"), { index: false, maxAge: 0 }));
   app.use("/data", express.static(path.join(rootPath, "data"), { index: false, maxAge: 0 }));
+  RegisterSharedRoutes(app, rootPath);
+  app.get(FrontendRoutes, BuildClientPageHandler(indexPath));
+}
+
+function RegisterSharedRoutes(app, rootPath) {
   app.get("/shared/csv.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/csv.js")));
   app.get("/shared/media.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/media.js")));
   app.get("/shared/recommendation-basis.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/recommendation-basis.js")));
@@ -52,11 +81,14 @@ export function RegisterStaticRoutes(app, rootPath) {
   app.get("/vendor/bootstrap.min.css", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/bootstrap/dist/css/bootstrap.min.css")));
   app.get("/vendor/fflate.js", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/fflate/esm/browser.js")));
   app.get("/favicon.svg", (_request, response) => response.sendFile(path.join(rootPath, "favicon.svg")));
-  app.get(["/", "/login", "/rate", "/wishlist", "/sync", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"], (request, response) => {
-    if (request.path !== "/" && request.path.endsWith("/"))
+}
+
+function BuildClientPageHandler(indexPath) {
+  return (request, response) => {
+    if (request.path !== RootRoute && request.path.endsWith(RootRoute))
       return response.redirect(308, request.path.replace(/\/+$/, ""));
-    response.sendFile(path.join(rootPath, "index.html"));
-  });
+    response.sendFile(indexPath);
+  };
 }
 
 export function VerifyOrigin(request, response, next) {
@@ -82,7 +114,9 @@ export function ReadAllowedOrigins(request) {
 function NormalizeOrigin(value) {
   try {
     const url = new URL(String(value || ""));
-    return ["http:", "https:"].includes(url.protocol) ? url.origin : "";
+    if (!AllowedOriginProtocols.includes(url.protocol))
+      return "";
+    return url.origin;
   } catch {
     return "";
   }
@@ -98,19 +132,29 @@ function ReadSessionSecret() {
 export function BuildHelmetOptions(secureOrigin) {
   return {
     contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        connectSrc: ["'self'"],
-        "upgrade-insecure-requests": secureOrigin ? [] : null
-      }
+      directives: BuildContentSecurityDirectives(secureOrigin)
     },
     crossOriginResourcePolicy: { policy: "cross-origin" },
-    ...(secureOrigin ? {} : {
-      crossOriginOpenerPolicy: false,
-      originAgentCluster: false
-    })
+    ...BuildHttpHelmetOverrides(secureOrigin)
+  };
+}
+
+function BuildContentSecurityDirectives(secureOrigin) {
+  return {
+    defaultSrc: [SelfSource],
+    imgSrc: [SelfSource, "data:", HttpsSource],
+    styleSrc: [SelfSource, "'unsafe-inline'"],
+    scriptSrc: [SelfSource],
+    connectSrc: [SelfSource],
+    "upgrade-insecure-requests": secureOrigin ? [] : null
+  };
+}
+
+function BuildHttpHelmetOverrides(secureOrigin) {
+  if (secureOrigin)
+    return {};
+  return {
+    crossOriginOpenerPolicy: false,
+    originAgentCluster: false
   };
 }

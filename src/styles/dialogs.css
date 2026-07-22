@@ -1,0 +1,255 @@
+.cookie-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(16, 20, 24, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.cookie-card {
+  width: min(720px, 100%);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.filter-card {
+  width: min(880px, 100%);
+  max-height: min(860px, calc(100dvh - 36px));
+  overflow: auto;
+}
+
+.filter-section {
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.filter-section legend {
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.filter-year-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.filter-year-grid label {
+  margin: 0;
+}
+
+.filter-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  max-height: 190px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.filter-option,
+.cookie-card label.filter-option,
+.filter-checkbox,
+.cookie-card label.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 8px;
+  border-radius: 7px;
+  font-weight: 600;
+}
+
+.filter-option:hover,
+.filter-checkbox:hover {
+  background: rgba(126, 182, 255, 0.08);
+}
+
+.filter-option input,
+.filter-checkbox input {
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+
+.filter-option span {
+  min-width: 0;
+  flex: 1;
+}
+
+.filter-option small,
+.filter-checkbox small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.filter-options-empty {
+  grid-column: 1 / -1;
+  padding: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.filter-origin-note,
+.filter-preview {
+  margin: 12px 0 0;
+}
+
+.filter-preview {
+  color: #d8e8fb !important;
+  font-weight: 750;
+}
+
+.auth-landing {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 32px 20px;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(224, 173, 71, 0.14), transparent 34%),
+    radial-gradient(circle at 82% 76%, rgba(126, 182, 255, 0.1), transparent 36%),
+    var(--bg);
+}
+
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(340px, 460px);
+  gap: clamp(36px, 8vw, 110px);
+  align-items: center;
+  width: min(1040px, 100%);
+}
+
+.auth-intro h1 {
+  max-width: 620px;
+  margin: 28px 0 16px;
+  font-size: clamp(38px, 6vw, 68px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.auth-intro h1 span {
+  display: block;
+}
+
+.auth-intro p {
+  max-width: 580px;
+  color: #c4cdd7;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.auth-brand { min-width: 0; }
+
+.auth-card {
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+.auth-card h2 { margin: 24px 0 6px; font-size: 25px; }
+.auth-card form > p:not(.cookie-error) { margin: 0 0 20px; color: var(--muted); line-height: 1.45; }
+.auth-card label { display: block; margin: 14px 0 6px; font-size: 13px; font-weight: 700; }
+.auth-card small { display: block; margin-top: 6px; color: var(--muted); line-height: 1.4; }
+
+.auth-tabs {
+  gap: 6px;
+}
+
+.auth-tabs .nav-link.active { background: var(--accent-soft); color: var(--accent-text); }
+.auth-submit { width: 100%; min-height: 44px; }
+
+.account-ready {
+  border-color: rgba(66, 189, 104, 0.44);
+  color: #91dfaa;
+}
+
+.migration-summary {
+  margin-top: 12px;
+}
+
+.mobile-rating-bar {
+  display: none;
+}
+
+.cookie-header h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.cookie-card p,
+.cookie-card ol {
+  color: #c4cdd7;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cookie-card a {
+  color: #9ec8ff;
+}
+
+.cookie-card ol {
+  margin: 12px 0;
+  padding-left: 22px;
+}
+
+.cookie-card label {
+  display: block;
+  margin: 14px 0 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cookie-card textarea {
+  min-height: 130px;
+  resize: vertical;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.setup-input {
+  min-height: 40px;
+  font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.cookie-error {
+  min-height: 21px;
+  margin: 8px 0 0;
+}
+
+.empty-state {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(16, 20, 24, 0.92);
+}
+
+.empty-state > div {
+  max-width: 460px;
+  text-align: center;
+}
+
+.empty-state h1 {
+  margin: 0 0 8px;
+  font-size: 30px;
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--muted);
+}
+
+

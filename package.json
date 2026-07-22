@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "start": "node scripts/server.mjs",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "db:migrate": "node scripts/migrate.mjs",
     "user:create": "node scripts/create-user.mjs",
     "key:generate": "node scripts/generate-key.mjs",
     "build:data": "node scripts/build-movie-pool.mjs --minVotes=2500 --recentMinVotes=100 --recentYears=1",
     "build:origins": "node scripts/enrich-title-origins.mjs",
-    "check": "node scripts/check-syntax.mjs",
+    "check": "node scripts/check-syntax.mjs && npm run typecheck",
     "test": "node --test"
   },
   "engines": {
@@ -27,9 +29,16 @@
     "fflate": "^0.8.3",
     "helmet": "^8.3.0",
     "pg": "^8.22.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "supertest": "^7.2.2"
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "supertest": "^7.2.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.5"
   }
 }

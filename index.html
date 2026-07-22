@@ -1,105 +1,159 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>IMDb Rapid Rater</title>
     <base href="/">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/vendor/bootstrap.min.css">
     <link rel="stylesheet" href="/src/styles.css">
   </head>
   <body>
     <header class="app-header">
       <div class="header-main">
-        <div class="brand">
-          <span class="brand-mark">RR</span>
-          <span><b>IMDb Rapid Rater</b><small id="brand-mode">Movies</small></span>
-        </div>
-        <div class="primary-navigation">
-          <div class="media-switch" role="group" aria-label="Choose what to rate">
-            <button type="button" class="active" id="switch-movies" aria-pressed="true">Movies</button>
-            <button type="button" id="switch-tv" aria-pressed="false">TV Shows</button>
+        <div class="header-identity">
+          <div class="brand d-flex align-items-center gap-2">
+            <span class="brand-mark">RR</span>
+            <span><b>IMDb Rapid Rater</b><small id="brand-mode">Movies</small></span>
           </div>
-          <nav class="view-tabs" id="view-tabs" aria-label="Movie views">
-            <a class="view-tab active" id="tab-rater" href="/movies/rate">Rate Movies</a>
-            <a class="view-tab" id="tab-ai" href="/movies/wishlist">Movie Watchlist</a>
-            <a class="view-tab" id="tab-sync" href="/movies/sync">Sync Movies</a>
-          </nav>
+          <div class="media-selector">
+            <span class="media-selector-label">Browse</span>
+            <div class="media-switch btn-group" role="group" aria-label="Choose what to rate">
+              <button type="button" class="btn btn-sm btn-outline-secondary active" id="switch-movies" aria-pressed="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m7 5 2.5 4L12 5l2.5 4L17 5M3 9h18"/></svg>
+                <span>Movies</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="switch-tv" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="m8 3 4 4 4-4"/></svg>
+                <span>TV Shows</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <button type="button" class="mobile-header-toggle" id="mobile-header-toggle" aria-expanded="false" aria-controls="header-dashboard">
-          <span>Tools &amp; setup</span>
-          <span class="mobile-header-toggle-icon" aria-hidden="true"></span>
-        </button>
+
+        <nav class="view-tabs nav nav-pills" id="view-tabs" aria-label="Movie views">
+          <a class="view-tab nav-link active" id="tab-rater" href="/movies/rate">Rate Movies</a>
+          <a class="view-tab nav-link" id="tab-ai" href="/movies/wishlist">Movie Watchlist</a>
+          <a class="view-tab nav-link" id="tab-sync" href="/movies/sync">Sync Movies</a>
+        </nav>
+
+        <div class="header-actions" aria-label="Account and data controls">
+          <button type="button" class="header-action btn btn-sm btn-outline-secondary" id="configure-filters" title="Filter the rating queue">Filters</button>
+
+          <details class="header-menu data-menu" id="data-menu">
+            <summary class="header-action btn btn-sm btn-outline-secondary" title="Import, restore, download, or back up your ratings">
+              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+              <span>Import / Export</span>
+              <span class="menu-chevron" aria-hidden="true"></span>
+            </summary>
+            <div class="header-menu-panel data-menu-panel">
+              <div class="menu-heading"><strong>Import &amp; export</strong><span>Move or recover your ratings</span></div>
+              <button type="button" class="menu-action btn" id="import-csv" title="Add ratings downloaded from IMDb">
+                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/><path d="m14 15 2 2 4-4"/></svg>
+                <span><strong>Import IMDb ratings</strong><small>Add ratings from an IMDb CSV</small></span>
+              </button>
+              <button type="button" class="menu-action btn" id="load-json" title="Restore a Rapid Rater backup">
+                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+                <span><strong>Restore progress</strong><small>Load a complete backup</small></span>
+              </button>
+              <span class="menu-divider" aria-hidden="true"></span>
+              <button type="button" class="menu-action btn" id="export-csv" title="Download your ratings as a spreadsheet">
+                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                <span><strong>Download ratings</strong><small>Export this section as CSV</small></span>
+              </button>
+              <button type="button" class="menu-action btn" id="export-json" title="Download a complete backup of your progress">
+                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>
+                <span><strong>Back up all progress</strong><small>Save movies, TV, filters, and queues</small></span>
+              </button>
+              <button type="button" class="menu-action retry-action btn" id="retry-failed" title="Retry ratings that IMDb did not accept">
+                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+                <span><strong>Retry IMDb failures</strong><small>Resend failed live ratings</small></span>
+              </button>
+            </div>
+          </details>
+
+          <details class="header-menu connection-menu" id="connection-menu">
+            <summary class="header-action connection-summary connection-checking btn btn-sm btn-outline-secondary" id="connection-summary" title="Checking your connections">
+              <span class="connection-dot" aria-hidden="true"></span>
+              <span>Connection</span>
+              <small id="connection-summary-label">Checking</small>
+              <span class="menu-chevron" aria-hidden="true"></span>
+            </summary>
+            <div class="header-menu-panel connection-menu-panel">
+              <div class="menu-heading"><strong>Connection status</strong><span>Hover over a status for details</span></div>
+              <button type="button" class="connection-status status-checking btn" id="configure-imdb" data-tooltip="IMDb enables ratings to be written directly to your IMDb account.">
+                <span class="connection-dot" aria-hidden="true"></span>
+                <span><strong>IMDb</strong><small id="imdb-status-label">Checking…</small></span>
+                <span class="status-action">Manage</span>
+              </button>
+              <button type="button" class="connection-status status-checking btn" id="configure-tmdb" data-tooltip="TMDB supplies posters, summaries, cast, and title details.">
+                <span class="connection-dot" aria-hidden="true"></span>
+                <span><strong>TMDB</strong><small id="tmdb-status-label">Checking…</small></span>
+                <span class="status-action">Manage</span>
+              </button>
+              <div class="connection-status status-checking" id="live-status-row" data-tooltip="Live sync reports whether new ratings can be sent to IMDb.">
+                <span class="connection-dot" aria-hidden="true"></span>
+                <span><strong>Live rating sync</strong><small id="live-badge">Checking…</small></span>
+              </div>
+              <div class="connection-status status-checking" id="source-status-row" data-tooltip="The local title catalog supplies the movie or TV rating pool.">
+                <span class="connection-dot" aria-hidden="true"></span>
+                <span><strong>Title catalog</strong><small id="source-badge">Loading…</small></span>
+              </div>
+            </div>
+          </details>
+
+          <span id="account-badge" hidden>Signed in</span>
+          <button type="button" class="logout-action btn btn-sm btn-link" id="sign-out" hidden title="Log out of Rapid Rater">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg>
+            <span>Log out</span>
+          </button>
+        </div>
       </div>
 
       <div class="header-dashboard" id="header-dashboard">
-        <div class="status-strip" aria-label="system status">
-          <span class="status-chip account-ready" id="account-badge">Signed out</span>
-          <button type="button" class="status-chip" id="sign-out" hidden>Sign out</button>
-          <button type="button" class="status-chip live-missing" id="configure-imdb">IMDb checking</button>
-          <button type="button" class="status-chip metadata-missing" id="configure-tmdb">TMDB key needed</button>
-          <button type="button" class="status-chip" id="configure-filters">Filters</button>
-          <span class="status-chip" id="source-badge">Loading</span>
-          <span class="status-chip live-missing" id="live-badge">Live checking</span>
-        </div>
         <div class="header-workspace">
-          <div class="stats" aria-label="rating progress">
-            <div class="stat">
+          <div class="stats d-flex align-items-center" aria-label="rating progress">
+            <div class="stat card">
               <strong id="rated-count">0</strong>
               <span id="rated-label">Movies rated</span>
             </div>
-            <div class="stat">
+            <div class="stat card">
               <strong id="skip-count">0</strong>
               <span id="skip-label">Not seen</span>
             </div>
-            <div class="stat">
+            <div class="stat card">
               <strong id="imported-count">0</strong>
               <span>CSV</span>
             </div>
-            <div class="stat">
+            <div class="stat card">
               <strong id="sent-count">0</strong>
               <span>Sent</span>
             </div>
-            <div class="stat">
+            <div class="stat card">
               <strong id="failed-count">0</strong>
               <span>Failed</span>
             </div>
-            <div class="stat">
+            <div class="stat card">
               <strong id="pool-status">Ready</strong>
               <span id="pool-label">Movie pool</span>
             </div>
           </div>
 
-          <div class="toolbar" aria-label="actions">
-            <button type="button" id="retry-failed">Retry IMDb failures</button>
-            <button type="button" class="file-action" id="load-json" title="Restore a Rapid Rater backup">
-              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
-              <span>Restore Progress</span>
-            </button>
-            <button type="button" class="file-action" id="import-csv" title="Add ratings downloaded from IMDb">
-              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/><path d="m14 15 2 2 4-4"/></svg>
-              <span>Add IMDb Ratings</span>
-            </button>
-            <button type="button" class="file-action" id="export-csv" title="Download your ratings as a spreadsheet">
-              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-              <span>Download Ratings</span>
-            </button>
-            <button type="button" class="file-action backup-action" id="export-json" title="Download a complete backup of your progress">
-              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>
-              <span>Back Up Progress</span>
-            </button>
-          </div>
         </div>
 
-        <section class="failure-panel" id="failure-panel" hidden>
+        <section class="failure-panel alert alert-danger d-grid" id="failure-panel" hidden>
           <div class="failure-header">
             <strong>IMDb write failures</strong>
-            <button type="button" id="failure-retry">Retry IMDb failures</button>
+            <button type="button" class="btn btn-sm btn-outline-danger" id="failure-retry">Retry IMDb failures</button>
           </div>
-          <ul id="failure-list"></ul>
+          <ul class="d-grid" id="failure-list"></ul>
         </section>
       </div>
+
+      <button type="button" class="mobile-header-toggle btn btn-sm btn-outline-secondary" id="mobile-header-toggle" aria-expanded="false" aria-controls="header-dashboard">
+        <span>Show progress</span>
+        <span class="mobile-header-toggle-icon" aria-hidden="true"></span>
+      </button>
 
       <input id="json-file" type="file" accept=".json,application/json" hidden>
       <input id="csv-file" type="file" accept=".csv,text/csv" hidden>
@@ -112,123 +166,123 @@
 
     <section class="recommendation-view" id="recommendation-view" hidden>
       <div class="recommendation-shell">
-        <header class="recommendation-header">
+        <header class="recommendation-header card">
           <div class="recommendation-heading-copy">
             <span class="recommendation-kicker">Curated for your taste</span>
             <h1 id="recommendation-title">Movie Recommendations</h1>
             <p id="recommendation-description">Fresh movie picks shaped by your ratings and exclusions. Every batch is added to your saved movie watchlist.</p>
           </div>
           <div class="recommendation-actions">
-            <button type="button" id="configure-ai">Set OpenAI Key</button>
+            <button type="button" class="btn btn-outline-secondary" id="configure-ai">Set OpenAI Key</button>
             <label class="recommendation-count-control" for="recommendation-count">
               <span>Number of picks</span>
-              <input id="recommendation-count" type="number" min="1" max="99" step="1" value="9" inputmode="numeric">
+              <input class="form-control form-control-sm" id="recommendation-count" type="number" min="1" max="99" step="1" value="9" inputmode="numeric">
             </label>
-            <button type="button" id="generate-recommendations">Generate picks</button>
+            <button type="button" class="btn btn-primary" id="generate-recommendations">Generate picks</button>
           </div>
         </header>
-        <div class="recommendation-basis-panel">
+        <div class="recommendation-basis-panel alert alert-primary">
           <div class="recommendation-basis-copy">
             <strong id="recommendation-basis-label">Build movie picks from</strong>
             <span id="recommendation-basis-detail">Your movie ratings shape the taste profile. Picks stay movies.</span>
           </div>
           <label class="visually-hidden" for="recommendation-basis">Ratings used for recommendations</label>
-          <select id="recommendation-basis" aria-describedby="recommendation-basis-detail">
+          <select class="form-select" id="recommendation-basis" aria-describedby="recommendation-basis-detail">
             <option value="current">My movie ratings</option>
             <option value="other">My TV ratings</option>
             <option value="both">Both</option>
           </select>
         </div>
-        <div class="model-panel">
+        <div class="model-panel card">
           <div class="model-copy">
             <strong id="ai-model-status">Model: checking</strong>
             <span id="ai-model-detail">Auto-selects two versions behind the newest eligible GPT model.</span>
           </div>
-          <div class="model-controls">
+          <div class="model-controls d-grid">
             <label class="visually-hidden" for="ai-model-select">Model</label>
-            <select id="ai-model-select">
+            <select class="form-select" id="ai-model-select">
               <option value="">Auto</option>
             </select>
-            <button type="button" id="refresh-ai-models">Refresh</button>
+            <button type="button" class="btn btn-outline-secondary" id="refresh-ai-models">Refresh</button>
           </div>
         </div>
-        <div class="recommendation-loading" id="recommendation-loading" role="status" aria-live="polite" hidden>
-          <span class="recommendation-spinner" aria-hidden="true"></span>
+        <div class="recommendation-loading alert alert-primary" id="recommendation-loading" role="status" aria-live="polite" hidden>
+          <span class="recommendation-spinner spinner-border text-primary" aria-hidden="true"></span>
           <div><strong>Building your watchlist</strong><span id="recommendation-loading-copy">Reading the signals in your ratings...</span></div>
         </div>
-        <div class="recommendation-list-toolbar">
+        <div class="recommendation-list-toolbar card">
           <div class="recommendation-list-copy">
             <strong id="watchlist-title">Saved movie watchlist</strong>
             <div class="recommendation-status" id="recommendation-status" role="status">Import your IMDb CSV, then generate recommendations.</div>
           </div>
-          <button type="button" class="recommendation-poster-toggle" id="toggle-recommendation-posters" aria-pressed="false">Hide posters</button>
+          <button type="button" class="recommendation-poster-toggle btn btn-outline-secondary" id="toggle-recommendation-posters" aria-pressed="false">Hide posters</button>
         </div>
-        <div class="recommendation-grid" id="recommendation-grid"></div>
+        <div class="recommendation-grid d-grid" id="recommendation-grid"></div>
       </div>
     </section>
 
     <section class="sync-view" id="sync-view" hidden>
       <div class="sync-shell">
-        <header class="sync-header">
+        <header class="sync-header card">
           <span class="recommendation-kicker">Choose a direction</span>
           <h1>Where do you want your movies to go?</h1>
           <p>Choose IMDb → Letterboxd to prepare a Letterboxd upload. Choose Letterboxd → This site → IMDb to bring ratings the other way.</p>
         </header>
 
-        <div class="sync-status" id="sync-status" role="status">Import your Letterboxd export once so the site can see which movies are missing.</div>
+        <div class="sync-status alert alert-info" id="sync-status" role="status">Import your Letterboxd export once so the site can see which movies are missing.</div>
 
-        <div class="sync-path-grid">
-          <section class="sync-path-card sync-path-imdb">
+        <div class="sync-path-grid d-grid">
+          <section class="sync-path-card sync-path-imdb card d-grid">
             <div class="sync-route" aria-label="IMDb to Letterboxd">
-              <span>IMDb</span><b aria-hidden="true">→</b><span>Letterboxd</span>
+              <span class="badge rounded-pill text-bg-dark border">IMDb</span><b aria-hidden="true">→</b><span class="badge rounded-pill text-bg-dark border">Letterboxd</span>
             </div>
             <h2>Put IMDb movies on Letterboxd</h2>
             <p>The site found <strong id="sync-to-letterboxd-count">0</strong> IMDb ratings that are not in your last Letterboxd import.</p>
-            <button type="button" class="sync-primary-action" id="sync-to-letterboxd" disabled>Download file to upload to Letterboxd</button>
-            <div class="sync-next-step">
+            <button type="button" class="sync-primary-action btn btn-primary" id="sync-to-letterboxd" disabled>Download file to upload to Letterboxd</button>
+            <div class="sync-next-step card d-grid">
               <strong>After it downloads</strong>
               <p>Open Letterboxd, choose the downloaded CSV, review the matches, and confirm.</p>
               <a class="sync-text-link" href="https://letterboxd.com/import/" target="_blank" rel="noopener noreferrer">Open Letterboxd import ↗</a>
             </div>
-            <div class="sync-secondary-action">
+            <div class="sync-secondary-action d-grid">
               <p><strong id="sync-imdb-count">0</strong> IMDb ratings loaded. Need the latest copy? <a class="sync-text-link" href="https://www.imdb.com/list/ratings/" target="_blank" rel="noopener noreferrer">Open IMDb ratings and choose Export ↗</a></p>
-              <button type="button" id="sync-import-imdb">Import downloaded IMDb CSV</button>
+              <button type="button" class="btn btn-outline-secondary" id="sync-import-imdb">Import downloaded IMDb CSV</button>
             </div>
           </section>
 
-          <section class="sync-path-card sync-path-letterboxd">
+          <section class="sync-path-card sync-path-letterboxd card d-grid">
             <div class="sync-route" aria-label="Letterboxd to this site and IMDb">
-              <span>Letterboxd</span><b aria-hidden="true">→</b><span>This site</span><b aria-hidden="true">→</b><span>IMDb</span>
+              <span class="badge rounded-pill text-bg-dark border">Letterboxd</span><b aria-hidden="true">→</b><span class="badge rounded-pill text-bg-dark border">This site</span><b aria-hidden="true">→</b><span class="badge rounded-pill text-bg-dark border">IMDb</span>
             </div>
             <h2>Bring Letterboxd movies into this site</h2>
             <p>First download your Letterboxd data. Then import that ZIP here—do not unzip it.</p>
-            <div class="sync-letterboxd-actions">
+            <div class="sync-letterboxd-actions d-grid">
               <p>1. <a class="sync-text-link" href="https://letterboxd.com/user/exportdata/" target="_blank" rel="noopener noreferrer">Download your Letterboxd export ZIP ↗</a></p>
-              <button type="button" class="sync-primary-action" id="sync-import-letterboxd">2. Import Letterboxd ZIP here</button>
+              <button type="button" class="sync-primary-action btn btn-primary" id="sync-import-letterboxd">2. Import Letterboxd ZIP here</button>
             </div>
             <div class="sync-source" id="sync-source">No Letterboxd export imported yet.</div>
-            <div class="sync-send-step">
+            <div class="sync-send-step card d-grid">
               <p><strong id="sync-letterboxd-count">0</strong> Letterboxd ratings loaded. <strong id="sync-to-imdb-count">0</strong> are missing from IMDb.</p>
-              <button type="button" id="sync-to-imdb" disabled>Send missing Letterboxd ratings to IMDb</button>
+              <button type="button" class="btn btn-primary" id="sync-to-imdb" disabled>Send missing Letterboxd ratings to IMDb</button>
             </div>
           </section>
         </div>
 
-        <details class="sync-review">
+        <details class="sync-review card">
           <summary>Review matches and problems</summary>
-          <div class="sync-review-counts">
+          <div class="sync-review-counts d-flex flex-wrap">
             <span><strong id="sync-matched-count">0</strong> matching ratings</span>
             <span><strong id="sync-conflict-count">0</strong> different ratings</span>
             <span><strong id="sync-unmatched-count">0</strong> titles need a match</span>
             <span><strong id="sync-watched-only-count">0</strong> watched without a rating</span>
           </div>
-          <div class="sync-detail-grid">
-            <section class="sync-detail-card">
+          <div class="sync-detail-grid d-grid">
+            <section class="sync-detail-card card">
               <h2>Different ratings</h2>
               <p>The site leaves these unchanged so it does not overwrite your choice.</p>
               <ul id="sync-conflict-list"><li>No conflicts.</li></ul>
             </section>
-            <section class="sync-detail-card">
+            <section class="sync-detail-card card">
               <h2>Titles that need a match</h2>
               <p>These stay saved in your account but cannot be sent to IMDb automatically.</p>
               <ul id="sync-unmatched-list"><li>No unmatched rated titles.</li></ul>
@@ -239,12 +293,12 @@
     </section>
 
     <footer class="footer" id="rating-footer" hidden>
-      <div class="shortcut-panel">
+      <div class="shortcut-panel d-flex align-items-center">
         <div class="shortcut-copy">
           <strong>Keyboard shortcuts</strong>
           <span>1-9 rate IMDb, 0 = 10/10. ` = not seen, Backspace = go back.</span>
         </div>
-        <div class="keybar" aria-label="keyboard ratings">
+        <div class="keybar d-flex align-items-center" aria-label="keyboard ratings">
           <span class="key" data-shortcut="rate-0">0</span>
           <span class="key" data-shortcut="rate-1">1</span>
           <span class="key" data-shortcut="rate-2">2</span>
@@ -266,15 +320,15 @@
 
     <nav class="mobile-rating-bar" id="mobile-rating-bar" aria-label="Touch rating controls" hidden>
       <div class="mobile-rating-buttons">
-        <button type="button" data-touch-rating="1">1</button><button type="button" data-touch-rating="2">2</button>
-        <button type="button" data-touch-rating="3">3</button><button type="button" data-touch-rating="4">4</button>
-        <button type="button" data-touch-rating="5">5</button><button type="button" data-touch-rating="6">6</button>
-        <button type="button" data-touch-rating="7">7</button><button type="button" data-touch-rating="8">8</button>
-        <button type="button" data-touch-rating="9">9</button><button type="button" data-touch-rating="10">10</button>
+        <button type="button" class="btn btn-outline-secondary" data-touch-rating="1">1</button><button type="button" class="btn btn-outline-secondary" data-touch-rating="2">2</button>
+        <button type="button" class="btn btn-outline-secondary" data-touch-rating="3">3</button><button type="button" class="btn btn-outline-secondary" data-touch-rating="4">4</button>
+        <button type="button" class="btn btn-outline-secondary" data-touch-rating="5">5</button><button type="button" class="btn btn-outline-secondary" data-touch-rating="6">6</button>
+        <button type="button" class="btn btn-outline-secondary" data-touch-rating="7">7</button><button type="button" class="btn btn-outline-secondary" data-touch-rating="8">8</button>
+        <button type="button" class="btn btn-outline-secondary" data-touch-rating="9">9</button><button type="button" class="btn btn-outline-secondary" data-touch-rating="10">10</button>
       </div>
       <div class="mobile-secondary-actions">
-        <button type="button" id="touch-not-seen">Not seen</button>
-        <button type="button" id="touch-undo">Go back</button>
+        <button type="button" class="btn btn-outline-secondary" id="touch-not-seen">Not seen</button>
+        <button type="button" class="btn btn-outline-secondary" id="touch-undo">Go back</button>
       </div>
     </nav>
 
@@ -284,12 +338,12 @@
       <div>
         <h1 id="empty-title">Movie pool exhausted</h1>
         <p id="empty-summary"></p>
-        <div class="empty-actions">
-          <button type="button" class="file-action" id="empty-export-csv" title="Download your ratings as a spreadsheet">
+        <div class="empty-actions d-flex justify-content-center gap-2 mt-3">
+          <button type="button" class="file-action btn btn-outline-secondary d-inline-flex align-items-center gap-2" id="empty-export-csv" title="Download your ratings as a spreadsheet">
             <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
             <span>Download Ratings</span>
           </button>
-          <button type="button" class="file-action backup-action" id="empty-export-json" title="Download a complete backup of your progress">
+          <button type="button" class="file-action btn btn-primary d-inline-flex align-items-center gap-2" id="empty-export-json" title="Download a complete backup of your progress">
             <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>
             <span>Back Up Progress</span>
           </button>
@@ -300,25 +354,25 @@
     <section class="auth-landing" id="auth-landing" aria-labelledby="auth-title">
       <div class="auth-shell">
         <div class="auth-intro">
-          <div class="brand auth-brand"><span class="brand-mark">RR</span><span>IMDb Rapid Rater</span></div>
+          <div class="brand auth-brand d-flex align-items-center gap-2"><span class="brand-mark">RR</span><span>IMDb Rapid Rater</span></div>
           <h1 id="auth-title"><span>Rate faster.</span><span>Pick better movies and shows.</span></h1>
           <p>Your ratings, queue, preferences, and encrypted service connections follow your account between computers.</p>
         </div>
-        <div class="auth-card">
-          <nav class="auth-tabs" aria-label="Account access">
-            <button type="button" class="active" id="show-login">Sign in</button>
-            <button type="button" id="show-signup">Create account</button>
+        <div class="auth-card card">
+          <nav class="auth-tabs nav nav-pills nav-fill p-1 rounded-3 bg-body-tertiary" aria-label="Account access">
+            <button type="button" class="nav-link active" id="show-login">Sign in</button>
+            <button type="button" class="nav-link" id="show-signup">Create account</button>
           </nav>
           <div id="login-panel">
             <form id="login-form">
               <h2>Welcome back</h2>
               <p>Sign in to continue rating.</p>
               <label for="login-email">Email</label>
-              <input class="setup-input" id="login-email" type="email" inputmode="email" autocomplete="email" maxlength="254" required>
+              <input class="setup-input form-control" id="login-email" type="email" inputmode="email" autocomplete="email" maxlength="254" required>
               <label for="login-password">Password</label>
-              <input class="setup-input" id="login-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
-              <p class="cookie-error" id="login-error" role="alert"></p>
-              <button class="auth-submit" type="submit" id="login-submit">Sign in</button>
+              <input class="setup-input form-control" id="login-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
+              <p class="cookie-error invalid-feedback d-block" id="login-error" role="alert"></p>
+              <button class="auth-submit btn btn-primary" type="submit" id="login-submit">Sign in</button>
             </form>
           </div>
           <div id="signup-panel" hidden>
@@ -326,14 +380,14 @@
               <h2>Create your account</h2>
               <p>Anyone can sign up. Your private connections are encrypted on the server.</p>
               <label for="signup-email">Email</label>
-              <input class="setup-input" id="signup-email" type="email" autocomplete="email" maxlength="254" required>
+              <input class="setup-input form-control" id="signup-email" type="email" autocomplete="email" maxlength="254" required>
               <label for="signup-password">Password</label>
-              <input class="setup-input" id="signup-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" aria-describedby="password-help" required>
+              <input class="setup-input form-control" id="signup-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" aria-describedby="password-help" required>
               <small id="password-help">Use at least 8 characters. A long, unique password is safest.</small>
               <label for="signup-confirmation">Confirm password</label>
-              <input class="setup-input" id="signup-confirmation" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
-              <p class="cookie-error" id="signup-error" role="alert"></p>
-              <button class="auth-submit" type="submit" id="signup-submit">Create account</button>
+              <input class="setup-input form-control" id="signup-confirmation" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+              <p class="cookie-error invalid-feedback d-block" id="signup-error" role="alert"></p>
+              <button class="auth-submit btn btn-primary" type="submit" id="signup-submit">Create account</button>
             </form>
           </div>
         </div>
@@ -341,22 +395,22 @@
     </section>
 
     <section class="cookie-dialog" id="migration-dialog" role="dialog" aria-modal="true" aria-labelledby="migration-title" hidden>
-      <div class="cookie-card">
-        <div class="cookie-header"><h1 id="migration-title">Move this browser's save?</h1></div>
+      <div class="cookie-card card">
+        <div class="cookie-header d-flex align-items-center justify-content-between gap-3 mb-2"><h1 id="migration-title">Move this browser's save?</h1></div>
         <p>Rapid Rater found ratings or settings saved in this browser. Move them into your account so they are available on your other computers.</p>
-        <p class="migration-summary" id="migration-summary"></p>
-        <div class="cookie-actions">
-          <button type="button" id="migration-skip">Start with account data</button>
-          <button type="button" class="backup-action" id="migration-import">Move into my account</button>
+        <p class="migration-summary alert alert-secondary" id="migration-summary"></p>
+        <div class="cookie-actions d-flex justify-content-end gap-2 mt-3 flex-wrap">
+          <button type="button" class="btn btn-outline-secondary" id="migration-skip">Start with account data</button>
+          <button type="button" class="btn btn-primary" id="migration-import">Move into my account</button>
         </div>
       </div>
     </section>
 
     <section class="cookie-dialog" id="filters-dialog" role="dialog" aria-modal="true" aria-labelledby="filters-title" hidden>
-      <div class="cookie-card filter-card">
-        <div class="cookie-header">
+      <div class="cookie-card filter-card card">
+        <div class="cookie-header d-flex align-items-center justify-content-between gap-3 mb-2">
           <h1 id="filters-title">Movie filters</h1>
-          <button type="button" id="filters-close">Close</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="filters-close">Close</button>
         </div>
         <p id="filters-description">Choose which release years and production origins stay in your rating queue. Filtered titles are not marked as unseen and return if you remove a filter.</p>
 
@@ -364,10 +418,10 @@
           <legend>Release year</legend>
           <div class="filter-year-grid">
             <label for="filter-min-year">From
-              <input class="setup-input" id="filter-min-year" type="number" min="1870" max="2200" inputmode="numeric" placeholder="Any year">
+              <input class="setup-input form-control" id="filter-min-year" type="number" min="1870" max="2200" inputmode="numeric" placeholder="Any year">
             </label>
             <label for="filter-max-year">Through
-              <input class="setup-input" id="filter-max-year" type="number" min="1870" max="2200" inputmode="numeric" placeholder="Any year">
+              <input class="setup-input form-control" id="filter-max-year" type="number" min="1870" max="2200" inputmode="numeric" placeholder="Any year">
             </label>
           </div>
         </fieldset>
@@ -382,24 +436,24 @@
           <div class="filter-options" id="filter-language-options"></div>
         </fieldset>
 
-        <div class="filter-toggles">
-          <label class="filter-checkbox"><input id="filter-bollywood" type="checkbox"> Hide Bollywood <small>Approximation: Indian productions whose original language is Hindi.</small></label>
-          <label class="filter-checkbox"><input id="filter-include-unknown" type="checkbox" checked> Include titles whose origin is unknown</label>
+        <div class="filter-toggles d-grid gap-1 mt-3">
+          <label class="filter-checkbox"><input class="form-check-input" id="filter-bollywood" type="checkbox"> Hide Bollywood <small>Approximation: Indian productions whose original language is Hindi.</small></label>
+          <label class="filter-checkbox"><input class="form-check-input" id="filter-include-unknown" type="checkbox" checked> Include titles whose origin is unknown</label>
         </div>
 
-        <p class="filter-origin-note" id="filter-origin-note"></p>
-        <p class="filter-preview" id="filter-preview" role="status"></p>
-        <p class="cookie-error" id="filter-error" role="alert"></p>
-        <div class="cookie-actions">
-          <button type="button" id="filters-reset">Reset</button>
-          <button type="button" class="backup-action" id="filters-apply">Apply filters</button>
+        <p class="filter-origin-note alert alert-secondary" id="filter-origin-note"></p>
+        <p class="filter-preview alert alert-info" id="filter-preview" role="status"></p>
+        <p class="cookie-error invalid-feedback d-block" id="filter-error" role="alert"></p>
+        <div class="cookie-actions d-flex justify-content-end gap-2 mt-3 flex-wrap">
+          <button type="button" class="btn btn-outline-secondary" id="filters-reset">Reset</button>
+          <button type="button" class="btn btn-primary" id="filters-apply">Apply filters</button>
         </div>
       </div>
     </section>
 
     <section class="cookie-dialog" id="imdb-dialog" role="dialog" aria-modal="true" aria-labelledby="imdb-title" hidden>
-      <div class="cookie-card">
-        <div class="cookie-header">
+      <div class="cookie-card card">
+        <div class="cookie-header d-flex align-items-center justify-content-between gap-3 mb-2">
           <h1 id="imdb-title">Connect IMDb</h1>
         </div>
         <p>IMDb must be connected before rating. Rapid Rater encrypts this connection in your account and uses it only on the server when you submit or go back from a rating.</p>
@@ -409,20 +463,20 @@
           <li>Select the main <code>www.imdb.com</code> request and copy the complete <code>Cookie</code> request-header value.</li>
         </ol>
         <label for="imdb-cookie-input">IMDb connection value</label>
-        <textarea id="imdb-cookie-input" autocomplete="off" spellcheck="false" placeholder="Paste the complete Cookie request-header value"></textarea>
-        <p class="cookie-error" id="imdb-error" role="alert"></p>
-        <div class="cookie-actions">
-          <button type="button" id="imdb-delete">Disconnect</button>
-          <button type="button" id="imdb-save">Connect IMDb</button>
+        <textarea class="form-control" id="imdb-cookie-input" autocomplete="off" spellcheck="false" placeholder="Paste the complete Cookie request-header value"></textarea>
+        <p class="cookie-error invalid-feedback d-block" id="imdb-error" role="alert"></p>
+        <div class="cookie-actions d-flex justify-content-end gap-2 mt-3 flex-wrap">
+          <button type="button" class="btn btn-outline-danger" id="imdb-delete">Disconnect</button>
+          <button type="button" class="btn btn-primary" id="imdb-save">Connect IMDb</button>
         </div>
       </div>
     </section>
 
     <section class="cookie-dialog" id="tmdb-dialog" role="dialog" aria-modal="true" aria-labelledby="tmdb-title" hidden>
-      <div class="cookie-card">
-        <div class="cookie-header">
+      <div class="cookie-card card">
+        <div class="cookie-header d-flex align-items-center justify-content-between gap-3 mb-2">
           <h1 id="tmdb-title">Add TMDB API Key</h1>
-          <button type="button" id="tmdb-close">Close</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="tmdb-close">Close</button>
         </div>
         <p>TMDB provides reliable posters and synopsis text. Rapid Rater encrypts the key in your account so it works on your other computers.</p>
         <ol>
@@ -433,21 +487,21 @@
           <li>Paste it here and save.</li>
         </ol>
         <label for="tmdb-key-input">TMDB API key</label>
-        <input class="setup-input" id="tmdb-key-input" autocomplete="off" spellcheck="false" placeholder="Paste TMDB API key or token">
-        <p class="cookie-error" id="tmdb-error" role="alert"></p>
-        <div class="cookie-actions">
-          <button type="button" id="tmdb-delete">Remove key</button>
-          <button type="button" id="tmdb-save">Save API Key</button>
-          <button type="button" id="tmdb-later">Skip for now</button>
+        <input class="setup-input form-control" id="tmdb-key-input" autocomplete="off" spellcheck="false" placeholder="Paste TMDB API key or token">
+        <p class="cookie-error invalid-feedback d-block" id="tmdb-error" role="alert"></p>
+        <div class="cookie-actions d-flex justify-content-end gap-2 mt-3 flex-wrap">
+          <button type="button" class="btn btn-outline-danger" id="tmdb-delete">Remove key</button>
+          <button type="button" class="btn btn-primary" id="tmdb-save">Save API Key</button>
+          <button type="button" class="btn btn-outline-secondary" id="tmdb-later">Skip for now</button>
         </div>
       </div>
     </section>
 
     <section class="cookie-dialog" id="ai-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-title" hidden>
-      <div class="cookie-card">
-        <div class="cookie-header">
+      <div class="cookie-card card">
+        <div class="cookie-header d-flex align-items-center justify-content-between gap-3 mb-2">
           <h1 id="ai-title">Add OpenAI API Key</h1>
-          <button type="button" id="ai-close">Close</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="ai-close">Close</button>
         </div>
         <p>AI recommendations need an OpenAI API key. Rapid Rater encrypts the key in your account and never returns it to browser JavaScript.</p>
         <ol>
@@ -456,12 +510,12 @@
           <li>Paste the key here and save.</li>
         </ol>
         <label for="ai-key-input">OpenAI API key</label>
-        <input class="setup-input" id="ai-key-input" autocomplete="off" spellcheck="false" placeholder="Paste OpenAI API key">
-        <p class="cookie-error" id="ai-error" role="alert"></p>
-        <div class="cookie-actions">
-          <button type="button" id="ai-delete">Remove key</button>
-          <button type="button" id="ai-save">Save API Key</button>
-          <button type="button" id="ai-later">Skip for now</button>
+        <input class="setup-input form-control" id="ai-key-input" autocomplete="off" spellcheck="false" placeholder="Paste OpenAI API key">
+        <p class="cookie-error invalid-feedback d-block" id="ai-error" role="alert"></p>
+        <div class="cookie-actions d-flex justify-content-end gap-2 mt-3 flex-wrap">
+          <button type="button" class="btn btn-outline-danger" id="ai-delete">Remove key</button>
+          <button type="button" class="btn btn-primary" id="ai-save">Save API Key</button>
+          <button type="button" class="btn btn-outline-secondary" id="ai-later">Skip for now</button>
         </div>
       </div>
     </section>

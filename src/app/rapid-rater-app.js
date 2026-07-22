@@ -1,469 +1,50 @@
 import { Config } from "./config.js";
-import { BuildElements } from "./elements.js";
-import { MergeAccountPayload } from "./account-state-merge.js";
-import {
-  BuildLetterboxdCsvFiles,
-  ImportLetterboxdCsvFiles,
-  NormalizeLetterboxdState,
-  ReconcileCollections
-} from "./collection-sync.js";
-import { BuildLetterboxdDownload, ReadLetterboxdUpload } from "./letterboxd-zip.js";
+import { ActiveClass, AiView, AriaPressedAttribute, BackspaceKey, DeleteKey, ImdbSecretType, MovieDisplayName, MovieMediaType, NoStoreCache, NotSeenLabel, NotWatchedLabel, PostMethod, PressedClass, PutMethod, RaterView, SaveApiKeyLabel, SavingLabel, ShowClass, SyncView, TmdbSecretType, TvDisplayName, TvMediaType, TvShowName } from "./app-constants.js";
+import { InstallFeatureMethods } from "./feature-methods.js";
+import { AccountSyncFeature } from "./features/account-sync.js";
+import { ApplicationLifecycleFeature } from "./features/application-lifecycle.js";
+import { CatalogViewFeature } from "./features/catalog-view.js";
+import { CollectionSyncFeature } from "./features/collection-sync.js";
+import { DataTransferFeature } from "./features/data-transfer.js";
+import { EventBindingsFeature } from "./features/event-bindings.js";
+import { RatingWorkflowFeature } from "./features/rating-workflow.js";
+import { RecommendationFeature } from "./features/recommendations.js";
+import { StatusUiFeature } from "./features/status-ui.js";
 import { DescribeSource, MakeSignature, NormalizeMovieList } from "./movies.js";
-import {
-  BuildAiPreferenceProfile,
-  BuildCsvText,
-  BuildRateRequest,
-  BuildRatingRecord,
-  CanSubmitLive,
-  ImportImdbCsv,
-  IsRetryableImdbSubmit
-} from "./rating-records.js";
-import {
-  RenderCard,
-  RenderFailure,
-  RenderModelOptions,
-  RenderRecommendationCard,
-  RenderRecommendationEmpty,
-  RenderRecommendationSkeletons,
-  UpdateActors,
-  UpdatePoster,
-  UpdateRecommendationPoster,
-  UpdateSeriesDetails,
-  UpdateSynopsis,
-  UpdateTrailerLink
-} from "./rendering.js";
 import {
   ApplyAccountSettings,
   ClearLegacyBrowserData,
   HasLegacyBrowserData,
-  ReadBrowserSettings,
   ReadLegacyRatingsCsv,
   ReadLegacyState
 } from "./browser-settings.js";
-import { BindRecommendationRatings } from "./recommendation-ratings.js";
-import {
-  SaveAiKeyFromDialog,
-  SaveImdbConnectionFromDialog,
-  SaveSelectedAiModel,
-  SaveTmdbKeyFromDialog
-} from "./settings-workflows.js";
-import { BuildCheckedAiState, BuildCheckedLiveState, BuildMediaState, BuildState, BuildStoragePayload } from "./state.js";
+import { BuildCheckedAiState, BuildCheckedLiveState, BuildMediaState, BuildStoragePayload } from "./state.js";
 import { BuildCompleteSummary, CountRatings } from "./stats.js";
 import { UndoRating } from "./undo-rating.js";
-import { EscapeHtml, FormatCount } from "./util.js";
-import { IsCanonicalViewPath, IsLoginPath, LoginPath, PathForView, RouteFromPathname } from "./view-routes.js";
+import { EscapeHtml } from "./util.js";
+import { LoginPath, PathForView } from "./view-routes.js";
 import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../shared/media.js";
 import { NormalizeTitleFilters } from "../../shared/title-filters.js";
 import { NormalizeRecommendationBasis } from "../../shared/recommendation-basis.js";
-import {
-  ApplyTitleFilters,
-  HideTitleFilterDialog,
-  ResetTitleFilterDialog,
-  ShowTitleFilterDialog,
-  UpdateTitleFilterButton,
-  UpdateTitleFilterPreview
-} from "./title-filter-workflows.js";
+import { UpdateTitleFilterButton } from "./title-filter-workflows.js";
 
-const DefaultRecommendationCount = 9;
-const StateConflictRetryCount = 4;
-const AccountRefreshIntervalMs = 15_000;
-const RecommendationLoadingMessages = [
-  "Reading the signals in your ratings...",
-  "Finding patterns across genres and eras...",
-  "Comparing stories, directors, and hidden gems...",
-  "Narrowing the list to your strongest matches...",
-  "Giving the final picks a last look..."
-];
+const SecretSettingByType = Object.freeze({ imdb: "imdbConfigured", openai: "openAiConfigured", tmdb: "tmdbConfigured" });
 
 export class RapidRaterApp {
   constructor() {
-    this.Elements = BuildElements();
-    this.Settings = ReadBrowserSettings();
-    this.LegacySettings = { ...this.Settings };
-    this.RecommendationPostersCollapsed = this.ReadRecommendationPosterPreference();
-    this.CollapsedRecommendationRows = new Set();
-    this.State = BuildState();
-    this.Catalogs = {};
-    this.AccountPayload = {};
-    this.RatingsCsvText = "";
-    this.AccountRevision = 0;
-    this.CsrfToken = "";
-    this.User = null;
-    this.SyncTimer = 0;
-    this.SyncPromise = Promise.resolve();
-    this.StateDirty = false;
-    this.AccountRefreshTimer = 0;
-    this.RaterEvents = null;
-    this.Initialized = false;
-    this.ToastTimer = 0;
-    this.AiLoadingTimer = 0;
-    this.AiLoadingMessageIndex = 0;
-    this.PendingRecommendationCount = DefaultRecommendationCount;
-    this.SubmitInFlight = false;
-    this.SubmitQueue = [];
-    this.SubmitQueuedIds = new Set();
-    this.SubmitActiveIds = new Set();
-    this.MetadataInFlight = new Set();
-    this.MediaSwitchToken = 0;
-    this.MediaSwitching = false;
-    this.PendingRoute = { mediaType: "movie", view: "rater" };
-    document.documentElement.style.setProperty("--anim", `${Config.animationMs}ms`);
+    this.InitializeBrowserState();
+    this.InitializeAccountState();
+    this.InitializeSynchronizationState();
+    this.InitializeSubmissionState();
+    this.InitializeMediaState();
   }
 
-  Start() {
-    this.BindEvents();
-    this.UpdateRecommendationPosterVisibility();
-    this.PendingRoute = RouteFromPathname(window.location.pathname);
-    this.State.mediaType = this.PendingRoute.mediaType;
-    this.UpdateMediaUx();
-    this.ShowView(this.PendingRoute.view);
-    this.BeginSession().catch((error) => this.ShowStartupError(error));
-  }
-
-  async Initialize() {
-    if (this.Initialized)
-      return;
-    this.Initialized = true;
-    await this.LoadAccountState();
-    await this.OfferLegacyMigration();
-    await this.RefreshLiveStatus();
-    await this.RefreshAiStatus();
-    const data = await this.LoadMediaData(this.State.mediaType);
-    this.ApplyMovieData(data, data.sourceLabel, this.State.mediaType);
-    if (this.StateDirty)
-      await this.FlushStateSync();
-    await this.LoadRaterQueue();
-    await this.LoadSavedRatingsCsv();
-    await this.RefreshRecommendationQueue({ force: true, silent: true });
-    await this.RefreshRaterQueue();
-    this.StartRaterEvents();
-    this.StartAccountRefresh();
-    this.RequireImdbSignIn();
-  }
-
-  Element(id) {
-    return document.getElementById(id);
-  }
-
-  BindEvents() {
-    this.BindViewEvents();
-    this.BindRaterEvents();
-    this.BindToolbarEvents();
-    this.BindSetupEvents();
-    this.BindAiEvents();
-    this.BindSyncEvents();
-    this.BindFileEvents();
-    this.BindAccountEvents();
-    this.BindMobileEvents();
-    window.addEventListener("keydown", (event) => this.HandleKeyDown(event));
-    window.addEventListener("focus", () => this.RefreshRemoteState().catch(() => null));
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden)
-        this.RefreshRemoteState().catch(() => null);
-    });
-  }
-
-  BindViewEvents() {
-    this.BindViewLink(this.Elements.tabRater, "rater");
-    this.BindViewLink(this.Elements.tabAi, "ai");
-    this.BindViewLink(this.Elements.tabSync, "sync");
-    this.Elements.switchMovies.addEventListener("click", () => this.NavigateToMedia("movie"));
-    this.Elements.switchTv.addEventListener("click", () => this.NavigateToMedia("tv"));
-    window.addEventListener("popstate", () => this.ApplyBrowserRoute().catch((error) => this.ShowStartupError(error)));
-  }
-
-  BindViewLink(link, view) {
-    link.addEventListener("click", (event) => {
-      if (event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
-        return;
-      event.preventDefault();
-      this.NavigateToView(view);
-    });
-  }
-
-  NavigateToView(view) {
-    const safeView = this.State.mediaType === "tv" && view === "sync" ? "rater" : view;
-    const path = PathForView(safeView, this.State.mediaType);
-    if (window.location.pathname !== path)
-      window.history.pushState({ view: safeView, mediaType: this.State.mediaType }, "", path);
-    this.ShowView(safeView);
-  }
-
-  NavigateToMedia(mediaType) {
-    if (mediaType === this.State.mediaType)
-      return;
-    if (this.State.locked || this.State.ai.loading || this.MediaSwitching)
-      return this.ShowToast("Finish the current action before switching sections.");
-    const view = this.State.activeView === "sync" ? "rater" : this.State.activeView;
-    const path = PathForView(view, mediaType);
-    window.history.pushState({ view, mediaType }, "", path);
-    this.ActivateMedia(mediaType, view).catch((error) => this.ShowStartupError(error));
-  }
-
-  async ApplyBrowserRoute() {
-    const route = RouteFromPathname(window.location.pathname);
-    if (!this.User) {
-      this.PendingRoute = route;
-      if (!IsLoginPath(window.location.pathname))
-        window.history.replaceState({}, "", LoginPath);
-      return;
-    }
-    if (route.mediaType !== this.State.mediaType)
-      return await this.ActivateMedia(route.mediaType, route.view);
-    this.ShowView(route.view);
-  }
-
-  BindToolbarEvents() {
-    this.Element("load-json").addEventListener("click", () => this.Elements.jsonFile.click());
-    this.Element("import-csv").addEventListener("click", () => this.Elements.csvFile.click());
-    this.Element("export-csv").addEventListener("click", () => this.ExportCsv());
-    this.Element("export-json").addEventListener("click", () => this.ExportJson());
-    this.Element("empty-export-csv").addEventListener("click", () => this.ExportCsv());
-    this.Element("empty-export-json").addEventListener("click", () => this.ExportJson());
-    this.Elements.retryFailed.addEventListener("click", () => this.RetryImdbFailures());
-    this.Elements.failureRetry.addEventListener("click", () => this.RetryImdbFailures());
-  }
-
-  BindSetupEvents() {
-    this.Elements.configureFilters.addEventListener("click", () => ShowTitleFilterDialog(this));
-    this.Elements.filtersClose.addEventListener("click", () => HideTitleFilterDialog(this));
-    this.Elements.filtersReset.addEventListener("click", () => ResetTitleFilterDialog(this));
-    this.Elements.filtersApply.addEventListener("click", () => ApplyTitleFilters(this).catch((error) => {
-      this.Elements.filterError.textContent = error.message || "Filters could not be applied.";
-    }));
-    this.Elements.filtersDialog.addEventListener("input", () => UpdateTitleFilterPreview(this));
-    this.Elements.filtersDialog.addEventListener("change", () => UpdateTitleFilterPreview(this));
-    this.Elements.configureImdb.addEventListener("click", () => this.ShowImdbDialog());
-    this.Elements.imdbSave.addEventListener("click", () => SaveImdbConnectionFromDialog(this).catch((error) => this.ShowImdbError(error.message)));
-    this.Elements.imdbDelete.addEventListener("click", () => this.DeleteAccountSecret("imdb"));
-    this.Elements.configureTmdb.addEventListener("click", () => this.ShowTmdbDialog());
-    this.Elements.tmdbClose.addEventListener("click", () => this.HideTmdbDialog());
-    this.Elements.tmdbLater.addEventListener("click", () => this.HideTmdbDialog());
-    this.Elements.tmdbSave.addEventListener("click", () => SaveTmdbKeyFromDialog(this).catch((error) => this.ShowTmdbError(error.message)));
-    this.Elements.tmdbDelete.addEventListener("click", () => this.DeleteAccountSecret("tmdb"));
-  }
-
-  BindAiEvents() {
-    this.Elements.configureAi.addEventListener("click", () => this.ShowAiDialog());
-    this.Elements.aiClose.addEventListener("click", () => this.HideAiDialog());
-    this.Elements.aiLater.addEventListener("click", () => this.HideAiDialog());
-    this.Elements.aiSave.addEventListener("click", () => this.HandleAiSaveClick());
-    this.Elements.aiDelete.addEventListener("click", () => this.DeleteAccountSecret("openai"));
-    this.Elements.generateRecommendations.addEventListener("click", () => this.HandleRecommendationClick());
-    this.Elements.recommendationBasis.addEventListener("change", () => this.HandleRecommendationBasisChange());
-    this.Elements.toggleRecommendationPosters.addEventListener("click", () => this.ToggleRecommendationPosters());
-    this.Elements.refreshAiModels.addEventListener("click", () => this.HandleModelRefreshClick());
-    this.Elements.aiModelSelect.addEventListener("change", () => this.HandleModelSelectChange());
-    BindRecommendationRatings(this);
-  }
-
-  HandleAiSaveClick() {
-    SaveAiKeyFromDialog(this).catch((error) => this.ShowAiError(error.message));
-  }
-
-  HandleRecommendationClick() {
-    this.GenerateRecommendations().catch((error) => this.ShowRecommendationError(error.message));
-  }
-
-  HandleRecommendationBasisChange() {
-    this.State.recommendationBasis = NormalizeRecommendationBasis({
-      source: this.Elements.recommendationBasis.value,
-      updatedAt: new Date().toISOString()
-    });
-    this.UpdateRecommendationBasisControl();
-    this.PersistStateNow();
-  }
-
-  HandleModelRefreshClick() {
-    this.RefreshAiModels().catch((error) => this.ShowRecommendationError(error.message));
-  }
-
-  HandleModelSelectChange() {
-    SaveSelectedAiModel(this).catch((error) => this.ShowRecommendationError(error.message));
-  }
-
-  BindFileEvents() {
-    this.Elements.jsonFile.addEventListener("change", (event) => this.HandleJsonFile(event));
-    this.Elements.csvFile.addEventListener("change", (event) => this.HandleCsvFile(event));
-    this.Elements.letterboxdFile.addEventListener("change", (event) => this.HandleLetterboxdFile(event).catch((error) => this.ShowSyncError(error)));
-  }
-
-  BindRaterEvents() {
-    this.Elements.strip.addEventListener("click", (event) => {
-      const button = event.target.closest?.("[data-add-active-to-wishlist]");
-      if (!button)
-        return;
-      this.AddActiveMovieToWishlist(button)
-        .catch((error) => this.ShowToast(`<strong>Wishlist was not updated:</strong> ${EscapeHtml(error.message)}`));
-    });
-  }
-
-  ToggleRecommendationPosters() {
-    this.RecommendationPostersCollapsed = !this.RecommendationPostersCollapsed;
-    try {
-      localStorage.setItem(Config.recommendationPosterPreferenceKey, this.RecommendationPostersCollapsed ? "collapsed" : "expanded");
-    } catch {
-      // The visual toggle still works when browser storage is unavailable.
-    }
-    this.UpdateRecommendationPosterVisibility();
-  }
-
-  ReadRecommendationPosterPreference() {
-    try {
-      return localStorage.getItem(Config.recommendationPosterPreferenceKey) === "collapsed";
-    } catch {
-      return false;
-    }
-  }
-
-  UpdateRecommendationPosterVisibility() {
-    const collapsed = Boolean(this.RecommendationPostersCollapsed);
-    this.Elements.recommendationGrid.classList.toggle("posters-collapsed", collapsed);
-    this.Elements.toggleRecommendationPosters.setAttribute("aria-pressed", String(collapsed));
-    this.Elements.toggleRecommendationPosters.textContent = collapsed ? "Show posters" : "Hide posters";
-  }
-
-  BindSyncEvents() {
-    this.Elements.syncImportImdb.addEventListener("click", () => this.Elements.csvFile.click());
-    this.Elements.syncImportLetterboxd.addEventListener("click", () => this.Elements.letterboxdFile.click());
-    this.Elements.syncToImdb.addEventListener("click", () => this.SyncMissingRatingsToImdb().catch((error) => this.ShowSyncError(error)));
-    this.Elements.syncToLetterboxd.addEventListener("click", () => this.DownloadLetterboxdSync().catch((error) => this.ShowSyncError(error)));
-  }
-
-  BindAccountEvents() {
-    this.Elements.loginForm.addEventListener("submit", (event) => this.HandleLogin(event));
-    this.Elements.signupForm.addEventListener("submit", (event) => this.HandleSignup(event));
-    this.Elements.showLogin.addEventListener("click", () => this.ShowAuthPanel("login"));
-    this.Elements.showSignup.addEventListener("click", () => this.ShowAuthPanel("signup"));
-    this.Elements.signOut.addEventListener("click", () => this.SignOut()
-      .catch((error) => this.ShowToast(EscapeHtml(error.message || "Could not sign out."))));
-  }
-
-  BindMobileEvents() {
-    this.Elements.mobileHeaderToggle.addEventListener("click", () => this.ToggleMobileHeader());
-    this.Elements.mobileRatingBar.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-touch-rating]");
-      if (button)
-        this.MarkActive(Number(button.dataset.touchRating), "rated");
-    });
-    this.Elements.touchNotSeen.addEventListener("click", () => this.MarkActive(null, "notSeen"));
-    this.Elements.touchUndo.addEventListener("click", () => this.Undo());
-  }
-
-  ToggleMobileHeader() {
-    const expanded = this.Elements.mobileHeaderToggle.getAttribute("aria-expanded") !== "true";
-    this.Elements.mobileHeaderToggle.setAttribute("aria-expanded", String(expanded));
-    this.Elements.appHeader.classList.toggle("mobile-dashboard-open", expanded);
-  }
-
-  async BeginSession() {
-    const session = await this.FetchJson("/api/auth/session");
-    this.CsrfToken = session.csrfToken || "";
-    if (!session.authenticated)
-      return this.ShowAuthLanding(session.registrationEnabled !== false);
-    this.EnterAuthenticatedApp(session.user);
-    await this.Initialize();
-  }
-
-  async HandleLogin(event) {
-    event.preventDefault();
-    this.Elements.loginError.textContent = "";
-    this.Elements.loginSubmit.disabled = true;
-    try {
-      const payload = await this.RequestJson("/api/auth/login", "POST", {
-        email: this.Elements.loginEmail.value,
-        password: this.Elements.loginPassword.value
-      });
-      this.CsrfToken = payload.csrfToken;
-      this.EnterAuthenticatedApp(payload.user);
-      this.Elements.authLanding.hidden = true;
-      this.Elements.loginPassword.value = "";
-      await this.Initialize();
-    } catch (error) {
-      this.Elements.loginError.textContent = error.message;
-    } finally {
-      this.Elements.loginSubmit.disabled = false;
-    }
-  }
-
-  async HandleSignup(event) {
-    event.preventDefault();
-    this.Elements.signupError.textContent = "";
-    const password = this.Elements.signupPassword.value;
-    if (password !== this.Elements.signupConfirmation.value) {
-      this.Elements.signupError.textContent = "The passwords do not match.";
-      return;
-    }
-    this.Elements.signupSubmit.disabled = true;
-    try {
-      const payload = await this.RequestJson("/api/auth/register", "POST", {
-        email: this.Elements.signupEmail.value,
-        password
-      });
-      this.CsrfToken = payload.csrfToken;
-      this.EnterAuthenticatedApp(payload.user);
-      this.Elements.signupPassword.value = "";
-      this.Elements.signupConfirmation.value = "";
-      await this.Initialize();
-    } catch (error) {
-      this.Elements.signupError.textContent = error.message;
-    } finally {
-      this.Elements.signupSubmit.disabled = false;
-    }
-  }
-
-  ShowAuthLanding(registrationEnabled = true) {
-    if (!IsLoginPath(window.location.pathname))
-      window.history.replaceState({}, "", LoginPath);
-    document.body.classList.remove("tv-mode");
-    document.title = "IMDb Rapid Rater";
-    this.Elements.authLanding.hidden = false;
-    this.Elements.signOut.hidden = true;
-    this.Elements.showSignup.hidden = !registrationEnabled;
-    this.ShowAuthPanel("login");
-    window.setTimeout(() => this.Elements.loginEmail.focus(), 0);
-  }
-
-  ShowAuthPanel(panel) {
-    const signup = panel === "signup";
-    this.Elements.loginPanel.hidden = signup;
-    this.Elements.signupPanel.hidden = !signup;
-    this.Elements.showLogin.classList.toggle("active", !signup);
-    this.Elements.showSignup.classList.toggle("active", signup);
-    this.Elements.loginError.textContent = "";
-    this.Elements.signupError.textContent = "";
-    window.setTimeout(() => (signup ? this.Elements.signupEmail : this.Elements.loginEmail).focus(), 0);
-  }
-
-  SetSignedInUser(user) {
-    this.User = user;
-    this.CollapsedRecommendationRows = this.ReadCollapsedRecommendationRows();
-    this.Elements.accountBadge.textContent = user?.email || "Signed in";
-    this.Elements.signOut.hidden = false;
-    this.Elements.authLanding.hidden = true;
-  }
-
-  EnterAuthenticatedApp(user) {
-    this.SetSignedInUser(user);
-    const route = this.PendingRoute || { mediaType: "movie", view: "rater" };
-    this.State.mediaType = route.mediaType;
-    this.UpdateMediaUx();
-    this.ShowView(route.view);
-    const path = PathForView(route.view, route.mediaType);
-    if (!IsCanonicalViewPath(window.location.pathname) || window.location.pathname !== path)
-      window.history.replaceState(route, "", path);
-  }
 
   async SignOut() {
     this.Elements.signOut.disabled = true;
     try {
-      window.clearTimeout(this.SyncTimer);
-      window.clearInterval(this.AccountRefreshTimer);
-      this.RaterEvents?.close();
-      await this.RequestJson("/api/auth/logout", "POST", {}).catch((error) => {
-        if (error?.status !== 401)
-          throw error;
-      });
+      this.StopAccountServices();
+      await this.RequestSignOut();
       window.location.replace(LoginPath);
     } catch (error) {
       this.Elements.signOut.disabled = false;
@@ -471,67 +52,119 @@ export class RapidRaterApp {
     }
   }
 
+  StopAccountServices() {
+    window.clearTimeout(this.SyncTimer);
+    window.clearInterval(this.AccountRefreshTimer);
+    this.RaterEvents?.close();
+  }
+
+  async RequestSignOut() {
+    try {
+      await this.RequestJson("/api/auth/logout", PostMethod, {});
+    } catch (error) {
+      if (error?.status !== 401)
+        throw error;
+    }
+  }
+
   ShowView(view) {
-    if (this.State.mediaType === "tv" && view === "sync")
-      view = "rater";
+    if (this.State.mediaType === TvMediaType && view === SyncView)
+      view = RaterView;
     this.State.activeView = view;
-    document.body.classList.toggle("rater-active", view === "rater");
-    document.body.classList.toggle("ai-active", view === "ai");
-    document.body.classList.toggle("sync-active", view === "sync");
+    this.UpdateViewClasses(view);
+    this.UpdateViewVisibility(view);
+    this.UpdateViewTabs(view);
+    this.UpdateActiveView(view);
+  }
+
+  UpdateViewClasses(view) {
+    document.body.classList.toggle("rater-active", view === RaterView);
+    document.body.classList.toggle("ai-active", view === AiView);
+    document.body.classList.toggle("sync-active", view === SyncView);
     this.Elements.mobileHeaderToggle.setAttribute("aria-expanded", "false");
+    this.SetMobileProgressLabel(false);
     this.Elements.appHeader.classList.remove("mobile-dashboard-open");
-    this.Elements.raterView.hidden = view !== "rater";
-    this.Elements.recommendationView.hidden = view !== "ai";
-    this.Elements.syncView.hidden = view !== "sync";
-    this.Elements.ratingFooter.hidden = view !== "rater";
-    this.Elements.mobileRatingBar.hidden = view !== "rater";
-    this.Elements.tabRater.classList.toggle("active", view === "rater");
-    this.Elements.tabAi.classList.toggle("active", view === "ai");
-    this.Elements.tabSync.classList.toggle("active", view === "sync");
-    if (view === "ai") {
+  }
+
+  UpdateViewVisibility(view) {
+    this.Elements.raterView.hidden = view !== RaterView;
+    this.Elements.recommendationView.hidden = view !== AiView;
+    this.Elements.syncView.hidden = view !== SyncView;
+    this.Elements.ratingFooter.hidden = view !== RaterView;
+    this.Elements.mobileRatingBar.hidden = view !== RaterView;
+  }
+
+  UpdateViewTabs(view) {
+    this.Elements.tabRater.classList.toggle(ActiveClass, view === RaterView);
+    this.Elements.tabAi.classList.toggle(ActiveClass, view === AiView);
+    this.Elements.tabSync.classList.toggle(ActiveClass, view === SyncView);
+  }
+
+  UpdateActiveView(view) {
+    if (view === AiView) {
       this.UpdateRecommendationBasisControl();
       this.UpdateRecommendationStatus();
     }
-    if (view === "sync")
+    if (view === SyncView)
       this.UpdateSyncView();
   }
 
   UpdateMediaUx() {
-    const isTv = this.State.mediaType === "tv";
+    const isTv = this.State.mediaType === TvMediaType;
+    this.UpdateMediaIdentity(isTv);
+    this.UpdateMediaNavigation(isTv);
+    this.UpdateMediaLabels(isTv);
+    this.UpdateMediaShortcut(isTv);
+    this.UpdateRecommendationBasisControl();
+    UpdateTitleFilterButton(this);
+  }
+
+  UpdateMediaIdentity(isTv) {
     document.body.classList.toggle("tv-mode", isTv);
-    document.title = `IMDb Rapid Rater — ${isTv ? "TV Shows" : "Movies"}`;
-    this.Elements.switchMovies.classList.toggle("active", !isTv);
-    this.Elements.switchMovies.setAttribute("aria-pressed", String(!isTv));
-    this.Elements.switchTv.classList.toggle("active", isTv);
-    this.Elements.switchTv.setAttribute("aria-pressed", String(isTv));
+    document.title = `IMDb Rapid Rater — ${isTv ? TvDisplayName : MovieDisplayName}`;
+    this.Elements.switchMovies.classList.toggle(ActiveClass, !isTv);
+    this.Elements.switchMovies.setAttribute(AriaPressedAttribute, String(!isTv));
+    this.Elements.switchTv.classList.toggle(ActiveClass, isTv);
+    this.Elements.switchTv.setAttribute(AriaPressedAttribute, String(isTv));
     this.Elements.switchMovies.disabled = this.MediaSwitching;
     this.Elements.switchTv.disabled = this.MediaSwitching;
-    this.Elements.brandMode.textContent = isTv ? "TV Shows" : "Movies";
+    this.Elements.brandMode.textContent = isTv ? TvDisplayName : MovieDisplayName;
+  }
+
+  UpdateMediaNavigation(isTv) {
     this.Elements.viewTabs.setAttribute("aria-label", isTv ? "TV show views" : "Movie views");
     this.Elements.tabRater.textContent = isTv ? "Rate Shows" : "Rate Movies";
     this.Elements.tabAi.textContent = isTv ? "TV Watchlist" : "Movie Watchlist";
-    this.Elements.tabRater.href = PathForView("rater", this.State.mediaType);
-    this.Elements.tabAi.href = PathForView("ai", this.State.mediaType);
-    this.Elements.tabSync.href = PathForView("sync", "movie");
+    this.Elements.tabRater.href = PathForView(RaterView, this.State.mediaType);
+    this.Elements.tabAi.href = PathForView(AiView, this.State.mediaType);
+    this.Elements.tabSync.href = PathForView(SyncView, MovieMediaType);
+  }
+
+  UpdateMediaLabels(isTv) {
     this.Elements.ratedLabel.textContent = isTv ? "Shows rated" : "Movies rated";
-    this.Elements.skipLabel.textContent = isTv ? "Not watched" : "Not seen";
+    this.Elements.skipLabel.textContent = isTv ? NotWatchedLabel : NotSeenLabel;
     this.Elements.poolLabel.textContent = isTv ? "Show pool" : "Movie pool";
     this.Elements.recommendationTitle.textContent = isTv ? "TV Show Recommendations" : "Movie Recommendations";
-    this.Elements.recommendationDescription.textContent = isTv
-      ? "Fresh series picks shaped by the ratings you choose and your TV exclusions. Every batch is added to your saved TV watchlist."
-      : "Fresh movie picks shaped by the ratings you choose and your movie exclusions. Every batch is added to your saved movie watchlist.";
+    this.Elements.recommendationDescription.textContent = this.ReadRecommendationDescription(isTv);
     this.Elements.watchlistTitle.textContent = isTv ? "Saved TV watchlist" : "Saved movie watchlist";
     this.Elements.emptyTitle.textContent = isTv ? "TV show pool exhausted" : "Movie pool exhausted";
-    this.Elements.touchNotSeen.textContent = isTv ? "Not watched" : "Not seen";
-    this.UpdateRecommendationBasisControl();
-    UpdateTitleFilterButton(this);
+    this.Elements.touchNotSeen.textContent = isTv ? NotWatchedLabel : NotSeenLabel;
+  }
+
+  ReadRecommendationDescription(isTv) {
+    if (isTv)
+      return "Fresh series picks shaped by the ratings you choose and your TV exclusions. Every batch is added to your saved TV watchlist.";
+    return "Fresh movie picks shaped by the ratings you choose and your movie exclusions. Every batch is added to your saved movie watchlist.";
+  }
+
+  UpdateMediaShortcut(isTv) {
     const shortcutCopy = this.Elements.ratingFooter.querySelector(".shortcut-copy span");
     if (shortcutCopy)
       shortcutCopy.textContent = `1-9 rate IMDb, 0 = 10/10. \` = ${isTv ? "not watched" : "not seen"}, Backspace = go back.`;
   }
 
   HandleKeyDown(event) {
-    if (this.State.activeView !== "rater")
+    if (this.State.activeView !== RaterView)
       return;
     if (this.IsDialogOpen())
       return;
@@ -564,7 +197,7 @@ export class RapidRaterApp {
   }
 
   HandleControlKey(event) {
-    if (event.key === "Backspace" || event.key === "Delete") {
+    if (event.key === BackspaceKey || event.key === DeleteKey) {
       event.preventDefault();
       this.FlashShortcutKey(event.key);
       this.Undo().catch((error) => this.ShowToast(EscapeHtml(error.message || "Could not go back.")));
@@ -591,63 +224,89 @@ export class RapidRaterApp {
     const element = this.Elements.ratingFooter.querySelector(`[data-shortcut="${id}"]`);
     if (!element)
       return;
-    element.classList.remove("pressed");
+    element.classList.remove(PressedClass);
     void element.offsetWidth;
-    element.classList.add("pressed");
-    window.setTimeout(() => element.classList.remove("pressed"), 180);
+    element.classList.add(PressedClass);
+    window.setTimeout(() => element.classList.remove(PressedClass), 180);
   }
 
   ShortcutIdForKey(key) {
-    if (key === "Backspace" || key === "Delete")
+    if (key === BackspaceKey || key === DeleteKey)
       return "undo";
     if (key === Config.skipKey)
       return "skip";
     return `rate-${key}`;
   }
 
-  async ActivateMedia(mediaType, view = "rater") {
+  async ActivateMedia(mediaType, view = RaterView) {
     const token = ++this.MediaSwitchToken;
     this.MediaSwitching = true;
+    const saved = this.PrepareMediaSwitch(mediaType);
+    this.ApplyMediaSwitchState(saved, mediaType);
+    this.UpdateMediaUx();
+    this.ShowView(view);
+    try {
+      await this.LoadActivatedMedia(token, mediaType);
+    } finally {
+      this.FinishMediaSwitch(token);
+    }
+  }
+
+  PrepareMediaSwitch(mediaType) {
     this.AccountPayload = WriteMediaPayload(this.AccountPayload, this.State.mediaType, BuildStoragePayload(this.State));
     this.RaterEvents?.close();
     this.RaterEvents = null;
-    const saved = ReadMediaPayload(this.AccountPayload, mediaType);
+    return ReadMediaPayload(this.AccountPayload, mediaType);
+  }
+
+  ApplyMediaSwitchState(saved, mediaType) {
     const fresh = BuildMediaState();
-    Object.assign(this.State, BuildMediaState(), {
+    const savedState = this.BuildSavedMediaState(saved, fresh, mediaType);
+    Object.assign(this.State, BuildMediaState(), savedState, this.BuildResetMediaState());
+    this.CollapsedRecommendationRows = this.ReadCollapsedRecommendationRows();
+  }
+
+  BuildSavedMediaState(saved, fresh, mediaType) {
+    return {
       mediaType,
       ratings: saved.ratings || {},
       recommendationExclusions: saved.recommendationExclusions || [],
       filters: NormalizeTitleFilters(saved.filters),
       recommendationBasis: NormalizeRecommendationBasis(saved.recommendationBasis),
       letterboxd: saved.letterboxd || fresh.letterboxd,
-      history: Array.isArray(saved.history) ? saved.history.slice(-200) : [],
+      history: Array.isArray(saved.history) ? saved.history.slice(-200) : []
+    };
+  }
+
+  BuildResetMediaState() {
+    return {
       metadata: {},
       savedQueueIds: null,
       queueRevision: 0,
       queuePoolVersion: "",
       queueReady: false,
       locked: false
-    });
-    this.CollapsedRecommendationRows = this.ReadCollapsedRecommendationRows();
+    };
+  }
+
+  async LoadActivatedMedia(token, mediaType) {
+    const data = await this.LoadMediaData(mediaType);
+    if (token !== this.MediaSwitchToken)
+      return;
+    this.ApplyMovieData(data, data.sourceLabel, mediaType);
+    if (this.StateDirty)
+      await this.FlushStateSync();
+    await this.LoadRaterQueue();
+    await this.RefreshRecommendationQueue({ force: true, silent: true });
+    await this.RefreshRaterQueue();
+    this.StartRaterEvents();
+  }
+
+  FinishMediaSwitch(token) {
+    if (token !== this.MediaSwitchToken)
+      return;
+    this.MediaSwitching = false;
     this.UpdateMediaUx();
-    this.ShowView(view);
-    try {
-      const data = await this.LoadMediaData(mediaType);
-      if (token !== this.MediaSwitchToken)
-        return;
-      this.ApplyMovieData(data, data.sourceLabel, mediaType);
-      if (this.StateDirty)
-        await this.FlushStateSync();
-      await this.LoadRaterQueue();
-      await this.RefreshRecommendationQueue({ force: true, silent: true });
-      await this.RefreshRaterQueue();
-      this.StartRaterEvents();
-    } finally {
-      if (token === this.MediaSwitchToken) {
-        this.MediaSwitching = false;
-        this.UpdateMediaUx();
-      }
-    }
   }
 
   async LoadMediaData(mediaType = this.State.mediaType) {
@@ -655,7 +314,7 @@ export class RapidRaterApp {
       return this.Catalogs[mediaType];
     const dataUrl = Config.dataUrls[mediaType];
     const data = await this.FetchJson(dataUrl).catch((error) => this.ThrowMediaDataError(error, mediaType));
-    const fileName = mediaType === "tv" ? "shows.json" : "movies.json";
+    const fileName = mediaType === TvMediaType ? "shows.json" : "movies.json";
     const catalog = { ...data, sourceLabel: DescribeSource(data, fileName) };
     this.Catalogs[mediaType] = catalog;
     return catalog;
@@ -681,19 +340,20 @@ export class RapidRaterApp {
   async ReplaceRaterQueue(queueIds) {
     if (!Array.isArray(queueIds) || !this.State.queueReady)
       return false;
+    const request = { mediaType: this.State.mediaType, expectedRevision: this.State.queueRevision, queueIds };
     try {
-      const payload = await this.RequestJson(Config.raterQueueUrl, "PUT", {
-        mediaType: this.State.mediaType,
-        expectedRevision: this.State.queueRevision,
-        queueIds
-      });
-      this.ApplyRaterQueueSnapshot(payload.queue, true);
-      return true;
+      return await this.RequestRaterQueueReplacement(request);
     } catch (error) {
       if (error?.payload?.current)
         this.ApplyRaterQueueSnapshot(error.payload.current, true);
       throw error;
     }
+  }
+
+  async RequestRaterQueueReplacement(request) {
+    const payload = await this.RequestJson(Config.raterQueueUrl, PutMethod, request);
+    this.ApplyRaterQueueSnapshot(payload.queue, true);
+    return true;
   }
 
   ApplyRaterQueueSnapshot(snapshot, render = false) {
@@ -711,12 +371,15 @@ export class RapidRaterApp {
     if (this.RaterEvents || typeof EventSource === "undefined")
       return;
     this.RaterEvents = new EventSource(this.MediaUrl(Config.raterEventsUrl));
-    this.RaterEvents.addEventListener("queue", (event) => {
-      const update = JSON.parse(event.data || "{}");
-      const revision = Number(update.revision) || 0;
-      if (update.mediaType === this.State.mediaType && revision > this.State.queueRevision)
-        this.RefreshRemoteState().catch(() => null);
-    });
+    this.RaterEvents.addEventListener("queue", (event) => this.HandleRaterQueueEvent(event));
+  }
+
+  HandleRaterQueueEvent(event) {
+    const update = JSON.parse(event.data || "{}");
+    const revision = Number(update.revision) || 0;
+    const isNewActiveQueue = update.mediaType === this.State.mediaType && revision > this.State.queueRevision;
+    if (isNewActiveQueue)
+      this.RefreshRemoteState().catch(() => null);
   }
 
   NewActionId() {
@@ -732,7 +395,7 @@ export class RapidRaterApp {
   }
 
   ThrowMediaDataError(error, mediaType) {
-    const label = mediaType === "tv" ? "TV show" : "movie";
+    const label = mediaType === TvMediaType ? TvShowName : MovieMediaType;
     throw new Error(`Real ${label} data is missing. Run npm run build:data, then restart the app. ${error.message}`);
   }
 
@@ -741,7 +404,7 @@ export class RapidRaterApp {
   }
 
   async FetchJson(url, options = {}) {
-    const response = await fetch(url, { ...options, cache: "no-store" });
+    const response = await fetch(url, { ...options, cache: NoStoreCache });
     const payload = await response.json().catch(() => null);
     if (!response.ok)
       throw new Error(payload?.error || `${url} returned HTTP ${response.status}`);
@@ -749,13 +412,14 @@ export class RapidRaterApp {
   }
 
   async RequestJson(url, method, body, options = {}) {
-    const response = await fetch(url, {
+    const request = {
       method,
-      cache: "no-store",
+      cache: NoStoreCache,
       headers: { "content-type": "application/json", "x-csrf-token": this.CsrfToken },
       body: JSON.stringify(body),
       ...options
-    });
+    };
+    const response = await fetch(url, request);
     const payload = await response.json().catch(() => null);
     if (!response.ok || !payload?.ok)
       throw Object.assign(new Error(payload?.error || `${url} returned HTTP ${response.status}`), { status: response.status, payload });
@@ -774,30 +438,49 @@ export class RapidRaterApp {
   async OfferLegacyMigration() {
     if (!HasLegacyBrowserData(this.LegacySettings))
       return;
-    const hasAccountData = ["movie", "tv"].some((mediaType) => Object.keys(ReadMediaPayload(this.AccountPayload, mediaType).ratings || {}).length > 0) || this.AccountRevision > 0;
-    if (hasAccountData)
+    if (this.HasSavedAccountData())
       return ClearLegacyBrowserData();
     const count = Object.keys(ReadLegacyState().ratings || {}).length;
     this.Elements.migrationSummary.textContent = `${count.toLocaleString()} saved rating records were found in this browser.`;
-    const shouldImport = await new Promise((resolve) => {
-      this.Elements.migrationDialog.hidden = false;
-      this.Elements.migrationImport.onclick = () => resolve(true);
-      this.Elements.migrationSkip.onclick = () => resolve(false);
-    });
+    const shouldImport = await this.ReadLegacyMigrationDecision();
     this.Elements.migrationDialog.hidden = true;
     if (!shouldImport)
       return ClearLegacyBrowserData();
+    await this.ImportLegacyAccount();
+  }
+
+  HasSavedAccountData() {
+    const hasRatings = [MovieMediaType, TvMediaType].some((mediaType) => Object.keys(ReadMediaPayload(this.AccountPayload, mediaType).ratings || {}).length > 0);
+    return hasRatings || this.AccountRevision > 0;
+  }
+
+  async ReadLegacyMigrationDecision() {
+    this.Elements.migrationDialog.hidden = false;
+    return await new Promise((resolve) => this.BindLegacyMigrationDecision(resolve));
+  }
+
+  BindLegacyMigrationDecision(resolve) {
+    this.Elements.migrationImport.onclick = () => resolve(true);
+    this.Elements.migrationSkip.onclick = () => resolve(false);
+  }
+
+  async ImportLegacyAccount() {
     this.AccountPayload = NormalizeAccountPayload(ReadLegacyState());
     this.RatingsCsvText = ReadLegacyRatingsCsv();
-    for (const [type, value] of [["imdb", this.LegacySettings.imdbCookie], ["tmdb", this.LegacySettings.tmdbApiKey], ["openai", this.LegacySettings.openAiApiKey]]) {
-      if (value)
-        await this.SaveAccountSecret(type, value);
-    }
+    await this.ImportLegacySecrets();
     if (this.LegacySettings.openAiModel)
       await this.SaveAccountPreferences(this.LegacySettings.openAiModel);
     await this.FlushStateSync();
     ClearLegacyBrowserData();
     this.ShowToast("This browser's save is now stored in your account.");
+  }
+
+  async ImportLegacySecrets() {
+    const secrets = [[ImdbSecretType, this.LegacySettings.imdbCookie], [TmdbSecretType, this.LegacySettings.tmdbApiKey], ["openai", this.LegacySettings.openAiApiKey]];
+    for (const [type, value] of secrets) {
+      if (value)
+        await this.SaveAccountSecret(type, value);
+    }
   }
 
   async LoadSavedRatingsCsv() {
@@ -815,9 +498,7 @@ export class RapidRaterApp {
 
   async RefreshLiveStatus() {
     const status = await this.FetchJson(Config.liveStatusUrl).catch((error) => ({ dryRun: false, lastError: error.message }));
-    this.State.live = BuildCheckedLiveState({
-      ...status
-    });
+    this.State.live = BuildCheckedLiveState(status);
     this.UpdateStats();
     this.UpdateSyncView();
   }
@@ -833,14 +514,14 @@ export class RapidRaterApp {
   ApplyMovieData(raw, sourceLabel, mediaType = this.State.mediaType) {
     const movies = NormalizeMovieList(raw);
     if (!movies.length)
-      throw new Error(`No valid tt-style ${mediaType === "tv" ? "TV show" : "movie"} IDs were found.`);
+      throw new Error(`No valid tt-style ${mediaType === TvMediaType ? TvShowName : MovieMediaType} IDs were found.`);
     const typedMovies = movies.map((movie) => ({ ...movie, mediaType }));
     this.State.movies = typedMovies;
     this.State.movieById = new Map(typedMovies.map((movie) => [movie.ttId, movie]));
     this.State.sourceLabel = sourceLabel || DescribeSource(raw, "custom data");
     this.State.signature = MakeSignature(typedMovies);
     this.Catalogs[mediaType] = { ...raw, sourceLabel, normalized: typedMovies, movieById: this.State.movieById };
-    if (mediaType === "tv")
+    if (mediaType === TvMediaType)
       this.RedistributeKnownTvRatings();
     this.RestoreLocalState();
     this.Render();
@@ -858,7 +539,7 @@ export class RapidRaterApp {
   }
 
   BuildImportOptions(mediaType) {
-    const otherType = mediaType === "tv" ? "movie" : "tv";
+    const otherType = mediaType === TvMediaType ? MovieMediaType : TvMediaType;
     const otherIds = this.Catalogs[otherType]?.movieById ? new Set(this.Catalogs[otherType].movieById.keys()) : null;
     return { mediaType, otherTitleIds: otherIds };
   }
@@ -867,150 +548,53 @@ export class RapidRaterApp {
     const tvIds = new Set(this.Catalogs.tv?.movieById?.keys?.() || []);
     if (!tvIds.size)
       return;
-    const movie = ReadMediaPayload(this.AccountPayload, "movie");
-    const tv = ReadMediaPayload(this.AccountPayload, "tv");
+    const movie = ReadMediaPayload(this.AccountPayload, MovieMediaType);
+    const tv = ReadMediaPayload(this.AccountPayload, TvMediaType);
     const movieRatings = { ...(movie.ratings || {}) };
     const tvRatings = { ...(tv.ratings || {}) };
+    const changed = this.MoveKnownTvRatings(movieRatings, tvRatings, tvIds);
+    if (!changed)
+      return;
+    this.SaveRatingRedistribution(movie, tv, movieRatings, tvRatings, tvIds);
+    this.StateDirty = true;
+  }
+
+  SaveRatingRedistribution(movie, tv, movieRatings, tvRatings, tvIds) {
     const movieHistory = Array.isArray(movie.history) ? movie.history : [];
     const tvHistory = Array.isArray(tv.history) ? tv.history : [];
+    this.SaveMovieRedistribution(movie, movieRatings, movieHistory, tvIds);
+    this.SaveTvRedistribution(tv, tvRatings, tvHistory, movieHistory, tvIds);
+  }
+
+  MoveKnownTvRatings(movieRatings, tvRatings, tvIds) {
     let changed = false;
     for (const [ttId, record] of Object.entries(movieRatings)) {
       if (!tvIds.has(ttId))
         continue;
-      tvRatings[ttId] = { ...record, mediaType: "tv" };
+      tvRatings[ttId] = { ...record, mediaType: TvMediaType };
       delete movieRatings[ttId];
       changed = true;
     }
-    if (!changed)
-      return;
-    const movedHistory = movieHistory.filter((item) => tvIds.has(item?.ttId));
-    this.AccountPayload = WriteMediaPayload(this.AccountPayload, "movie", {
+    return changed;
+  }
+
+  SaveMovieRedistribution(movie, movieRatings, movieHistory, tvIds) {
+    const payload = {
       ...movie,
       ratings: movieRatings,
       history: movieHistory.filter((item) => !tvIds.has(item?.ttId))
-    });
-    this.AccountPayload = WriteMediaPayload(this.AccountPayload, "tv", {
+    };
+    this.AccountPayload = WriteMediaPayload(this.AccountPayload, MovieMediaType, payload);
+  }
+
+  SaveTvRedistribution(tv, tvRatings, tvHistory, movieHistory, tvIds) {
+    const movedHistory = movieHistory.filter((item) => tvIds.has(item?.ttId));
+    const payload = {
       ...tv,
       ratings: tvRatings,
       history: [...tvHistory, ...movedHistory].slice(-200)
-    });
-    this.StateDirty = true;
-  }
-
-  RestoreLocalState() {
-    const saved = this.ReadStoredState();
-    this.State.ratings = saved.ratings || {};
-    this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(saved.recommendationExclusions);
-    this.State.letterboxd = NormalizeLetterboxdState(saved.letterboxd, this.State.movieById);
-    this.State.history = Array.isArray(saved.history) ? saved.history : [];
-    this.State.filters = NormalizeTitleFilters(saved.filters);
-    this.State.recommendationBasis = NormalizeRecommendationBasis(saved.recommendationBasis);
-    this.State.savedQueueIds = null;
-    this.UpdateRecommendationBasisControl();
-    UpdateTitleFilterButton(this);
-  }
-
-  ReadStoredState() {
-    return ReadMediaPayload(this.AccountPayload, this.State.mediaType);
-  }
-
-  UpdateActiveMediaPayload(partial) {
-    const current = this.ReadStoredState();
-    this.AccountPayload = WriteMediaPayload(this.AccountPayload, this.State.mediaType, { ...current, ...partial });
-  }
-
-  SaveLocalState() {
-    this.AccountPayload = WriteMediaPayload(this.AccountPayload, this.State.mediaType, BuildStoragePayload(this.State));
-    this.StateDirty = true;
-    window.clearTimeout(this.SyncTimer);
-    this.SyncTimer = window.setTimeout(() => this.FlushStateSync().catch((error) => this.ShowToast(EscapeHtml(error.message))), 300);
-  }
-
-  PersistStateNow() {
-    this.SaveLocalState();
-    this.FlushStateSync().catch((error) => this.ShowToast(EscapeHtml(error.message)));
-  }
-
-  async FlushStateSync() {
-    window.clearTimeout(this.SyncTimer);
-    this.SyncPromise = this.SyncPromise.catch(() => null).then(() => this.PerformStateSync());
-    return await this.SyncPromise;
-  }
-
-  async PerformStateSync() {
-    let mergedAnotherDevice = false;
-    for (let attempt = 0; attempt < StateConflictRetryCount; attempt++) {
-      try {
-        const payloadBeingSaved = this.AccountPayload || BuildStoragePayload(this.State);
-        const result = await this.RequestJson("/api/account/state", "PUT", {
-          payload: payloadBeingSaved,
-          ratingsCsv: this.RatingsCsvText || "",
-          revision: this.AccountRevision,
-          mediaType: this.State.mediaType
-        });
-        this.AccountRevision = Number(result.revision);
-        if (this.AccountPayload === payloadBeingSaved)
-          this.StateDirty = false;
-        if (mergedAnotherDevice)
-          this.ShowToast("Changes from your other device were combined and saved.");
-        return;
-      } catch (error) {
-        const current = error?.status === 409 ? error.payload?.current : null;
-        if (!current || attempt === StateConflictRetryCount - 1)
-          throw error;
-        this.AccountPayload = MergeAccountPayload(current.payload, this.AccountPayload);
-        this.RatingsCsvText ||= current.ratings_csv || current.ratingsCsv || "";
-        this.AccountRevision = Number(current.revision) || 0;
-        this.ApplyMergedAccountPayload(this.AccountPayload);
-        mergedAnotherDevice = true;
-      }
-    }
-  }
-
-  StartAccountRefresh() {
-    if (this.AccountRefreshTimer)
-      return;
-    this.AccountRefreshTimer = window.setInterval(() => {
-      if (!document.hidden)
-        this.RefreshRemoteState().catch(() => null);
-    }, AccountRefreshIntervalMs);
-  }
-
-  async RefreshRemoteState() {
-    const accountChanged = await this.RefreshAccountStateFromServer().catch(() => false);
-    const recommendationChanged = await this.RefreshRecommendationQueue().catch(() => false);
-    const queueChanged = await this.RefreshRaterQueue().catch(() => false);
-    return accountChanged || recommendationChanged || queueChanged;
-  }
-
-  async RefreshAccountStateFromServer() {
-    if (!this.User || this.StateDirty)
-      return false;
-    const account = await this.FetchJson("/api/account/state");
-    const revision = Number(account.revision) || 0;
-    if (revision <= this.AccountRevision)
-      return false;
-    this.AccountPayload = NormalizeAccountPayload(account.payload);
-    this.RatingsCsvText = account.ratingsCsv || "";
-    this.AccountRevision = revision;
-    this.ApplyMergedAccountPayload(this.AccountPayload);
-    this.ShowToast("Updated with changes from your other device.");
-    return true;
-  }
-
-  ApplyMergedAccountPayload(payload) {
-    const media = ReadMediaPayload(payload, this.State.mediaType);
-    this.State.ratings = media.ratings || {};
-    this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(media.recommendationExclusions);
-    this.State.letterboxd = NormalizeLetterboxdState(media.letterboxd, this.State.movieById);
-    this.State.history = Array.isArray(media.history) ? media.history.slice(-200) : [];
-    this.State.filters = NormalizeTitleFilters(media.filters);
-    this.State.recommendationBasis = NormalizeRecommendationBasis(media.recommendationBasis);
-    this.RebuildQueue();
-    this.UpdateRecommendationBasisControl();
-    UpdateTitleFilterButton(this);
-    this.Render();
-    this.UpdateSyncView();
+    };
+    this.AccountPayload = WriteMediaPayload(this.AccountPayload, TvMediaType, payload);
   }
 
   RebuildQueue() {
@@ -1056,506 +640,6 @@ export class RapidRaterApp {
     return true;
   }
 
-  Render() {
-    this.UpdateStats();
-    this.Elements.sourceBadge.textContent = this.State.sourceLabel;
-    if (!this.State.queueReady) {
-      this.Elements.strip.innerHTML = "";
-      this.Elements.emptySummary.textContent = `Synchronizing your ${this.State.mediaType === "tv" ? "TV show" : "movie"} queue...`;
-      this.Elements.empty.hidden = false;
-      return;
-    }
-    if (!this.State.queue.length) {
-      this.ShowComplete();
-      return;
-    }
-    this.RenderVisibleCards();
-  }
-
-  RenderVisibleCards() {
-    const visible = this.State.queue.slice(0, Config.visibleCount);
-    this.Elements.empty.hidden = true;
-    this.Elements.strip.classList.remove("rating");
-    this.Elements.strip.innerHTML = visible.map((movie, index) => this.BuildCardHtml(movie, index)).join("");
-    this.EnrichVisibleMovies(visible);
-  }
-
-  BuildCardHtml(movie, index) {
-    const metadata = this.State.metadata[movie.ttId] || {};
-    return RenderCard(movie, index, metadata);
-  }
-
-  EnrichVisibleMovies(movies) {
-    for (const movie of movies)
-      this.EnrichTitleMetadata(movie.ttId);
-  }
-
-  EnrichTitleMetadata(ttId) {
-    if (!/^tt\d+$/.test(ttId || ""))
-      return;
-    if (this.State.metadata[ttId])
-      return this.ApplyTitleMetadata(ttId, this.State.metadata[ttId]);
-    if (!this.MetadataInFlight.has(ttId))
-      this.QueueMetadataRequest(ttId);
-  }
-
-  QueueMetadataRequest(ttId) {
-    this.MetadataInFlight.add(ttId);
-    this.FetchAndApplyMetadata(ttId);
-  }
-
-  async FetchAndApplyMetadata(ttId) {
-    const metadata = await this.FetchTitleMetadata(ttId).catch(() => this.BuildMissingMetadata());
-    this.ApplyTitleMetadata(ttId, metadata);
-    this.MetadataInFlight.delete(ttId);
-  }
-
-  BuildMissingMetadata() {
-    return {
-      posterUrl: "",
-      synopsis: "To see the synopsis, set up a TMDB key.",
-      actors: [],
-      trailerUrl: "",
-      source: ""
-    };
-  }
-
-  async FetchTitleMetadata(ttId) {
-    const payload = await this.FetchJson(this.MediaUrl(`${Config.titleMetadataUrl}${ttId}`), this.BuildMetadataFetchOptions());
-    if (!payload.ok)
-      throw new Error(payload.error || "Metadata request failed.");
-    return {
-      posterUrl: payload.posterUrl || "",
-      synopsis: payload.synopsis || "To see the synopsis, set up a TMDB key.",
-      actors: Array.isArray(payload.actors) ? payload.actors.slice(0, 3) : [],
-      trailerUrl: payload.trailerUrl || "",
-      seriesStatus: payload.seriesStatus || "",
-      seasonCount: Number(payload.seasonCount) || 0,
-      episodeCount: Number(payload.episodeCount) || 0,
-      episodeRuntimeMinutes: Number(payload.episodeRuntimeMinutes) || 0,
-      source: payload.source || ""
-    };
-  }
-
-  BuildMetadataFetchOptions() {
-    return {};
-  }
-
-  ApplyTitleMetadata(ttId, metadata) {
-    this.State.metadata[ttId] = metadata;
-    const card = this.Elements.strip.querySelector(`[data-ttid="${ttId}"]`);
-    if (card) {
-      UpdatePoster(card, metadata);
-      UpdateSynopsis(card, metadata);
-      UpdateActors(card, metadata);
-      UpdateTrailerLink(card, metadata);
-      UpdateSeriesDetails(card, this.State.movieById.get(ttId) || {}, metadata);
-    }
-    for (const recommendation of this.Elements.recommendationGrid.querySelectorAll(`[data-ttid="${ttId}"]`)) {
-      UpdateRecommendationPoster(recommendation, metadata);
-      UpdateTrailerLink(recommendation, metadata);
-    }
-  }
-
-  UpdateStats() {
-    const counts = CountRatings(this.State.ratings);
-    this.Elements.rated.textContent = FormatCount(counts.rated);
-    this.Elements.skipped.textContent = FormatCount(counts.skipped);
-    this.Elements.imported.textContent = FormatCount(counts.imported);
-    this.Elements.sent.textContent = FormatCount(counts.sent);
-    this.Elements.failed.textContent = FormatCount(counts.failed);
-    this.UpdatePoolStatus();
-    this.UpdateLiveBadge(counts);
-    this.UpdateFailurePanel();
-  }
-
-  UpdatePoolStatus() {
-    this.Elements.poolStatus.textContent = !this.State.queueReady ? "Syncing" : this.State.queue.length ? "Ready" : "Empty";
-  }
-
-  UpdateLiveBadge(counts) {
-    this.UpdateSettingsButtons();
-    this.UpdateRetryButtons(counts);
-    if (!this.State.live.checked)
-      return this.SetLiveBadge("status-chip live-missing", "Live checking");
-    if (!this.State.live.configured)
-      return this.SetLiveBadge("status-chip live-missing", "IMDb connection required");
-    if (counts.failed > 0)
-      return this.SetLiveBadge("status-chip live-failed", `Live ${FormatCount(counts.failed)} failed`);
-    if (counts.pending > 0 || this.State.live.submitting)
-      return this.SetLiveBadge("status-chip live-ready", `Live ${FormatCount(counts.pending)} pending`);
-    this.SetLiveBadge("status-chip live-ready", this.State.live.dryRun ? "Live dry run" : "Live ready");
-  }
-
-  SetLiveBadge(className, text) {
-    this.Elements.liveBadge.className = className;
-    this.Elements.liveBadge.textContent = text;
-  }
-
-  UpdateSettingsButtons() {
-    this.UpdateImdbButton();
-    this.UpdateTmdbButton();
-  }
-
-  UpdateImdbButton() {
-    const configured = this.State.live.configured;
-    this.Elements.configureImdb.className = configured ? "status-chip live-ready" : "status-chip live-missing";
-    this.Elements.configureImdb.textContent = configured ? "IMDb connected" : "Connect IMDb";
-  }
-
-  UpdateTmdbButton() {
-    const configured = this.State.live.tmdbConfigured;
-    this.Elements.configureTmdb.className = configured ? "status-chip metadata-ready" : "status-chip metadata-missing";
-    this.Elements.configureTmdb.textContent = configured ? "TMDB ready" : "Set TMDB Key";
-  }
-
-  UpdateRetryButtons(counts) {
-    const disabled = !this.State.live.configured || counts.retryableImdb === 0;
-    this.Elements.retryFailed.disabled = disabled;
-    this.Elements.failureRetry.disabled = disabled;
-  }
-
-  UpdateAiControls() {
-    this.Elements.configureAi.textContent = this.State.ai.configured ? "OpenAI connected" : "Set OpenAI Key";
-    this.SetAiControlsDisabled(this.State.ai.loading);
-    this.UpdateModelFeed();
-    this.UpdateRecommendationStatus();
-  }
-
-  UpdateRecommendationStatus() {
-    if (!this.State.ai.configured)
-      return this.SetRecommendationStatus("Add an OpenAI API key to generate recommendations.");
-    const saved = this.State.recommendationQueue.length;
-    const queue = saved ? ` ${FormatCount(saved)} saved ${saved === 1 ? "pick" : "picks"} in your watchlist.` : "";
-    this.SetRecommendationStatus(`Ready with ${this.ReadAiModelLabel()}.${queue}`);
-  }
-
-  UpdateRecommendationBasisControl() {
-    const isTv = this.State.mediaType === "tv";
-    const currentMediaType = isTv ? "tv" : "movie";
-    const otherMediaType = isTv ? "movie" : "tv";
-    const currentName = isTv ? "TV" : "movie";
-    const otherName = isTv ? "movie" : "TV";
-    const outputName = isTv ? "TV shows" : "movies";
-    const basis = NormalizeRecommendationBasis(this.State.recommendationBasis).source;
-    const optionLabels = {
-      current: `My ${currentName} ratings`,
-      other: `My ${otherName} ratings`,
-      both: "Both"
-    };
-    for (const option of this.Elements.recommendationBasis.options)
-      option.textContent = optionLabels[option.value] || option.textContent;
-    this.Elements.recommendationBasis.value = basis;
-    this.Elements.recommendationBasisLabel.textContent = `Build ${isTv ? "TV" : "movie"} picks from`;
-    const currentCount = this.CountTasteRatings(currentMediaType);
-    const otherCount = this.CountTasteRatings(otherMediaType);
-    const selectedCount = basis === "both" ? currentCount + otherCount : basis === "other" ? otherCount : currentCount;
-    const sourceCopy = basis === "both"
-      ? `${this.FormatTasteRatingCount(currentCount, currentName)} and ${this.FormatTasteRatingCount(otherCount, otherName)}`
-      : this.FormatTasteRatingCount(selectedCount, basis === "other" ? otherName : currentName);
-    const readiness = selectedCount < 5
-      ? `You need at least 5 selected ratings; currently using ${sourceCopy}.`
-      : `Using ${sourceCopy} as taste signals.`;
-    this.Elements.recommendationBasisDetail.textContent = `${readiness} Picks, filters, and watchlist stay ${outputName}.`;
-  }
-
-  FormatTasteRatingCount(count, mediaName) {
-    return `${FormatCount(count)} ${mediaName} ${count === 1 ? "rating" : "ratings"}`;
-  }
-
-  CountTasteRatings(mediaType) {
-    const records = mediaType === this.State.mediaType
-      ? this.State.ratings
-      : ReadMediaPayload(this.AccountPayload, mediaType).ratings;
-    return BuildAiPreferenceProfile(records || {}, new Map()).ratings.length;
-  }
-
-  SetRecommendationStatus(message) {
-    this.Elements.recommendationStatus.textContent = message;
-  }
-
-  ReadAiModelLabel() {
-    return this.State.ai.selectedModel || this.State.ai.model || "auto model";
-  }
-
-  UpdateModelFeed() {
-    this.Elements.aiModelStatus.textContent = `Model: ${this.ReadAiModelLabel()}`;
-    this.Elements.aiModelDetail.textContent = this.BuildModelDetailText();
-    this.UpdateModelSelect();
-  }
-
-  BuildModelDetailText() {
-    if (this.State.ai.model)
-      return "Manual OPENAI_MODEL override is active.";
-    return `Auto-selecting ${FormatCount(this.State.ai.modelLag)} versions behind newest eligible GPT model.`;
-  }
-
-  UpdateModelSelect() {
-    this.Elements.aiModelSelect.innerHTML = RenderModelOptions(this.State.ai);
-    this.Elements.aiModelSelect.value = this.State.ai.model || "";
-  }
-
-  UpdateFailurePanel() {
-    const ratings = Object.values(this.State.ratings);
-    const failed = ratings.filter((record) => record.submitStatus === "failed");
-    const failures = failed.sort((a, b) => String(b.at || "").localeCompare(String(a.at || ""))).slice(0, 5);
-    if (!failures.length) {
-      this.Elements.failurePanel.hidden = true;
-      this.Elements.failureList.innerHTML = "";
-      return;
-    }
-    this.Elements.failurePanel.hidden = false;
-    this.Elements.failureList.innerHTML = failures.map(RenderFailure).join("");
-  }
-
-  MarkActive(rating, status) {
-    if (this.State.locked || !this.State.queue.length || !this.State.queueReady)
-      return;
-    this.State.locked = true;
-    this.CommitActiveDecision(this.State.queue[0], rating, status)
-      .catch((error) => this.RecoverFromDecisionError(error));
-  }
-
-  async CommitActiveDecision(movie, rating, status) {
-    const payload = await this.RequestJson(Config.raterDecisionUrl, "PUT", {
-      mediaType: this.State.mediaType,
-      actionId: this.NewActionId(),
-      expectedRevision: this.State.queueRevision,
-      kind: status,
-      titleId: movie.ttId,
-      title: movie.title,
-      year: movie.year || "",
-      genres: Array.isArray(movie.genres) ? movie.genres : [],
-      rating,
-      at: new Date().toISOString()
-    });
-    this.ApplyCommittedDecision(payload, movie);
-    if (status === "rated")
-      this.EnqueueLiveSubmit(movie.ttId);
-    this.AnimateActiveCard(status);
-    this.ShowRatingToast(movie, rating, status);
-    window.setTimeout(() => {
-      this.State.locked = false;
-      this.Render();
-    }, Config.animationMs);
-  }
-
-  ApplyCommittedDecision(payload, movie) {
-    const previous = payload.previous ?? this.State.ratings[movie.ttId] ?? null;
-    if (payload.record) {
-      this.State.ratings[movie.ttId] = payload.record;
-      const last = this.State.history.at(-1);
-      if (last?.ttId !== movie.ttId)
-        this.State.history.push({ ttId: movie.ttId, previous });
-    }
-    this.AccountRevision = Math.max(this.AccountRevision, Number(payload.stateRevision) || 0);
-    this.UpdateActiveMediaPayload({
-      ratings: { ...this.State.ratings },
-      history: this.State.history.slice(-200)
-    });
-    this.ApplyRaterQueueSnapshot(payload.queue);
-    this.UpdateStats();
-    this.UpdateSyncView();
-  }
-
-  async RecoverFromDecisionError(error) {
-    if (error?.payload?.current)
-      this.ApplyRaterQueueSnapshot(error.payload.current);
-    await this.RefreshRemoteState().catch(() => null);
-    this.State.locked = false;
-    this.Render();
-    this.ShowToast(`<strong>Queue synchronized:</strong> ${EscapeHtml(error.message || "The active title changed on another device.")}`);
-  }
-
-  AnimateActiveCard(status) {
-    const card = this.Elements.strip.firstElementChild;
-    if (!card)
-      return;
-    this.Elements.strip.classList.add("rating");
-    card.classList.remove("active");
-    card.classList.add("leaving", status === "notSeen" ? "skip" : "rated");
-  }
-
-  ShowRatingToast(movie, rating, status) {
-    const value = status === "rated" ? rating : this.State.mediaType === "tv" ? "not watched" : "not seen";
-    this.ShowToast(`${EscapeHtml(movie.title)} <strong>${value}</strong>`);
-  }
-
-  async AddActiveMovieToWishlist(button) {
-    if (this.State.locked || !this.State.queue.length)
-      return false;
-    this.State.locked = true;
-    button.disabled = true;
-    button.classList.add("saving");
-    const originalLabel = button.innerHTML;
-    button.textContent = "Adding...";
-    const movie = this.State.queue[0];
-    try {
-      const payload = await this.RequestJson(Config.raterDecisionUrl, "PUT", {
-        mediaType: this.State.mediaType,
-        actionId: this.NewActionId(),
-        expectedRevision: this.State.queueRevision,
-        kind: "wishlist",
-        titleId: movie.ttId,
-        title: movie.title,
-        year: movie.year || "",
-        genres: Array.isArray(movie.genres) ? movie.genres : []
-      });
-      this.State.recommendationQueue = this.NormalizeRecommendationQueue(payload.recommendations);
-      this.ApplyRaterQueueSnapshot(payload.queue);
-      this.RenderRecommendationQueue();
-      this.UpdateRecommendationStatus();
-      this.Render();
-      const message = payload.duplicate ? "is already in your wishlist" : "added to your wishlist";
-      this.ShowToast(`<strong>${EscapeHtml(movie.title)}</strong> ${message}`);
-      return true;
-    } catch (error) {
-      if (error?.payload?.current)
-        this.ApplyRaterQueueSnapshot(error.payload.current, true);
-      await this.RefreshRemoteState().catch(() => null);
-      throw error;
-    } finally {
-      this.State.locked = false;
-      button.disabled = false;
-      button.classList.remove("saving");
-      button.innerHTML = originalLabel;
-    }
-  }
-
-  EnqueueLiveSubmit(ttId, mediaType = this.State.mediaType) {
-    const record = mediaType === this.State.mediaType
-      ? this.State.ratings[ttId]
-      : ReadMediaPayload(this.AccountPayload, mediaType).ratings?.[ttId];
-    if (!CanSubmitLive(record, this.State.live.configured))
-      return false;
-    record.submitStatus = "pending";
-    record.submitError = "";
-    const queued = this.QueueSubmitId(ttId, mediaType);
-    this.UpdateStats();
-    this.PumpSubmitQueue();
-    return queued;
-  }
-
-  SubmitKey(ttId, mediaType = this.State.mediaType) {
-    return `${mediaType}:${ttId}`;
-  }
-
-  QueueSubmitId(ttId, mediaType = this.State.mediaType) {
-    const key = this.SubmitKey(ttId, mediaType);
-    const isQueued = this.SubmitQueuedIds.has(key);
-    const isSubmitting = this.SubmitActiveIds.has(key);
-    if (isQueued || isSubmitting)
-      return false;
-    this.SubmitQueue.push({ ttId, mediaType, key });
-    this.SubmitQueuedIds.add(key);
-    return true;
-  }
-
-  async PumpSubmitQueue() {
-    if (this.SubmitInFlight || !this.SubmitQueue.length)
-      return;
-    const item = this.PopSubmitId();
-    const media = ReadMediaPayload(this.AccountPayload, item.mediaType);
-    const record = item.mediaType === this.State.mediaType ? this.State.ratings[item.ttId] : media.ratings?.[item.ttId];
-    if (!CanSubmitLive(record, this.State.live.configured))
-      return this.PumpSubmitQueue();
-    await this.SubmitRatingRecord(record, item.mediaType);
-  }
-
-  PopSubmitId() {
-    const item = this.SubmitQueue.shift();
-    this.SubmitQueuedIds.delete(item.key);
-    return item;
-  }
-
-  async SubmitRatingRecord(record, mediaType = this.State.mediaType) {
-    this.SetSubmitInFlight(true);
-    const key = this.SubmitKey(record.ttId, mediaType);
-    this.SubmitActiveIds.add(key);
-    try {
-      const result = await this.PostLiveRating({ ...record, mediaType });
-      this.MarkSubmitSuccess(record.ttId, result.rating ?? record.rating, result.revision, mediaType);
-    } catch (error) {
-      this.MarkSubmitFailure(record.ttId, error.message || "IMDb submit failed.", mediaType);
-      if (/cookie|sign.?in|auth/i.test(error.message || ""))
-        this.RequireImdbSignIn();
-    }
-    this.SubmitActiveIds.delete(key);
-    this.UpdateSyncView();
-    this.ScheduleNextSubmit();
-  }
-
-  SetSubmitInFlight(value) {
-    this.SubmitInFlight = value;
-    this.State.live.submitting = value;
-    this.UpdateStats();
-  }
-
-  async PostLiveRating(record) {
-    return await this.PostJson(Config.rateUrl, this.BuildLiveRateRequest(record), "IMDb write failed.");
-  }
-
-  BuildLiveRateRequest(record) {
-    return BuildRateRequest({ ...record, mediaType: record?.mediaType || this.State.mediaType });
-  }
-
-  MarkSubmitSuccess(ttId, rating, revision = 0, mediaType = this.State.mediaType) {
-    const media = ReadMediaPayload(this.AccountPayload, mediaType);
-    const current = mediaType === this.State.mediaType ? this.State.ratings[ttId] : media.ratings?.[ttId];
-    if (!current)
-      return;
-    Object.assign(current, { submitStatus: "submitted", submitError: "", submittedAt: new Date().toISOString(), imdbEchoRating: rating });
-    this.AccountRevision = Math.max(this.AccountRevision, Number(revision) || 0);
-    this.AccountPayload = WriteMediaPayload(this.AccountPayload, mediaType, { ...media, ratings: { ...(media.ratings || {}), [ttId]: current } });
-    if (mediaType === this.State.mediaType)
-      this.UpdateSyncView();
-  }
-
-  MarkSubmitFailure(ttId, error, mediaType = this.State.mediaType) {
-    const media = ReadMediaPayload(this.AccountPayload, mediaType);
-    const current = mediaType === this.State.mediaType ? this.State.ratings[ttId] : media.ratings?.[ttId];
-    if (!current)
-      return;
-    Object.assign(current, { submitStatus: "failed", submitError: error, submittedAt: "" });
-    this.AccountPayload = WriteMediaPayload(this.AccountPayload, mediaType, { ...media, ratings: { ...(media.ratings || {}), [ttId]: current } });
-    this.SaveLocalState();
-    if (mediaType === this.State.mediaType)
-      this.UpdateSyncView();
-  }
-
-  ScheduleNextSubmit() {
-    window.setTimeout(() => {
-      this.SetSubmitInFlight(false);
-      this.PumpSubmitQueue();
-    }, Config.submitDelayMs);
-  }
-
-  RetryImdbFailures() {
-    if (!this.State.live.configured)
-      return this.RequireImdbSignIn();
-    const queued = this.QueueRetryableImdbSubmits();
-    this.ShowToast(`Queued <strong>${FormatCount(queued)}</strong> IMDb retries`);
-    this.SaveLocalState();
-    this.UpdateStats();
-  }
-
-  QueueRetryableImdbSubmits() {
-    let queued = 0;
-    for (const record of Object.values(this.State.ratings)) {
-      if (!IsRetryableImdbSubmit(record))
-        continue;
-      if (this.EnqueueLiveSubmit(record.ttId))
-        queued++;
-    }
-    return queued;
-  }
-
-  RequireImdbSignIn() {
-    if (this.State.live.configured)
-      return;
-    this.ShowImdbDialog();
-  }
-
   ShowImdbDialog() {
     this.ShowImdbError("");
     this.Elements.imdbDialog.hidden = false;
@@ -1596,24 +680,24 @@ export class RapidRaterApp {
 
   async PostJson(url, body, message) {
     try {
-      return await this.RequestJson(url, "POST", body);
+      return await this.RequestJson(url, PostMethod, body);
     } catch (error) {
       throw new Error(error.message || message);
     }
   }
 
   async SaveAccountSecret(type, value) {
-    await this.RequestJson(`/api/account/secrets/${type}`, "PUT", { value });
-    const setting = type === "imdb" ? "imdbConfigured" : type === "tmdb" ? "tmdbConfigured" : "openAiConfigured";
+    await this.RequestJson(`/api/account/secrets/${type}`, PutMethod, { value });
+    const setting = SecretSettingByType[type] ?? SecretSettingByType.openai;
     this.Settings[setting] = true;
   }
 
   async DeleteAccountSecret(type) {
     await this.RequestJson(`/api/account/secrets/${type}`, "DELETE", {});
-    if (type === "imdb") {
+    if (type === ImdbSecretType) {
       this.Elements.imdbDialog.hidden = true;
       await this.RefreshLiveStatus();
-    } else if (type === "tmdb") {
+    } else if (type === TmdbSecretType) {
       this.Elements.tmdbDialog.hidden = true;
       await this.RefreshLiveStatus();
       this.RefreshVisibleMetadata();
@@ -1625,10 +709,11 @@ export class RapidRaterApp {
   }
 
   async SaveAccountPreferences(model) {
-    const payload = await this.RequestJson("/api/account/preferences", "PUT", {
+    const request = {
       openAiModel: model,
       openAiModelLag: Number(this.Settings.openAiModelLag) || 2
-    });
+    };
+    const payload = await this.RequestJson("/api/account/preferences", PutMethod, request);
     this.Settings.openAiModel = payload.openAiModel;
     this.Settings.openAiModelLag = payload.openAiModelLag;
   }
@@ -1656,12 +741,12 @@ export class RapidRaterApp {
 
   SetTmdbSaving(value) {
     this.Elements.tmdbSave.disabled = value;
-    this.Elements.tmdbSave.textContent = value ? "Saving..." : "Save API Key";
+    this.Elements.tmdbSave.textContent = value ? SavingLabel : SaveApiKeyLabel;
   }
 
   SetAiSaving(value) {
     this.Elements.aiSave.disabled = value;
-    this.Elements.aiSave.textContent = value ? "Saving..." : "Save API Key";
+    this.Elements.aiSave.textContent = value ? SavingLabel : SaveApiKeyLabel;
   }
 
   SetAiControlsDisabled(value) {
@@ -1691,328 +776,37 @@ export class RapidRaterApp {
     this.Elements.aiError.textContent = message || "";
   }
 
-  async GenerateRecommendations() {
-    if (!this.State.ai.configured)
-      return this.ShowAiDialog();
-    const count = this.ReadRecommendationCount();
-    const mediaType = this.State.mediaType;
-    this.PendingRecommendationCount = count;
-    this.SetAiLoading(true, count);
-    const payload = await this.RequestRecommendations(count).finally(() => this.SetAiLoading(false, count));
-    if (mediaType !== this.State.mediaType)
-      return;
-    this.RenderRecommendations(payload);
-  }
-
-  ReadRecommendationCount() {
-    const count = Number(this.Elements.recommendationCount.value);
-    if (!Number.isInteger(count) || count < 1 || count > 99)
-      throw new Error("Choose a whole number from 1 to 99 for the number of picks.");
-    return count;
-  }
-
-  async RequestRecommendations(count) {
-    return await this.PostJson(Config.recommendationsUrl, await this.BuildRecommendationRequest(count), "AI recommendation request failed.");
-  }
-
-  async BuildRecommendationRequest(count = this.ReadRecommendationCount()) {
-    const targetMediaType = this.State.mediaType;
-    const otherMediaType = targetMediaType === "tv" ? "movie" : "tv";
-    const basis = NormalizeRecommendationBasis(this.State.recommendationBasis).source;
-    const targetProfile = BuildAiPreferenceProfile(this.State.ratings, this.State.movieById, this.State.recommendationExclusions);
-    let tasteRatings = [];
-    if (basis !== "other")
-      tasteRatings.push(...this.TagTasteRatings(targetProfile.ratings, targetMediaType));
-    if (basis !== "current") {
-      const otherMedia = ReadMediaPayload(this.AccountPayload, otherMediaType);
-      const otherRatings = otherMedia.ratings || {};
-      const otherCatalog = Object.keys(otherRatings).length ? await this.EnsureCatalog(otherMediaType) : { movieById: new Map() };
-      const otherProfile = BuildAiPreferenceProfile(otherRatings, otherCatalog.movieById);
-      tasteRatings.push(...this.TagTasteRatings(otherProfile.ratings, otherMediaType));
-    }
-    return {
-      count,
-      mediaType: targetMediaType,
-      profile: {
-        ...targetProfile,
-        ratings: tasteRatings,
-        ratedTargets: targetProfile.ratings.map(({ title, year }) => ({ title, year })),
-        tasteBasis: basis,
-        fieldsSent: [...targetProfile.fieldsSent, "sourceMediaType", "ratedTargetTitle", "ratedTargetYear", "tasteBasis"]
-      }
-    };
-  }
-
-  TagTasteRatings(ratings, mediaType) {
-    return ratings.map((rating) => ({ ...rating, sourceMediaType: mediaType }));
-  }
-
-  AddRecommendationExclusion(value) {
-    const exclusion = this.NormalizeRecommendationExclusion(value);
-    if (!exclusion)
-      return null;
-    const key = this.RecommendationExclusionKey(exclusion);
-    const others = this.State.recommendationExclusions.filter((item) => this.RecommendationExclusionKey(item) !== key);
-    this.State.recommendationExclusions = [...others, exclusion];
-    this.RemoveRecommendationFromQueue(exclusion);
-    this.SaveLocalState();
-    this.RequestJson(Config.recommendationExclusionsUrl, "PUT", exclusion, { keepalive: true })
-      .catch((error) => this.ShowToast(`<strong>Don't recommend was not saved:</strong> ${EscapeHtml(error.message)}`));
-    return exclusion;
-  }
-
-  NormalizeRecommendationExclusions(value) {
-    const exclusions = Array.isArray(value) ? value : [];
-    const normalized = new Map();
-    for (const item of exclusions) {
-      const exclusion = this.NormalizeRecommendationExclusion(item);
-      if (exclusion)
-        normalized.set(this.RecommendationExclusionKey(exclusion), exclusion);
-    }
-    return [...normalized.values()];
-  }
-
-  NormalizeRecommendationExclusion(value) {
-    const ttId = /^tt\d+$/.test(String(value?.ttId || "").trim()) ? String(value.ttId).trim() : "";
-    const movie = this.State.movieById.get(ttId) || {};
-    const title = String(value?.title || movie.title || "").replace(/\s+/g, " ").trim();
-    if (!title)
-      return null;
-    return {
-      ttId,
-      mediaType: this.State.mediaType,
-      title,
-      year: Number(value?.year || movie.year) || null,
-      at: String(value?.at || new Date().toISOString()),
-      queueKey: this.RecommendationExclusionKey({ title, year: Number(value?.year || movie.year) || null })
-    };
-  }
-
-  RecommendationExclusionKey(value) {
-    const title = String(value?.title || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
-    return `${title}|${Number(value?.year) || ""}`;
-  }
-
-  async RefreshAiModels() {
-    if (!this.State.ai.configured)
-      return;
-    const payload = await this.FetchJson(Config.aiModelsUrl, this.BuildAiModelsFetchOptions());
-    this.ApplyAiModelFeed(payload);
-  }
-
-  BuildAiModelsFetchOptions() {
-    return {};
-  }
-
-  ApplyAiModelFeed(payload) {
-    this.State.ai.model = payload.explicitModel || "";
-    this.State.ai.selectedModel = payload.selectedModel || "";
-    this.State.ai.models = Array.isArray(payload.models) ? payload.models : [];
-    this.State.ai.modelLag = Number(payload.modelLag) || this.State.ai.modelLag;
-    this.UpdateAiControls();
-  }
-
-  SetAiLoading(value, count = this.PendingRecommendationCount) {
-    this.State.ai.loading = value;
-    this.SetAiControlsDisabled(value);
-    this.Elements.generateRecommendations.textContent = value ? `Finding ${this.State.mediaType === "tv" ? "shows" : "movies"}...` : "Generate picks";
-    this.Elements.recommendationLoading.hidden = !value;
-    window.clearInterval(this.AiLoadingTimer);
-    if (!value) {
-      this.AiLoadingTimer = 0;
-      return;
-    }
-    this.AiLoadingMessageIndex = 0;
-    this.UpdateAiLoadingMessage();
-    this.Elements.recommendationGrid.classList.add("is-loading");
-    this.Elements.recommendationGrid.setAttribute("aria-busy", "true");
-    if (!this.State.recommendationQueue.length)
-      this.Elements.recommendationGrid.innerHTML = `<div class="recommendation-row-grid">${RenderRecommendationSkeletons(Math.min(count, 12))}</div>`;
-    this.SetRecommendationStatus(`Generating ${FormatCount(count)} new ${count === 1 ? "pick" : "picks"} for your saved watchlist.`);
-    this.AiLoadingTimer = window.setInterval(() => {
-      this.AiLoadingMessageIndex = (this.AiLoadingMessageIndex + 1) % RecommendationLoadingMessages.length;
-      this.UpdateAiLoadingMessage();
-    }, 1800);
-  }
-
-  UpdateAiLoadingMessage() {
-    this.Elements.recommendationLoadingCopy.textContent = RecommendationLoadingMessages[this.AiLoadingMessageIndex];
-  }
-
-  RenderRecommendations(payload) {
-    this.State.recommendationQueue = this.NormalizeRecommendationQueue(payload.recommendations);
-    const ratingQueueChanged = this.RemoveWishlistedMoviesFromRatingQueue();
-    const added = Number(payload.addedCount) || 0;
-    const total = this.State.recommendationQueue.length;
-    const summary = payload.summary ? ` ${payload.summary}` : "";
-    this.SetRecommendationStatus(`Added ${FormatCount(added)} new ${added === 1 ? "pick" : "picks"}. ${FormatCount(total)} saved in your watchlist.${summary}`);
-    this.RenderRecommendationQueue();
-    if (ratingQueueChanged)
-      this.Render();
-  }
-
-  RenderRecommendationQueue() {
-    const items = this.State.recommendationQueue;
-    this.PruneCollapsedRecommendationRows(items.length);
-    this.Elements.recommendationGrid.classList.remove("is-loading");
-    this.Elements.recommendationGrid.setAttribute("aria-busy", "false");
-    this.Elements.recommendationGrid.innerHTML = items.length ? this.BuildRecommendationRows(items) : RenderRecommendationEmpty();
-    for (const item of items)
-      this.EnrichTitleMetadata(item.ttId);
-  }
-
-  BuildRecommendationRows(items) {
-    const rows = [];
-    for (let start = 0; start < items.length; start += 3) {
-      const movies = items.slice(start, start + 3);
-      const rowKey = `row-${Math.floor(start / 3)}`;
-      const collapsed = this.CollapsedRecommendationRows.has(rowKey);
-      const end = start + movies.length;
-      const range = movies.length === 1 ? `Pick ${start + 1}` : `Picks ${start + 1}–${end}`;
-      const action = collapsed ? "Expand row" : "Collapse row";
-      const titles = movies.map((item) => `${EscapeHtml(item.title)}${item.year ? ` (${EscapeHtml(item.year)})` : ""}`).join(" <span aria-hidden=\"true\">•</span> ");
-      const cards = movies.map((item, index) => RenderRecommendationCard(item, start + index)).join("");
-      rows.push(`<section class="recommendation-row"><button type="button" class="recommendation-row-toggle" data-recommendation-row-toggle data-row-key="${EscapeHtml(rowKey)}" aria-expanded="${String(!collapsed)}"><span class="recommendation-row-range">${range}</span><span class="recommendation-row-titles">${titles}</span><span class="recommendation-row-action">${action}</span></button><div class="recommendation-row-grid"${collapsed ? " hidden" : ""}>${cards}</div></section>`);
-    }
-    return rows.join("");
-  }
-
-  ToggleRecommendationRow(button) {
-    const rowKey = String(button?.dataset?.rowKey || "");
-    if (!rowKey)
-      return;
-    if (this.CollapsedRecommendationRows.has(rowKey))
-      this.CollapsedRecommendationRows.delete(rowKey);
-    else
-      this.CollapsedRecommendationRows.add(rowKey);
-    this.SaveCollapsedRecommendationRows();
-    this.RenderRecommendationQueue();
-  }
-
-  ReadCollapsedRecommendationRows() {
-    try {
-      const value = JSON.parse(localStorage.getItem(this.CollapsedRecommendationRowsStorageKey()) || "[]");
-      return new Set(Array.isArray(value) ? value.map(String).filter((item) => /^row-\d+$/.test(item)) : []);
-    } catch {
-      return new Set();
-    }
-  }
-
-  SaveCollapsedRecommendationRows() {
-    try {
-      localStorage.setItem(this.CollapsedRecommendationRowsStorageKey(), JSON.stringify([...this.CollapsedRecommendationRows]));
-    } catch {
-      // Row collapsing still works for the current page when browser storage is unavailable.
-    }
-  }
-
-  CollapsedRecommendationRowsStorageKey() {
-    return `${Config.recommendationRowsPreferenceKey}:${this.User?.id || "anonymous"}:${this.State.mediaType}`;
-  }
-
-  PruneCollapsedRecommendationRows(itemCount) {
-    const rowCount = Math.ceil(Number(itemCount || 0) / 3);
-    const active = new Set([...this.CollapsedRecommendationRows].filter((key) => Number(key.slice(4)) < rowCount));
-    if (active.size === this.CollapsedRecommendationRows.size)
-      return;
-    this.CollapsedRecommendationRows = active;
-    this.SaveCollapsedRecommendationRows();
-  }
-
-  async RefreshRecommendationQueue(options = {}) {
-    if (this.State.ai.loading && !options.force)
-      return false;
-    const payload = await this.FetchJson(this.MediaUrl(Config.recommendationQueueUrl));
-    const queue = this.NormalizeRecommendationQueue(payload.recommendations);
-    const previous = this.RecommendationQueueSignature(this.State.recommendationQueue);
-    const next = this.RecommendationQueueSignature(queue);
-    if (!options.force && previous === next)
-      return false;
-    this.State.recommendationQueue = queue;
-    const ratingQueueChanged = this.RemoveWishlistedMoviesFromRatingQueue();
-    this.RenderRecommendationQueue();
-    this.UpdateRecommendationStatus();
-    if (ratingQueueChanged)
-      this.Render();
-    if (!options.silent)
-      this.ShowToast("Your saved recommendation watchlist was updated.");
-    return true;
-  }
-
-  NormalizeRecommendationQueue(value) {
-    const normalized = [];
-    for (const item of Array.isArray(value) ? value : []) {
-      const title = String(item?.title || "").replace(/\s+/g, " ").trim();
-      if (!title)
-        continue;
-      const recommendation = {
-        ...item,
-        ttId: /^tt\d+$/.test(String(item?.ttId || "").trim()) ? String(item.ttId).trim() : "",
-        title,
-        year: Number(item?.year) || null,
-        queueKey: String(item?.queueKey || this.RecommendationExclusionKey({ title, year: item?.year }))
-      };
-      if (!normalized.some((existing) => this.IsSameRecommendation(existing, recommendation)))
-        normalized.push(recommendation);
-    }
-    return normalized;
-  }
-
-  RemoveRecommendationFromQueue(value) {
-    const previousLength = this.State.recommendationQueue.length;
-    this.State.recommendationQueue = this.State.recommendationQueue.filter((item) => !this.IsSameRecommendation(item, value));
-    if (this.State.recommendationQueue.length === previousLength)
-      return false;
-    this.RenderRecommendationQueue();
-    this.UpdateRecommendationStatus();
-    return true;
-  }
-
-  IsSameRecommendation(left, right) {
-    const leftId = String(left?.ttId || "").trim();
-    const rightId = String(right?.ttId || "").trim();
-    if (leftId && rightId && leftId === rightId)
-      return true;
-    const leftTitle = String(left?.title || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
-    const rightTitle = String(right?.title || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
-    if (!leftTitle || leftTitle !== rightTitle)
-      return false;
-    const leftYear = Number(left?.year) || null;
-    const rightYear = Number(right?.year) || null;
-    return !leftYear || !rightYear || leftYear === rightYear;
-  }
-
-  RecommendationQueueSignature(value) {
-    return this.NormalizeRecommendationQueue(value).map((item) => `${item.queueKey}|${item.addedAt || ""}`).join("\n");
-  }
-
-  ShowRecommendationError(message) {
-    this.SetAiLoading(false);
-    this.RenderRecommendationQueue();
-    this.SetRecommendationStatus(message || "Could not generate recommendations.");
-  }
-
   async Undo() {
     await UndoRating(this);
   }
 
   async RestoreHistoryItem(last, movie) {
-    const payload = await this.RequestJson(Config.raterUndoUrl, "PUT", {
+    const request = {
       mediaType: this.State.mediaType,
       actionId: this.NewActionId(),
       expectedRevision: this.State.queueRevision,
       titleId: movie.ttId
-    });
+    };
+    const payload = await this.RequestJson(Config.raterUndoUrl, PutMethod, request);
+    this.ApplyRestoredRating(last, payload);
+    this.ApplyRestoredHistoryPayload(payload);
+  }
+
+  ApplyRestoredRating(last, payload) {
     if (payload.record)
       this.State.ratings[last.ttId] = payload.record;
     else
       delete this.State.ratings[last.ttId];
+  }
+
+  ApplyRestoredHistoryPayload(payload) {
     this.State.history.pop();
     this.AccountRevision = Math.max(this.AccountRevision, Number(payload.stateRevision) || 0);
-    this.UpdateActiveMediaPayload({
+    const mediaPayload = {
       ratings: { ...this.State.ratings },
       history: this.State.history.slice(-200)
-    });
+    };
+    this.UpdateActiveMediaPayload(mediaPayload);
     this.ApplyRaterQueueSnapshot(payload.queue);
     this.Render();
     this.UpdateSyncView();
@@ -2025,321 +819,19 @@ export class RapidRaterApp {
     this.Elements.empty.hidden = false;
   }
 
-  ReadSyncPlan() {
-    if (this.State.mediaType === "tv")
-      return { imdbCount: 0, letterboxdCount: 0, matched: 0, toImdb: [], toLetterboxd: [], conflicts: [], unmatched: [], watchedOnly: [] };
-    return ReconcileCollections(this.State.ratings, this.State.letterboxd);
-  }
-
-  UpdateSyncView() {
-    const plan = this.ReadSyncPlan();
-    this.Elements.syncImdbCount.textContent = FormatCount(plan.imdbCount);
-    this.Elements.syncLetterboxdCount.textContent = FormatCount(plan.letterboxdCount);
-    this.Elements.syncMatchedCount.textContent = FormatCount(plan.matched);
-    this.Elements.syncToImdbCount.textContent = FormatCount(plan.toImdb.length);
-    this.Elements.syncToLetterboxdCount.textContent = FormatCount(plan.toLetterboxd.length);
-    this.Elements.syncConflictCount.textContent = FormatCount(plan.conflicts.length);
-    this.Elements.syncUnmatchedCount.textContent = FormatCount(plan.unmatched.length);
-    this.Elements.syncWatchedOnlyCount.textContent = FormatCount(plan.watchedOnly.length);
-    const readyForImdb = plan.toImdb.some((action) => this.CanQueueSyncAction(action));
-    this.Elements.syncToImdb.disabled = !this.State.live.configured || !readyForImdb;
-    this.Elements.syncToLetterboxd.disabled = plan.toLetterboxd.length === 0;
-    this.Elements.syncConflictList.innerHTML = this.RenderSyncConflicts(plan.conflicts);
-    this.Elements.syncUnmatchedList.innerHTML = this.RenderSyncUnmatched(plan.unmatched);
-    this.UpdateSyncSource();
-    this.UpdateSyncStatus(plan);
-  }
-
-  UpdateSyncSource() {
-    if (!this.State.letterboxd.importedAt) {
-      this.Elements.syncSource.textContent = "No Letterboxd export imported yet.";
-      return;
-    }
-    const imported = new Date(this.State.letterboxd.importedAt).toLocaleString();
-    const fileCount = this.State.letterboxd.files.length;
-    this.Elements.syncSource.textContent = `${this.State.letterboxd.sourceName || "Letterboxd export"} imported ${imported} from ${FormatCount(fileCount)} recognized CSV files.`;
-  }
-
-  UpdateSyncStatus(plan) {
-    if (!this.State.letterboxd.importedAt) {
-      this.Elements.syncStatus.textContent = "Import a Letterboxd export to compare it with the IMDb ratings in this account.";
-      return;
-    }
-    const ready = plan.toImdb.length + plan.toLetterboxd.length;
-    if (!ready && !plan.conflicts.length && !plan.unmatched.length) {
-      this.Elements.syncStatus.textContent = "IMDb, Letterboxd, and this account are aligned for every rated title in the imported snapshots.";
-      return;
-    }
-    this.Elements.syncStatus.textContent = `${FormatCount(plan.toLetterboxd.length)} ready for Letterboxd. ${FormatCount(plan.toImdb.length)} ready for IMDb. Open “Review matches and problems” for ${FormatCount(plan.conflicts.length)} different ratings and ${FormatCount(plan.unmatched.length)} unmatched titles.`;
-  }
-
-  CanQueueSyncAction(action) {
-    const ttId = action?.record?.ttId || action?.item?.ttId || "";
-    const key = this.SubmitKey(ttId);
-    return Boolean(ttId) && !this.SubmitQueuedIds.has(key) && !this.SubmitActiveIds.has(key);
-  }
-
-  RenderSyncConflicts(conflicts) {
-    if (!conflicts.length)
-      return "<li>No conflicts.</li>";
-    return conflicts.slice(0, 12).map((item) => `<li><strong>${EscapeHtml(item.title)}</strong>${item.year ? ` (${EscapeHtml(item.year)})` : ""}: IMDb ${item.imdbRating}/10, Letterboxd ${item.letterboxdRating}/10</li>`).join("");
-  }
-
-  RenderSyncUnmatched(items) {
-    if (!items.length)
-      return "<li>No unmatched rated titles.</li>";
-    return items.slice(0, 12).map((item) => `<li><strong>${EscapeHtml(item.title)}</strong>${item.year ? ` (${EscapeHtml(item.year)})` : ""}: Letterboxd ${item.rating}/10</li>`).join("");
-  }
-
-  async HandleLetterboxdFile(event) {
-    if (this.State.mediaType === "tv")
-      return;
-    const file = this.TakeSelectedFile(event);
-    if (!file)
-      return;
-    this.Elements.syncStatus.textContent = "Reading the Letterboxd export...";
-    const files = await ReadLetterboxdUpload(file);
-    this.State.letterboxd = ImportLetterboxdCsvFiles(files, this.State.movieById, file.name);
-    this.PersistStateNow();
-    await this.FlushStateSync();
-    this.UpdateSyncView();
-    this.ShowToast(`Imported <strong>${FormatCount(this.State.letterboxd.items.length)}</strong> Letterboxd movies into this account`);
-  }
-
-  async SyncMissingRatingsToImdb() {
-    if (!this.State.live.configured)
-      return this.RequireImdbSignIn();
-    const plan = this.ReadSyncPlan();
-    let queued = 0;
-    for (const action of plan.toImdb) {
-      const record = action.record || this.CreateLetterboxdSyncRating(action.item);
-      if (!record)
-        continue;
-      if (!action.record)
-        this.State.ratings[record.ttId] = record;
-      if (this.EnqueueLiveSubmit(record.ttId))
-        queued++;
-    }
-    this.RebuildQueue();
-    this.SaveLocalState();
-    await this.FlushStateSync();
-    await this.RefreshRaterQueue();
-    this.UpdateStats();
-    this.UpdateSyncView();
-    this.ShowToast(`Queued <strong>${FormatCount(queued)}</strong> Letterboxd ratings for IMDb`);
-  }
-
-  CreateLetterboxdSyncRating(item) {
-    if (!/^tt\d+$/.test(item?.ttId || "") || !Number.isInteger(item?.rating))
-      return null;
-    const movie = this.State.movieById.get(item.ttId) || item;
-    const record = BuildRatingRecord(movie, item.rating, "rated", this.State.live.configured);
-    record.at = item.ratedAt || item.watchedAt || record.at;
-    record.syncSource = "letterboxd";
-    return record;
-  }
-
-  async DownloadLetterboxdSync() {
-    const plan = this.ReadSyncPlan();
-    const files = BuildLetterboxdCsvFiles(plan.toLetterboxd);
-    if (!files.length)
-      return this.ShowToast("Letterboxd already has every rated IMDb title from the imported snapshot.");
-    this.Elements.syncToLetterboxd.disabled = true;
-    this.Elements.syncToLetterboxd.textContent = "Preparing download...";
-    try {
-      const download = await BuildLetterboxdDownload(files);
-      this.Download(download.name, download.content, download.type);
-      this.Elements.syncStatus.textContent = files.length === 1
-        ? `Downloaded ${download.name}. Now click “Open Letterboxd import” and upload that CSV.`
-        : `Downloaded ${download.name}. Unzip it, then upload each CSV inside to Letterboxd one at a time.`;
-    } finally {
-      this.Elements.syncToLetterboxd.textContent = "Download file to upload to Letterboxd";
-      this.Elements.syncToLetterboxd.disabled = false;
-    }
-  }
-
-  ShowSyncError(error) {
-    const message = error?.message || "Collection sync failed.";
-    this.Elements.syncStatus.textContent = message;
-    this.ShowToast(EscapeHtml(message));
-  }
-
-  async HandleJsonFile(event) {
-    const file = this.TakeSelectedFile(event);
-    if (!file)
-      return;
-    const parsed = JSON.parse(await file.text());
-    if (this.IsRatingSave(parsed))
-      return this.ImportRatingSave(parsed, file.name);
-    this.ApplyMovieData(parsed, file.name);
-    this.ShowToast(`Loaded <strong>${FormatCount(this.State.movies.length)}</strong> titles`);
-  }
-
-  IsRatingSave(parsed) {
-    if (parsed?.format === "imdb-rapid-rater-save" || parsed?.ratings || parsed?.state?.ratings || parsed?.state?.media)
-      return true;
-    return Array.isArray(parsed) && parsed.some((item) => this.IsRatingRecord(item));
-  }
-
-  async ImportRatingSave(parsed, fileName) {
-    if (parsed?.state?.media)
-      return await this.ImportAccountBackup(parsed.state, fileName);
-    const source = this.ReadRatingSaveSource(parsed);
-    const ratings = this.NormalizeSavedRatings(source.ratings);
-    const exclusions = this.NormalizeRecommendationExclusions(source.recommendationExclusions);
-    const letterboxd = NormalizeLetterboxdState(source.letterboxd, this.State.movieById);
-    if (!Object.keys(ratings).length && !exclusions.length && !letterboxd.items.length)
-      throw new Error("The selected JSON file does not contain any Rapid Rater records.");
-    await this.ApplyImportedRatingSave(source, ratings);
-    const counts = CountRatings(ratings);
-    this.ShowToast(`Restored <strong>${FormatCount(Object.keys(ratings).length)}</strong> records and <strong>${FormatCount(exclusions.length)}</strong> AI exclusions from ${EscapeHtml(fileName)}, including <strong>${FormatCount(counts.skipped)}</strong> not seen`);
-  }
-
-  ReadRatingSaveSource(parsed) {
-    if (Array.isArray(parsed))
-      return { ratings: parsed, recommendationExclusions: [], letterboxd: {}, history: [], queueIds: null, signature: "", merge: true };
-    const state = parsed.state || parsed;
-    return {
-      ratings: state.ratings || {},
-      recommendationExclusions: Array.isArray(state.recommendationExclusions) ? state.recommendationExclusions : [],
-      letterboxd: state.letterboxd || {},
-      history: Array.isArray(state.history) ? state.history : [],
-      queueIds: Array.isArray(state.queueIds) ? state.queueIds : null,
-      signature: String(state.signature || ""),
-      merge: false
-    };
-  }
-
-  NormalizeSavedRatings(value) {
-    const records = Array.isArray(value) ? value : Object.values(value || {});
-    const normalized = {};
-    for (const record of records) {
-      if (!this.IsRatingRecord(record))
-        continue;
-      normalized[record.ttId] = { ...record, ttId: String(record.ttId).trim() };
-    }
-    return normalized;
-  }
-
-  IsRatingRecord(record) {
-    const validStatus = ["rated", "imported", "notSeen"].includes(record?.status);
-    return validStatus && /^tt\d+$/.test(String(record?.ttId || "").trim());
-  }
-
-  async ApplyImportedRatingSave(source, ratings) {
-    this.State.ratings = source.merge ? { ...this.State.ratings, ...ratings } : ratings;
-    if (!source.merge) {
-      this.State.recommendationExclusions = this.NormalizeRecommendationExclusions(source.recommendationExclusions);
-      this.State.letterboxd = NormalizeLetterboxdState(source.letterboxd, this.State.movieById);
-    }
-    this.State.history = source.merge ? this.State.history : source.history.slice(-200);
-    this.RebuildQueue();
-    this.SaveLocalState();
-    await this.FlushStateSync();
-    await this.RefreshRaterQueue();
-    if (Array.isArray(source.queueIds))
-      await this.ReplaceRaterQueue(source.queueIds);
-    this.Render();
-    this.UpdateSyncView();
-  }
-
-  async HandleCsvFile(event) {
-    const file = this.TakeSelectedFile(event);
-    if (!file)
-      return;
-    const text = await file.text();
-    await this.SaveRatingsCsvText(text);
-    const [movieCatalog, tvCatalog] = await Promise.all([this.EnsureCatalog("movie"), this.EnsureCatalog("tv")]);
-    const catalogs = { movie: movieCatalog, tv: tvCatalog };
-    const results = {};
-    for (const mediaType of ["movie", "tv"]) {
-      const media = ReadMediaPayload(this.AccountPayload, mediaType);
-      const ratings = mediaType === this.State.mediaType ? this.State.ratings : { ...(media.ratings || {}) };
-      const otherType = mediaType === "movie" ? "tv" : "movie";
-      results[mediaType] = ImportImdbCsv(text, ratings, catalogs[mediaType].movieById, {
-        mediaType,
-        otherTitleIds: new Set(catalogs[otherType].movieById.keys())
-      });
-      this.AccountPayload = WriteMediaPayload(this.AccountPayload, mediaType, { ...media, ratings });
-    }
-    this.RebuildQueue();
-    this.StateDirty = true;
-    await this.FlushStateSync();
-    await this.RefreshRaterQueue();
-    this.Render();
-    this.UpdateSyncView();
-    this.ShowToast(this.BuildCsvSyncToast(results));
-  }
-
-  async ImportAccountBackup(value, fileName) {
-    this.AccountPayload = NormalizeAccountPayload(value);
-    this.ApplyMergedAccountPayload(this.AccountPayload);
-    this.StateDirty = true;
-    await this.FlushStateSync();
-    await this.RefreshRaterQueue();
-    const movieCount = Object.keys(ReadMediaPayload(this.AccountPayload, "movie").ratings || {}).length;
-    const tvCount = Object.keys(ReadMediaPayload(this.AccountPayload, "tv").ratings || {}).length;
-    this.ShowToast(`Restored <strong>${FormatCount(movieCount)}</strong> movie and <strong>${FormatCount(tvCount)}</strong> TV records from ${EscapeHtml(fileName)}`);
-  }
-
-  BuildCsvSyncToast(results) {
-    const movieCount = FormatCount(results.movie?.count || 0);
-    const tvCount = FormatCount(results.tv?.count || 0);
-    const removed = Number(results.movie?.removed || 0) + Number(results.tv?.removed || 0);
-    const suffix = removed ? ` Removed <strong>${FormatCount(removed)}</strong> stale imported ratings.` : "";
-    return `Synced <strong>${movieCount}</strong> movie and <strong>${tvCount}</strong> TV ratings from IMDb.${suffix}`;
-  }
-
-  async SaveRatingsCsvText(text) {
-    this.RatingsCsvText = text;
-    return { ok: true };
-  }
-
-  TakeSelectedFile(event) {
-    const file = event.target.files[0];
-    event.target.value = "";
-    return file;
-  }
-
-  ExportCsv() {
-    const csv = BuildCsvText(this.State.ratings);
-    const suffix = this.State.mediaType === "tv" ? "tv-shows" : "movies";
-    this.Download(`imdb-rapid-rater-${suffix}-export.csv`, csv, "text/csv;charset=utf-8");
-  }
-
-  ExportJson() {
-    const active = { ...BuildStoragePayload(this.State), signature: this.State.signature, queueIds: Array.isArray(this.State.savedQueueIds) ? this.State.savedQueueIds : [] };
-    const accountPayload = WriteMediaPayload(this.AccountPayload, this.State.mediaType, active);
-    const save = {
-      format: "imdb-rapid-rater-save",
-      version: 5,
-      exportedAt: new Date().toISOString(),
-      state: accountPayload
-    };
-    this.Download("imdb-rapid-rater-save.json", JSON.stringify(save, null, 2), "application/json;charset=utf-8");
-  }
-
-  Download(fileName, content, type) {
-    const blob = new Blob([content], { type });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
   ShowStartupError(error) {
     console.error(error);
     this.Elements.sourceBadge.textContent = "Load failed";
-    this.ShowToast(`Could not load ${this.State.mediaType === "tv" ? "TV show" : "movie"} data: ${EscapeHtml(error.message)}`);
+    this.ShowToast(`Could not load ${this.State.mediaType === TvMediaType ? TvShowName : MovieMediaType} data: ${EscapeHtml(error.message)}`);
   }
 
   ShowToast(html) {
     this.Elements.toast.innerHTML = html;
-    this.Elements.toast.classList.add("show");
+    this.Elements.toast.classList.add(ShowClass);
     window.clearTimeout(this.ToastTimer);
-    this.ToastTimer = window.setTimeout(() => this.Elements.toast.classList.remove("show"), 900);
+    this.ToastTimer = window.setTimeout(() => this.Elements.toast.classList.remove(ShowClass), 900);
   }
 
 }
+
+InstallFeatureMethods(RapidRaterApp, AccountSyncFeature.prototype, ApplicationLifecycleFeature.prototype, CatalogViewFeature.prototype, CollectionSyncFeature.prototype, DataTransferFeature.prototype, EventBindingsFeature.prototype, RatingWorkflowFeature.prototype, RecommendationFeature.prototype, StatusUiFeature.prototype);

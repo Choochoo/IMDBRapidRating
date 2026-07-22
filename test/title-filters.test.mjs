@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { FilterTitlePool } from "../server/movie-pool.mjs";
+import { ValidateCatalogOriginCoverage } from "../scripts/enrich-title-origins.mjs";
 import {
   CountActiveTitleFilters,
   IsTitleAllowed,
@@ -8,67 +9,116 @@ import {
   NormalizeTmdbOrigin
 } from "../shared/title-filters.js";
 
-test("title filters normalize ranges and deduplicate origin selections", () => {
-  const filters = NormalizeTitleFilters({
-    minYear: "2020",
-    maxYear: "1990",
-    excludedOriginCountries: ["us", "US", "invalid"],
-    excludedOriginalLanguages: ["EN", "en", ""],
-    excludeBollywood: true,
-    includeUnknownOrigin: false
-  });
+const MovieId = "tt0000001";
+const TvId = "tt0000002";
+const ThirdTitleId = "tt0000003";
+const MovieMediaType = "movie";
+const TvMediaType = "tv";
+const MatchedStatus = "matched";
+const UsCountry = "US";
+const KoreaCountry = "KR";
+const IndiaCountry = "IN";
+const EnglishLanguage = "en";
+const KoreanLanguage = "ko";
+const HindiLanguage = "hi";
+const TurkishLanguage = "tr";
 
+test("title filters normalize ranges and deduplicate origin selections", VerifyTitleFilterNormalization);
+test("year, country, language, Bollywood, and unknown-origin filters compose", VerifyComposedTitleFilters);
+test("TMDB origin normalization combines TV origin and production countries", VerifyTmdbOriginNormalization);
+test("filtered title pools get a distinct identity without mutating the catalog", VerifyFilteredTitlePool);
+test("origin enrichment refuses to publish catalogs without usable metadata", VerifyCatalogOriginCoverage);
+
+function VerifyTitleFilterNormalization() {
+  const input = BuildTitleFilterInput();
+  const filters = NormalizeTitleFilters(input);
   assert.equal(filters.minYear, 1990);
   assert.equal(filters.maxYear, 2020);
-  assert.deepEqual(filters.excludedOriginCountries, ["US"]);
-  assert.deepEqual(filters.excludedOriginalLanguages, ["en"]);
+  assert.deepEqual(filters.excludedOriginCountries, [UsCountry]);
+  assert.deepEqual(filters.excludedOriginalLanguages, [EnglishLanguage]);
   assert.equal(CountActiveTitleFilters(filters), 5);
-});
+}
 
-test("year, country, language, Bollywood, and unknown-origin filters compose", () => {
-  const filters = {
-    minYear: 2000,
-    maxYear: 2020,
-    excludedOriginCountries: ["US"],
-    excludedOriginalLanguages: ["tr"],
+function BuildTitleFilterInput() {
+  return {
+    minYear: "2020",
+    maxYear: "1990",
+    excludedOriginCountries: ["us", UsCountry, "invalid"],
+    excludedOriginalLanguages: ["EN", EnglishLanguage, ""],
     excludeBollywood: true,
     includeUnknownOrigin: false
   };
+}
 
-  assert.equal(IsTitleAllowed(Title(1999, ["KR"], "ko"), filters), false);
-  assert.equal(IsTitleAllowed(Title(2010, ["US", "KR"], "ko"), filters), false);
-  assert.equal(IsTitleAllowed(Title(2010, ["TR"], "tr"), filters), false);
-  assert.equal(IsTitleAllowed(Title(2010, ["IN"], "hi"), filters), false);
-  assert.equal(IsTitleAllowed(Title(2010, ["IN"], "ta"), filters), true);
-  assert.equal(IsTitleAllowed(Title(2020, ["KR"], "ko"), filters), true);
+function VerifyComposedTitleFilters() {
+  const filters = BuildComposedTitleFilters();
+  assert.equal(IsTitleAllowed(Title(1999, [KoreaCountry], KoreanLanguage), filters), false);
+  assert.equal(IsTitleAllowed(Title(2010, [UsCountry, KoreaCountry], KoreanLanguage), filters), false);
+  assert.equal(IsTitleAllowed(Title(2010, ["TR"], TurkishLanguage), filters), false);
+  assert.equal(IsTitleAllowed(Title(2010, [IndiaCountry], HindiLanguage), filters), false);
+  assert.equal(IsTitleAllowed(Title(2010, [IndiaCountry], "ta"), filters), true);
+  assert.equal(IsTitleAllowed(Title(2020, [KoreaCountry], KoreanLanguage), filters), true);
   assert.equal(IsTitleAllowed(Title(2010, [], ""), filters), false);
-});
+}
 
-test("TMDB origin normalization combines TV origin and production countries", () => {
-  const origin = NormalizeTmdbOrigin("tv", { original_language: "KO" }, {
-    origin_country: ["KR"],
-    production_countries: [{ iso_3166_1: "US" }],
+function BuildComposedTitleFilters() {
+  return {
+    minYear: 2000,
+    maxYear: 2020,
+    excludedOriginCountries: [UsCountry],
+    excludedOriginalLanguages: [TurkishLanguage],
+    excludeBollywood: true,
+    includeUnknownOrigin: false
+  };
+}
+
+function VerifyTmdbOriginNormalization() {
+  const details = {
+    origin_country: [KoreaCountry],
+    production_countries: [{ iso_3166_1: UsCountry }],
     production_companies: [{ origin_country: "JP" }]
-  });
+  };
+  const origin = NormalizeTmdbOrigin(TvMediaType, { original_language: "KO" }, details);
+  assert.deepEqual(origin.originCountries, [KoreaCountry, UsCountry]);
+  assert.equal(origin.originalLanguage, KoreanLanguage);
+}
 
-  assert.deepEqual(origin.originCountries, ["KR", "US"]);
-  assert.equal(origin.originalLanguage, "ko");
-});
-
-test("filtered title pools get a distinct identity without mutating the catalog", () => {
-  const titles = [
-    { ttId: "tt0000001", year: 1995, originCountries: ["US"], originalLanguage: "en" },
-    { ttId: "tt0000002", year: 2019, originCountries: ["KR"], originalLanguage: "ko" },
-    { ttId: "tt0000003", year: 2021, originCountries: ["IN"], originalLanguage: "hi" }
-  ];
+function VerifyFilteredTitlePool() {
+  const titles = BuildCatalogTitles();
   const pool = { titles, ids: titles.map((title) => title.ttId), version: "unfiltered" };
   const filtered = FilterTitlePool(pool, { minYear: 2000, excludeBollywood: true });
-
-  assert.deepEqual(filtered.ids, ["tt0000002"]);
+  assert.deepEqual(filtered.ids, [TvId]);
   assert.match(filtered.version, /^[a-f0-9]{64}$/);
   assert.notEqual(filtered.version, pool.version);
-  assert.deepEqual(pool.ids, ["tt0000001", "tt0000002", "tt0000003"]);
-});
+  assert.deepEqual(pool.ids, [MovieId, TvId, ThirdTitleId]);
+}
+
+function BuildCatalogTitles() {
+  return [
+    { ttId: MovieId, year: 1995, originCountries: [UsCountry], originalLanguage: EnglishLanguage },
+    { ttId: TvId, year: 2019, originCountries: [KoreaCountry], originalLanguage: KoreanLanguage },
+    { ttId: ThirdTitleId, year: 2021, originCountries: [IndiaCountry], originalLanguage: HindiLanguage }
+  ];
+}
+
+function VerifyCatalogOriginCoverage() {
+  const { catalogs, cache } = BuildOriginCoverageFixtures();
+  assert.doesNotThrow(() => ValidateCatalogOriginCoverage(catalogs, cache));
+  const missingTvMetadata = { ...cache, [TvId]: { mediaType: TvMediaType, status: "not-found" } };
+  assert.throws(() => ValidateCatalogOriginCoverage(catalogs, missingTvMetadata), /no usable tv metadata/);
+}
+
+function BuildOriginCoverageFixtures() {
+  const catalogs = [
+    { mediaType: MovieMediaType, titles: [{ ttId: MovieId }] },
+    { mediaType: TvMediaType, titles: [{ ttId: TvId }] }
+  ];
+  const cache = {
+    [MovieId]: { mediaType: MovieMediaType, status: MatchedStatus, originCountries: [UsCountry], originalLanguage: EnglishLanguage },
+    [TvId]: { mediaType: TvMediaType, status: MatchedStatus, originCountries: [KoreaCountry], originalLanguage: KoreanLanguage }
+  };
+  return { catalogs, cache };
+}
 
 function Title(year, originCountries, originalLanguage) {
   return { year, originCountries, originalLanguage };

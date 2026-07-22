@@ -1,9 +1,11 @@
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { CreateApp } from "../server/app.mjs";
 import { LoadLocalEnv } from "../server/env.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+process.env.NODE_ENV ||= existsSync(path.join(RootPath, "dist", "index.html")) ? "production" : "development";
 process.env.IMDB_RAPID_RATER_HOME ||= path.join(RootPath, ".runtime");
 LoadLocalEnv(RootPath);
 const Port = Number(process.env.PORT || 5012);

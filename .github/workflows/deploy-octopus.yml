@@ -29,8 +29,17 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Validate deployment credentials
+        env:
+          TMDB_BUILD_API_KEY: ${{ secrets.TMDB_BUILD_API_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:TMDB_BUILD_API_KEY)) {
+            throw 'TMDB_BUILD_API_KEY is required. Add it as a GitHub Actions repository secret before deploying.'
+          }
+        shell: powershell
+
       - name: Cache IMDb source datasets
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: cache/*.tsv.gz
           key: imdb-source-datasets-v1
@@ -45,6 +54,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Syntax validation failed.' }
           npm test
           if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { throw 'Frontend build failed.' }
           npm audit --omit=dev
           if ($LASTEXITCODE -ne 0) { throw 'Production dependency audit failed.' }
         shell: powershell
@@ -54,7 +65,7 @@ jobs:
         shell: powershell
 
       - name: Restore TMDB origin cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: cache/tmdb-title-origins.json
           key: tmdb-title-origins-v1-${{ github.sha }}
@@ -65,12 +76,8 @@ jobs:
         env:
           TMDB_BUILD_API_KEY: ${{ secrets.TMDB_BUILD_API_KEY }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:TMDB_BUILD_API_KEY)) {
-            Write-Warning 'TMDB_BUILD_API_KEY is not configured; origin filters will have no catalog metadata.'
-          } else {
-            npm run build:origins
-            if ($LASTEXITCODE -ne 0) { throw 'TMDB origin enrichment failed.' }
-          }
+          npm run build:origins
+          if ($LASTEXITCODE -ne 0) { throw 'TMDB origin enrichment failed.' }
         shell: powershell
 
       - name: Stage deployment package
@@ -91,6 +98,7 @@ jobs:
           New-Item -Path (Join-Path $staging 'data') -ItemType Directory -Force | Out-Null
           Copy-Item -LiteralPath 'data\movies.json' -Destination (Join-Path $staging 'data\movies.json') -Force
           Copy-Item -LiteralPath 'data\shows.json' -Destination (Join-Path $staging 'data\shows.json') -Force
+          Copy-Item -LiteralPath 'dist' -Destination (Join-Path $staging 'dist') -Recurse -Force
 
           if (-not (Test-Path (Join-Path $staging 'scripts\server.mjs'))) {
             throw 'Package staging failed: scripts/server.mjs is missing.'
@@ -100,6 +108,9 @@ jobs:
           }
           if (-not (Test-Path (Join-Path $staging 'data\shows.json'))) {
             throw 'Package staging failed: data/shows.json is missing.'
+          }
+          if (-not (Test-Path (Join-Path $staging 'dist\index.html'))) {
+            throw 'Package staging failed: dist/index.html is missing.'
           }
 
           "STAGING_PATH=$staging" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
