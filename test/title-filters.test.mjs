@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { FilterTitlePool } from "../server/movie-pool.mjs";
-import { BuildPendingTitles, FetchTmdbJson, ValidateCatalogOriginCoverage, ValidateHydrationComplete } from "../scripts/enrich-title-origins.mjs";
+import { BuildPendingTitles, FetchTitleMetadata, FetchTmdbJson, ValidateCatalogOriginCoverage, ValidateHydrationComplete } from "../scripts/enrich-title-origins.mjs";
 import {
   CountActiveTitleFilters,
   IsTitleAllowed,
@@ -33,6 +33,7 @@ test("filtered title pools get a distinct identity without mutating the catalog"
 test("origin enrichment refuses to publish catalogs without usable metadata", VerifyCatalogOriginCoverage);
 test("origin enrichment only queues titles missing from its persistent cache", VerifyOriginPendingTitles);
 test("origin enrichment expires negative cache entries and rejects unresolved catalogs", VerifyIncompleteHydration);
+test("TMDB enrichment caches missing title details as a negative result", VerifyMissingTmdbDetails);
 test("TMDB enrichment does not retry permanent client errors", VerifyPermanentTmdbFailure);
 test("TMDB enrichment retries transient server errors", VerifyTransientTmdbFailure);
 
@@ -145,6 +146,20 @@ function VerifyIncompleteHydration() {
   const cache = { [MovieId]: { mediaType: MovieMediaType, status: NotFoundStatus, checkedAt: "2020-01-01T00:00:00.000Z" } };
   assert.deepEqual(BuildPendingTitles(catalogs, cache), [{ ttId: MovieId, mediaType: MovieMediaType }]);
   assert.throws(() => ValidateHydrationComplete(catalogs, cache), /left 1 catalog titles unresolved/);
+}
+
+async function VerifyMissingTmdbDetails() {
+  const requests = [];
+  const fetchImpl = async (url) => {
+    requests.push(url);
+    return requests.length === 1 ? JsonResponse({ movie_results: [{ id: 101 }] }) : ErrorResponse(404);
+  };
+  const result = await FetchTitleMetadata({ ttId: MovieId, mediaType: MovieMediaType }, null, TestApiKey, fetchImpl, () => {});
+  assert.equal(result.status, NotFoundStatus);
+  assert.equal(result.tmdbId, null);
+  assert.equal(requests.length, 2);
+  const catalogs = [{ mediaType: MovieMediaType, titles: [{ ttId: MovieId }] }];
+  assert.doesNotThrow(() => ValidateHydrationComplete(catalogs, { [MovieId]: result }));
 }
 
 async function VerifyPermanentTmdbFailure() {

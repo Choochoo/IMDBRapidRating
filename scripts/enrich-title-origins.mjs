@@ -25,6 +25,7 @@ const DefaultConcurrency = 12;
 const TextEncoding = "utf8";
 const TvMediaType = "tv";
 const EnglishLanguage = "en-US";
+const NotFoundHttpStatus = 404;
 const UnauthorizedStatus = 401;
 const ForbiddenStatus = 403;
 const TooManyRequestsStatus = 429;
@@ -193,22 +194,35 @@ async function PersistCheckpointEntries(store, entries) {
   await store.upsertOrigins(origins);
 }
 
-async function FetchTitleMetadata(item, cached, apiKey) {
-  const result = await ResolveTmdbResult(item, cached, apiKey);
+export async function FetchTitleMetadata(item, cached, apiKey, fetchImpl = globalThis.fetch, delayImpl = Delay) {
+  const result = await ResolveTmdbResult(item, cached, apiKey, fetchImpl, delayImpl);
   const checkedAt = new Date().toISOString();
   if (!result)
-    return { mediaType: item.mediaType, status: NotFoundStatus, tmdbId: null, originCountries: [], originalLanguage: "", checkedAt };
-  const details = await FetchTmdbJson(BuildDetailsUrl(item.mediaType, result.id, apiKey), apiKey);
+    return BuildNotFoundMetadata(item.mediaType, checkedAt);
+  const details = await FetchTmdbJson(BuildDetailsUrl(item.mediaType, result.id, apiKey), apiKey, fetchImpl, delayImpl);
+  if (!details)
+    return BuildNotFoundMetadata(item.mediaType, checkedAt);
   const origin = BuildMatchedOrigin(item, result, details, checkedAt);
   const extras = NormalizeTmdbDetails(item.mediaType, details);
   return { titleId: item.ttId, ...origin, ...BuildTmdbMetadata(details, extras, item.mediaType, result.id), metadataCheckedAt: checkedAt };
 }
 
-async function ResolveTmdbResult(item, cached, apiKey) {
+function BuildNotFoundMetadata(mediaType, checkedAt) {
+  return {
+    mediaType,
+    status: NotFoundStatus,
+    tmdbId: null,
+    originCountries: [],
+    originalLanguage: "",
+    checkedAt
+  };
+}
+
+async function ResolveTmdbResult(item, cached, apiKey, fetchImpl, delayImpl) {
   const knownTmdbId = Number(cached?.tmdbId);
   if (Number.isInteger(knownTmdbId) && knownTmdbId > 0)
     return { id: knownTmdbId };
-  const find = await FetchTmdbJson(BuildFindUrl(item.ttId, apiKey), apiKey);
+  const find = await FetchTmdbJson(BuildFindUrl(item.ttId, apiKey), apiKey, fetchImpl, delayImpl);
   return PickFindResult(find, item.mediaType);
 }
 
@@ -261,6 +275,8 @@ async function RequestTmdbAttempt(url, apiKey, attempt, fetchImpl) {
     const response = await fetchImpl(url, { headers: BuildTmdbHeaders(apiKey) });
     if (response.ok)
       return { payload: await response.json() };
+    if (response.status === NotFoundHttpStatus)
+      return { payload: null };
     return BuildFailedRequest(response, attempt);
   } catch (error) {
     return { error, retryable: true, delay: BuildRetryDelay(attempt) };
