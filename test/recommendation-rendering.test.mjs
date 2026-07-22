@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { RenderCard, RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons, UpdateActors, UpdateTrailerLink } from "../src/app/rendering.js";
+import { RenderCard, RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons, UpdateActors, UpdateStreamingAvailability, UpdateTrailerLink } from "../src/app/rendering.js";
 
 test("recommendation loading renders eight cinematic placeholders", () => {
   const html = RenderRecommendationSkeletons(8);
@@ -31,6 +31,44 @@ test("only the active rating card offers the wishlist action", () => {
   assert.doesNotMatch(active, /1\s*\/\s*3/);
   assert.doesNotMatch(preview, /2\s*\/\s*3/);
   assert.match(active, /class="movie-id">tt0113277/);
+  assert.match(active, /data-streaming-availability/);
+  assert.doesNotMatch(preview, /data-streaming-availability/);
+});
+
+test("the active card shows categorized streaming logos and attribution below its synopsis", () => {
+  const movie = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"] };
+  const streamingAvailability = {
+    country: "US",
+    watchUrl: "https://www.themoviedb.org/movie/949/watch?locale=US",
+    providers: [
+      { type: "subscription", id: 8, name: "Netflix", logoPath: "/netflix.jpg" },
+      { type: "rent", id: 2, name: "Apple TV", logoPath: "/apple.jpg" }
+    ]
+  };
+  const html = RenderCard(movie, 0, { synopsis: "A crime saga.", streamingAvailability });
+
+  assert.ok(html.indexOf("A crime saga.") < html.indexOf("Where to watch"));
+  assert.match(html, /https:\/\/image\.tmdb\.org\/t\/p\/w92\/netflix\.jpg/);
+  assert.match(html, />Stream</);
+  assert.match(html, />Rent</);
+  assert.match(html, /View all watching options/);
+  assert.match(html, /JustWatch/);
+});
+
+test("streaming metadata updates an active card after its API response arrives", () => {
+  const container = { hidden: true, innerHTML: "" };
+  const card = { querySelector: (selector) => selector === "[data-streaming-availability]" ? container : null };
+
+  UpdateStreamingAvailability(card, {
+    streamingAvailability: {
+      country: "US",
+      providers: [{ type: "free", id: 1, name: "Freevee", logoPath: "" }]
+    }
+  });
+
+  assert.equal(container.hidden, false);
+  assert.match(container.innerHTML, /Freevee/);
+  assert.match(container.innerHTML, />Free</);
 });
 
 test("movie cards show at most the top three actors", () => {

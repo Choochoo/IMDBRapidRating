@@ -1,0 +1,705 @@
+{
+  "audit_mode": "change",
+  "change_paths": [
+    ".github/workflows/deploy-octopus.yml",
+    "README.md",
+    "index.html",
+    "scripts/enrich-title-origins.mjs",
+    "server/db/schema.mjs",
+    "server/routes.mjs",
+    "server/title-metadata.mjs",
+    "src/app/features/catalog-view.js",
+    "src/app/rendering.js",
+    "src/styles/rater.css",
+    "src/styles/responsive.css",
+    "test/recommendation-rendering.test.mjs",
+    "test/title-metadata.test.mjs",
+    "db/migrations/0008_title_metadata_cache.sql",
+    "server/streaming-availability.mjs",
+    "server/title-metadata-store.mjs",
+    "test/streaming-availability.test.mjs",
+    "test/title-metadata-store.test.mjs"
+  ],
+  "exclude_globs": [
+    ".codex-audit/**",
+    ".codex/project-intelligence/**",
+    ".codex/agents/project-knowledge-reviewer.toml",
+    "docs/project-knowledge/**",
+    ".git/**",
+    "node_modules/**",
+    "vendor/**",
+    "vendors/**",
+    "dist/**",
+    "build/**",
+    "out/**",
+    "target/**",
+    ".next/**",
+    ".nuxt/**",
+    ".cache/**",
+    "__pycache__/**",
+    "*.min.js",
+    "*.map",
+    "*.lock",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock"
+  ],
+  "exclude_roots": [],
+  "excluded_file_count": 108,
+  "exclusion_reasons": {
+    "configured exclude pattern": 1,
+    "outside change audit scope": 107
+  },
+  "exclusions": [
+    {
+      "path": ".codex-audit/audit.lock",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": ".codex-audit/config.json",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": ".codex/repository-audit.json",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": ".gitattributes",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": ".github/workflows/deploy-octopus.yml",
+      "pattern": ".git/**",
+      "reason": "configured exclude pattern"
+    },
+    {
+      "path": ".gitignore",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "LICENSE",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "db/migrations/0001_accounts.sql",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "db/migrations/0002_email_accounts.sql",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "db/migrations/0003_remove_legacy_accounts.sql",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "db/migrations/0004_recommendation_queue.sql",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "db/migrations/0005_authoritative_rater_queue.sql",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "db/migrations/0006_media_scoped_queues.sql",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "db/migrations/0007_title_origin_cache.sql",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "deploy/PostDeploy.ps1",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "deploy/PreDeploy.ps1",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "docs/engineering/CODING_STANDARDS.md",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "docs/engineering/PROJECT_EXCEPTIONS.md",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "docs/engineering/PROJECT_PROFILE.md",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "favicon.svg",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "package-lock.json",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "package.json",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "scripts/build-movie-pool.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "scripts/check-syntax.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "scripts/create-user.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "scripts/generate-key.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "scripts/migrate.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "scripts/server.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "scripts/setup-octopus-project.ps1",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "scripts/title-pool-policy.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/account-store.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/ai-recommendations.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/app.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/auth.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/db/client.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/db/config.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/db/migrate.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/env.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/http.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/imdb-ratings.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/movie-pool.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/openai-models.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/rater-events.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/rater-queue-store.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/rater-queue.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/ratings-csv.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/recommendation-queue.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/security/secrets.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/static-files.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/title-origin-cache.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "server/user-data.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "settings.env.example",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "shared/csv.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "shared/media.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "shared/recommendation-basis.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "shared/title-filters.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/account-state-merge.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/app-constants.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/browser-settings.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/collection-sync.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/config.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/elements.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/feature-methods.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/features/account-sync.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/features/application-lifecycle.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/features/collection-sync.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/features/data-transfer.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/features/event-bindings.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/features/rating-workflow.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/features/recommendations.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/features/status-ui.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/letterboxd-zip.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/movies.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/rapid-rater-app.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/rating-records.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/recommendation-ratings.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/settings-workflows.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/state.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/stats.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/title-filter-workflows.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/undo-rating.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/util.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/app/view-routes.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/styles.css",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/styles/dialogs.css",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/styles/foundation.css",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/styles/theme.css",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "src/styles/workspace.css",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/account-state-merge.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/account-store.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/auth-routes.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/auth-ui.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/collection-sync.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/feature-methods.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/markup-contract.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/rater-events.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/rater-queue.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/rating-records.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/recommendation-queue.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/security.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/static-routes.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/title-filters.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/title-origin-cache.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/title-pool-policy.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "test/view-routes.test.mjs",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "tsconfig.json",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    },
+    {
+      "path": "vite.config.js",
+      "pattern": ".github/workflows/deploy-octopus.yml,README.md,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/title-metadata.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/styles/rater.css,src/styles/responsive.css,test/recommendation-rendering.test.mjs,test/title-metadata.test.mjs,db/migrations/0008_title_metadata_cache.sql,server/streaming-availability.mjs,server/title-metadata-store.mjs,test/streaming-availability.test.mjs,test/title-metadata-store.test.mjs",
+      "reason": "outside change audit scope"
+    }
+  ],
+  "files": [
+    {
+      "file_kind": "markdown-documentation",
+      "hash": "514f077366c11750ed3011640bfc2e5d86644651b9e41279285133ba6fb77e7c",
+      "path": "README.md",
+      "size": 21570
+    },
+    {
+      "file_kind": "other",
+      "hash": "cf9c8928ff0aa4d90a0930a9d4610b401292c68dede3bc961ce5f60a71523d93",
+      "path": "db/migrations/0008_title_metadata_cache.sql",
+      "size": 1275
+    },
+    {
+      "file_kind": "other",
+      "hash": "4a6353b6f68cb68a86f80fee3b64ebea56cbaf3d7a69b7c80f16d13ea01a63bc",
+      "path": "index.html",
+      "size": 34122
+    },
+    {
+      "file_kind": "other",
+      "hash": "1384bcdcd7ef3b630f35ba5c5a46135d19e950fc2be3e85bc89a2e4c56c6ca44",
+      "path": "scripts/enrich-title-origins.mjs",
+      "size": 12454
+    },
+    {
+      "file_kind": "other",
+      "hash": "84a389d71b5d8169b1de77839f5c4cceb8d749f8d0c9b4c84ad6b1f94c02fccf",
+      "path": "server/db/schema.mjs",
+      "size": 5403
+    },
+    {
+      "file_kind": "other",
+      "hash": "d8c4335708db0b8eb79436442c11ddd4299f1ca7a94761b3829ddcc2c65baa43",
+      "path": "server/routes.mjs",
+      "size": 24325
+    },
+    {
+      "file_kind": "other",
+      "hash": "4a80126171d7a5fde862343d441688b0c9b19a9754d9921705fd25aa561552ee",
+      "path": "server/streaming-availability.mjs",
+      "size": 5586
+    },
+    {
+      "file_kind": "other",
+      "hash": "5d4774182948adaaddc1ba5799c223f53f564bab08cd3f8ce903eadcb45b71b0",
+      "path": "server/title-metadata-store.mjs",
+      "size": 10137
+    },
+    {
+      "file_kind": "other",
+      "hash": "9e2b1e2ef5ff3d0c39fc9580b99d75da4a2973b651d16638e3686613261e3d6b",
+      "path": "server/title-metadata.mjs",
+      "size": 20277
+    },
+    {
+      "file_kind": "other",
+      "hash": "528bf927540e395bb9583eede8500f7f3f9272ea9bf047883d0f09109f29e19c",
+      "path": "src/app/features/catalog-view.js",
+      "size": 4391
+    },
+    {
+      "file_kind": "other",
+      "hash": "1fcb31ec32241a59cdf5764dc59a8a8fafa01a4422a708b70420db5a9cb1a3a5",
+      "path": "src/app/rendering.js",
+      "size": 15531
+    },
+    {
+      "file_kind": "other",
+      "hash": "bd1dc9855ae257b207e5ec94b66887adc93bc2a4439645e34d6f51dc66a72be7",
+      "path": "src/styles/rater.css",
+      "size": 9930
+    },
+    {
+      "file_kind": "other",
+      "hash": "48cb1878c8a37429c6af28f860f6dbe2327ecaa7e8bf1eda39ba23f04dbbc98b",
+      "path": "src/styles/responsive.css",
+      "size": 9655
+    },
+    {
+      "file_kind": "other",
+      "hash": "5edd39339d42ee4bc76f4f9c52abd7ce144d789964de2d96ae18ba6dcd60bd4e",
+      "path": "test/recommendation-rendering.test.mjs",
+      "size": 5796
+    },
+    {
+      "file_kind": "other",
+      "hash": "0f6517e8090c665d6015f77745f79d4bca6da795fb09bd292018e574a4b43e42",
+      "path": "test/streaming-availability.test.mjs",
+      "size": 3883
+    },
+    {
+      "file_kind": "other",
+      "hash": "d9a1b6f790a571e479d6c9c737962186527a3406edb2b618bb3fc5a749bcc265",
+      "path": "test/title-metadata-store.test.mjs",
+      "size": 4342
+    },
+    {
+      "file_kind": "other",
+      "hash": "b88c1d7e2c47da13f7a4493131b8077f8545c2158eb79f0b0a71822aafbcf1f9",
+      "path": "test/title-metadata.test.mjs",
+      "size": 3233
+    }
+  ],
+  "generated_at": "2026-07-22T18:55:51Z",
+  "include_roots": [],
+  "include_untracked": true,
+  "repo_identity": "24c64586703550c4d5596a4b65555ab675f3feb5ecbbbd7e035c7195a624cd2f",
+  "total_scope_files": 17,
+  "total_tracked_files": 114
+}

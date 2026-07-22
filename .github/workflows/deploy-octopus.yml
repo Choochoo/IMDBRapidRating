@@ -32,13 +32,9 @@ jobs:
       - name: Validate deployment credentials
         env:
           TMDB_BUILD_API_KEY: ${{ secrets.TMDB_BUILD_API_KEY }}
-          POSTGRES_CONNECTION_STRING: ${{ secrets.POSTGRES_CONNECTION_STRING }}
         run: |
           if ([string]::IsNullOrWhiteSpace($env:TMDB_BUILD_API_KEY)) {
             throw 'TMDB_BUILD_API_KEY is required. Add it as a GitHub Actions repository secret before deploying.'
-          }
-          if ([string]::IsNullOrWhiteSpace($env:POSTGRES_CONNECTION_STRING)) {
-            throw 'POSTGRES_CONNECTION_STRING is required. Add the application database connection string as a GitHub Actions repository secret before deploying.'
           }
         shell: powershell
 
@@ -71,7 +67,6 @@ jobs:
       - name: Enrich production origins
         env:
           TMDB_BUILD_API_KEY: ${{ secrets.TMDB_BUILD_API_KEY }}
-          POSTGRES_CONNECTION_STRING: ${{ secrets.POSTGRES_CONNECTION_STRING }}
         run: |
           npm run build:origins
           if ($LASTEXITCODE -ne 0) { throw 'TMDB origin enrichment failed.' }

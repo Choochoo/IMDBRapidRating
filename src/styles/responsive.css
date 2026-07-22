@@ -423,6 +423,22 @@
     grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
   }
 
+  .streaming-provider-group,
+  .streaming-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .streaming-provider-group > span {
+    flex-basis: auto;
+    padding-top: 0;
+  }
+
+  .streaming-footer small {
+    max-width: none;
+    text-align: left;
+  }
+
   .recommendation-actions,
   .model-controls {
     display: grid;

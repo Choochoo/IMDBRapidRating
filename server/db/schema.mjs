@@ -59,7 +59,7 @@ export const RaterActions = AppSchema.table("rater_actions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull()
 }, (table) => [uniqueIndex("rater_actions_user_action_unique").on(table.userId, table.actionId)]);
 
-export const TitleOriginCache = AppSchema.table("title_origin_cache", {
+export const TitleMetadataCache = AppSchema.table("title_metadata_cache", {
   ttId: varchar("tt_id", { length: 32 }).notNull(),
   mediaType: varchar("media_type", { length: 16 }).notNull(),
   status: varchar("status", { length: 16 }).notNull(),
@@ -67,6 +67,18 @@ export const TitleOriginCache = AppSchema.table("title_origin_cache", {
   originCountries: jsonb("origin_countries").notNull().default([]),
   originalLanguage: varchar("original_language", { length: 16 }).notNull().default(""),
   checkedAt: timestamp("checked_at", { withTimezone: true }).notNull(),
+  posterUrl: text("poster_url").notNull().default(""),
+  synopsis: text("synopsis").notNull().default(""),
+  actors: jsonb("actors").notNull().default([]),
+  trailerUrl: text("trailer_url").notNull().default(""),
+  seriesStatus: text("series_status").notNull().default(""),
+  seasonCount: integer("season_count").notNull().default(0),
+  episodeCount: integer("episode_count").notNull().default(0),
+  episodeRuntimeMinutes: integer("episode_runtime_minutes").notNull().default(0),
+  metadataSource: varchar("metadata_source", { length: 32 }).notNull().default(""),
+  sourcePayload: jsonb("source_payload").notNull().default({}),
+  metadataCheckedAt: timestamp("metadata_checked_at", { withTimezone: true }),
+  streamingAvailability: jsonb("streaming_availability").notNull().default({}),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull()
 }, (table) => [primaryKey({ columns: [table.ttId, table.mediaType] })]);
 

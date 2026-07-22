@@ -13,7 +13,8 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 - Loads real feature-film, TV-series, and TV-miniseries IDs from IMDb's non-commercial datasets. Episodes are intentionally excluded.
 - Filters each rating queue by release/premiere year, production country, original language, and an optional Bollywood approximation without marking hidden titles as seen.
 - Presents series-native facts in TV mode, including run years, status, seasons, episodes, and episode runtime when TMDB metadata is available.
-- Enriches visible cards with poster and synopsis metadata from TMDB when configured.
+- Enriches visible cards with poster, synopsis, cast, trailer, title details, and country-specific streaming availability from TMDB when configured.
+- Caches normalized metadata, complete fetched TMDB detail payloads, and streaming-provider results in PostgreSQL so repeat views are served locally.
 - Imports your IMDb ratings CSV so already-rated titles are removed from the queue.
 - Saves that ratings CSV in your account and auto-loads it on future visits.
 - Generates movie or whole-series AI recommendations from the active section's minimized ratings profile.
@@ -47,7 +48,7 @@ One-time setup:
   -ApiKey "<Octopus API key>"
 ```
 
-The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add `TMDB_BUILD_API_KEY` and `POSTGRES_CONNECTION_STRING` Actions secrets to enrich the generated catalogs with production-country and original-language metadata and persist those lookups in the application database. Deployment fails before packaging when either secret is missing or when enrichment produces no usable origin metadata, preventing an apparently successful release with empty country and language filters.
+The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add a `TMDB_BUILD_API_KEY` Actions secret to enrich the generated catalogs with production-country and original-language metadata. The PostgreSQL connection string is not stored in GitHub: the internal self-hosted runner must inherit `POSTGRES_CONNECTION_STRING`, or inherit `IMDB_RAPID_RATER_HOME` pointing to an ACL-protected directory containing `settings.env`. The runner must have internal network access to PostgreSQL. Deployment fails before packaging when enrichment cannot use the database or produces no usable origin metadata.
 
 Configure these Octopus project variables before the first account-backed deployment. Mark the first three as sensitive:
 
@@ -58,6 +59,8 @@ Configure these Octopus project variables before the first account-backed deploy
 - `RapidRater.AllowedOrigins` (optional comma-separated origins)
 
 Use a dedicated PostgreSQL database/user with access only to the `imdb_rapid_rater` schema. The deployment writes the runtime values to an ACL-restricted file, installs production dependencies, and applies migrations before starting the scheduled task.
+
+For build-time origin enrichment, configure the self-hosted GitHub Actions runner service locally with either `POSTGRES_CONNECTION_STRING` or `IMDB_RAPID_RATER_HOME`. Restart the runner service after changing its environment. Keeping the settings directory outside the checked-out repository prevents checkout cleanup from deleting it and keeps the internal database credential out of GitHub.
 
 `RapidRater.AppOrigin` is the primary browser origin. Same-origin requests are accepted from the host serving the current request, while additional trusted browser origins can be supplied through `RapidRater.AllowedOrigins`; the deployment writes them to the `APP_ALLOWED_ORIGINS` runtime setting. The repository contains no deployment-specific hostnames or addresses.
 
@@ -192,11 +195,15 @@ Or set this in the server's local settings file:
 IMDB_DRY_RUN=true
 ```
 
-## Enable Posters And Synopsis
+## Enable TMDB Metadata And Streaming Availability
 
-IMDb page metadata is inconsistent for this use case. For reliable posters and synopsis text, click **Set TMDB Key** in the app header and paste a TMDB API key. It is encrypted in your account. Get a v3 API key or read access token from [TMDB API Getting Started](https://developer.themoviedb.org/reference/getting-started).
+IMDb page metadata is inconsistent for this use case. For reliable posters, synopsis text, cast, trailers, series details, and streaming availability, click **Set TMDB Key** in the app header and paste a TMDB API key. It is encrypted in your account. Get a v3 API key or read access token from [TMDB API Getting Started](https://developer.themoviedb.org/reference/getting-started).
 
-Rapid Rater looks up each title by its IMDb ID through TMDB. If you add the key after already opening the app, visible metadata is refreshed automatically.
+Rapid Rater looks up only the three visible titles by IMDb ID through TMDB. The normalized fields used by the app and the complete TMDB details response already fetched for each title are stored in PostgreSQL. Movie metadata is refreshed after 30 days; an active TV series is refreshed after 7 days so season and episode counts can change. Ended-series metadata uses the 30-day interval.
+
+After the TMDB title ID is known, Rapid Rater loads the configured country's watch-provider results (currently `US`). Streaming results are stored by country for 12 hours. Fresh results are served directly from PostgreSQL; stale results are shown immediately and refreshed in the background. Provider logos and categories appear below the synopsis on the active poster card. TMDB provides a regional viewing-options page, not direct Netflix/Hulu deep links.
+
+If you add the key after already opening the app, visible metadata is refreshed automatically. The next time another user sees the same title, the shared PostgreSQL cache is reused instead of repeating the TMDB requests.
 
 ## Retry Failed IMDb Writes
 
@@ -240,7 +247,7 @@ $env:TMDB_BUILD_API_KEY = "<TMDB v3 API key or read access token>"
 npm run build:origins
 ```
 
-The enrichment is resumable. Results, including titles TMDB could not match, are stored in PostgreSQL and reused by later builds. The ignored `cache/tmdb-title-origins.json` file remains a local checkpoint and is imported into PostgreSQL when it contains records not already in the database. `TMDB_ORIGIN_CONCURRENCY` can be set from `1` to `24` and defaults to `12`. Re-run `build:origins` after generating fresh IMDb catalogs; only titles missing from the database cache are sent to TMDB.
+The enrichment is resumable. Results, including titles TMDB could not match, are stored in the shared PostgreSQL title-metadata cache and reused by later builds. The ignored `cache/tmdb-title-origins.json` file remains a local checkpoint and is imported into PostgreSQL when it contains records not already in the database. `TMDB_ORIGIN_CONCURRENCY` can be set from `1` to `24` and defaults to `12`. Re-run `build:origins` after generating fresh IMDb catalogs; only titles missing origin results from the database cache are sent to TMDB. This build never requests streaming availability for the entire catalog; runtime loads it only for visible cards.
 
 The script downloads these files into `cache/`:
 
@@ -294,7 +301,8 @@ src/app/util.js            Shared browser utilities
 server/                    Authenticated API, database, and IMDb proxy modules
 server/rater-queue-store.mjs Authoritative queue transactions and conflict checks
 server/rater-events.mjs    Cross-device queue revision event stream
-server/title-origin-cache.mjs PostgreSQL TMDB-origin cache
+server/title-metadata-store.mjs PostgreSQL title metadata, origin, and streaming cache
+server/streaming-availability.mjs TMDB watch-provider service and 12-hour cache policy
 db/migrations/             Versioned PostgreSQL schema migrations
 shared/                    Browser/server shared helpers
 scripts/server.mjs         Local server entrypoint
@@ -323,3 +331,5 @@ These are covered by `.gitignore`.
 Information courtesy of IMDb (https://www.imdb.com). Used with permission.
 
 This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+Streaming availability data is provided by JustWatch through TMDB.

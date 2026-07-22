@@ -4,46 +4,64 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BuildUserDataPath, EnsureUserDataParent, MigrateLegacyFile } from "./user-data.mjs";
 import { NormalizeLanguageCode, NormalizeTmdbOrigin } from "../shared/title-filters.js";
+import { CreateStreamingAvailabilityService } from "./streaming-availability.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CachePath = BuildTitleMetadataCachePath();
 const TmdbApiUrl = "https://api.themoviedb.org/3";
 const TmdbImageUrl = "https://image.tmdb.org/t/p/w342";
+const DefaultStreamingCountry = "US";
+const MovieMetadataTtlMilliseconds = 30 * 24 * 60 * 60 * 1000;
+const ActiveTvMetadataTtlMilliseconds = 7 * 24 * 60 * 60 * 1000;
 let CacheWriteTimer;
 const MetadataCache = LoadMetadataCache();
+const StreamingAvailabilityService = CreateStreamingAvailabilityService();
 
 export async function GetTitleMetadata(titleId, options = {}) {
-  if (ShouldUseCachedMetadata(MetadataCache[titleId], options))
-    return Ok({ ok: true, ...MetadataCache[titleId] });
-  const metadata = await LoadTitleMetadata(titleId, options);
-  MetadataCache[titleId] = metadata;
-  ScheduleCacheWrite();
-  return Ok({ ok: true, ...metadata });
+  const mediaType = options.mediaType === "tv" ? "tv" : "movie";
+  const databaseMetadata = await ReadDatabaseMetadata(options.metadataStore, titleId, mediaType);
+  const mergedCache = MergeCachedMetadata(databaseMetadata, MetadataCache[titleId], mediaType);
+  const shouldMigrateLocalCache = Boolean(mergedCache && !mergedCache.metadataCheckedAt && HasMetadataPayload(mergedCache));
+  const cached = shouldMigrateLocalCache ? { ...mergedCache, metadataCheckedAt: new Date().toISOString() } : mergedCache;
+  const useCached = ShouldUseCachedMetadata(cached, options);
+  const metadata = useCached
+    ? cached
+    : await LoadTitleMetadata(titleId, { ...options, mediaType }, cached);
+  if (!useCached || shouldMigrateLocalCache || (!databaseMetadata?.metadataCheckedAt && metadata?.metadataCheckedAt))
+    await PersistMetadata(metadata, options.metadataStore);
+  const streamingAvailability = await ResolveStreamingAvailability(metadata, options);
+  return Ok(BuildPublicMetadata(metadata, streamingAvailability));
 }
 
-async function LoadTitleMetadata(titleId, options) {
+async function LoadTitleMetadata(titleId, options, cached = {}) {
   const [tmdb, titlePage, suggestion] = await Promise.all([
-    FetchTmdbMetadata(titleId, options).catch(() => null),
+    FetchTmdbMetadata(titleId, options, cached).catch(() => null),
     FetchTitlePageMetadata(titleId).catch(() => null),
     FetchSuggestionMetadata(titleId).catch(() => null)
   ]);
   return {
     titleId,
     mediaType: options.mediaType === "tv" ? "tv" : "movie",
-    posterUrl: tmdb?.posterUrl || titlePage?.posterUrl || suggestion?.posterUrl || "",
-    synopsis: tmdb?.synopsis || titlePage?.synopsis || "",
-    actors: FirstActorList(tmdb?.actors, titlePage?.actors, suggestion?.actors),
-    trailerUrl: FirstTrailerUrl(tmdb?.trailerUrl, titlePage?.trailerUrl),
-    seriesStatus: tmdb?.seriesStatus || "",
-    seasonCount: Number(tmdb?.seasonCount) || 0,
-    episodeCount: Number(tmdb?.episodeCount) || 0,
-    episodeRuntimeMinutes: Number(tmdb?.episodeRuntimeMinutes) || 0,
-    source: tmdb?.source || titlePage?.source || suggestion?.source || ""
+    tmdbId: Number(tmdb?.tmdbId || cached?.tmdbId) || null,
+    posterUrl: tmdb?.posterUrl || cached?.posterUrl || titlePage?.posterUrl || suggestion?.posterUrl || "",
+    synopsis: tmdb?.synopsis || cached?.synopsis || titlePage?.synopsis || "",
+    actors: FirstActorList(tmdb?.actors, cached?.actors, titlePage?.actors, suggestion?.actors),
+    trailerUrl: FirstTrailerUrl(tmdb?.trailerUrl, cached?.trailerUrl, titlePage?.trailerUrl),
+    seriesStatus: tmdb?.seriesStatus || cached?.seriesStatus || "",
+    seasonCount: Number(tmdb?.seasonCount || cached?.seasonCount) || 0,
+    episodeCount: Number(tmdb?.episodeCount || cached?.episodeCount) || 0,
+    episodeRuntimeMinutes: Number(tmdb?.episodeRuntimeMinutes || cached?.episodeRuntimeMinutes) || 0,
+    originCountries: Array.isArray(tmdb?.originCountries) ? tmdb.originCountries : Array.isArray(cached?.originCountries) ? cached.originCountries : [],
+    originalLanguage: tmdb?.originalLanguage || cached?.originalLanguage || "",
+    source: tmdb?.source || cached?.source || titlePage?.source || suggestion?.source || "",
+    sourcePayload: IsRecord(tmdb?.sourcePayload) ? tmdb.sourcePayload : IsRecord(cached?.sourcePayload) ? cached.sourcePayload : {},
+    metadataCheckedAt: new Date().toISOString(),
+    streamingByCountry: IsRecord(cached?.streamingByCountry) ? cached.streamingByCountry : {}
   };
 }
 
 function ShouldUseCachedMetadata(metadata, options) {
-  if (!metadata)
+  if (!metadata || !HasMetadataPayload(metadata))
     return false;
   if (!Array.isArray(metadata.actors))
     return false;
@@ -51,15 +69,41 @@ function ShouldUseCachedMetadata(metadata, options) {
     return false;
   if (options.mediaType === "tv" && (metadata.mediaType !== "tv" || !("seriesStatus" in metadata)))
     return false;
-  if (metadata.synopsis && metadata.posterUrl)
+  if (!ReadTmdbApiKey(options))
     return true;
-  return !ReadTmdbApiKey(options);
+  if (!metadata.synopsis || !metadata.posterUrl)
+    return false;
+  if (!metadata.metadataCheckedAt)
+    return true;
+  const checkedAt = new Date(metadata.metadataCheckedAt);
+  const seriesStatus = String(metadata.seriesStatus || "").toLowerCase();
+  const ttl = metadata.mediaType === "tv" && !["ended", "canceled"].includes(seriesStatus)
+    ? ActiveTvMetadataTtlMilliseconds
+    : MovieMetadataTtlMilliseconds;
+  const age = Date.now() - checkedAt.getTime();
+  return Number.isFinite(age) && age >= 0 && age < ttl;
 }
 
-async function FetchTmdbMetadata(titleId, options) {
+function HasMetadataPayload(metadata) {
+  return Boolean(
+    metadata?.metadataCheckedAt
+    || metadata?.posterUrl
+    || metadata?.synopsis
+    || metadata?.trailerUrl
+    || metadata?.source
+    || (Array.isArray(metadata?.actors) && metadata.actors.length)
+  );
+}
+
+async function FetchTmdbMetadata(titleId, options, cached) {
   const apiKey = ReadTmdbApiKey(options);
   if (!apiKey)
     throw new Error("TMDB_API_KEY is not configured.");
+  const knownTmdbId = Number(cached?.tmdbId);
+  if (Number.isInteger(knownTmdbId) && knownTmdbId > 0) {
+    const extras = await FetchTmdbExtras(options.mediaType, knownTmdbId, apiKey);
+    return BuildTmdbMetadata(extras, extras, options.mediaType, knownTmdbId);
+  }
   const response = await fetch(BuildTmdbFindUrl(titleId, apiKey), { headers: BuildTmdbHeaders(apiKey) });
   if (!response.ok)
     throw new Error(`TMDB returned HTTP ${response.status}.`);
@@ -68,7 +112,7 @@ async function FetchTmdbMetadata(titleId, options) {
   if (!result)
     throw new Error("TMDB did not find this IMDb title.");
   const extras = await FetchTmdbExtras(result.mediaType, result.item.id, apiKey).catch(() => ({ actors: [], trailerUrl: "" }));
-  return BuildTmdbMetadata(result.item, extras, result.mediaType);
+  return BuildTmdbMetadata(result.item, extras, result.mediaType, Number(result.item.id));
 }
 
 function BuildTmdbFindUrl(titleId, apiKey) {
@@ -123,21 +167,26 @@ async function FetchTmdbExtras(mediaType, id, apiKey) {
     throw new Error(`TMDB details returned HTTP ${response.status}.`);
   const payload = await response.json();
   return {
+    poster_path: payload?.poster_path || "",
+    overview: CleanMetadataText(payload?.overview || ""),
+    original_language: NormalizeLanguageCode(payload?.original_language),
     actors: ReadActorNames(payload?.credits?.cast),
     trailerUrl: PickTmdbTrailerUrl(payload?.videos?.results),
     seriesStatus: CleanMetadataText(payload?.status || ""),
     seasonCount: Number(payload?.number_of_seasons) || 0,
     episodeCount: Number(payload?.number_of_episodes) || 0,
     episodeRuntimeMinutes: ReadEpisodeRuntime(payload),
+    sourcePayload: payload,
     ...NormalizeTmdbOrigin(mediaType, null, payload)
   };
 }
 
-function BuildTmdbMetadata(item, extras, mediaType) {
+function BuildTmdbMetadata(item, extras, mediaType, tmdbId) {
   return {
     mediaType,
-    posterUrl: BuildTmdbPosterUrl(item.poster_path),
-    synopsis: CleanMetadataText(item.overview || ""),
+    tmdbId: Number(tmdbId) || null,
+    posterUrl: BuildTmdbPosterUrl(extras.poster_path || item.poster_path),
+    synopsis: CleanMetadataText(extras.overview || item.overview || ""),
     actors: ReadActorNames(extras.actors),
     trailerUrl: NormalizeTrailerUrl(extras.trailerUrl),
     seriesStatus: extras.seriesStatus || "",
@@ -146,7 +195,8 @@ function BuildTmdbMetadata(item, extras, mediaType) {
     episodeRuntimeMinutes: Number(extras.episodeRuntimeMinutes) || 0,
     originCountries: Array.isArray(extras.originCountries) ? extras.originCountries : [],
     originalLanguage: extras.originalLanguage || NormalizeLanguageCode(item.original_language),
-    source: "tmdb"
+    source: "tmdb",
+    sourcePayload: IsRecord(extras.sourcePayload) ? extras.sourcePayload : IsRecord(item) ? item : {}
   };
 }
 
@@ -264,6 +314,111 @@ function BuildSuggestionHeaders() {
     "accept": "application/json",
     "user-agent": "Mozilla/5.0"
   };
+}
+
+async function ReadDatabaseMetadata(store, titleId, mediaType) {
+  if (!store?.readOne)
+    return null;
+  try {
+    return await store.readOne(titleId, mediaType);
+  } catch (error) {
+    console.warn(`${titleId} PostgreSQL metadata read failed: ${error.message}`);
+    return null;
+  }
+}
+
+function MergeCachedMetadata(databaseMetadata, localMetadata, mediaType) {
+  if (!databaseMetadata && !localMetadata)
+    return null;
+  const database = databaseMetadata || {};
+  const local = localMetadata || {};
+  return {
+    ...local,
+    ...database,
+    titleId: database.titleId || local.titleId || "",
+    mediaType,
+    tmdbId: Number(database.tmdbId || local.tmdbId) || null,
+    posterUrl: database.posterUrl || local.posterUrl || "",
+    synopsis: database.synopsis || local.synopsis || "",
+    actors: FirstActorList(database.actors, local.actors),
+    trailerUrl: FirstTrailerUrl(database.trailerUrl, local.trailerUrl),
+    seriesStatus: database.seriesStatus || local.seriesStatus || "",
+    seasonCount: Number(database.seasonCount || local.seasonCount) || 0,
+    episodeCount: Number(database.episodeCount || local.episodeCount) || 0,
+    episodeRuntimeMinutes: Number(database.episodeRuntimeMinutes || local.episodeRuntimeMinutes) || 0,
+    originCountries: Array.isArray(database.originCountries) && database.originCountries.length ? database.originCountries : Array.isArray(local.originCountries) ? local.originCountries : [],
+    originalLanguage: database.originalLanguage || local.originalLanguage || "",
+    source: database.source || local.source || "",
+    metadataCheckedAt: database.metadataCheckedAt || local.metadataCheckedAt || "",
+    sourcePayload: IsRecord(database.sourcePayload) && Object.keys(database.sourcePayload).length ? database.sourcePayload : IsRecord(local.sourcePayload) ? local.sourcePayload : {},
+    streamingByCountry: {
+      ...(IsRecord(local.streamingByCountry) ? local.streamingByCountry : {}),
+      ...(IsRecord(database.streamingByCountry) ? database.streamingByCountry : {})
+    }
+  };
+}
+
+async function PersistMetadata(metadata, store) {
+  if (!metadata?.titleId)
+    return;
+  MetadataCache[metadata.titleId] = metadata;
+  ScheduleCacheWrite();
+  if (!store?.upsertMetadata)
+    return;
+  try {
+    await store.upsertMetadata(metadata);
+  } catch (error) {
+    console.warn(`${metadata.titleId} PostgreSQL metadata write failed: ${error.message}`);
+  }
+}
+
+async function ResolveStreamingAvailability(metadata, options) {
+  const country = NormalizeStreamingCountry(options.streamingCountry || DefaultStreamingCountry);
+  const cached = IsRecord(metadata?.streamingByCountry) ? metadata.streamingByCountry[country] : null;
+  const service = options.streamingAvailabilityService || StreamingAvailabilityService;
+  if (!service?.get)
+    return cached || null;
+  try {
+    return await service.get({
+      mediaType: metadata.mediaType,
+      tmdbId: metadata.tmdbId,
+      apiKey: ReadTmdbApiKey(options),
+      country,
+      cached,
+      persist: (availability) => PersistStreamingAvailability(metadata, country, availability, options.metadataStore)
+    });
+  } catch (error) {
+    console.warn(`${metadata.titleId} streaming availability failed: ${error.message}`);
+    return cached ? { ...cached, stale: true } : null;
+  }
+}
+
+async function PersistStreamingAvailability(metadata, country, availability, store) {
+  const current = MetadataCache[metadata.titleId] || metadata;
+  current.streamingByCountry = { ...(IsRecord(current.streamingByCountry) ? current.streamingByCountry : {}), [country]: availability };
+  MetadataCache[metadata.titleId] = current;
+  ScheduleCacheWrite();
+  if (!store?.updateStreaming)
+    return;
+  try {
+    await store.updateStreaming(metadata.titleId, metadata.mediaType, country, availability);
+  } catch (error) {
+    console.warn(`${metadata.titleId} PostgreSQL streaming write failed: ${error.message}`);
+  }
+}
+
+function BuildPublicMetadata(metadata, streamingAvailability) {
+  const { status: _status, checkedAt: _checkedAt, sourcePayload: _sourcePayload, streamingByCountry: _streamingByCountry, ...payload } = metadata;
+  return { ok: true, ...payload, streamingAvailability };
+}
+
+function NormalizeStreamingCountry(value) {
+  const country = String(value || "").trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(country) ? country : DefaultStreamingCountry;
+}
+
+function IsRecord(value) {
+  return value && typeof value === "object" && !Array.isArray(value);
 }
 
 function BuildTitleHeaders() {

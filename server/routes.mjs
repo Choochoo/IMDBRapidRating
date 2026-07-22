@@ -4,6 +4,7 @@ import { Authenticate, EnsureCsrfToken, HashPassword, LoginLimiter, RegenerateSe
 import { GetOpenAiModels } from "./openai-models.mjs";
 import { DeleteImdbRating, GetImdbStatus, SubmitImdbRating } from "./imdb-ratings.mjs";
 import { GetTitleMetadata } from "./title-metadata.mjs";
+import { CreateTitleMetadataStore } from "./title-metadata-store.mjs";
 import { HasEncryptionKey } from "./security/secrets.mjs";
 import { NormalizeRecommendationItem, RecommendationKey } from "./recommendation-queue.mjs";
 import { ReadMoviePool, ReadTitlePool } from "./movie-pool.mjs";
@@ -80,8 +81,11 @@ export function RegisterApiRoutes(app, {
   generateAiRecommendations = GenerateAiRecommendations,
   readMoviePool = ReadMoviePool,
   readTitlePool = ReadTitlePool,
+  titleMetadataStore,
+  streamingAvailabilityService,
   raterEvents = { subscribe() {}, publish() {} }
 }) {
+  const metadataStore = titleMetadataStore || CreateTitleMetadataStore(pool);
   app.get("/health", async (_request, response) => {
     await pool.query("SELECT 1");
     response.json({ ok: true, database: "connected", encryptionConfigured: HasEncryptionKey() });
@@ -360,7 +364,12 @@ export function RegisterApiRoutes(app, {
     if (!mediaType)
       return;
     const tmdbApiKey = await store.getSecret(request.session.userId, "tmdb");
-    SendResult(response, await GetTitleMetadata(request.params[0], { tmdbApiKey, mediaType }));
+    SendResult(response, await GetTitleMetadata(request.params[0], {
+      tmdbApiKey,
+      mediaType,
+      metadataStore,
+      streamingAvailabilityService
+    }));
   });
 }
 

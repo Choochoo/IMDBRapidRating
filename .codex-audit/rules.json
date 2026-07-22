@@ -1,0 +1,3934 @@
+{
+  "ambiguous_rules": [],
+  "conflicts": [],
+  "document_policies": [
+    {
+      "heading_hierarchy": [
+        "Repository Coding Standards"
+      ],
+      "id": "DOC-POLICY-001",
+      "line_end": 2,
+      "line_start": 1,
+      "policy_text_hash": "ef31eca3ae5b240b73a070d5f5955829baa521f34e6e7b439ce9f3ecb7bf60be",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "# Repository Coding Standards"
+    }
+  ],
+  "generated_at": "2026-07-22T18:55:51Z",
+  "reports": {
+    "ambiguous_applicability": [],
+    "apparent_truncation": [],
+    "conflicting_git_policies": [],
+    "conflicting_rule_ids": [],
+    "duplicate_document_sections": [],
+    "duplicate_rule_ids": [],
+    "malformed_rule_lines": [],
+    "missing_rule_sources": [],
+    "priority_order_conflicts": [],
+    "project_compatibility_conflicts": [],
+    "resolved_git_policy_conflicts": [],
+    "unauthorized_project_changes": [],
+    "unavailable_tooling": [],
+    "unknown_exception_rule_ids": []
+  },
+  "rule_source_hashes": {
+    "docs/engineering/CODING_STANDARDS.md": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+    "docs/engineering/PROJECT_EXCEPTIONS.md": "8b0d20de49c1120cf38110568735b4dd8a57ca93c418637fa7f7c058476892c4"
+  },
+  "rules": [
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "repository safety"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "AUDIT-01"
+      ],
+      "id": "AUDIT-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 6,
+      "line_start": 3,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "a85f332306b49ca66e8fc116b3e8a5f85c8fff0902e84d418d2bd8c2e5bbd295",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## AUDIT-01\n\nCommit: I'm about to commit, please follow these rules, and spawn as many specialized agents asyncly to get the job done and make sure these rules apply.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "prohibited",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "repository safety"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "GIT-01"
+      ],
+      "id": "GIT-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 11,
+      "line_start": 7,
+      "priority": "high",
+      "reporting_requirements": [],
+      "rule_text_hash": "11dc7421dc2287476069c2092e201da1032fdfc56b318a8722a4f2691b42c9b4",
+      "severity": "high",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## GIT-01\n\nDO NOT MESS WITH GIT, DON'T STAGE, DON'T UNSTAGE, DON'T TOUCH ANY GIT COMMANDS*****\n(apply these to all my uncommitted code)",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [
+            "C#",
+            "TypeScript"
+          ],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "mandatory",
+        "enforcement": "semantic reviewer required",
+        "scope": "language-specific",
+        "subject": "type design"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "VAR-01"
+      ],
+      "id": "VAR-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 15,
+      "line_start": 12,
+      "priority": "high",
+      "reporting_requirements": [],
+      "rule_text_hash": "171aa64e25cb78752907018ff307e8210a1c914d97d1827177de8f756a6f7744",
+      "severity": "high",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## VAR-01\n\nno vars ever, in typescript must be const or let, in c# must be explicit types.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "other"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [
+        "## EXCEPTION-01"
+      ],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "EXCEPTION-01"
+      ],
+      "id": "EXCEPTION-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 19,
+      "line_start": 16,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "b7aca835ffaa423008dcfbfdf106f6b4fc5cb4acd2e14a0f414d8977d338e337",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## EXCEPTION-01\n\nminimal if not no zero try/catches",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "other"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "COMMENT-01"
+      ],
+      "id": "COMMENT-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 23,
+      "line_start": 20,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "2be7d240fa56c71770aa932264d8ac7836e5f688003606945ef9a6bd08257bce",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## COMMENT-01\n\nno knockout inline comment",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "prohibited",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "other"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "CONDITION-01"
+      ],
+      "id": "CONDITION-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 27,
+      "line_start": 24,
+      "priority": "high",
+      "reporting_requirements": [],
+      "rule_text_hash": "457d1d4fd8b20acb8149cf570af8ca005a0715176f2c896bd4e8367f236ad17d",
+      "severity": "high",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## CONDITION-01\n\nif statements an never be one line like if(true) something else;  two line if statements SHOULD NOT have brackets.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "methods"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "FLOW-01"
+      ],
+      "id": "FLOW-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 31,
+      "line_start": 28,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "4918ae91ea5a374ec08a8e55a56880d73893025d9841f24be44a9bd2d8aa81ae",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## FLOW-01\n\nreturn early as possible from functions.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [
+            "C#",
+            "TypeScript"
+          ],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": [
+            "all function names in typescript or c# are capitalized, private or not."
+          ]
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "language-specific",
+        "subject": "naming"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "NAME-01"
+      ],
+      "id": "NAME-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 35,
+      "line_start": 32,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "d92b3f4d1262a3111b68774a2497d6816203dfaecd798a5a7bd860bcbdc349cb",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## NAME-01\n\nall function names in typescript or c# are capitalized, private or not.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "other"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "KNOCKOUT-01"
+      ],
+      "id": "KNOCKOUT-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 39,
+      "line_start": 36,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "78ace96fa242cdd23cf0308d95083362f353abc41a89b9280fdfb72ecdc7f9be",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## KNOCKOUT-01\n\nI dont' like computed variables in knockout i like observables, can you make sure all variables are observables.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "methods"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "MUTABILITY-01"
+      ],
+      "id": "MUTABILITY-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 43,
+      "line_start": 40,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "4e85e8bf86cd663a4d9492690a891486c68d386a559718e2b9ab0b6b5b9e9950",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## MUTABILITY-01\n\nMake sure all new functions or variables I've modified are static or readonly (if they can be)",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": [
+            "## FUNCTION-01"
+          ]
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "methods"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "FUNCTION-01"
+      ],
+      "id": "FUNCTION-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 47,
+      "line_start": 44,
+      "priority": "medium",
+      "reporting_requirements": [],
+      "rule_text_hash": "5df88a428d545b9a683013475488d4915748948ec74c0e42765dbca1ed45e2d6",
+      "severity": "medium",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## FUNCTION-01\n\nNo new functions should be over 15 line of code, including constructors, please refactor any that you see that I added.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "methods"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "DEADCODE-01"
+      ],
+      "id": "DEADCODE-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 51,
+      "line_start": 48,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "657d37fdccbd6f66c4ed883bf7ad2f188fd889aaa24c08b8e26ba589cdbc5f00",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## DEADCODE-01\n\nRemove unused variables, delete empty functions.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": [
+            "No async methods in the constructor if you're loading a awaitable function please use a promise."
+          ]
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "methods"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "ASYNC-01"
+      ],
+      "id": "ASYNC-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 55,
+      "line_start": 52,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "09fada23bc971bf51f2dc74dc6af89b48a3eba1a89f52137ee00dc842efb93bc",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## ASYNC-01\n\nNo async methods in the constructor if you're loading a awaitable function please use a promise.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "null handling"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "NULLABLE-01"
+      ],
+      "id": "NULLABLE-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 59,
+      "line_start": 56,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "56a4df9361f95684127cefa10f50fc8d48d23eb46d2b4afe3736042613eb75a5",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## NULLABLE-01\n\nThis is .net 8 so NULLABLE MATTERS! Most properties need default values, including null, if these are nullable make sure everything knows about it, i.e. Person? jared is different than Person jared",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "type design"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "TYPE-01"
+      ],
+      "id": "TYPE-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 63,
+      "line_start": 60,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "aec1c06e5ca523fcc8c93e1c994d8c35ae67ea2394ac2bb2dc3e549af62cc67f",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## TYPE-01\n\ndon't use objects or dynamics, use expclit types",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "other"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "MODEL-01"
+      ],
+      "id": "MODEL-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 67,
+      "line_start": 64,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "04c0418e677e09b8ffa0d89ed7b116602dd9108e70e773d68da04673c07142e6",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## MODEL-01\n\nmake sure all models are either in their own files or in one file by themselves if they are smaller models.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [
+          "web_http"
+        ],
+        "condition_support": "supported",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [
+            "web or HTTP service"
+          ],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": [
+            "## CONTROLLER-01",
+            "Model.isValid states are needed in every controller function."
+          ]
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "project-type-specific",
+        "subject": "methods"
+      },
+      "condition": "",
+      "condition_domains": [
+        "web_http"
+      ],
+      "condition_source": "inferred-domain",
+      "condition_support": "supported",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "CONTROLLER-01"
+      ],
+      "id": "CONTROLLER-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 71,
+      "line_start": 68,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "00505bd05ec049f13459cd1480b9f2f9fa8d0e3da86905b562d587809085f1aa",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## CONTROLLER-01\n\nModel.isValid states are needed in every controller function.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [
+            "Go"
+          ],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "prohibited",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "naming"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "NAMESPACE-01"
+      ],
+      "id": "NAMESPACE-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 75,
+      "line_start": 72,
+      "priority": "high",
+      "reporting_requirements": [],
+      "rule_text_hash": "1eeb7b68f5227fa272b29c85e3af42d8a25593bb5e5ad5c7a78be996b4c42144",
+      "severity": "high",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## NAMESPACE-01\n\nDo not include name spaces for models, always use shortcuts, BAD: IntelliPass.Web.Data.Personnel.PersonnelDataProvider personnelDataProvider, GOOD: PersonnelDataProvider personnelDataProvider",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [
+            "C#"
+          ],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "language-specific",
+        "subject": "collections"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "COLLECTION-01"
+      ],
+      "id": "COLLECTION-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 79,
+      "line_start": 76,
+      "priority": "medium",
+      "reporting_requirements": [],
+      "rule_text_hash": "fcb41b74822685601c2a5e250fab13c967a9d18d6bbd9a89b5ad2fc249213b21",
+      "severity": "medium",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## COLLECTION-01\n\nin C# All List/arrays etc should be \"IEnumerable or Enumerate.empty<int>(); preferred unless it cannot be",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "other"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "REGION-01"
+      ],
+      "id": "REGION-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 83,
+      "line_start": 80,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "0325109ffe6a48047c8595b128f420b64cb1b3baed8e35ae7cc9950897478880",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## REGION-01\n\nno regions! i.e. #region XYZ #endregion",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [
+          "database_persistence"
+        ],
+        "condition_support": "supported",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": true,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [
+            "Go"
+          ],
+          "networking_relevance": false,
+          "project_types": [
+            "database or persistence"
+          ],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": [
+            "all new code MUST be on one line for functions or function calls, no multiline function calls i.e. BAD:"
+          ]
+        },
+        "effect": "mandatory",
+        "enforcement": "test or build verification",
+        "scope": "project-type-specific",
+        "subject": "formatting"
+      },
+      "condition": "",
+      "condition_domains": [
+        "database_persistence"
+      ],
+      "condition_source": "inferred-domain",
+      "condition_support": "supported",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "FORMAT-01"
+      ],
+      "id": "FORMAT-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 96,
+      "line_start": 84,
+      "priority": "high",
+      "reporting_requirements": [],
+      "rule_text_hash": "ff6b197b4fa473b395620eab46f3dacd2c1f01793a8de8285baded1aff2f0f30",
+      "severity": "high",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## FORMAT-01\n\nall new code MUST be on one line for functions or function calls, no multiline function calls i.e. BAD:\n        private static string? GetDepartureIcsRoles(\n            DeparturePobRow? matchedPob,\n            DeparturePresetRow? matchedPreset,\n            DepartureDefaultAssignmentRow? defaultAssignment,\n            IReadOnlyDictionary<int, string> pobIcsRoles,\n            IReadOnlyDictionary<int, string> presetIcsRoles,\n            IReadOnlyDictionary<int, string> defaultIcsRoles)\nGOOD:\n        private static string? GetDepartureIcsRoles(DeparturePobRow? matchedPob,DeparturePresetRow? matchedPreset, DepartureDefaultAssignmentRow? defaultAssignment, IReadOnlyDictionary<int, string> pobIcsRoles, IReadOnlyDictionary<int, string> presetIcsRoles, IReadOnlyDictionary<int, string> defaultIcsRoles)",
+      "verification_method": "automated command plus inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "other"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "TERNARY-01"
+      ],
+      "id": "TERNARY-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 100,
+      "line_start": 97,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "57504da133dc655dbb11d4852d87a4cc2619f90d895c9bcdaf88b9405c9bc942",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## TERNARY-01\n\nNo overly complicated Terniary operations.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": [
+            "Any variables checked, always check if its a nullable variable if it is, check for null and return instantly OR check this variable at the end of the function and return then (doing as much logic to everything else first)"
+          ]
+        },
+        "effect": "mandatory",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "null handling"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "NULLABLE-02"
+      ],
+      "id": "NULLABLE-02",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 104,
+      "line_start": 101,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "2a7774eaf1f957030c96715d39fd355684ce0e7567cd908d736766dd90d0c790",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## NULLABLE-02\n\nAny variables checked, always check if its a nullable variable if it is, check for null and return instantly OR check this variable at the end of the function and return then (doing as much logic to everything else first)",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [
+          "database_persistence"
+        ],
+        "condition_support": "supported",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": true,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [
+            "Go"
+          ],
+          "networking_relevance": false,
+          "project_types": [
+            "database or persistence"
+          ],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "test or build verification",
+        "scope": "project-type-specific",
+        "subject": "formatting"
+      },
+      "condition": "",
+      "condition_domains": [
+        "database_persistence"
+      ],
+      "condition_source": "inferred-domain",
+      "condition_support": "supported",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "FORMAT-02"
+      ],
+      "id": "FORMAT-02",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 119,
+      "line_start": 105,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "5aab8521b7a0beaeffe0f3172aec354ce442ef427f0997e675cb8ba365654b21",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## FORMAT-02\n\nGood:\n    private BuildConflictDialogOptions(conflicts: WorkSiteScheduleEventConflict[], allowAddConflictingEvents: boolean): WorkSiteScheduleConflictDialogOptions {\n        return {\n            showAddConflictingButton: allowAddConflictingEvents,\n            addConflicting: () => this.SaveConflictingCrewEvents(conflicts)\n        };\n    }\nBad: \n    private BuildConflictDialogOptions(conflicts: WorkSiteScheduleEventConflict[], allowAddConflictingEvents: boolean): WorkSiteScheduleConflictDialogOptions {\n        return { showAddConflictingButton: allowAddConflictingEvents, addConflicting: () => this.SaveConflictingCrewEvents(conflicts) };\n    }.\nSee the difference? if it is easier to read do it, but NOT with functions.",
+      "verification_method": "automated command plus inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "mandatory",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "methods"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "PARAMETER-01"
+      ],
+      "id": "PARAMETER-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 123,
+      "line_start": 120,
+      "priority": "high",
+      "reporting_requirements": [],
+      "rule_text_hash": "f1978d83dba3e626e616f8b8c22e374db663867bc830f68509047d7963fb7a3d",
+      "severity": "high",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## PARAMETER-01\n\nall new functions created must have max 7 parameters.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [
+          "database_persistence"
+        ],
+        "condition_support": "supported",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [
+            "database or persistence"
+          ],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "mandatory",
+        "enforcement": "semantic reviewer required",
+        "scope": "project-type-specific",
+        "subject": "type design"
+      },
+      "condition": "",
+      "condition_domains": [
+        "database_persistence"
+      ],
+      "condition_source": "inferred-domain",
+      "condition_support": "supported",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "DATABASE-01"
+      ],
+      "id": "DATABASE-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 127,
+      "line_start": 124,
+      "priority": "high",
+      "reporting_requirements": [],
+      "rule_text_hash": "b11a5e54d01606d134934d3eff2439bd5a30d5b4c2907b971c14df37685b9da0",
+      "severity": "high",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## DATABASE-01\n\nDatabase classes MUST be in their own file by themselves.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "mandatory",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "type design"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "TYPE-02"
+      ],
+      "id": "TYPE-02",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 131,
+      "line_start": 128,
+      "priority": "high",
+      "reporting_requirements": [],
+      "rule_text_hash": "ac7377c9efbe5206dc05e63c76c2cb7efb4b5bdd15b87a2a5a7c11c8a1535f30",
+      "severity": "high",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## TYPE-02\n\nPrivate sealed classes must be at the bottom, if the lines in the file are huge, put them in their own file.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [
+            "Go"
+          ],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "other"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "READABILITY-01"
+      ],
+      "id": "READABILITY-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 141,
+      "line_start": 132,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "6852dfb7197e991b772b65b8dd49dfd587fb337232c3be60142ad9d50900a34e",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## READABILITY-01\n\nBad:\nreturn DoesCrewConflictPersonnelMatch(scheduleEvent, personnel, key) && scheduleEvent.ArrivalDate.Date == key.ArrivalDate.Date && scheduleEvent.DepartureDate.Date == key.DepartureDate.Date;\nGood:\nconst hasMatchingArrival = scheduleEvent.ArrivalDate.Date == key.ArrivalDate.Date;\nconst hasMatchingDeparture = scheduleEvent.DepartureDate.Date == key.DepartureDate.Date\nreturn DoesCrewConflictPersonnelMatch(scheduleEvent, personnel, key) && hasMatchingArrival && hasMatchingDeparture.\n//so it is easily readable like a book.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [
+            "Go"
+          ],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": [
+            "this._utils.Confirm(message, () => this.SaveEvent(mode, false, false, false, \"skip\", true), () => this.IsSavingEvent(false), \"Continue\", \"Cancel\", \"fa-trash\", \"fa-times-circle\");  think of this generically, if a human reads this do they understand it without going into the function."
+          ]
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "type design"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "CALL-01"
+      ],
+      "id": "CALL-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 146,
+      "line_start": 142,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "8861c0d24eb3b36a4b2dfc708a6bd2c15b71d81eca3ca1ae19fef188b92ed28e",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## CALL-01\n\nThis line right here is bad, what does all this stuff going into this utils mean?\n        this._utils.Confirm(message, () => this.SaveEvent(mode, false, false, false, \"skip\", true), () => this.IsSavingEvent(false), \"Continue\", \"Cancel\", \"fa-trash\", \"fa-times-circle\");  think of this generically, if a human reads this do they understand it without going into the function.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [
+            "Go"
+          ],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "AST or symbol analysis",
+        "scope": "universal",
+        "subject": "null handling"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "LINQ-01"
+      ],
+      "id": "LINQ-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 158,
+      "line_start": 147,
+      "priority": "medium",
+      "reporting_requirements": [],
+      "rule_text_hash": "0ba97894d51cff5ee6c2d8c43cdfd2cfee34880f020f7bba38c50fa98a156114",
+      "severity": "medium",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## LINQ-01\n\nI prefer linqs to be on separate lines like this.\nGood:\n            return personnel\n                .Select(personnelItem => CreatePersonnelEventFromCrewEvent(scheduleEvent.Copy(), personnelItem, crewPositionIds))\n                .Where(scheduleEvent => scheduleEvent != null)\n                .Cast<WorkSiteScheduleEvent>()\n                .ToList();\nBad:\n            return personnel.Select(personnelItem => CreatePersonnelEventFromCrewEvent(scheduleEvent.Copy(), personnelItem, crewPositionIds)).Where(scheduleEvent => scheduleEvent != null).Cast<WorkSiteScheduleEvent>().ToList();",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": true,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": [
+            "You are allowed to optimize, BUT ONLY if you can guarantee the same result is produced through unit tests before/after on that function."
+          ]
+        },
+        "effect": "preferred",
+        "enforcement": "test or build verification",
+        "scope": "universal",
+        "subject": "methods"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "OPTIMIZATION-01"
+      ],
+      "id": "OPTIMIZATION-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 162,
+      "line_start": 159,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "ab19e93316265d6d02b2d2ed50e6287fab3316004c9e943896b862bc74ab26f3",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## OPTIMIZATION-01\n\nYou are allowed to optimize, BUT ONLY if you can guarantee the same result is produced through unit tests before/after on that function.",
+      "verification_method": "automated command plus inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "strings and identifiers"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "CONSTANT-01"
+      ],
+      "id": "CONSTANT-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 166,
+      "line_start": 163,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "4e777936f7ffb8220c6959010c7749a750ed5c07791bfb0c764fe2ccc997c738",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## CONSTANT-01\n\nNo \"magic strings\" if you see a string mentioned more than once in the code, make it a variable. If it is part of a bigger theme make it an Enum.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "type design"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "DESIGN-01"
+      ],
+      "id": "DESIGN-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 170,
+      "line_start": 167,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "007375dda066feeed05353ee83aa7fa8ed37481b53112c17b8be6896698c8ff8",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## DESIGN-01\n\nLook for places for more KISS and DRY techniques using generics. Less code = better.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "preferred",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "other"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [
+        "possibly-vague"
+      ],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "FILE-01"
+      ],
+      "id": "FILE-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 174,
+      "line_start": 171,
+      "priority": "low",
+      "reporting_requirements": [],
+      "rule_text_hash": "8befe5fd576c6f194073f4356eb44ff112286a495992fce4b3868ab499f6990f",
+      "severity": "low",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## FILE-01\n\nNo files over 1k line of code.",
+      "verification_method": "manual inspection",
+      "verification_requirements": []
+    },
+    {
+      "applicability": {
+        "condition": "",
+        "condition_domains": [],
+        "condition_support": "unconditional",
+        "exclude_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/**",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "include_globs": [
+          "**/*"
+        ]
+      },
+      "applicability_conditions": [],
+      "automated": false,
+      "classification": {
+        "applicability": {
+          "engine_relevance": false,
+          "file_patterns": [
+            "**/*"
+          ],
+          "frameworks": [],
+          "hot_path_requirement": false,
+          "languages": [],
+          "networking_relevance": false,
+          "project_types": [],
+          "runtime_paths": [],
+          "serialization_relevance": false,
+          "symbol_kinds": []
+        },
+        "effect": "prohibited",
+        "enforcement": "semantic reviewer required",
+        "scope": "universal",
+        "subject": "repository safety"
+      },
+      "condition": "",
+      "condition_domains": [],
+      "condition_source": "none",
+      "condition_support": "unconditional",
+      "conflict_resolution_instructions": [],
+      "examples": [],
+      "exception_relationships": [],
+      "exclude_globs": [
+        ".codex-audit/**",
+        ".codex/project-intelligence/**",
+        ".codex/agents/project-knowledge-reviewer.toml",
+        "docs/project-knowledge/**",
+        ".git/**",
+        "node_modules/**",
+        "vendor/**",
+        "vendors/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        "target/**",
+        ".next/**",
+        ".nuxt/**",
+        ".cache/**",
+        "__pycache__/**",
+        "*.min.js",
+        "*.map",
+        "*.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
+      "explicit_exceptions": [],
+      "flags": [],
+      "heading_hierarchy": [
+        "Repository Coding Standards",
+        "SCOPE-01"
+      ],
+      "id": "SCOPE-01",
+      "include_globs": [
+        "**/*"
+      ],
+      "line_end": 178,
+      "line_start": 175,
+      "priority": "high",
+      "reporting_requirements": [],
+      "rule_text_hash": "ea13ed261e9accae89c0c020c9b94ef676dd2c917cd6ccfcff79dbf23396e91d",
+      "severity": "high",
+      "source_file": "docs/engineering/CODING_STANDARDS.md",
+      "source_hash": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "text": "## SCOPE-01\n\nAGAIN ******* can you verify all **AND ONLY** my uncommitted changes NOT all code. ONLY code I touched.\n--------- Do this now, do not stop until it is finished.",
+      "verification_method": "manual inspection",
+      "verification_requirements": [
+        "AGAIN ******* can you verify all **AND ONLY** my uncommitted changes NOT all code. ONLY code I touched."
+      ]
+    }
+  ],
+  "sources": [
+    "docs/engineering/CODING_STANDARDS.md",
+    "docs/engineering/PROJECT_EXCEPTIONS.md"
+  ]
+}

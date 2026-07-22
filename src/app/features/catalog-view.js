@@ -1,5 +1,5 @@
 import { Config } from "../config.js";
-import { RenderCard, UpdateActors, UpdatePoster, UpdateRecommendationPoster, UpdateSeriesDetails, UpdateSynopsis, UpdateTrailerLink } from "../rendering.js";
+import { RenderCard, UpdateActors, UpdatePoster, UpdateRecommendationPoster, UpdateSeriesDetails, UpdateStreamingAvailability, UpdateSynopsis, UpdateTrailerLink } from "../rendering.js";
 import { CountRatings } from "../stats.js";
 
 const MissingSynopsis = "To see the synopsis, set up a TMDB key.";
@@ -68,6 +68,7 @@ export class CatalogViewFeature {
       synopsis: MissingSynopsis,
       actors: [],
       trailerUrl: "",
+      streamingAvailability: null,
       source: ""
     };
   }
@@ -89,6 +90,7 @@ export class CatalogViewFeature {
       seasonCount: Number(payload.seasonCount) || 0,
       episodeCount: Number(payload.episodeCount) || 0,
       episodeRuntimeMinutes: Number(payload.episodeRuntimeMinutes) || 0,
+      streamingAvailability: payload.streamingAvailability && typeof payload.streamingAvailability === "object" ? payload.streamingAvailability : null,
       source: payload.source || ""
     };
   }
@@ -112,6 +114,7 @@ export class CatalogViewFeature {
     UpdateActors(card, metadata);
     UpdateTrailerLink(card, metadata);
     UpdateSeriesDetails(card, this.State.movieById.get(ttId) || {}, metadata);
+    UpdateStreamingAvailability(card, metadata);
   }
 
   ApplyRecommendationMetadata(selector, metadata) {

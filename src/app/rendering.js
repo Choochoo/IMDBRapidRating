@@ -60,6 +60,15 @@ export function UpdateSeriesDetails(card, movie, metadata) {
     details.innerHTML = RenderSeriesDetailsContent(movie, metadata);
 }
 
+export function UpdateStreamingAvailability(card, metadata) {
+  const container = card.querySelector("[data-streaming-availability]");
+  if (!container)
+    return;
+  const content = RenderStreamingAvailabilityContent(metadata?.streamingAvailability);
+  container.hidden = !content;
+  container.innerHTML = content;
+}
+
 export function RenderFailure(record) {
   const title = EscapeHtml(record.title || record.ttId);
   const error = EscapeHtml(record.submitError || "No error detail returned.");
@@ -118,11 +127,60 @@ function RenderCardBody(movie, index, metadata) {
   const synopsis = EscapeHtml(metadata.synopsis || "Loading synopsis...");
   const title = `<h2 class="title">${EscapeHtml(movie.title)}</h2>`;
   const series = movie.mediaType === "tv" ? `<div class="series-details">${RenderSeriesDetailsContent(movie, metadata)}</div>` : "";
-  const body = `${RenderMovieId(movie)}${title}${series}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>`;
+  const streaming = index === 0 ? RenderStreamingAvailability(metadata.streamingAvailability) : "";
+  const body = `${RenderMovieId(movie)}${title}${series}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>${streaming}`;
   const wishlist = index === 0 ? `<button type="button" class="movie-wishlist-action btn btn-primary" data-add-active-to-wishlist><span aria-hidden="true">&#9734;</span> Add to wishlist</button>` : "";
   const trailer = index === 0 ? RenderTrailerLink(metadata, "movie-trailer-link") : "";
   const actions = index === 0 ? `<div class="movie-card-actions d-grid">${trailer}${wishlist}</div>` : "";
   return `<div class="movie-body">${body}<div class="meta d-flex flex-wrap">${RenderMeta(movie)}</div>${actions}</div>`;
+}
+
+export function RenderStreamingAvailability(availability) {
+  const content = RenderStreamingAvailabilityContent(availability);
+  const hidden = content ? "" : " hidden";
+  return `<section class="streaming-availability" data-streaming-availability${hidden}>${content}</section>`;
+}
+
+function RenderStreamingAvailabilityContent(availability) {
+  if (!availability || typeof availability !== "object" || Array.isArray(availability))
+    return "";
+  const country = /^[A-Z]{2}$/.test(String(availability.country || "")) ? availability.country : "US";
+  const providers = Array.isArray(availability.providers) ? availability.providers : [];
+  const groups = [
+    RenderStreamingProviderGroup("Stream", "subscription", providers),
+    RenderStreamingProviderGroup("Free", "free", providers),
+    RenderStreamingProviderGroup("With ads", "ads", providers),
+    RenderStreamingProviderGroup("Rent", "rent", providers),
+    RenderStreamingProviderGroup("Buy", "buy", providers)
+  ].filter(Boolean).join("");
+  const empty = groups ? "" : `<p class="streaming-empty">No watching options are currently listed.</p>`;
+  const watchUrl = ReadWebUrl(availability.watchUrl);
+  const link = watchUrl ? `<a class="streaming-watch-link" href="${EscapeHtml(watchUrl)}" target="_blank" rel="noopener noreferrer">View all watching options</a>` : "";
+  const stale = availability.stale ? `<span class="streaming-refreshing">Refreshing</span>` : "";
+  return `<div class="streaming-heading"><div><span>Where to watch</span><strong>${EscapeHtml(country)}</strong></div>${stale}</div>${groups}${empty}<div class="streaming-footer">${link}<small>Streaming data provided by <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a> via TMDB.</small></div>`;
+}
+
+function RenderStreamingProviderGroup(label, type, providers) {
+  const matches = providers.filter((provider) => provider?.type === type && provider?.name).slice(0, 4);
+  if (!matches.length)
+    return "";
+  const total = providers.filter((provider) => provider?.type === type && provider?.name).length;
+  const chips = matches.map(RenderStreamingProvider).join("");
+  const overflow = total > matches.length ? `<span class="streaming-provider-more">+${total - matches.length} more</span>` : "";
+  return `<div class="streaming-provider-group"><span>${EscapeHtml(label)}</span><div class="streaming-provider-list">${chips}${overflow}</div></div>`;
+}
+
+function RenderStreamingProvider(provider) {
+  const rawName = String(provider.name || "").replace(/\s+/g, " ").trim();
+  const name = EscapeHtml(rawName);
+  const logoUrl = BuildProviderLogoUrl(provider.logoPath);
+  const logo = logoUrl ? `<img src="${EscapeHtml(logoUrl)}" alt="" loading="lazy">` : `<span class="streaming-provider-fallback" aria-hidden="true">${EscapeHtml(rawName.slice(0, 1))}</span>`;
+  return `<span class="streaming-provider">${logo}<span>${name}</span></span>`;
+}
+
+function BuildProviderLogoUrl(value) {
+  const path = String(value || "").trim();
+  return /^\/[a-z0-9._/-]+$/i.test(path) && !path.includes("..") ? `https://image.tmdb.org/t/p/w92${path}` : "";
 }
 
 function RenderSeriesDetailsContent(show, metadata) {
@@ -161,8 +219,12 @@ function RenderTrailerLink(metadata, className) {
 }
 
 function ReadTrailerUrl(metadata) {
+  return ReadWebUrl(metadata?.trailerUrl);
+}
+
+function ReadWebUrl(value) {
   try {
-    const url = new URL(String(metadata?.trailerUrl || ""));
+    const url = new URL(String(value || ""));
     return ["http:", "https:"].includes(url.protocol) ? url.href : "";
   } catch {
     return "";

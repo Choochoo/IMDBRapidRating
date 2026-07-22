@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CreateDatabase } from "../server/db/client.mjs";
 import { RunMigrations } from "../server/db/migrate.mjs";
-import { CreateTitleOriginCacheStore } from "../server/title-origin-cache.mjs";
+import { CreateTitleMetadataStore } from "../server/title-metadata-store.mjs";
 import { NormalizeTmdbOrigin } from "../shared/title-filters.js";
 import { LoadLocalEnv } from "../server/env.mjs";
 
@@ -43,12 +43,12 @@ async function Main() {
   const { pool } = CreateDatabase();
   try {
     await RunMigrations(pool);
-    const originStore = CreateTitleOriginCacheStore(pool);
+    const originStore = CreateTitleMetadataStore(pool);
     const titleReferences = BuildTitleReferences(catalogs);
-    const databaseCache = await originStore.read(titleReferences);
+    const databaseCache = await originStore.readOrigins(titleReferences);
     const localImports = BuildLocalCacheImports(titleReferences, localCache, databaseCache);
     if (localImports.length)
-      await originStore.upsert(localImports);
+      await originStore.upsertOrigins(localImports);
     const cache = { ...localCache, ...databaseCache };
     const pending = BuildPendingTitles(catalogs, cache);
     console.log(`PostgreSQL origin cache has ${Object.keys(databaseCache).length.toLocaleString()} catalog titles; imported ${localImports.length.toLocaleString()} local entries; ${pending.length.toLocaleString()} need TMDB lookup.`);
@@ -154,7 +154,7 @@ async function FlushCheckpoint(cache, originStore, state) {
   if (!entries.length)
     return;
   state.checkpoint = state.checkpoint.then(async () => {
-    await originStore.upsert(entries);
+    await originStore.upsertOrigins(entries);
     await WriteCache(cache);
   });
   await state.checkpoint;

@@ -1,0 +1,20 @@
+{
+  "allowAutomaticCommit": false,
+  "allowAutomaticPull": false,
+  "allowAutomaticPush": false,
+  "allowAutomaticStage": false,
+  "allowGitNetworkOperations": false,
+  "allowGitStateModification": false,
+  "defaultAuditMode": "read-only-assessment",
+  "defaultBatchSize": 20,
+  "exceptionsFile": "docs/engineering/PROJECT_EXCEPTIONS.md",
+  "excludeRoots": [],
+  "includeRoots": [],
+  "includeUntrackedNonIgnoredFiles": true,
+  "projectProfileFile": "docs/engineering/PROJECT_PROFILE.md",
+  "remediationStrategy": "rule_order",
+  "requireIndependentReview": true,
+  "requireProjectIntelligence": true,
+  "requireRuleApproval": true,
+  "standardsFile": "docs/engineering/CODING_STANDARDS.md"
+}
