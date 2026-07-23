@@ -1,7 +1,7 @@
 import { Config } from "../config.js";
 import { AiView, AriaExpandedAttribute, AriaPressedAttribute, ChangeEvent, ClickEvent, CollapsedPreference, ImdbSecretType, KeydownEvent, MovieMediaType, RaterView, SubmitEvent, SyncView, TmdbSecretType, TvMediaType } from "../app-constants.js";
 import { BindRecommendationRatings } from "../recommendation-ratings.js";
-import { SaveAiKeyFromDialog, SaveImdbConnectionFromDialog, SaveSelectedAiModel, SaveTmdbKeyFromDialog } from "../settings-workflows.js";
+import { SaveAiKeyFromDialog, SaveImdbConnectionFromDialog, SaveSelectedAiModel, SaveTmdbSettingsFromDialog } from "../settings-workflows.js";
 import { ApplyTitleFilters, HideTitleFilterDialog, ResetTitleFilterDialog, ShowTitleFilterDialog, UpdateTitleFilterPreview } from "../title-filter-workflows.js";
 import { EscapeHtml } from "../util.js";
 import { NormalizeRecommendationBasis } from "../../../shared/recommendation-basis.js";
@@ -11,6 +11,7 @@ export class EventBindingsFeature {
   BindEvents() {
     this.BindViewEvents();
     this.BindRaterEvents();
+    this.BindQuickRateEvents();
     this.BindToolbarEvents();
     this.BindSetupEvents();
     this.BindAiEvents();
@@ -105,8 +106,8 @@ export class EventBindingsFeature {
     this.BindHeaderAction("export-json", () => this.ExportJson());
     this.Element("empty-export-csv").addEventListener(ClickEvent, () => this.ExportCsv());
     this.Element("empty-export-json").addEventListener(ClickEvent, () => this.ExportJson());
-    this.BindHeaderAction("retry-failed", () => this.RetryImdbFailures());
-    this.Elements.failureRetry.addEventListener(ClickEvent, () => this.RetryImdbFailures());
+    this.BindHeaderAction("retry-failed", () => this.RetryImdbFailures().catch((error) => this.ShowToast(EscapeHtml(error.message))));
+    this.Elements.failureRetry.addEventListener(ClickEvent, () => this.RetryImdbFailures().catch((error) => this.ShowToast(EscapeHtml(error.message))));
   }
 
   BindHeaderAction(id, action) {
@@ -151,12 +152,13 @@ export class EventBindingsFeature {
     this.BindHeaderAction("configure-tmdb", () => this.ShowTmdbDialog());
     this.Elements.tmdbClose.addEventListener(ClickEvent, () => this.HideTmdbDialog());
     this.Elements.tmdbLater.addEventListener(ClickEvent, () => this.HideTmdbDialog());
-    this.Elements.tmdbSave.addEventListener(ClickEvent, () => SaveTmdbKeyFromDialog(this).catch((error) => this.ShowTmdbError(error.message)));
+    this.Elements.tmdbSave.addEventListener(ClickEvent, () => SaveTmdbSettingsFromDialog(this).catch((error) => this.ShowTmdbError(error.message)));
     this.Elements.tmdbDelete.addEventListener(ClickEvent, () => this.DeleteAccountSecret(TmdbSecretType));
   }
 
   BindAiEvents() {
     this.Elements.configureAi.addEventListener(ClickEvent, () => this.ShowAiDialog());
+    this.BindHeaderAction("configure-openai", () => this.ShowAiDialog());
     this.Elements.aiClose.addEventListener(ClickEvent, () => this.HideAiDialog());
     this.Elements.aiLater.addEventListener(ClickEvent, () => this.HideAiDialog());
     this.Elements.aiSave.addEventListener(ClickEvent, () => this.HandleAiSaveClick());
@@ -203,6 +205,15 @@ export class EventBindingsFeature {
 
   BindRaterEvents() {
     this.Elements.strip.addEventListener(ClickEvent, (event) => this.HandleRaterStripClick(event));
+  }
+
+  BindQuickRateEvents() {
+    this.Elements.quickRateMenu.addEventListener("toggle", () => this.HandleQuickRateMenuToggle());
+    this.Elements.quickRateSearch.addEventListener("input", () => this.HandleQuickRateSearchInput());
+    this.Elements.quickRateSearch.addEventListener(KeydownEvent, (event) => this.HandleQuickRateSearchKey(event));
+    this.Elements.quickRateResults.addEventListener(ClickEvent, (event) => this.HandleQuickRateResultsClick(event));
+    this.Elements.quickRateRating.addEventListener("input", () => this.UpdateQuickRateSubmitState());
+    this.Elements.quickRateForm.addEventListener(SubmitEvent, (event) => this.HandleQuickRateSubmit(event));
   }
 
   HandleRaterStripClick(event) {
@@ -272,7 +283,7 @@ export class EventBindingsFeature {
   }
 
   BindHeaderMenuEvents() {
-    const menus = [this.Elements.dataMenu, this.Elements.connectionMenu];
+    const menus = [this.Elements.quickRateMenu, this.Elements.dataMenu, this.Elements.connectionMenu];
     for (const menu of menus)
       menu.addEventListener("toggle", () => this.HandleHeaderToggle(menu, menus));
     document.addEventListener(ClickEvent, (event) => this.HandleHeaderDocumentClick(event, menus));
@@ -298,6 +309,7 @@ export class EventBindingsFeature {
   }
 
   CloseHeaderMenus() {
+    this.Elements.quickRateMenu.open = false;
     this.Elements.dataMenu.open = false;
     this.Elements.connectionMenu.open = false;
   }

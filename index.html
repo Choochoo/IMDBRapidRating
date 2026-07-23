@@ -40,6 +40,26 @@
         <div class="header-actions" aria-label="Account and data controls">
           <button type="button" class="header-action btn btn-sm btn-outline-secondary" id="configure-filters" title="Filter the rating queue">Filters</button>
 
+          <details class="header-menu quick-rate-menu" id="quick-rate-menu">
+            <summary class="header-action quick-rate-summary btn btn-sm btn-outline-secondary" title="Rate something you already watched">
+              <span aria-hidden="true">+</span>
+              <span>Quick Rate</span>
+            </summary>
+            <div class="header-menu-panel quick-rate-menu-panel">
+              <div class="menu-heading"><strong>Rate something you watched</strong><span>Search the full catalog, then choose your rating</span></div>
+              <form class="quick-rate-form" id="quick-rate-form">
+                <label for="quick-rate-search">Title or IMDb ID</label>
+                <input class="form-control" id="quick-rate-search" type="search" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="quick-rate-results" aria-expanded="false" placeholder="Type a title, year, or tt ID">
+                <div class="quick-rate-results" id="quick-rate-results" role="listbox" aria-label="Matching titles" hidden></div>
+                <div class="quick-rate-selection" id="quick-rate-selection" hidden></div>
+                <label for="quick-rate-rating">Your rating</label>
+                <input class="form-control" id="quick-rate-rating" type="number" min="1" max="10" step="1" inputmode="numeric" placeholder="1–10">
+                <p class="quick-rate-error invalid-feedback d-block" id="quick-rate-error" role="alert"></p>
+                <button type="submit" class="btn btn-primary" id="quick-rate-submit" disabled>Rate here and on IMDb</button>
+              </form>
+            </div>
+          </details>
+
           <details class="header-menu data-menu" id="data-menu">
             <summary class="header-action btn btn-sm btn-outline-secondary" title="Import, restore, download, or back up your ratings">
               <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -73,14 +93,12 @@
           </details>
 
           <details class="header-menu connection-menu" id="connection-menu">
-            <summary class="header-action connection-summary connection-checking btn btn-sm btn-outline-secondary" id="connection-summary" title="Checking your connections">
-              <span class="connection-dot" aria-hidden="true"></span>
-              <span>Connection</span>
-              <small id="connection-summary-label">Checking</small>
-              <span class="menu-chevron" aria-hidden="true"></span>
+            <summary class="connection-summary connection-checking btn btn-sm btn-outline-secondary" id="connection-summary" title="Checking your connections">
+              <span class="connection-count" id="connection-summary-count" aria-hidden="true">–</span>
+              <span class="visually-hidden" id="connection-summary-label">Checking connections</span>
             </summary>
             <div class="header-menu-panel connection-menu-panel">
-              <div class="menu-heading"><strong>Connection status</strong><span>Hover over a status for details</span></div>
+              <div class="menu-heading"><strong>Connections</strong><span id="connection-menu-heading">Checking saved services…</span></div>
               <button type="button" class="connection-status status-checking btn" id="configure-imdb" data-tooltip="IMDb enables ratings to be written directly to your IMDb account.">
                 <span class="connection-dot" aria-hidden="true"></span>
                 <span><strong>IMDb</strong><small id="imdb-status-label">Checking…</small></span>
@@ -91,6 +109,12 @@
                 <span><strong>TMDB</strong><small id="tmdb-status-label">Checking…</small></span>
                 <span class="status-action">Manage</span>
               </button>
+              <button type="button" class="connection-status status-checking btn" id="configure-openai" data-tooltip="OpenAI generates recommendations from your ratings.">
+                <span class="connection-dot" aria-hidden="true"></span>
+                <span><strong>OpenAI</strong><small id="openai-status-label">Checking…</small></span>
+                <span class="status-action">Manage</span>
+              </button>
+              <span class="menu-divider" aria-hidden="true"></span>
               <div class="connection-status status-checking" id="live-status-row" data-tooltip="Live sync reports whether new ratings can be sent to IMDb.">
                 <span class="connection-dot" aria-hidden="true"></span>
                 <span><strong>Live rating sync</strong><small id="live-badge">Checking…</small></span>
@@ -461,7 +485,7 @@
         <div class="cookie-header d-flex align-items-center justify-content-between gap-3 mb-2">
           <h1 id="imdb-title">Connect IMDb</h1>
         </div>
-        <p>IMDb must be connected before rating. Rapid Rater encrypts this connection in your account and uses it only on the server when you submit or go back from a rating.</p>
+        <p>IMDb must be connected before rating. Rapid Rater encrypts this connection in your account and uses it only while its controlled background queue submits or reverses your ratings.</p>
         <ol>
           <li><a href="https://www.imdb.com/registration/signin/" target="_blank" rel="noopener noreferrer">Sign in on IMDb</a> in this browser.</li>
           <li>On IMDb, open DevTools, select Network, and refresh the page.</li>
@@ -480,23 +504,26 @@
     <section class="cookie-dialog" id="tmdb-dialog" role="dialog" aria-modal="true" aria-labelledby="tmdb-title" hidden>
       <div class="cookie-card card">
         <div class="cookie-header d-flex align-items-center justify-content-between gap-3 mb-2">
-          <h1 id="tmdb-title">Add TMDB API Key</h1>
+          <h1 id="tmdb-title">TMDB settings</h1>
           <button type="button" class="btn btn-sm btn-outline-secondary" id="tmdb-close">Close</button>
         </div>
-        <p>TMDB provides posters, synopsis text, cast, trailers, title details, and country-specific streaming availability. Rapid Rater encrypts the key in your account so it works on your other computers.</p>
+        <p>TMDB provides posters, synopsis text, cast, trailers, title details, and country-specific streaming availability. Rapid Rater saves these settings in your account so they work on your other computers.</p>
         <ol>
           <li>Create or sign into a TMDB account.</li>
           <li>Open <a href="https://developer.themoviedb.org/reference/getting-started" target="_blank" rel="noreferrer">TMDB API Getting Started</a>.</li>
           <li>Use the Credentials section to get an API key or read access token.</li>
           <li>Copy the credential value.</li>
-          <li>Paste it here and save.</li>
+          <li>Paste it here, choose the country whose streaming services you use, and save.</li>
         </ol>
         <label for="tmdb-key-input">TMDB API key</label>
-        <input class="setup-input form-control" id="tmdb-key-input" autocomplete="off" spellcheck="false" placeholder="Paste TMDB API key or token">
+        <input class="setup-input form-control" id="tmdb-key-input" autocomplete="off" spellcheck="false" placeholder="Paste a new key, or leave blank to keep the saved key">
+        <label class="mt-3" for="tmdb-country-input">Streaming country</label>
+        <input class="setup-input form-control" id="tmdb-country-input" autocomplete="off" spellcheck="false" inputmode="text" maxlength="2" pattern="[A-Za-z]{2}" placeholder="US">
+        <p class="form-text">Use the two-letter country code for the services available where you watch, such as US, CA, GB, or AU.</p>
         <p class="cookie-error invalid-feedback d-block" id="tmdb-error" role="alert"></p>
         <div class="cookie-actions d-flex justify-content-end gap-2 mt-3 flex-wrap">
           <button type="button" class="btn btn-outline-danger" id="tmdb-delete">Remove key</button>
-          <button type="button" class="btn btn-primary" id="tmdb-save">Save API Key</button>
+          <button type="button" class="btn btn-primary" id="tmdb-save">Save TMDB settings</button>
           <button type="button" class="btn btn-outline-secondary" id="tmdb-later">Skip for now</button>
         </div>
       </div>

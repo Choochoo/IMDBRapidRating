@@ -23,6 +23,7 @@ const CachedMetadataData = {
 const CachedMetadata = Object.freeze(CachedMetadataData);
 
 test("title metadata requests are limited to the selected catalog", VerifyCatalogValidation);
+test("title streaming requests use the account's saved country", VerifyStreamingCountry);
 
 async function VerifyCatalogValidation() {
   const state = { reads: 0 };
@@ -32,6 +33,14 @@ async function VerifyCatalogValidation() {
   const response = await request(app).get(`/api/title/${ValidTitleId}?media=${MovieMediaType}`).expect(200);
   assert.equal(response.body.titleId, ValidTitleId);
   assert.equal(state.reads, 1);
+}
+
+async function VerifyStreamingCountry() {
+  const state = { reads: 0 };
+  const app = BuildApp(state);
+  const response = await request(app).get(`/api/title/${ValidTitleId}?media=${MovieMediaType}&streaming=1`).expect(200);
+  assert.equal(state.streamingRequest.country, "CA");
+  assert.equal(response.body.streamingAvailability.country, "CA");
 }
 
 function BuildApp(state) {
@@ -48,16 +57,21 @@ function AddSession(requestMessage, _response, next) {
 
 function BuildDependencies(state) {
   return {
-    store: { getSecret: async () => "" },
+    store: { getSecret: async () => "tmdb-key", getPreferences: async () => ({ streamingCountry: "CA" }) },
     pool: { query: async () => ({ rows: [] }) },
     rootPath: process.cwd(),
     readMoviePool: async () => ({ ids: [ValidTitleId] }),
     titleMetadataStore: { readOne: async () => ReadMetadata(state) },
-    streamingAvailabilityService: { get: async () => null }
+    streamingAvailabilityService: { get: async (value) => ReadStreaming(state, value) }
   };
 }
 
 function ReadMetadata(state) {
   state.reads++;
   return CachedMetadata;
+}
+
+function ReadStreaming(state, requestValue) {
+  state.streamingRequest = requestValue;
+  return { country: requestValue.country, fetchedAt: new Date().toISOString(), watchUrl: "", providers: [] };
 }

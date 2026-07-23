@@ -22,8 +22,8 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 - Synchronizes ratings, queue progress, imports, and preferences through PostgreSQL.
 - Reconciles IMDb ratings with a Letterboxd export and builds a non-destructive union sync plan.
 - Encrypts IMDb connection data and API keys with AES-256-GCM before storing them.
-- Writes ratings `1` through `10` back to IMDb when live mode is configured.
-- Updates the saved ratings CSV after successful live IMDb writes.
+- Queues ratings `1` through `10` for controlled background write-back when live mode is configured.
+- Tracks queued, sent, and failed live IMDb writes in account state without rewriting the imported ratings CSV.
 - Maps the `0` key to an IMDb `10/10` rating.
 - Exports local progress as CSV or JSON, including live-submit status.
 
@@ -121,6 +121,16 @@ Older browser-local saves are detected after the first sign-in and can be moved 
 - `` ` ``: mark the title as not seen (Movies) or not watched (TV Shows) without submitting an IMDb rating.
 - `Backspace` or `Delete`: go back to the previous title in the active section.
 
+## Quick Rate Something You Watched
+
+Open **Quick Rate** in the header when a movie or show is not already at the front of your rating queue. Search by title and year, or paste its IMDb `tt` ID or title URL, select the matching catalog entry, enter a whole-number rating from `1` through `10`, and choose **Rate here and on IMDb**.
+
+Quick Rate saves the pending rating to the account first, removes the title from the active rating queue and saved watchlist, and then sends it through the same IMDb writer and retry workflow as the main rater. Existing local ratings can be updated through the same control. Search is limited to the active movie or TV catalog so the server can verify the canonical title, year, and media type before saving.
+
+## Connection Indicator
+
+The circular header indicator counts the three saved service connections: IMDb, TMDB, and OpenAI. Green means all three are connected, yellow means one or two are connected, red means none are connected, and gray means the checks are still running. Hover or focus it to read what is missing, or select it to open the connection menu. Each service row opens its existing setup dialog; live-rating sync and title-catalog health remain listed separately as system status.
+
 ## Import Existing IMDb Ratings
 
 1. Sign into IMDb in your browser.
@@ -137,9 +147,11 @@ The imported CSV is saved in your account. On future visits from any signed-in c
 
 Uploading a fresh IMDb CSV resyncs CSV-owned entries. Rapid Rater removes old `imported` records that are no longer in the new CSV, adds or refreshes records that are in the new CSV, and preserves ratings created in the app.
 
-Rating decisions and queue progress are committed together before the IMDb write runs in the background. IMDb success or failure then updates the same synchronized rating record; failed writes do not count as successfully submitted.
+Rating decisions, queue progress, and durable IMDb jobs are committed together before write-back runs in the background. The PostgreSQL queue coalesces repeated changes to the same account, media type, and title so only the newest desired rating remains. IMDb success or failure then updates the same synchronized rating record; failed writes do not count as successfully submitted.
 
-If a rating was already submitted to IMDb, `Backspace` or `Delete` removes or restores the IMDb rating before restoring the card locally. If IMDb rejects the reversal, local state is left unchanged so the browser does not drift out of sync.
+The always-running server worker starts with a global ceiling of 10 IMDb request starts per second across all users. HTTP `429` halves the persisted dispatch rate and honors IMDb's `Retry-After` value; each 100 consecutive successes restores one request per second up to the configured ceiling. HTTP `404` fails only that job because it is not a throttling response. Network and server failures retry with bounded exponential backoff, while an expired IMDb connection pauses the affected rating for the user to retry after reconnecting.
+
+If a rating is undone before its background job starts, the pending job is canceled or replaced with the previously desired rating. If it may already have reached IMDb, the queue records a compensating restore or delete operation.
 
 IMDb does not provide a public CSV upload/import API. If you rate movies directly on IMDb outside this app, export your IMDb ratings CSV again and import the fresh file here.
 
@@ -195,19 +207,28 @@ Or set this in the server's local settings file:
 IMDB_DRY_RUN=true
 ```
 
+The background dispatcher can be tuned without changing code:
+
+```env
+IMDB_MAX_REQUESTS_PER_SECOND=10
+IMDB_WORKER_CONCURRENCY=4
+```
+
+`IMDB_MAX_REQUESTS_PER_SECOND` is a global ceiling, not a per-user limit. `IMDB_WORKER_CONCURRENCY` allows requests to overlap while PostgreSQL still spaces their start times globally.
+
 ## Enable TMDB Metadata And Streaming Availability
 
-IMDb page metadata is inconsistent for this use case. For reliable posters, synopsis text, cast, trailers, series details, and streaming availability, click **Set TMDB Key** in the app header and paste a TMDB API key. It is encrypted in your account. Get a v3 API key or read access token from [TMDB API Getting Started](https://developer.themoviedb.org/reference/getting-started).
+IMDb page metadata is inconsistent for this use case. For reliable posters, synopsis text, cast, trailers, series details, and streaming availability, open **TMDB settings** in the app header, paste a TMDB API key, and select the two-letter country code for the streaming services you use. The key is encrypted and the country is saved in your account. Get a v3 API key or read access token from [TMDB API Getting Started](https://developer.themoviedb.org/reference/getting-started).
 
 The deployment build preloads stable TMDB title metadata for the generated movie and TV catalogs. It saves the normalized fields used by the app plus the complete details response in PostgreSQL. At runtime, only visible titles that are missing or stale are requested. Movie metadata is refreshed after 30 days; an active TV series is refreshed after 7 days so season and episode counts can change. Ended-series metadata uses the 30-day interval.
 
-After the TMDB title ID is known, Rapid Rater loads the configured country's watch-provider results (currently `US`). Streaming results are stored by country for 12 hours. Fresh results are served directly from PostgreSQL; stale results are shown immediately and refreshed in the background. Provider logos and categories appear below the synopsis on the active poster card. TMDB provides a regional viewing-options page, not direct Netflix/Hulu deep links.
+After the TMDB title ID is known, Rapid Rater loads the watch-provider results for that user's saved streaming country. Existing and new accounts default to `US` until changed in **TMDB settings**. Streaming results are stored by country for 12 hours. Fresh results are served directly from PostgreSQL; stale results are shown immediately and refreshed in the background. Provider logos and categories appear below the synopsis on the active poster card. TMDB provides a regional viewing-options page, not direct Netflix/Hulu deep links.
 
 If you add the key after already opening the app, visible metadata is refreshed automatically. The next time another user sees the same title, the shared PostgreSQL cache is reused instead of repeating the TMDB requests.
 
 ## Retry Failed IMDb Writes
 
-The header shows **Retry IMDb failures** when ratings failed before IMDb accepted them. That retry does not include local CSV-sync failures where IMDb already saved the rating.
+The header shows **Retry IMDb failures** when queued rating or delete writes fail before IMDb accepts them. That retry does not include local CSV-sync failures where IMDb already saved the rating.
 
 ## AI Recommendations
 
@@ -301,6 +322,8 @@ src/app/util.js            Shared browser utilities
 server/                    Authenticated API, database, and IMDb proxy modules
 server/rater-queue-store.mjs Authoritative queue transactions and conflict checks
 server/rater-events.mjs    Cross-device queue revision event stream
+server/imdb-rating-job-store.mjs Persistent IMDb outbox and distributed dispatch state
+server/imdb-rating-worker.mjs Adaptive background IMDb dispatcher
 server/title-metadata-store.mjs PostgreSQL title metadata, origin, and streaming cache
 server/streaming-availability.mjs TMDB watch-provider service and 12-hour cache policy
 db/migrations/             Versioned PostgreSQL schema migrations

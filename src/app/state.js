@@ -27,6 +27,7 @@ export function BuildCheckedLiveState(status) {
     configured: Boolean(status.configured),
     dryRun: Boolean(status.dryRun),
     tmdbConfigured: Boolean(status.tmdbConfigured),
+    queueCounts: status.imdbQueue?.counts || {},
     submitting: false,
     lastError: status.lastError || ""
   };
@@ -88,6 +89,7 @@ function BuildLiveState() {
     configured: false,
     dryRun: false,
     tmdbConfigured: false,
+    queueCounts: {},
     submitting: false,
     lastError: ""
   };

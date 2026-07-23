@@ -22,7 +22,7 @@ const AriaLabelAttribute = "aria-label";
 
 export class StatusUiFeature {
   UpdateStats() {
-    const counts = CountRatings(this.State.ratings);
+    const counts = this.BuildDisplayedRatingCounts(CountRatings(this.State.ratings));
     this.Elements.rated.textContent = FormatCount(counts.rated);
     this.Elements.skipped.textContent = FormatCount(counts.skipped);
     this.Elements.imported.textContent = FormatCount(counts.imported);
@@ -31,6 +31,19 @@ export class StatusUiFeature {
     this.UpdatePoolStatus();
     this.UpdateLiveBadge(counts);
     this.UpdateFailurePanel();
+  }
+
+  BuildDisplayedRatingCounts(counts) {
+    const queue = this.State.live.queueCounts || {};
+    const failedJobs = Number(queue.failed) || 0;
+    const authRequiredJobs = Number(queue.auth_required) || 0;
+    const queuedFailures = failedJobs + authRequiredJobs;
+    return {
+      ...counts,
+      pending: Math.max(counts.pending, Number(queue.pending) || 0),
+      failed: Math.max(counts.failed, queuedFailures),
+      retryableImdb: Math.max(counts.retryableImdb, queuedFailures)
+    };
   }
 
   UpdatePoolStatus() {
@@ -58,10 +71,10 @@ export class StatusUiFeature {
     if (counts.failed > 0)
       return this.BuildStatusDescriptor(IssueTone, `${FormatCount(counts.failed)} failed`, "Some ratings were not accepted by IMDb. Use Import / Export to retry them.");
     if (counts.pending > 0 || this.State.live.submitting)
-      return this.BuildStatusDescriptor(AttentionTone, `${FormatCount(counts.pending)} pending`, "The connection is working and ratings are still being sent.");
+      return this.BuildStatusDescriptor(AttentionTone, `${FormatCount(counts.pending)} pending`, "Ratings are queued for controlled background delivery to IMDb.");
     if (this.State.live.dryRun)
       return this.BuildStatusDescriptor(AttentionTone, "Dry run", "Live writes are configured in dry-run mode and will not change IMDb.");
-    return this.BuildStatusDescriptor(ReadyTone, ReadyLabel, "New ratings will be sent directly to IMDb.");
+    return this.BuildStatusDescriptor(ReadyTone, ReadyLabel, "New ratings will be queued and sent to IMDb in the background.");
   }
 
   BuildStatusDescriptor(tone, text, tooltip) {
@@ -77,6 +90,7 @@ export class StatusUiFeature {
   UpdateSettingsButtons() {
     this.UpdateImdbButton();
     this.UpdateTmdbButton();
+    this.UpdateOpenAiButton();
   }
 
   UpdateImdbButton() {
@@ -111,6 +125,21 @@ export class StatusUiFeature {
     return this.BuildStatusDescriptor(AttentionTone, "Key needed", tooltip);
   }
 
+  UpdateOpenAiButton() {
+    const status = this.BuildOpenAiButtonStatus();
+    this.ApplySettingsButtonStatus(this.Elements.configureOpenAi, this.Elements.openAiStatusLabel, "OpenAI", status);
+  }
+
+  BuildOpenAiButtonStatus() {
+    const connectedTooltip = "OpenAI is ready to generate recommendations from your ratings.";
+    const missingTooltip = "Add an OpenAI key to generate recommendations.";
+    if (!this.State.ai.checked)
+      return this.BuildStatusDescriptor(CheckingTone, CheckingLabel, missingTooltip);
+    if (this.State.ai.configured)
+      return this.BuildStatusDescriptor(ReadyTone, ReadyLabel, connectedTooltip);
+    return this.BuildStatusDescriptor(AttentionTone, "Key needed", missingTooltip);
+  }
+
   ApplySettingsButtonStatus(button, label, prefix, status) {
     label.textContent = status.text;
     this.SetConnectionStatus(button, status.tone, status.tooltip, `${prefix}: ${status.text}`);
@@ -138,37 +167,46 @@ export class StatusUiFeature {
     element.setAttribute(AriaLabelAttribute, accessibleLabel);
   }
 
-  UpdateConnectionSummary(counts = CountRatings(this.State.ratings)) {
-    const status = this.BuildConnectionSummaryStatus(counts);
+  UpdateConnectionSummary() {
+    const status = this.BuildConnectionSummaryStatus();
     this.ApplyConnectionSummaryStatus(status);
   }
 
-  BuildConnectionSummaryStatus(counts) {
-    if (!this.State.live.checked)
-      return this.BuildStatusDescriptor(CheckingTone, "Checking", "Connections are still being checked. Open for details.");
-    const failed = Number(counts?.failed) || 0;
-    const hasIssue = !this.State.live.configured || failed > 0;
-    if (hasIssue)
-      return this.BuildStatusDescriptor(IssueTone, "Fix needed", "A required connection needs attention. Open for details.");
-    if (this.NeedsConnectionAttention(counts))
-      return this.BuildStatusDescriptor(AttentionTone, "Attention", "A connection or background task needs attention. Open for details.");
-    return this.BuildStatusDescriptor(ReadyTone, ConnectedLabel, "Everything is connected and ready. Open for details.");
+  BuildConnectionSummaryStatus() {
+    if (!this.State.live.checked || !this.State.ai.checked)
+      return this.BuildStatusDescriptor(CheckingTone, "Checking connections", "Connections are still being checked. Open for details.");
+    const summary = this.ReadConnectionSummary();
+    if (summary.connected === 0)
+      return this.BuildStatusDescriptor(IssueTone, "0 of 3 connected", summary.tooltip);
+    if (summary.connected < summary.total)
+      return this.BuildStatusDescriptor(AttentionTone, `${summary.connected} of ${summary.total} connected`, summary.tooltip);
+    return this.BuildStatusDescriptor(ReadyTone, "3 of 3 connected", summary.tooltip);
   }
 
-  NeedsConnectionAttention(counts) {
-    const lacksMetadata = !this.State.live.tmdbConfigured;
-    const catalogUnavailable = !this.State.sourceLabel || !this.State.queueReady;
-    const hasPendingRatings = Number(counts?.pending) > 0;
-    const hasBackgroundWork = hasPendingRatings || this.State.live.submitting;
-    return lacksMetadata || catalogUnavailable || this.State.live.dryRun || hasBackgroundWork;
+  ReadConnectionSummary() {
+    const services = this.ReadConnectionServices();
+    const connected = services.filter((service) => service.connected).length;
+    const missing = services.filter((service) => !service.connected).map((service) => service.name);
+    const tooltip = missing.length ? `${connected} of ${services.length} connected. Missing: ${missing.join(", ")}.` : "All 3 services are connected.";
+    return { connected, total: services.length, tooltip };
+  }
+
+  ReadConnectionServices() {
+    return [
+      { name: "IMDb", connected: Boolean(this.State.live.configured) },
+      { name: "TMDB", connected: Boolean(this.State.live.tmdbConfigured) },
+      { name: "OpenAI", connected: Boolean(this.State.ai.configured) }
+    ];
   }
 
   ApplyConnectionSummaryStatus(status) {
     this.Elements.connectionSummary.classList.remove("connection-ready", "connection-attention", "connection-issue", "connection-checking");
     this.Elements.connectionSummary.classList.add(`connection-${status.tone}`);
     this.Elements.connectionSummaryLabel.textContent = status.text;
+    this.Elements.connectionSummaryCount.textContent = status.tone === CheckingTone ? "–" : status.text.split(" ")[0];
+    this.Elements.connectionMenuHeading.textContent = `${status.text}. Select a service to manage it.`;
     this.Elements.connectionSummary.title = status.tooltip;
-    this.Elements.connectionSummary.setAttribute(AriaLabelAttribute, `Connection: ${status.text}. ${status.tooltip}`);
+    this.Elements.connectionSummary.setAttribute(AriaLabelAttribute, `Connections: ${status.text}. ${status.tooltip}`);
   }
 
   UpdateRetryButtons(counts) {
@@ -179,6 +217,8 @@ export class StatusUiFeature {
 
   UpdateAiControls() {
     this.Elements.configureAi.textContent = this.State.ai.configured ? "OpenAI connected" : "Set OpenAI Key";
+    this.UpdateSettingsButtons();
+    this.UpdateConnectionSummary();
     this.SetAiControlsDisabled(this.State.ai.loading);
     this.UpdateModelFeed();
     this.UpdateRecommendationStatus();

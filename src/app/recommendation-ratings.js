@@ -106,6 +106,8 @@ function BuildRatedMovie(request, payload) {
 }
 
 function MarkSubmitSuccess(record, payload) {
+  if (payload.queued)
+    return Object.assign(record, { submitStatus: "pending", submitError: "", submittedAt: "" });
   Object.assign(record, {
     submitStatus: "submitted",
     submitError: "",

@@ -55,13 +55,21 @@ jobs:
       - name: Validate application
         run: |
           npm run check
-          if ($LASTEXITCODE -ne 0) { throw 'Syntax validation failed.' }
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Syntax validation failed.'
+          }
           npm test
-          if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Tests failed.'
+          }
           npm run build
-          if ($LASTEXITCODE -ne 0) { throw 'Frontend build failed.' }
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Frontend build failed.'
+          }
           npm audit --omit=dev
-          if ($LASTEXITCODE -ne 0) { throw 'Production dependency audit failed.' }
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Production dependency audit failed.'
+          }
         shell: powershell
 
       - name: Generate movie and TV datasets

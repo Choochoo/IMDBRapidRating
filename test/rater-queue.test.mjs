@@ -123,6 +123,20 @@ test("atomic decisions advance only the expected head and reject a stale device"
   assert.deepEqual(database.queue.queue_ids, ["tt0000002", "tt0000003"]);
 });
 
+test("quick ratings atomically save history and remove queue and watchlist entries", async () => {
+  const database = FakeRaterDatabase();
+  const store = CreateRaterQueueStore(database.pool);
+  const record = { ttId: "tt0000002", title: "Two", status: "rated", rating: 9, at: "2026-07-22T20:00:00.000Z", submitStatus: "pending" };
+  const result = await store.CommitQuickRating("user-1", { actionId: "f136c85c-3516-45bb-a8d0-00fdf8d65da6", kind: "rated", ttId: record.ttId, mediaType: "movie", record });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.queue.revision, 5);
+  assert.deepEqual(result.queue.queueIds, ["tt0000001", "tt0000003"]);
+  assert.equal(database.state.payload.media.movie.ratings.tt0000002.rating, 9);
+  assert.equal(database.state.payload.media.movie.history.at(-1).ttId, "tt0000002");
+  assert.deepEqual(database.deletedRecommendations, ["tt0000002"]);
+});
+
 function Movie(ttId) {
   return { ttId, title: ttId };
 }
@@ -131,6 +145,7 @@ function FakeRaterDatabase() {
   const queue = { pool_version: "pool-v1", seed: "seed", queue_ids: ["tt0000001", "tt0000002", "tt0000003"], revision: 4 };
   const state = { payload: { ratings: {}, history: [] }, revision: 9 };
   const actions = new Map();
+  const deletedRecommendations = [];
   const client = {
     async query(sql, parameters = []) {
       if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql))
@@ -157,6 +172,12 @@ function FakeRaterDatabase() {
         queue.revision++;
         return { rows: [{ ...queue, queue_ids: [...queue.queue_ids] }], rowCount: 1 };
       }
+      if (/DELETE FROM .*recommendation_queue/.test(sql)) {
+        deletedRecommendations.push(parameters[2]);
+        return { rows: [], rowCount: 1 };
+      }
+      if (/INSERT INTO .*imdb_rating_jobs/.test(sql))
+        return { rows: [{ id: 1, generation: 1, status: "pending" }], rowCount: 1 };
       if (/INSERT INTO .*rater_actions/.test(sql)) {
         actions.set(parameters[1], { tt_id: parameters[4], result: JSON.parse(parameters[5]) });
         return { rows: [], rowCount: 1 };
@@ -165,5 +186,5 @@ function FakeRaterDatabase() {
     },
     release() {}
   };
-  return { queue, state, pool: { connect: async () => client } };
+  return { queue, state, deletedRecommendations, pool: { connect: async () => client } };
 }

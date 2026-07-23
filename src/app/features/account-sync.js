@@ -132,11 +132,19 @@ export class AccountSyncFeature {
     if (!this.User || this.StateDirty)
       return false;
     const account = await this.FetchJson(AccountStateUrl);
+    this.ApplyImdbQueueStatus(account.imdbQueue);
     const revision = Number(account.revision) || 0;
     if (revision <= this.AccountRevision)
       return false;
     this.ApplyRemoteAccountState(account, revision);
     return true;
+  }
+
+  ApplyImdbQueueStatus(status) {
+    if (!status)
+      return;
+    this.State.live.queueCounts = status.counts || {};
+    this.UpdateStats();
   }
 
   ApplyRemoteAccountState(account, revision) {

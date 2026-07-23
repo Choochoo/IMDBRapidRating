@@ -1,13 +1,14 @@
 import { CreateQueueSeed, QueueSnapshot, ReconcileQueueIds, SameQueueIds } from "./rater-queue.mjs";
-import { ReadDatabaseSchema } from "./db/config.mjs";
+import { Qualified, RunTransaction } from "./db/transaction.mjs";
 import { NormalizeMediaType, ReadMediaPayload, WriteMediaPayload } from "../shared/media.js";
 import { FilterTitlePool } from "./movie-pool.mjs";
+import { ReconcileImdbUndoJob, UpsertImdbRatingJob } from "./imdb-rating-job-store.mjs";
 
 export function CreateRaterQueueStore(pool) {
   return {
     async getRaterQueue(userId, mediaTypeOrPool, maybePool) {
       const { mediaType, titlePool } = ReadPoolArguments(mediaTypeOrPool, maybePool);
-      return await WithTransaction(pool, async (client) => {
+      return await RunTransaction(pool, async (client) => {
         let queue = await ReadQueue(client, userId, mediaType, true);
         const state = await ReadState(client, userId, true);
         const recommendations = await ReadRecommendationIds(client, userId, mediaType);
@@ -37,7 +38,7 @@ export function CreateRaterQueueStore(pool) {
 
     async commitRaterDecision(userId, decision) {
       const mediaType = NormalizeMediaType(decision.mediaType);
-      return await WithTransaction(pool, async (client) => {
+      return await RunTransaction(pool, async (client) => {
         const duplicate = await ReadAction(client, userId, mediaType, decision.actionId);
         if (duplicate)
           return await BuildDuplicateResult(client, userId, mediaType, duplicate);
@@ -57,6 +58,8 @@ export function CreateRaterQueueStore(pool) {
         const stateRevision = decision.record
           ? await WriteStatePayload(client, userId, nextPayload)
           : Number(state.revision) || 0;
+        if (decision.kind === "rated")
+          await UpsertImdbRatingJob(client, userId, decision.record, mediaType);
         if (decision.recommendation)
           await InsertRecommendation(client, userId, mediaType, decision.recommendation);
         const nextQueue = await WriteQueue(client, userId, mediaType, current.queueIds.slice(1));
@@ -74,9 +77,14 @@ export function CreateRaterQueueStore(pool) {
       });
     },
 
+    async CommitQuickRating(userId, decision) {
+      const mediaType = NormalizeMediaType(decision.mediaType);
+      return await RunTransaction(pool, async (client) => await CommitQuickRating(client, userId, mediaType, decision));
+    },
+
     async commitRaterUndo(userId, request) {
       const mediaType = NormalizeMediaType(request.mediaType);
-      return await WithTransaction(pool, async (client) => {
+      return await RunTransaction(pool, async (client) => {
         const duplicate = await ReadAction(client, userId, mediaType, request.actionId);
         if (duplicate)
           return await BuildDuplicateResult(client, userId, mediaType, duplicate);
@@ -96,6 +104,7 @@ export function CreateRaterQueueStore(pool) {
           mediaPayload.ratings[request.ttId] = last.previous;
         else
           delete mediaPayload.ratings[request.ttId];
+        await ReconcileImdbUndoJob(client, userId, media.ratings?.[request.ttId], last.previous, mediaType);
         const stateRevision = await WriteStatePayload(client, userId, WriteMediaPayload(state.payload, mediaType, mediaPayload));
         const queueIds = last.previous
           ? current.queueIds
@@ -116,7 +125,7 @@ export function CreateRaterQueueStore(pool) {
 
     async replaceRaterQueue(userId, request, mediaTypeOrPool, maybePool) {
       const { mediaType, titlePool } = ReadPoolArguments(mediaTypeOrPool, maybePool);
-      return await WithTransaction(pool, async (client) => {
+      return await RunTransaction(pool, async (client) => {
         const queue = await ReadQueue(client, userId, mediaType, true);
         const current = QueueSnapshot(queue);
         if (!queue || current.revision !== request.expectedRevision)
@@ -132,6 +141,48 @@ export function CreateRaterQueueStore(pool) {
       });
     }
   };
+}
+
+async function CommitQuickRating(client, userId, mediaType, decision) {
+  const duplicate = await ReadAction(client, userId, mediaType, decision.actionId);
+  if (duplicate)
+    return await BuildDuplicateResult(client, userId, mediaType, duplicate);
+  const context = await ReadQuickRatingContext(client, userId, mediaType, decision.ttId);
+  const committedDuplicate = await ReadAction(client, userId, mediaType, decision.actionId);
+  if (committedDuplicate)
+    return await BuildDuplicateResult(client, userId, mediaType, committedDuplicate);
+  const result = await WriteQuickRating(client, userId, mediaType, decision, context);
+  await InsertAction(client, userId, mediaType, decision, result);
+  return result;
+}
+
+async function ReadQuickRatingContext(client, userId, mediaType, ttId) {
+  const queue = await ReadQueue(client, userId, mediaType, true);
+  const state = await ReadState(client, userId, true);
+  const media = ReadMediaPayload(state.payload, mediaType);
+  return { queue, state, previous: media.ratings?.[ttId] || null };
+}
+
+async function WriteQuickRating(client, userId, mediaType, decision, context) {
+  const nextPayload = ApplyDecisionToPayload(context.state.payload, mediaType, decision, context.previous);
+  const stateRevision = await WriteStatePayload(client, userId, nextPayload);
+  await UpsertImdbRatingJob(client, userId, decision.record, mediaType);
+  await DeleteQuickRatingRecommendation(client, userId, mediaType, decision.ttId);
+  const queue = await RemoveQuickRatingFromQueue(client, userId, mediaType, context.queue, decision.ttId);
+  return { ok: true, duplicate: false, stateRevision, record: decision.record, previous: context.previous, queue };
+}
+
+async function DeleteQuickRatingRecommendation(client, userId, mediaType, ttId) {
+  await client.query(`DELETE FROM ${Qualified("recommendation_queue")} WHERE user_id=$1 AND media_type=$2 AND tt_id=$3`, [userId, mediaType, ttId]);
+}
+
+async function RemoveQuickRatingFromQueue(client, userId, mediaType, queue, ttId) {
+  const current = QueueSnapshot(queue);
+  const queueIds = current.queueIds.filter((queueId) => queueId !== ttId);
+  if (!queue)
+    return current;
+  const updated = await WriteQueue(client, userId, mediaType, queueIds);
+  return QueueSnapshot(updated);
 }
 
 function ApplyDecisionToPayload(value, mediaType, decision, previous) {
@@ -214,24 +265,4 @@ function ReadPoolArguments(mediaTypeOrPool, maybePool) {
   if (mediaTypeOrPool && typeof mediaTypeOrPool === "object")
     return { mediaType: "movie", titlePool: mediaTypeOrPool };
   return { mediaType: NormalizeMediaType(mediaTypeOrPool), titlePool: maybePool };
-}
-
-async function WithTransaction(pool, action) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    const result = await action(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
-function Qualified(table) {
-  const schema = ReadDatabaseSchema();
-  return `"${schema}"."${table}"`;
 }

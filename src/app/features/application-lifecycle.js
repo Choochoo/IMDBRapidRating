@@ -40,10 +40,7 @@ export class ApplicationLifecycleFeature {
     this.AiLoadingTimer = 0;
     this.AiLoadingMessageIndex = 0;
     this.PendingRecommendationCount = DefaultRecommendationCount;
-    this.SubmitInFlight = false;
-    this.SubmitQueue = [];
-    this.SubmitQueuedIds = new Set();
-    this.SubmitActiveIds = new Set();
+    this.InitializeQuickRateState();
   }
 
   InitializeMediaState() {

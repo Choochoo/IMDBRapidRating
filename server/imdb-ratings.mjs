@@ -1,6 +1,7 @@
 import { IsDryRun } from "./env.mjs";
 
 const GraphqlUrl = "https://api.graphql.imdb.com/";
+const ImdbRequestTimeoutMs = 30_000;
 const RateMutation = "mutation UpdateTitleRating($rating: Int!, $titleId: ID!) { " +
   "rateTitle(input: {rating: $rating, titleId: $titleId}) { rating { value __typename } __typename }}";
 const DeleteMutation = "mutation DeleteTitleRating($titleId: ID!) { " +
@@ -101,7 +102,8 @@ function BuildRatingFetchOptions(titleId, rating, cookie) {
   return {
     method: "POST",
     headers: BuildHeaders(titleId, cookie),
-    body: JSON.stringify(BuildRateBody(titleId, rating))
+    body: JSON.stringify(BuildRateBody(titleId, rating)),
+    signal: AbortSignal.timeout(ImdbRequestTimeoutMs)
   };
 }
 
@@ -109,7 +111,8 @@ function BuildDeleteFetchOptions(titleId, cookie) {
   return {
     method: "POST",
     headers: BuildHeaders(titleId, cookie),
-    body: JSON.stringify(BuildDeleteBody(titleId))
+    body: JSON.stringify(BuildDeleteBody(titleId)),
+    signal: AbortSignal.timeout(ImdbRequestTimeoutMs)
   };
 }
 
@@ -142,13 +145,28 @@ function BuildDeleteBody(titleId) {
 
 function BuildImdbError(response, payload) {
   if (response.status === 429)
-    return Fail(429, "IMDB_RATE_LIMITED", "IMDb rate limited the request. Slow down and retry later.");
+    return BuildRateLimitError(response);
   if (!response.ok)
     return Fail(response.status, "IMDB_HTTP_ERROR", `IMDb returned HTTP ${response.status}.`);
   const hasGraphqlErrors = Array.isArray(payload?.errors) && payload.errors.length;
   if (hasGraphqlErrors)
     return BuildGraphqlError(payload.errors);
   return null;
+}
+
+function BuildRateLimitError(response) {
+  const retryAfterMs = ParseRetryAfter(response.headers.get("retry-after"));
+  return Fail(429, "IMDB_RATE_LIMITED", "IMDb rate limited the request. Slow down and retry later.", { retryAfterMs });
+}
+
+function ParseRetryAfter(value) {
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0)
+    return Math.round(seconds * 1000);
+  const timestamp = Date.parse(String(value || ""));
+  if (!Number.isFinite(timestamp))
+    return 0;
+  return Math.max(0, timestamp - Date.now());
 }
 
 function BuildGraphqlError(errors) {
@@ -166,10 +184,10 @@ function Ok(payload) {
   };
 }
 
-function Fail(status, code, error) {
+function Fail(status, code, error, details = {}) {
   return {
     status,
-    payload: { ok: false, code, error }
+    payload: { ok: false, code, error, ...details }
   };
 }
 

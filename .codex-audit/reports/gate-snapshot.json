@@ -1,0 +1,121 @@
+{
+  "gate_state_signature": "208d06db74f292c4e86b92902be02430c16513174e823a5e2e828684d8c0faf3",
+  "generated_at": "2026-07-22T23:47:28Z",
+  "integrity_generation": 58505,
+  "passed": true,
+  "proof_root": "12bbc0c8b089b7ed43d1646a8af7e1fff98b3bf7ebb939d49599cafd454c2a56",
+  "repository_signature": "a20e15b7bf0dc344dcfe45e28768d261e4cfdf70a76f1fc9e18a97c491b29361",
+  "summary": {
+    "checks": {
+      "all_applicable_pairs_represented": true,
+      "all_results_terminal": true,
+      "controller_errors_zero": true,
+      "final_diff_reviewed": true,
+      "git_policy_clean": true,
+      "hashes_current": true,
+      "inventory_current": true,
+      "ledger_seal_valid": true,
+      "no_unresolved_high_medium_findings": true,
+      "project_intelligence_current": true,
+      "reviewer_evidence_complete": true,
+      "rule_sources_approved": true,
+      "rule_sources_current": true,
+      "strategy_findings_resolved": true,
+      "validation_commands_pass": true,
+      "zero_failed": true,
+      "zero_pending": true,
+      "zero_unresolved_violations": true
+    },
+    "counts": {
+      "active": true,
+      "audit_id": "0da34f5f70054be8bafb088469d888fd",
+      "audit_mode": "remediation",
+      "audit_scope_mode": "full",
+      "blocked_reason": "",
+      "controller_errors": [],
+      "deep_status": false,
+      "default_batch_limit": 20,
+      "deferred_mechanical_findings": 0,
+      "failed": 0,
+      "findings_by_class": {
+        "compiler-assisted-rename": 0,
+        "deferred-mechanical": 0,
+        "mechanical-autofix": 0,
+        "protected-contract": 0,
+        "requires-user-decision": 0,
+        "semantic-refactor": 0
+      },
+      "findings_by_severity": {},
+      "hard_blocked": false,
+      "hard_blockers": [],
+      "hash_stale": 0,
+      "independent_work_remaining": false,
+      "inventory_files": 139,
+      "ledger_seal_valid": true,
+      "not_applicable": 0,
+      "only_same_user_decision_remaining": false,
+      "pass": 2552,
+      "passed": 2552,
+      "pending": 0,
+      "remediation_strategy": "semantic_refactor_first",
+      "repo_hash_signature": "01b7d3c8e1eafba97bf32cf3f0846695b7ee11d29caf5d430c14c7a28c2b7fde",
+      "skipped": 1869,
+      "stale": 0,
+      "state": "active",
+      "strategy_phase": {
+        "name": "final-complete-rule-audit-and-validation",
+        "number": 7,
+        "strategy": "semantic_refactor_first"
+      },
+      "terminal": 4421,
+      "total_checks": 4421,
+      "total_tracked_files": 148,
+      "unable_to_verify": 0,
+      "unresolved_high_medium_findings": 0,
+      "unreviewed": 0,
+      "unreviewed_terminal_rows": 0,
+      "violation": 0
+    },
+    "final_review_required": true,
+    "gate": "remediation",
+    "git_policy": {
+      "violated": false,
+      "violations": 0
+    },
+    "inventory_added": [],
+    "inventory_removed": [],
+    "missing_pairs": [],
+    "passed": true,
+    "project_intelligence": {
+      "current": true,
+      "present": true,
+      "stale_record_ids": []
+    },
+    "rule_source_approval": {
+      "approved": true,
+      "approved_hashes": {
+        "docs/engineering/CODING_STANDARDS.md": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+        "docs/engineering/PROJECT_EXCEPTIONS.md": "8b0d20de49c1120cf38110568735b4dd8a57ca93c418637fa7f7c058476892c4"
+      },
+      "approved_manifest_hash": "78e705bc764fa02ed298b18e4b19ad4af9d3e51ba5469b1fc1fecbd84619f5d9",
+      "changed_sources": [],
+      "current_hashes": {
+        "docs/engineering/CODING_STANDARDS.md": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+        "docs/engineering/PROJECT_EXCEPTIONS.md": "8b0d20de49c1120cf38110568735b4dd8a57ca93c418637fa7f7c058476892c4"
+      },
+      "current_manifest_hash": "78e705bc764fa02ed298b18e4b19ad4af9d3e51ba5469b1fc1fecbd84619f5d9",
+      "manifest_path": "C:\\Users\\Jared\\.codex\\repository-audit\\state\\24c64586703550c4d5596a4b65555ab675f3feb5ecbbbd7e035c7195a624cd2f\\approved-rules.json",
+      "missing_sources": [],
+      "normalized_manifest_path": "C:\\Users\\Jared\\.codex\\repository-audit\\state\\24c64586703550c4d5596a4b65555ab675f3feb5ecbbbd7e035c7195a624cd2f\\normalized-manifest.json"
+    },
+    "strategy": "semantic_refactor_first",
+    "strategy_phase": {
+      "name": "final-complete-rule-audit-and-validation",
+      "number": 7,
+      "strategy": "semantic_refactor_first"
+    },
+    "validation_results": []
+  },
+  "version": 1,
+  "worktree_fast_signature": "b04127568f64d3693d72cd3ae5997550432893ae613c7798e64b44aa5639d3ec"
+}

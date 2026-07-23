@@ -1,4 +1,5 @@
 import { Config } from "./config.js";
+import { ReadStreamingCountry } from "../../shared/streaming-country.js";
 
 export function ReadBrowserSettings() {
   try {
@@ -14,7 +15,8 @@ export function ApplyAccountSettings(settings, remote) {
     tmdbConfigured: Boolean(remote?.tmdbConfigured),
     openAiConfigured: Boolean(remote?.openAiConfigured),
     openAiModel: String(remote?.openAiModel || ""),
-    openAiModelLag: Number(remote?.openAiModelLag) || 2
+    openAiModelLag: Number(remote?.openAiModelLag) || 2,
+    streamingCountry: ReadStreamingCountry(remote?.streamingCountry)
   });
   delete settings.imdbCookie;
   delete settings.tmdbApiKey;
@@ -64,7 +66,8 @@ function NormalizeLegacySettings(settings) {
     tmdbApiKey: NormalizeBearerValue(settings?.tmdbApiKey || ""),
     openAiApiKey: NormalizeBearerValue(settings?.openAiApiKey || ""),
     openAiModel: String(settings?.openAiModel || "").trim(),
-    openAiModelLag: Number(settings?.openAiModelLag) || 2
+    openAiModelLag: Number(settings?.openAiModelLag) || 2,
+    streamingCountry: ReadStreamingCountry(settings?.streamingCountry)
   };
 }
 

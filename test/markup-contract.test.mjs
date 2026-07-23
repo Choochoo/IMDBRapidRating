@@ -7,6 +7,7 @@ const HtmlPath = "index.html";
 
 test("every browser element lookup exists in the HTML shell", VerifyElementLookups);
 test("rating controls start hidden without competing display utilities", VerifyHiddenRatingControls);
+test("quick rating and connection controls expose their accessible contracts", VerifyHeaderControlContracts);
 test("the visible data-credits section includes required TMDB and JustWatch attribution", VerifyDataCredits);
 
 async function VerifyElementLookups() {
@@ -33,4 +34,13 @@ async function VerifyDataCredits() {
   assert.match(html, /src="\/src\/assets\/tmdb-logo\.svg"/);
   assert.match(html, /This product uses the TMDB API but is not endorsed or certified by TMDB\./);
   assert.match(html, /Streaming availability is provided by JustWatch through TMDB\./);
+}
+
+async function VerifyHeaderControlContracts() {
+  const html = await readFile(HtmlPath, TextEncoding);
+  assert.match(html, /id="quick-rate-search"[^>]*role="combobox"[^>]*aria-controls="quick-rate-results"/);
+  assert.match(html, /id="quick-rate-rating"[^>]*min="1"[^>]*max="10"/);
+  assert.match(html, /id="quick-rate-submit"[^>]*disabled>Rate here and on IMDb/);
+  assert.match(html, /id="connection-summary-count"[^>]*aria-hidden="true"/);
+  assert.match(html, /id="connection-summary-label"[^>]*>Checking connections/);
 }

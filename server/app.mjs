@@ -10,6 +10,7 @@ import { ReadDatabaseSchema } from "./db/config.mjs";
 import { RunMigrations } from "./db/migrate.mjs";
 import { RegisterApiRoutes } from "./routes.mjs";
 import { CreateRaterEvents } from "./rater-events.mjs";
+import { CreateImdbRatingWorker } from "./imdb-rating-worker.mjs";
 
 const ProductionEnvironment = "production";
 const DistributionDirectory = "dist";
@@ -27,10 +28,12 @@ export async function CreateApp(rootPath) {
   const app = BuildExpressApp(pool);
   const store = CreateAccountStore({ db, pool });
   const raterEvents = CreateRaterEvents();
+  const imdbRatingWorker = CreateImdbRatingWorker({ store });
   RegisterApiRoutes(app, { store, pool, rootPath, raterEvents });
   RegisterStaticRoutes(app, rootPath);
   app.use(HandleAppError);
-  return { app, pool, store };
+  await imdbRatingWorker.Start();
+  return { app, pool, store, imdbRatingWorker };
 }
 
 function BuildExpressApp(pool) {

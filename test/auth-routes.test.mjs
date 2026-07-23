@@ -8,6 +8,10 @@ import { RegisterApiRoutes } from "../server/routes.mjs";
 
 const TestMoviePool = {
   ids: ["tt0113277", "tt0083190"],
+  titles: [
+    { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime", "Drama"] },
+    { ttId: "tt0083190", title: "Thief", year: 1981, genres: ["Crime"] }
+  ],
   version: "pool-v1"
 };
 
@@ -126,31 +130,22 @@ test("registration rejects missing CSRF and unavailable email addresses", async 
   assert.equal(duplicate.body.code, "EMAIL_UNAVAILABLE");
 });
 
-test("a successful IMDb rating is committed to account state by the same request", async () => {
+test("IMDb rating requests are persisted for background delivery", async () => {
   const user = { id: "0ed7ef61-71e6-4c9b-92ba-76a680af3b2d", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
   let recorded = null;
-  let deleted = null;
-  let removedRecommendation = null;
+  let queuedDelete = null;
   const store = {
     findUserByEmail: async () => user,
-    getSecret: async () => "cookie",
-    recordRating: async (userId, record, mediaType) => {
+    QueueImdbRating: async (userId, record, mediaType) => {
       recorded = { userId, record, mediaType };
-      return 17;
+      return { revision: 17, job: { id: 41 } };
     },
-    deleteRating: async (userId, ttId, mediaType) => {
-      deleted = { userId, ttId, mediaType };
-      return 18;
-    },
-    removeRecommendation: async (userId, value, mediaType) => {
-      removedRecommendation = { userId, value, mediaType };
-      return 1;
+    QueueImdbDelete: async (userId, ttId, mediaType, options) => {
+      queuedDelete = { userId, ttId, mediaType, options };
+      return { job: { id: 42 }, revision: 18 };
     }
   };
-  const app = BuildTestApp(store, {
-    submitImdbRating: async (titleId, rating) => ({ status: 200, payload: { ok: true, titleId, rating } }),
-    deleteImdbRating: async (titleId) => ({ status: 200, payload: { ok: true, titleId, deleted: true } })
-  });
+  const app = BuildTestApp(store);
   const agent = request.agent(app);
   const anonymous = await agent.get("/api/auth/session").expect(200);
   const login = await agent.post("/api/auth/login")
@@ -161,8 +156,10 @@ test("a successful IMDb rating is committed to account state by the same request
   const rated = await agent.post("/api/rate")
     .set("x-csrf-token", login.body.csrfToken)
     .send({ titleId: "tt0107050", rating: 8, title: "Grumpy Old Men", year: 1993, at: "2026-07-16T20:00:00.000Z" })
-    .expect(200);
+    .expect(202);
   assert.equal(rated.body.revision, 17);
+  assert.equal(rated.body.queued, true);
+  assert.equal(rated.body.jobId, 41);
   assert.equal(recorded.userId, user.id);
   assert.deepEqual(recorded.record, {
     status: "rated",
@@ -172,22 +169,18 @@ test("a successful IMDb rating is committed to account state by the same request
     ttId: "tt0107050",
     mediaType: "movie",
     at: "2026-07-16T20:00:00.000Z",
-    submitStatus: "submitted",
+    submitStatus: "pending",
     submitError: "",
-    submittedAt: recorded.record.submittedAt,
-    imdbEchoRating: 8
+    submittedAt: ""
   });
-  assert.equal(removedRecommendation.userId, user.id);
-  assert.equal(removedRecommendation.mediaType, "movie");
-  assert.equal(removedRecommendation.value.ttId, "tt0107050");
-  assert.equal(removedRecommendation.value.queueKey, "grumpy old men|1993");
 
   const removed = await agent.delete("/api/rate")
     .set("x-csrf-token", login.body.csrfToken)
     .send({ titleId: "tt0107050" })
-    .expect(200);
+    .expect(202);
   assert.equal(removed.body.revision, 18);
-  assert.deepEqual(deleted, { userId: user.id, ttId: "tt0107050", mediaType: "movie" });
+  assert.equal(removed.body.queued, true);
+  assert.deepEqual(queuedDelete, { userId: user.id, ttId: "tt0107050", mediaType: "movie", options: { deferAccountState: false } });
 });
 
 test("not-seen decisions are committed directly to account state", async () => {
@@ -279,6 +272,57 @@ test("rater decisions require the current queue head and return the canonical ne
   assert.equal(response.body.queue.revision, 13);
   assert.deepEqual(response.body.queue.queueIds, ["tt0083190"]);
 });
+
+test("quick ratings use canonical catalog details and create a pending IMDb write", VerifyQuickRatingRoute);
+test("quick ratings reject title IDs outside the selected catalog", VerifyUnknownQuickRating);
+
+async function VerifyQuickRatingRoute() {
+  const user = { id: "9fdfd065-5aa8-49ec-9b7f-c17b28e8c221", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const scenario = BuildQuickRatingScenario(user);
+  const authenticated = await LoginTestUser(scenario.store, user);
+  const body = { actionId: "496bf6a2-1fb2-4ad9-83d2-ed7685ea0b96", titleId: "tt0113277", rating: 9, at: "2026-07-22T20:00:00.000Z" };
+  const response = await authenticated.agent.put("/api/rater/quick-rating").set("x-csrf-token", authenticated.csrfToken).send(body).expect(200);
+  VerifyQuickRatingResult(scenario.ReadReceived(), response.body);
+}
+
+async function VerifyUnknownQuickRating() {
+  const user = { id: "667368a1-185b-4f4d-84ad-8b42d4330524", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const store = { findUserByEmail: async () => user };
+  const authenticated = await LoginTestUser(store, user);
+  const body = { actionId: "304628ee-b652-4e27-931d-729946ab3a26", titleId: "tt9999999", rating: 8 };
+  const response = await authenticated.agent.put("/api/rater/quick-rating").set("x-csrf-token", authenticated.csrfToken).send(body).expect(404);
+  assert.equal(response.body.code, "TITLE_NOT_FOUND");
+}
+
+function BuildQuickRatingScenario(user) {
+  let received = null;
+  const store = {
+    findUserByEmail: async () => user,
+    getRaterQueue: async () => ({ revision: 12, poolVersion: "pool-v1", queueIds: TestMoviePool.ids }),
+    CommitQuickRating: async (_userId, decision) => {
+      received = decision;
+      return { ok: true, stateRevision: 24, record: decision.record, previous: null, queue: { revision: 13, poolVersion: "pool-v1", queueIds: ["tt0083190"] } };
+    },
+    listRecommendationQueue: async () => []
+  };
+  return { store, ReadReceived: () => received };
+}
+
+async function LoginTestUser(store, user) {
+  const agent = request.agent(BuildTestApp(store));
+  const anonymous = await agent.get("/api/auth/session").expect(200);
+  const login = await agent.post("/api/auth/login").set("x-csrf-token", anonymous.body.csrfToken).send({ email: user.email, password: "correct horse battery staple" }).expect(200);
+  return { agent, csrfToken: login.body.csrfToken };
+}
+
+function VerifyQuickRatingResult(received, response) {
+  assert.equal(received.record.title, "Heat");
+  assert.equal(received.record.year, 1995);
+  assert.equal(received.record.rating, 9);
+  assert.equal(received.record.submitStatus, "pending");
+  assert.deepEqual(response.queue.queueIds, ["tt0083190"]);
+  assert.deepEqual(response.recommendations, []);
+}
 
 test("the TV queue route selects the independent TV catalog and queue namespace", async () => {
   const user = { id: "95c3cf3e-c6d8-4ba5-aec1-53f5870a6279", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };

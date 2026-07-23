@@ -19,6 +19,7 @@ export const PressedClass = "pressed";
 export const PutMethod = "PUT";
 export const RaterView = "rater";
 export const SaveApiKeyLabel = "Save API Key";
+export const SaveTmdbSettingsLabel = "Save TMDB settings";
 export const SavingLabel = "Saving...";
 export const ShowClass = "show";
 export const SyncView = "sync";

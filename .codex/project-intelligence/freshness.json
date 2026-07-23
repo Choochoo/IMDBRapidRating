@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-22T20:08:26Z",
+  "generated_at": "2026-07-22T23:39:37Z",
   "record_hashes": {
     "K001": {
       "package.json": "49e68ee9d2fe721dc3e30426e4ffdb1f705d014c9c4445de3f912feee518734b"
     },
     "K002": {
-      ".github/workflows/deploy-octopus.yml": "ad487681d2c20b9b59997e8f0a4231834047a001f069897c76b6d72b3c63c1a8"
+      ".github/workflows/deploy-octopus.yml": "1dda49ffbdbde0c12ea7b0f3b927dccec98bdbd865cf4fc19fa34967fdaa5e0b"
     },
     "K003": {
       "package-lock.json": "63fe3d9e29842f58996d043cfde70120f21b7f4ed2a30d68cfa79cd0608e258f"
@@ -14,16 +14,16 @@
       "package.json": "49e68ee9d2fe721dc3e30426e4ffdb1f705d014c9c4445de3f912feee518734b"
     },
     "K005": {
-      ".codex/repository-audit.json": "9294f2bb887bfdde3a54bb0bfe28f90fb6ef620038d3e9afd2d785a9b8ce98d4"
+      ".codex/repository-audit.json": "a85a167d1dc21fdd90a9c3acc81ff8a56b820c1bcb20fc8e9925ca2ef9d73ed6"
     },
     "K006": {
       "tsconfig.json": "3ce148b8edcb420901b79f1568780598eafa8394a3b96d2a887e9179ba208681"
     },
     "K007": {
-      ".codex/repository-audit.json": "9294f2bb887bfdde3a54bb0bfe28f90fb6ef620038d3e9afd2d785a9b8ce98d4"
+      ".codex/repository-audit.json": "a85a167d1dc21fdd90a9c3acc81ff8a56b820c1bcb20fc8e9925ca2ef9d73ed6"
     },
     "K008": {
-      ".github/workflows/deploy-octopus.yml": "ad487681d2c20b9b59997e8f0a4231834047a001f069897c76b6d72b3c63c1a8"
+      ".github/workflows/deploy-octopus.yml": "1dda49ffbdbde0c12ea7b0f3b927dccec98bdbd865cf4fc19fa34967fdaa5e0b"
     },
     "K009": {
       "docs/engineering/CODING_STANDARDS.md": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
@@ -34,37 +34,39 @@
       "shared/csv.js": "8c24860ae22837ab81a116d334ede1d88d0997e57d33ca5916b27f8a1c7e0d30",
       "shared/media.js": "901b1067e1c6ad2b8223f5813fee3532c2972f8b9d5364a9d5997f22857f39d2",
       "shared/recommendation-basis.js": "7d79dc8388bfa629fc893dfe5d157162faf0a81725b7d682e1e4d3fdfc4493b3",
+      "shared/streaming-country.js": "91dc2cf6ff44a1324b67bb09e7899de1562619d74866502e540b4ac734357f10",
       "shared/title-filters.js": "8558b511c4895a337eb200c23bd0a87e5efbb320fd8add1352d9ad97c7cc622e"
     },
     "K011": {
       "src/app.js": "f3a440ecd6e216194705876bb0b60dabfdbd0ed5a8c96d39c530529bd81bc6af",
-      "src/app/account-state-merge.js": "71b7272ef25e7cb003ecb312e5ab9ed2e775edaefae5537cacc716f68e0120ca",
-      "src/app/app-constants.js": "0b3451207cded752fbe1859e9cc363e7ae2025871771e3d384d22829bd8bd14b",
-      "src/app/browser-settings.js": "eeaf8b4570fa87991be26c90a4f6cc47b0ef2cfbe9e837174285319379cf06b6",
+      "src/app/account-state-merge.js": "827fc5ca6c539ac83d55fcd22bd074ecf0ada4efea3d2ef4e03574aa24d171ae",
+      "src/app/app-constants.js": "ed406cd0314b5af8ef9ca0ac569e1640293f71f9d20543b00ab06f66ecfb7951",
+      "src/app/browser-settings.js": "9c51d702bf68bae018ab5c56c320ec356eeaf05cf85b44bb6d577dc1374ce9db",
       "src/app/collection-sync.js": "19fc4d52645e01d8ccaf1abe9d23325502d16f61a73d931d70257aa29fd68f13",
-      "src/app/config.js": "d994b37e43ac9ca808263031c11b88365881b427f57604c5638c0e052f27756a",
-      "src/app/elements.js": "ce09c5bb257a48f5603c64b552aa1e4b4d87d7bdaaa12e408e017182228343ab",
+      "src/app/config.js": "78d03bb926a4e0d0ebf2209589617e303aee7d457741df11fc3b0ee91e332c60",
+      "src/app/elements.js": "9e9cae2ee045965d3377d6cd0d0e09b585ddf63a51e1a1fb3f6f236b2bc18336",
       "src/app/feature-methods.js": "87b856b1c08f32e0bf89058fb6832b781aa6aa83cc19a5e9f691d788b159c906",
-      "src/app/features/account-sync.js": "f0405c85c6a3f54bb41e598b79b85ee2786c4c3703ec391c7863bae215564830",
-      "src/app/features/application-lifecycle.js": "79250f60ade052d8132d6dd66e908326c7313359203db7df347c2d4541972489",
+      "src/app/features/account-sync.js": "47c4ec9bd48e7110cf7354936fd6c5f35fc586c362711ef507b1747a7ab16129",
+      "src/app/features/application-lifecycle.js": "8b7ce42566049def6628081d6a70e38371fc5818fbf8031a87930949915ad944",
       "src/app/features/catalog-view.js": "cd6af9740914882b87e0b50b2df1ebf1a38e559ea2a7e1b96dbf21a9efab8dbc",
-      "src/app/features/collection-sync.js": "5c3510df9f29bf421c53d25312fd45828c2377300f96d3cdb9f2e3d5b99fae5a",
+      "src/app/features/collection-sync.js": "8cbaad86ba2865ac1345a49d8d1414425f763c19478a8c8df1f2c6d7d89c03e9",
       "src/app/features/data-transfer.js": "1767dfadc3a3c8149b7dd7b870c98b6db80a2049af3deefaf530a95a81fb371b",
-      "src/app/features/event-bindings.js": "8bf9f24a390003407b36c6ef0b858c9834f05e41daa3c4969c5ba12015ada6e3",
-      "src/app/features/rating-workflow.js": "661a21a7dd4459b1b11f83d309ea1477a17ff3f0de15af6b578feee5d7b753d9",
+      "src/app/features/event-bindings.js": "b54c3cc5305c692854e93f6d1c31ec457385ca754591137845f058da33326f3d",
+      "src/app/features/quick-rate.js": "dc473204e81f50cdba5d75a3ca32ee2ce569cd57535d6d012951933cdb00f088",
+      "src/app/features/rating-workflow.js": "94018e903e46762ef47a44f3c67c1367736a3bebaa6ea4aebb024919dd56d69c",
       "src/app/features/recommendations.js": "f40a7de9b9a883b2321b2058c857b5a05eeee865d765a07b819aaeffa64396f1",
-      "src/app/features/status-ui.js": "86d0b10074daf84b751a3ecd98f83c5ae028221f764189ccbe8d8454a900e4df",
+      "src/app/features/status-ui.js": "1f753b335d7f279e73c4606683075d67f31accccf23dd9aa4f3a519f225dc1f4",
       "src/app/letterboxd-zip.js": "dbcf2227f5d0a921e9428c6cdead1c36a6b9608b19be8ae73b58aa365d9dee79",
       "src/app/movies.js": "23dd533e95c685c045de0e24269cb09916674070e1bf13b48182d55c5121df60",
-      "src/app/rapid-rater-app.js": "7427b180ef8590b3cdacd812b106df318d204a80ee767634c806a00e25b4434c",
+      "src/app/rapid-rater-app.js": "5f5fc549659a8ad1d5138c9d17958b40fd793a2d00bc533ddeda678d3536cf17",
       "src/app/rating-records.js": "71b1aebdee11bb58e968558d523f507158ff0fa3d13e8a6cb7457df94be46b85",
-      "src/app/recommendation-ratings.js": "3bea2bc2656abdbfb5a5d2f17fe5de395cef1b3968d0820475bd2d9ed7e118ec",
-      "src/app/rendering.js": "a0de1594393b12b93f6317328ea9b86787d257cf7edeb1948f0c72be26724b9d",
-      "src/app/settings-workflows.js": "74441cf34a6d41c0646cf7d3e5357e11365f24a698d49b12f44444cbb81798ed",
-      "src/app/state.js": "9861be772abc6375d7b134c172649499c6f3eba8bdd1483fda9d2912775999d8",
+      "src/app/recommendation-ratings.js": "8637eacc42078778447cfc69171636e3f0cc1078305cf4560b4c10459bb43e0d",
+      "src/app/rendering.js": "4e7975e435fc376f242410405ad45281b14f6fc0fa04c99093316a61d2352b20",
+      "src/app/settings-workflows.js": "12bf5e7edbcd7f7cef34684887a5ac338a7d3bbd607a7508650f5070d5cc8b6b",
+      "src/app/state.js": "15a82c3a53ae55a3686eeb9cf40f6afeb5ca947f27aec528eeccaaa6f91ae66a",
       "src/app/stats.js": "0aef18337d984855da87c1d49a4e4311ac87ca77d206edee85240aec99ccc71e",
       "src/app/title-filter-workflows.js": "191ead783c8b2d96232b408aa0a97e2ce336199e8f4419390fbacc32a169f48a",
-      "src/app/undo-rating.js": "44472bea8d11a40d1e8e49349cc8656dcd1390707654a7a89d64daa261ff8d60",
+      "src/app/undo-rating.js": "64acdfb1acccd14ec7ea352631c19b74b179d0456beef4bf41c0bdea4bf141c9",
       "src/app/util.js": "a48f3d8d2df72684fcd030860c87618d8a56912f606f9374473a4648bdf6472f",
       "src/app/view-routes.js": "7c9ae4fb160bd1bd138e039cddfdc0c857051a5dc6d1b0784846ca4efba8cc7e"
     },

@@ -93,12 +93,7 @@ export class CollectionSyncFeature {
 
   CanQueueSyncAction(action) {
     const ttId = action?.record?.ttId || action?.item?.ttId || "";
-    if (!ttId)
-      return false;
-    const key = this.SubmitKey(ttId);
-    const isQueued = this.SubmitQueuedIds.has(key);
-    const isActive = this.SubmitActiveIds.has(key);
-    return !isQueued && !isActive;
+    return Boolean(ttId);
   }
 
   RenderSyncConflicts(conflicts) {
@@ -159,9 +154,10 @@ export class CollectionSyncFeature {
       const record = action.record || this.CreateLetterboxdSyncRating(action.item);
       if (!record)
         continue;
+      record.submitStatus = "pending";
+      record.submitError = "";
       this.StoreLetterboxdSyncRating(action, record);
-      if (this.EnqueueLiveSubmit(record.ttId))
-        queued += 1;
+      queued += 1;
     }
     return queued;
   }

@@ -1,6 +1,6 @@
 import { AddTmdbApiKey, BuildTmdbHeaders, TmdbApiUrl } from "./tmdb-request.mjs";
+import { DefaultStreamingCountry, ReadStreamingCountry } from "../shared/streaming-country.js";
 
-const DefaultCountry = "US";
 const MovieMediaType = "movie";
 const TvMediaType = "tv";
 export const StreamingAvailabilityTtlMilliseconds = 12 * 60 * 60 * 1000;
@@ -26,7 +26,7 @@ export function CreateStreamingAvailabilityService(options = {}) {
 }
 
 function GetStreamingAvailability(context, request) {
-  const region = NormalizeCountry(request.country || DefaultCountry);
+  const region = ReadStreamingCountry(request.country);
   const cached = NormalizeCachedAvailability(request.cached, region);
   if (IsStreamingAvailabilityFresh(cached, context.now(), context.ttlMilliseconds))
     return { ...cached, stale: false, refreshing: false };
@@ -55,9 +55,9 @@ async function RefreshAvailability(context, request, region) {
   return { ...availability, stale: false, refreshing: false };
 }
 
-export async function FetchTmdbWatchProviders(mediaType, tmdbId, apiKey, country = DefaultCountry, { fetchImpl = globalThis.fetch, now = () => new Date() } = {}) {
+export async function FetchTmdbWatchProviders(mediaType, tmdbId, apiKey, country = DefaultStreamingCountry, { fetchImpl = globalThis.fetch, now = () => new Date() } = {}) {
   const normalizedMediaType = mediaType === TvMediaType ? TvMediaType : MovieMediaType;
-  const region = NormalizeCountry(country);
+  const region = ReadStreamingCountry(country);
   const request = BuildWatchProviderRequest(normalizedMediaType, tmdbId, apiKey);
   const response = await fetchImpl(request.url, { headers: request.headers });
   if (!response.ok)
@@ -134,11 +134,6 @@ function ReadOrCreateRefresh(refreshes, key, load) {
   const refresh = Promise.resolve().then(load).finally(() => refreshes.delete(key));
   refreshes.set(key, refresh);
   return refresh;
-}
-
-function NormalizeCountry(value) {
-  const country = String(value || "").trim().toUpperCase();
-  return /^[A-Z]{2}$/.test(country) ? country : DefaultCountry;
 }
 
 function NormalizeLogoPath(value) {

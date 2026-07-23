@@ -54,7 +54,7 @@ function NormalizeTitles(raw) {
       continue;
     seen.add(ttId);
     const year = Number(title?.year || title?.startYear) || null;
-    normalized.push({ ttId, year, ...NormalizeTitleOrigin(title) });
+    normalized.push({ ...title, ttId, year, ...NormalizeTitleOrigin(title) });
   }
   return normalized;
 }

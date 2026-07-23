@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CreateAccountStore } from "../server/account-store.mjs";
-import { ReadMediaPayload } from "../shared/media.js";
+import { ReadMediaPayload, WriteMediaPayload } from "../shared/media.js";
+
+test("account saves enqueue every pending IMDb rating in the same transaction", VerifyPendingRatingEnqueue);
 
 test("successful IMDb writes update the matching PostgreSQL rating atomically", async () => {
   const calls = [];
@@ -92,3 +94,30 @@ test("excluding a recommendation updates account state and removes the queue row
   assert.equal(calls[4].sql, "COMMIT");
   assert.equal(released, true);
 });
+
+async function VerifyPendingRatingEnqueue() {
+  const calls = [];
+  const client = BuildPendingRatingClient(calls);
+  const store = CreateAccountStore({ db: {}, pool: { connect: async () => client } });
+  const rating = { ttId: "tt0113277", status: "rated", rating: 9, submitStatus: "pending" };
+  const payload = WriteMediaPayload({}, "movie", { ratings: { [rating.ttId]: rating } });
+  const result = await store.saveState("user-1", payload, "", 4);
+  assert.deepEqual(result, { ok: true, revision: 5 });
+  const insert = calls.find((call) => /INSERT INTO .*imdb_rating_jobs/.test(call.sql));
+  assert.equal(JSON.parse(insert.parameters[1])[0].ttId, rating.ttId);
+  assert.deepEqual(calls.map((call) => call.sql === "BEGIN" || call.sql === "COMMIT" ? call.sql : "query"), ["BEGIN", "query", "query", "COMMIT"]);
+}
+
+function BuildPendingRatingClient(calls) {
+  return {
+    async query(sql, parameters = []) {
+      calls.push({ sql, parameters });
+      if (/UPDATE .*user_states/.test(sql))
+        return { rows: [{ revision: 5 }], rowCount: 1 };
+      if (/INSERT INTO .*imdb_rating_jobs/.test(sql))
+        return { rows: [], rowCount: 1 };
+      return { rows: [], rowCount: 0 };
+    },
+    release() {}
+  };
+}

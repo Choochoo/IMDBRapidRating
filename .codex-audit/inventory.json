@@ -1,31 +1,35 @@
 {
-  "audit_mode": "change",
-  "change_paths": [
-    ".github/workflows/deploy-octopus.yml",
-    "README.md",
-    "db/migrations/0008_title_metadata_cache.sql",
-    "index.html",
-    "scripts/enrich-title-origins.mjs",
-    "server/db/schema.mjs",
-    "server/routes.mjs",
-    "server/streaming-availability.mjs",
-    "server/title-metadata-store.mjs",
-    "server/title-metadata.mjs",
-    "server/tmdb-request.mjs",
-    "src/app/features/catalog-view.js",
-    "src/app/rendering.js",
-    "src/assets/tmdb-logo.svg",
-    "src/styles/rater.css",
-    "src/styles/responsive.css",
-    "test/catalog-view.test.mjs",
-    "test/markup-contract.test.mjs",
-    "test/recommendation-rendering.test.mjs",
-    "test/streaming-availability.test.mjs",
-    "test/title-filters.test.mjs",
-    "test/title-metadata-route.test.mjs",
-    "test/title-metadata-store.test.mjs",
-    "test/title-metadata.test.mjs"
-  ],
+  "audit_mode": "full",
+  "change_paths": [],
+  "content_merkle": {
+    "algorithm": "sha256-merkle-directory-v1",
+    "directory_roots": {
+      "": "4b5ec9fbcf953fd9341679fce8a9b1a8ff3a73b91cd991bacf13281663e8cc57",
+      ".codex": "5cc8fa51d6bf5b44449514330918def0bb6549d7eab12a3abc84d692cf68a9fc",
+      ".github": "98c194373f538cd705c142ff21a61c99ba40f215cb99effe3b64a34204ee64a7",
+      ".github/workflows": "5bcef567980c5d96e3abdf429bb2de950bec546ed37aca52c588152806fe7115",
+      "db": "b828fa4e42feac92d6a520f8d3f794c5ecc86d28dbc51e460498aab987b77162",
+      "db/migrations": "4d5c8c34c23ecca8bfbf5e33ced9906c3d89f6b0f4fd43a56c6333a560767536",
+      "deploy": "8323f781bd41f121a71188f351f952de4bef10dfb362e601181985a759c3f941",
+      "docs": "41df064bff76a7002bba5a1cd2b93ec0d53ecef8a83f6f2b089a2f872a2f0eac",
+      "docs/engineering": "7ed6019b7b903e8b9128f21c8b4fa18dadafd0bce73e75e61a4ad7ee549356a4",
+      "scripts": "41fc1b47e4f4d19db24c8f3f9f5264f84b2e467665e9f434962b38e224407e5e",
+      "server": "29da4242b5e940fe0e2f5a00fab3f6be24c53e48c2ca3b5b643e3b871ca23d24",
+      "server/db": "084d1d2099f284cb7ba0369e60b7490b1e87827e9a3285677e04460eb442f5f7",
+      "server/security": "8c8fd97c65fc345c9d48679d38b52974cefcbd339427e26e5e85cc7eae3f53a7",
+      "shared": "2e87cfd88e2fef6caf83cc9e11e1b18e2dc6dbe87fd65e9553d4a2134d67036b",
+      "src": "ca3c93d5bfb31fd9d6cc5e0bc2b43e30fa94cb2561bf7057c48b2ad7c9c3a880",
+      "src/app": "860e130f9aadc218804005a1803d032a73d97c88a9cba33e0fa17be387aac8f6",
+      "src/app/features": "15831f29c9de0c32b123ae6e18979e0220ab5d688dd1541f47db83e2d4a3482e",
+      "src/assets": "26c9e60b2fb79b9a2dd506d87033f4e1ff63db0a6993bbcab291761b353c9bc7",
+      "src/styles": "12945929d98efa9a27b07c2da9af61600ff37c9d018dceb868ace7bf470526c8",
+      "test": "de9ae03b72a7843ed736afb2898e241d76f82f7b889c9875d8579ff29ba50a2c"
+    },
+    "leaf_count": 139,
+    "root": "4b5ec9fbcf953fd9341679fce8a9b1a8ff3a73b91cd991bacf13281663e8cc57",
+    "version": 1
+  },
+  "dirty_file_count": 56,
   "exclude_globs": [
     ".codex-audit/**",
     ".codex/project-intelligence/**",
@@ -51,777 +55,859 @@
     "yarn.lock"
   ],
   "exclude_roots": [],
-  "excluded_file_count": 123,
+  "excluded_file_count": 1,
   "exclusion_reasons": {
-    "outside change audit scope": 123
+    "configured exclude pattern": 1
   },
   "exclusions": [
     {
-      "path": ".codex-audit/ACTIVE",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex-audit/audit.lock",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex-audit/audit.sqlite",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex-audit/compiled-rules.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex-audit/config.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex-audit/inventory.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex-audit/reports/INIT.md",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex-audit/reports/applicability-plan.fast-profile.invalid.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex-audit/rules.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex/agents/project-knowledge-reviewer.toml",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex/project-intelligence/conflicts.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex/project-intelligence/freshness.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex/project-intelligence/index.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex/project-intelligence/knowledge.sqlite",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex/project-intelligence/projects.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex/project-intelligence/reports/learn-summary.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex/project-intelligence/symbols.sqlite",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".codex/repository-audit.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".gitattributes",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": ".gitignore",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "LICENSE",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "db/migrations/0001_accounts.sql",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "db/migrations/0002_email_accounts.sql",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "db/migrations/0003_remove_legacy_accounts.sql",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "db/migrations/0004_recommendation_queue.sql",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "db/migrations/0005_authoritative_rater_queue.sql",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "db/migrations/0006_media_scoped_queues.sql",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "db/migrations/0007_title_origin_cache.sql",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "deploy/PostDeploy.ps1",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "deploy/PreDeploy.ps1",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "docs/engineering/CODING_STANDARDS.md",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "docs/engineering/PROJECT_EXCEPTIONS.md",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "docs/engineering/PROJECT_PROFILE.md",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "docs/project-knowledge/architecture.md",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "docs/project-knowledge/glossary.md",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "docs/project-knowledge/invariants.md",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "docs/project-knowledge/overview.md",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "favicon.svg",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
       "path": "package-lock.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "package.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "scripts/build-movie-pool.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "scripts/check-syntax.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "scripts/create-user.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "scripts/generate-key.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "scripts/migrate.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "scripts/server.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "scripts/setup-octopus-project.ps1",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "scripts/title-pool-policy.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/account-store.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/ai-recommendations.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/app.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/auth.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/db/client.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/db/config.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/db/migrate.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/env.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/http.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/imdb-ratings.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/movie-pool.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/openai-models.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/rater-events.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/rater-queue-store.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/rater-queue.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/ratings-csv.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/recommendation-queue.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/security/secrets.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/static-files.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "server/user-data.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "settings.env.example",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "shared/csv.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "shared/media.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "shared/recommendation-basis.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "shared/title-filters.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/account-state-merge.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/app-constants.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/browser-settings.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/collection-sync.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/config.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/elements.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/feature-methods.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/features/account-sync.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/features/application-lifecycle.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/features/collection-sync.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/features/data-transfer.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/features/event-bindings.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/features/rating-workflow.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/features/recommendations.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/features/status-ui.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/letterboxd-zip.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/movies.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/rapid-rater-app.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/rating-records.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/recommendation-ratings.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/settings-workflows.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/state.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/stats.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/title-filter-workflows.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/undo-rating.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/util.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/app/view-routes.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/styles.css",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/styles/dialogs.css",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/styles/foundation.css",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/styles/theme.css",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "src/styles/workspace.css",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/account-state-merge.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/account-store.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/auth-routes.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/auth-ui.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/collection-sync.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/failure-panel.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/feature-methods.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/rater-events.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/rater-queue.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/rating-records.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/recommendation-queue.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/security.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/static-routes.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/title-pool-policy.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "test/view-routes.test.mjs",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "tsconfig.json",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
-    },
-    {
-      "path": "vite.config.js",
-      "pattern": ".github/workflows/deploy-octopus.yml,README.md,db/migrations/0008_title_metadata_cache.sql,index.html,scripts/enrich-title-origins.mjs,server/db/schema.mjs,server/routes.mjs,server/streaming-availability.mjs,server/title-metadata-store.mjs,server/title-metadata.mjs,server/tmdb-request.mjs,src/app/features/catalog-view.js,src/app/rendering.js,src/assets/tmdb-logo.svg,src/styles/rater.css,src/styles/responsive.css,test/catalog-view.test.mjs,test/markup-contract.test.mjs,test/recommendation-rendering.test.mjs,test/streaming-availability.test.mjs,test/title-filters.test.mjs,test/title-metadata-route.test.mjs,test/title-metadata-store.test.mjs,test/title-metadata.test.mjs",
-      "reason": "outside change audit scope"
+      "pattern": "package-lock.json",
+      "reason": "configured exclude pattern"
     }
   ],
   "files": [
     {
-      "file_kind": "configuration",
-      "hash": "ad487681d2c20b9b59997e8f0a4231834047a001f069897c76b6d72b3c63c1a8",
-      "path": ".github/workflows/deploy-octopus.yml",
-      "size": 6916
-    },
-    {
-      "file_kind": "markdown-documentation",
-      "hash": "e34d8bff05d6995d807a90eb3b11c07417ee1b5d85bcce55ed631852114f861c",
-      "path": "README.md",
-      "size": 21767
+      "file_kind": "plugin-state",
+      "hash": "git-sha1:407a2ae05545b0e98f3f2f8ad36120b94cd33181",
+      "path": ".codex/repository-audit.json",
+      "size": 883
     },
     {
       "file_kind": "other",
-      "hash": "cf9c8928ff0aa4d90a0930a9d4610b401292c68dede3bc961ce5f60a71523d93",
+      "hash": "git-sha1:dfe0770424b2a19faf507a501ebfc23be8f54e7b",
+      "path": ".gitattributes",
+      "size": 66
+    },
+    {
+      "file_kind": "configuration",
+      "hash": "git-sha1:28a8a7e04598fad20a9a27644e285b5ae4dcd3ee",
+      "path": ".github/workflows/deploy-octopus.yml",
+      "size": 7377
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:2c803c53f1262437c9ceb87cfc259b32e102cacf",
+      "path": ".gitignore",
+      "size": 189
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:3e29581d105a0c44e6b161d2dce7902d32857589",
+      "path": "LICENSE",
+      "size": 1089
+    },
+    {
+      "file_kind": "markdown-documentation",
+      "hash": "git-sha1:282226923461cfefd936dc8a12dc55291845cce1",
+      "path": "README.md",
+      "size": 24082
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:45c54a38e0f218fe36c89d37ee2acc16a2f78656",
+      "path": "db/migrations/0001_accounts.sql",
+      "size": 1583
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:8309c7dcbe07a086f2e8e16a19efb1271901b61d",
+      "path": "db/migrations/0002_email_accounts.sql",
+      "size": 200
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:adc4058b8adc0966722ab095b7d0841277f248ea",
+      "path": "db/migrations/0003_remove_legacy_accounts.sql",
+      "size": 520
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:09963570635e7d0485b539428f877fb31049836e",
+      "path": "db/migrations/0004_recommendation_queue.sql",
+      "size": 650
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:1c110e1ecb78f6afdfa186b390a76ca540635d07",
+      "path": "db/migrations/0005_authoritative_rater_queue.sql",
+      "size": 862
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:7a87b180361c5f2d5dfa00ba6d23dd9d90ea86a9",
+      "path": "db/migrations/0006_media_scoped_queues.sql",
+      "size": 1345
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:dea184f5b81757b68c8f65ca7d791ac85ea14a12",
+      "path": "db/migrations/0007_title_origin_cache.sql",
+      "size": 622
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:cb34a208f5f471b9d4480375e136e3217dca0322",
       "path": "db/migrations/0008_title_metadata_cache.sql",
       "size": 1275
     },
     {
       "file_kind": "other",
-      "hash": "c7b16512013206bfae8a60db73cfc5c03fb3b357dbe408eaec8967e97b5a76a6",
+      "hash": "git-sha1:04115ec10caa6648a37935ca4aa20dfc3d4321d4",
+      "path": "db/migrations/0009_imdb_rating_jobs.sql",
+      "size": 2896
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:13033707a761712f777f3b894107aa6dfab94140",
+      "path": "db/migrations/0009_streaming_country.sql",
+      "size": 144
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:1714b8622f068bc1a126e3fc0dbc09fecded6ced",
+      "path": "deploy/PostDeploy.ps1",
+      "size": 9036
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:c027a59d6779b4b3449b119b30adf9c066ccf17f",
+      "path": "deploy/PreDeploy.ps1",
+      "size": 4718
+    },
+    {
+      "file_kind": "audit-standards",
+      "hash": "git-sha1:f096c2d47509a7fd94da4a425a4655f1654ddbc3",
+      "path": "docs/engineering/CODING_STANDARDS.md",
+      "size": 6523
+    },
+    {
+      "file_kind": "audit-standards",
+      "hash": "git-sha1:ca0c52ddaedd4fe89a93b5714595eced14d62d01",
+      "path": "docs/engineering/PROJECT_EXCEPTIONS.md",
+      "size": 499
+    },
+    {
+      "file_kind": "audit-standards",
+      "hash": "git-sha1:9ba0aca4f6106e17622c06b5f27cb86ac6e1232c",
+      "path": "docs/engineering/PROJECT_PROFILE.md",
+      "size": 2460
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:63666ce0d9f192b929eb769a3c148e7491187de2",
+      "path": "favicon.svg",
+      "size": 294
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:b01adef6d0036cfbe2ebdfe79f71ea27390e8489",
       "path": "index.html",
-      "size": 34419
+      "size": 37055
+    },
+    {
+      "file_kind": "configuration",
+      "hash": "git-sha1:3a183af22ec9b149a1d268279e7a605dc6f0dcc3",
+      "path": "package.json",
+      "size": 1293
     },
     {
       "file_kind": "other",
-      "hash": "bb0effa5027cdead608c83961a98a0dfebeb34e0af17a2c49db683fc056074d9",
+      "hash": "git-sha1:ede0707281bd3d857279b41650bbb77175c9eadf",
+      "path": "scripts/build-movie-pool.mjs",
+      "size": 9183
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:41b8f2ea12c4e9fc572df7512d0ec4acef9f3f26",
+      "path": "scripts/check-syntax.mjs",
+      "size": 766
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:274d75de82086e69299c3b018debae5f9a09d7f7",
+      "path": "scripts/create-user.mjs",
+      "size": 2300
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:9233993b3af49263290976ccf25e35f0886d17c2",
       "path": "scripts/enrich-title-origins.mjs",
-      "size": 15633
+      "size": 16093
     },
     {
       "file_kind": "other",
-      "hash": "ab9da561b1a1f035630188281e497279428c424570799c6c2401229d305f10e9",
+      "hash": "git-sha1:2071de1315b445308ba1debcaf9db9050d594cb8",
+      "path": "scripts/generate-key.mjs",
+      "size": 94
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e06a169328463341ac69a62836093fa4a51883af",
+      "path": "scripts/migrate.mjs",
+      "size": 469
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:54e4ecfbf1a907a54d6819adc0fc889622599fdf",
+      "path": "scripts/server.mjs",
+      "size": 1151
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:c99f8bbdd5c6592a17fca618883ab164183e8c83",
+      "path": "scripts/setup-octopus-project.ps1",
+      "size": 6767
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:d93397c2dfb876dcb78f2f5da6ef538996944033",
+      "path": "scripts/title-pool-policy.mjs",
+      "size": 739
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:0754a5b9a2eed4fa1137328fff88afc003faf4f0",
+      "path": "server/account-store.mjs",
+      "size": 9404
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e3e5b2f070b3a3f59cee4ea3561c86d12902871e",
+      "path": "server/ai-recommendations.mjs",
+      "size": 13867
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:80e1a2229749d452cbfdd08dd2a7abdf0a906991",
+      "path": "server/app.mjs",
+      "size": 6713
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e57d25e95be1b0cce8e544ed5047619b40d80d6c",
+      "path": "server/auth.mjs",
+      "size": 3029
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e60acc71391963cad96b5b3a18e4e00b106a0f18",
+      "path": "server/db/client.mjs",
+      "size": 436
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:6e3e5ee9b0f3240b7868442105f862a34029448a",
+      "path": "server/db/config.mjs",
+      "size": 1772
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:f1089fae80d281e1047bf19770fd0433de99c4a2",
+      "path": "server/db/migrate.mjs",
+      "size": 1619
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:0bc8b70002f74eeb9b8dff78da4d274c4935088f",
       "path": "server/db/schema.mjs",
-      "size": 5363
+      "size": 7470
     },
     {
       "file_kind": "other",
-      "hash": "072ebb06eaea9876551daea63dab9fea344357aa396dca2ef1b7cc42fa21d428",
+      "hash": "git-sha1:2159d6db8c90ec17a18860180ed5aa2ddcb1e784",
+      "path": "server/db/transaction.mjs",
+      "size": 506
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:8061059997062db83be8b83c7e98cd889a9eda7d",
+      "path": "server/env.mjs",
+      "size": 1356
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:6eb0b24c22b933d8fbcb90ab493b4e5605346a1c",
+      "path": "server/http.mjs",
+      "size": 1432
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:0512f325c048f10cd0410356384c2b6484fcf691",
+      "path": "server/imdb-rating-job-store.mjs",
+      "size": 20786
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:02f7e3210820735e52dac1a89ab2926ba678778a",
+      "path": "server/imdb-rating-worker.mjs",
+      "size": 4492
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:734956c0fbf74f3659ae72df590f79ded33a95e8",
+      "path": "server/imdb-ratings.mjs",
+      "size": 6500
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:b72d067fead9d6fc52001913d41d469c336ad6ca",
+      "path": "server/movie-pool.mjs",
+      "size": 2382
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:8af80723a00cc0307491af1d2d2f5bda93a2e0d6",
+      "path": "server/openai-models.mjs",
+      "size": 3178
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:8bfa1a98588ee9e9860e71c17c0adec7ad7267a0",
+      "path": "server/rater-events.mjs",
+      "size": 1390
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:eaf4dbafd599545e41ec74f7dea14ec61ce8ea94",
+      "path": "server/rater-queue-store.mjs",
+      "size": 14515
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:f6eebf9259228f4a54664ed4cab5369ba40e85b5",
+      "path": "server/rater-queue.mjs",
+      "size": 1799
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:68932a6afb3dcd4b7009079377395b0ef06dc2f2",
+      "path": "server/ratings-csv.mjs",
+      "size": 7148
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:ce0ce24911b472194e5a9ec14c92936041769216",
+      "path": "server/recommendation-queue.mjs",
+      "size": 2680
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:5336eed6a371b23d96df9da8fee1e8b9c4fc54b8",
       "path": "server/routes.mjs",
-      "size": 24905
+      "size": 28188
     },
     {
       "file_kind": "other",
-      "hash": "5ed64c0b624741ce552ec144a4e3b30bdc6c4dadf5c666f383e5f3579db57865",
+      "hash": "git-sha1:220e820c9e3677c01c9ae28cab7926bc4a709686",
+      "path": "server/security/secrets.mjs",
+      "size": 2070
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:8a159487fd01a2287f7fd97084e8d155b69114d8",
+      "path": "server/static-files.mjs",
+      "size": 1540
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:1022b533df23a83d15b2a8db60de863a884a4cc7",
       "path": "server/streaming-availability.mjs",
-      "size": 6644
+      "size": 6548
     },
     {
       "file_kind": "other",
-      "hash": "f8cf4739ef008da2040a1977f0c9207e9f697ba63482c60b9f94c99216eb50ab",
+      "hash": "git-sha1:3fcc406d41ee92378106cf21dc200536ec30667e",
       "path": "server/title-metadata-store.mjs",
       "size": 11422
     },
     {
       "file_kind": "other",
-      "hash": "026672d600f45ee59a56c854ae689de3b8ac3486d15c36e127b52a87ce9e375a",
+      "hash": "git-sha1:1af611dc98f5de28b35856fa4484b22e7d25bcdc",
       "path": "server/title-metadata.mjs",
-      "size": 25311
+      "size": 25132
     },
     {
       "file_kind": "other",
-      "hash": "92968d4a0c8d2c8269a7b5097f0e534cb7ffae0d7d47e40a4da734dbd044add3",
+      "hash": "git-sha1:e3d54d1e771301132377120e58c1a3392c8fbfb0",
       "path": "server/tmdb-request.mjs",
       "size": 463
     },
     {
       "file_kind": "other",
-      "hash": "cd6af9740914882b87e0b50b2df1ebf1a38e559ea2a7e1b96dbf21a9efab8dbc",
+      "hash": "git-sha1:38924823e57bf1f0dba00f4bc0f1594195c9396f",
+      "path": "server/user-data.mjs",
+      "size": 1786
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:39004b3fd23006af02f7f276e9b952b73cff4cd1",
+      "path": "settings.env.example",
+      "size": 1138
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:db77b77f13b151215b59ad812c15c80750375b97",
+      "path": "shared/csv.js",
+      "size": 1476
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:79239ec00c2435620aa160846a3197d2419adb12",
+      "path": "shared/media.js",
+      "size": 1926
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:35cbecfb5265da406636349b9f67e0e02ed21894",
+      "path": "shared/recommendation-basis.js",
+      "size": 576
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:9f82ee0a20898a44a9a5ce63a83bc18dd29e906d",
+      "path": "shared/streaming-country.js",
+      "size": 330
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:6a90a920279e95835b4a81d8443949027bb15bee",
+      "path": "shared/title-filters.js",
+      "size": 4814
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:65862f8373232fdae4b27065c81e9070295a15fa",
+      "path": "src/app.js",
+      "size": 105
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:3d087f3a4a60237ee9e30cb10b4b58de6ddc2119",
+      "path": "src/app/account-state-merge.js",
+      "size": 4394
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:4786437140d7980cd830f997b0c9e4a9e7c98d68",
+      "path": "src/app/app-constants.js",
+      "size": 1187
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:76171f813a42f4bb32b192fd3d2c67afa000fbfd",
+      "path": "src/app/browser-settings.js",
+      "size": 3176
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:948312a17c7eb28e8ea984fcfa8c51ded99f7896",
+      "path": "src/app/collection-sync.js",
+      "size": 11438
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:6748b5f1b52002e1542c729f3ec07e20442658a2",
+      "path": "src/app/config.js",
+      "size": 1204
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:a1c84de6412ae8346fea2aad1cbebeca3a5bc79b",
+      "path": "src/app/elements.js",
+      "size": 10005
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:715be4c2ed8c63e9e1772d34d63eaa8f57dd3ede",
+      "path": "src/app/feature-methods.js",
+      "size": 462
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:df1de7044819cc06dd1238fcdf7458a0b054781e",
+      "path": "src/app/features/account-sync.js",
+      "size": 6885
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:f693d1b319426fde2e9a3856a854a43fcae274c0",
+      "path": "src/app/features/application-lifecycle.js",
+      "size": 7230
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:0736ea1ad43838dccaea9adfde9eeee79f2a1c65",
       "path": "src/app/features/catalog-view.js",
       "size": 7772
     },
     {
       "file_kind": "other",
-      "hash": "a0de1594393b12b93f6317328ea9b86787d257cf7edeb1948f0c72be26724b9d",
-      "path": "src/app/rendering.js",
-      "size": 15958
+      "hash": "git-sha1:920f05a00ac17bd4b6b7c8b2558295a66e55c641",
+      "path": "src/app/features/collection-sync.js",
+      "size": 8744
     },
     {
       "file_kind": "other",
-      "hash": "699d191b5915b7dcd74ed45e88956ff91909f844000bb4eb7e214782ac15de68",
+      "hash": "git-sha1:fb47fd6cc87d2862babe2392e9f8d5e099f779fa",
+      "path": "src/app/features/data-transfer.js",
+      "size": 9490
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:c637cad274ee31840e55e08fb328e063550740c6",
+      "path": "src/app/features/event-bindings.js",
+      "size": 14731
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:1bf92230ec3f642288f233e51df9e7a0bf8307de",
+      "path": "src/app/features/quick-rate.js",
+      "size": 10136
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:ad20f6ef1a3268aed5c574ada0f9a9340dd51560",
+      "path": "src/app/features/rating-workflow.js",
+      "size": 6266
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:ffe261016dbfc0e3b241acc533d04c8767e59fc0",
+      "path": "src/app/features/recommendations.js",
+      "size": 17793
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:3d00bb1c8fa5bf76c559548ffe250c2092b54f70",
+      "path": "src/app/features/status-ui.js",
+      "size": 15524
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e0571c761035f577fb87edf59476bddf4a84f11f",
+      "path": "src/app/letterboxd-zip.js",
+      "size": 1473
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:04ef79b28c5ab66f1b30d371f613a10202b7ebb5",
+      "path": "src/app/movies.js",
+      "size": 1813
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:02418662e8d41db821d055efac045f34847d4537",
+      "path": "src/app/rapid-rater-app.js",
+      "size": 31918
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e9afeb25881c7714e0c6fbd00772abb139f310bf",
+      "path": "src/app/rating-records.js",
+      "size": 7731
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:034a9969c4ccd8b858519a791b1a80e8a438ec30",
+      "path": "src/app/recommendation-ratings.js",
+      "size": 4508
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:a3ab1312141ec13d2c9a2608a2cd35199d5e8392",
+      "path": "src/app/rendering.js",
+      "size": 15951
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:de2b98b524b14165362c6702d5fa0ff3eaf10f34",
+      "path": "src/app/settings-workflows.js",
+      "size": 3294
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:a173e4f6fe1e224cea0cfa924512927687d180d1",
+      "path": "src/app/state.js",
+      "size": 2408
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:eb964c9849b2864fce5c95959bd041a503df4796",
+      "path": "src/app/stats.js",
+      "size": 1309
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:a58c76c50973d741acc4b81dcc5576cca63b9e23",
+      "path": "src/app/title-filter-workflows.js",
+      "size": 8564
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:f7723477bfc2620b985245eb864e60750283be23",
+      "path": "src/app/undo-rating.js",
+      "size": 1549
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:0ff2c22ac1a16bdf04963a2225366586ee821283",
+      "path": "src/app/util.js",
+      "size": 851
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:21a9ae3c81271e9b56bb7362f4cb19330563c76c",
+      "path": "src/app/view-routes.js",
+      "size": 1371
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:b808a3660ac8c0b0068d163363cc5b12215196db",
       "path": "src/assets/tmdb-logo.svg",
       "size": 2409
     },
     {
       "file_kind": "other",
-      "hash": "01926d954e0abd7b48364fadad3b54bdb640aecf25cd97d2d78a2d355a7d94cb",
+      "hash": "git-sha1:8b2ef2ecd498146f3c4aeedfcac3f7f2413bd969",
+      "path": "src/styles.css",
+      "size": 742
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e527f00d7a49b696a3d04d947274197da4d13b91",
+      "path": "src/styles/dialogs.css",
+      "size": 4541
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:9c9d41fe8d2fe27c9092827a330fec06a165079d",
+      "path": "src/styles/foundation.css",
+      "size": 13796
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:d51b7180927757d84f6a1a39f533d9d0b2c5c286",
       "path": "src/styles/rater.css",
       "size": 10333
     },
     {
       "file_kind": "other",
-      "hash": "d552cde490a8d9ea8154fd4aa11b73a9195750a35db503aee999714a673b81a0",
+      "hash": "git-sha1:5299a90045c87e8f74fde015cd9e0caab3393848",
       "path": "src/styles/responsive.css",
-      "size": 9525
+      "size": 9622
     },
     {
       "file_kind": "other",
-      "hash": "a96827464a67ef54f58db38a2f97b100d5ef0038f741581d0c96c9961323e421",
+      "hash": "git-sha1:d7648a5b930a587bb324f61e7ac22d87dcb2d522",
+      "path": "src/styles/theme.css",
+      "size": 3520
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:2807222f9e9e6739ac6a8ddefecceed6076a1d0c",
+      "path": "src/styles/workspace.css",
+      "size": 14037
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e4fa12225dae9205920821abbafe90820a5574ca",
+      "path": "test/account-state-merge.test.mjs",
+      "size": 7526
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:a56bf0465dc1711a60277ac93434f1a37c713408",
+      "path": "test/account-store.test.mjs",
+      "size": 5264
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:1dcbfa114bafb070cc36f16378c26d85d1b6b47e",
+      "path": "test/auth-routes.test.mjs",
+      "size": 20522
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:cff2eb54f73fb57df1c102e9dcd1cec285ad46ff",
+      "path": "test/auth-ui.test.mjs",
+      "size": 3601
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:052255ba190725b1387db134dbc8085be55afe81",
       "path": "test/catalog-view.test.mjs",
       "size": 5214
     },
     {
       "file_kind": "other",
-      "hash": "a5caa55b828260e74c4feca9ca6a7c875badc8ebdafd728c87a6d3bef94e39fe",
-      "path": "test/markup-contract.test.mjs",
-      "size": 1760
+      "hash": "git-sha1:ab0686ee4e079c1c12e476683e9e06d4175826c0",
+      "path": "test/collection-sync.test.mjs",
+      "size": 5218
     },
     {
       "file_kind": "other",
-      "hash": "458857468afd7fb71742f9249e682932128cf089486da2d9cdb95323b51c37c8",
+      "hash": "git-sha1:8ab8dde7417358245e274258338c0f5b4cebf1a3",
+      "path": "test/connection-status.test.mjs",
+      "size": 2067
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:f7b3ad7c6473760858ce80024bc2e519b5827378",
+      "path": "test/failure-panel.test.mjs",
+      "size": 745
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:c41374612ea5dbe90da74d5953694ade893b3ae1",
+      "path": "test/feature-methods.test.mjs",
+      "size": 879
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:3214f066fb061d1c48d1b26038bcae75261e9934",
+      "path": "test/imdb-queue-routes.test.mjs",
+      "size": 2089
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:924f6bae88a761f765e26c7ca89deae424c4e955",
+      "path": "test/imdb-rating-job-store.test.mjs",
+      "size": 13054
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:a9ff2e76c11a06956ef123efcd79b9f25f10df55",
+      "path": "test/imdb-rating-worker.test.mjs",
+      "size": 3226
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:8e2ac3c7fa850aa0fb537f131ed368dc82f667d2",
+      "path": "test/markup-contract.test.mjs",
+      "size": 2398
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:ba637ba190495ef3a933e46e75b77d6c99ca2dd2",
+      "path": "test/quick-rate.test.mjs",
+      "size": 2364
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:04f8278cb578919698a007bb06e6cd8a83bc8a27",
+      "path": "test/rater-events.test.mjs",
+      "size": 1105
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e12f11fc739c2f7b2576fd7c44aea80f4d13ec3d",
+      "path": "test/rater-queue.test.mjs",
+      "size": 8429
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e39b4a9f01d53b0f4b73354ba8adfdf33ee202d4",
+      "path": "test/rating-records.test.mjs",
+      "size": 1412
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:8504fe159757997f80a9fcc5c5427bdc7d23ecba",
+      "path": "test/recommendation-queue.test.mjs",
+      "size": 19251
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:a0386a07259f3f4780899e3ee26f4dcc1ac65b1d",
       "path": "test/recommendation-rendering.test.mjs",
       "size": 6261
     },
     {
       "file_kind": "other",
-      "hash": "ff2f5329c3aad29b3146a0960a8a3bea73ec82bd94015932816b234fb16902e5",
+      "hash": "git-sha1:710b8b7588abc2a3f6d3cd1a9e330d1b55bc1568",
+      "path": "test/security.test.mjs",
+      "size": 4675
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:279cd2b061efb8576d9f7bfead771c2fbac54785",
+      "path": "test/settings-workflows.test.mjs",
+      "size": 1484
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:2b5b06597d0622882b35da5de55eea97a8f4c473",
+      "path": "test/static-routes.test.mjs",
+      "size": 2888
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:ce124b957bcee86d2f852264c9ac5d5c71fa43e9",
       "path": "test/streaming-availability.test.mjs",
       "size": 6198
     },
     {
       "file_kind": "other",
-      "hash": "029e7a91fbb805e0b0c84794ef8a4db335fdaaba93caf0ceda03a1551a9821dc",
+      "hash": "git-sha1:32ca509d49496fbdfe1bd90def5961c4d82c558b",
+      "path": "test/streaming-country.test.mjs",
+      "size": 737
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:fa586d6915e6df58d3fab936a1cb0e0202848d9a",
       "path": "test/title-filters.test.mjs",
-      "size": 7799
+      "size": 8578
     },
     {
       "file_kind": "other",
-      "hash": "90d4c1736868cddd62e5aee178b2ed57a9f5f13259b5773eb1dd332b9a74cbf4",
+      "hash": "git-sha1:67b517424e806f712acad4063a115aa1b6eb49ab",
       "path": "test/title-metadata-route.test.mjs",
-      "size": 1903
+      "size": 2635
     },
     {
       "file_kind": "other",
-      "hash": "24c74d66e0f76b0f9231b94b239600b5dba6acaf5baeb77bfdc71a244e2f2f54",
+      "hash": "git-sha1:780ad46ae8265deb94e5cd99b01c82a7bf57b601",
       "path": "test/title-metadata-store.test.mjs",
       "size": 5351
     },
     {
       "file_kind": "other",
-      "hash": "32f4a00aac2bf09addc9b466c06036f995f9438147c176916b6dad6943fc88d8",
+      "hash": "git-sha1:0b83cc76bae61e43cbf055317a797ec941466a7f",
       "path": "test/title-metadata.test.mjs",
       "size": 11124
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:28187cf58f265076dacacdb8f54638f48ec1eab4",
+      "path": "test/title-pool-policy.test.mjs",
+      "size": 967
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:000c9b93c8935b02224146f4f669bec63837b8ff",
+      "path": "test/view-routes.test.mjs",
+      "size": 1491
+    },
+    {
+      "file_kind": "configuration",
+      "hash": "git-sha1:f626f18dfb916c2961c30b11194e9129626ba879",
+      "path": "tsconfig.json",
+      "size": 540
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:343f9ac255d58bfd7ec38c03650e0c12eb6e5b8b",
+      "path": "vite.config.js",
+      "size": 491
     }
   ],
-  "generated_at": "2026-07-22T20:02:26Z",
+  "generated_at": "2026-07-22T23:46:12Z",
+  "hash_scheme": "git-object-v1",
   "include_roots": [],
   "include_untracked": true,
   "repo_identity": "24c64586703550c4d5596a4b65555ab675f3feb5ecbbbd7e035c7195a624cd2f",
-  "total_scope_files": 24,
-  "total_tracked_files": 143
+  "repository_signature": "a20e15b7bf0dc344dcfe45e28768d261e4cfdf70a76f1fc9e18a97c491b29361",
+  "total_scope_files": 139,
+  "total_tracked_files": 148
 }

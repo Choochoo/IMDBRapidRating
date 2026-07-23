@@ -9,13 +9,22 @@ process.env.NODE_ENV ||= existsSync(path.join(RootPath, "dist", "index.html")) ?
 process.env.IMDB_RAPID_RATER_HOME ||= path.join(RootPath, ".runtime");
 LoadLocalEnv(RootPath);
 const Port = Number(process.env.PORT || 5012);
-const { app } = await CreateApp(RootPath);
+const { app, pool, imdbRatingWorker } = await CreateApp(RootPath);
 const server = app.listen(Port, () => console.log(`IMDb Rapid Rater running at http://localhost:${Port}`));
 server.on("error", HandleServerError);
+process.on("SIGINT", () => Shutdown(0));
+process.on("SIGTERM", () => Shutdown(0));
 
 function HandleServerError(error) {
   if (error.code !== "EADDRINUSE")
     throw error;
   console.error(`Port ${Port} is already in use.`);
   process.exit(1);
+}
+
+async function Shutdown(exitCode) {
+  server.close();
+  await imdbRatingWorker.Stop();
+  await pool.end();
+  process.exit(exitCode);
 }

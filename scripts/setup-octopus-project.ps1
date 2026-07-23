@@ -45,7 +45,9 @@ function Invoke-OctopusApi {
         if ($_.Exception.Response) {
             $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
             $responseBody = $reader.ReadToEnd()
-            if ($responseBody) { $details = $responseBody }
+            if ($responseBody) {
+                $details = $responseBody
+            }
         }
         throw "Octopus API $Method $Uri failed: $details"
     }
@@ -92,21 +94,31 @@ function New-ProcessStep {
 
 $spaces = Invoke-OctopusApi "/api/spaces?partialName=$([uri]::EscapeDataString($SpaceName))&take=100"
 $space = $spaces.Items | Where-Object { $_.Name -eq $SpaceName } | Select-Object -First 1
-if (-not $space) { throw "Octopus space '$SpaceName' was not found." }
+if (-not $space) {
+    throw "Octopus space '$SpaceName' was not found."
+}
 $spaceId = $space.Id
 
 $environments = Invoke-OctopusApi "/api/$spaceId/environments?partialName=Production&take=100"
 $production = $environments.Items | Where-Object { $_.Name -eq "Production" } | Select-Object -First 1
-if (-not $production) { throw "The Production environment was not found." }
+if (-not $production) {
+    throw "The Production environment was not found."
+}
 
 $groups = Invoke-OctopusApi "/api/$spaceId/projectgroups?take=100"
 $projectGroup = $groups.Items | Select-Object -First 1
-if (-not $projectGroup) { throw "No Octopus project group was found." }
+if (-not $projectGroup) {
+    throw "No Octopus project group was found."
+}
 
 $lifecycles = Invoke-OctopusApi "/api/$spaceId/lifecycles?take=100"
 $lifecycle = $lifecycles.Items | Where-Object { $_.Name -eq "Default Lifecycle" } | Select-Object -First 1
-if (-not $lifecycle) { $lifecycle = $lifecycles.Items | Select-Object -First 1 }
-if (-not $lifecycle) { throw "No Octopus lifecycle was found." }
+if (-not $lifecycle) {
+    $lifecycle = $lifecycles.Items | Select-Object -First 1
+}
+if (-not $lifecycle) {
+    throw "No Octopus lifecycle was found."
+}
 
 $projects = Invoke-OctopusApi "/api/$spaceId/projects?partialName=$([uri]::EscapeDataString($ProjectName))&take=100"
 $project = $projects.Items | Where-Object { $_.Name -eq $ProjectName } | Select-Object -First 1

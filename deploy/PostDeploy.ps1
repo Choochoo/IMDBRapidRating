@@ -44,6 +44,8 @@ $defaultSettingsLines = @(
     "RAPID_RATER_DB_SCHEMA=imdb_rapid_rater",
     "TRUST_PROXY_HOPS=1",
     "IMDB_DRY_RUN=false",
+    "IMDB_MAX_REQUESTS_PER_SECOND=10",
+    "IMDB_WORKER_CONCURRENCY=4",
     "PUBLIC_REGISTRATION_ENABLED=true"
 )
 $settingsLines = $defaultSettingsLines
@@ -72,13 +74,17 @@ icacls $runtimeSettingsPath /inheritance:r /grant:r "SYSTEM:F" "Administrators:F
 
 Write-Host "Installing production dependencies..."
 & $npmPath ci --omit=dev --no-audit --no-fund --prefix $InstallDir
-if ($LASTEXITCODE -ne 0) { throw "npm ci failed." }
+if ($LASTEXITCODE -ne 0) {
+    throw "npm ci failed."
+}
 
 Write-Host "Applying PostgreSQL migrations..."
 Push-Location $InstallDir
 try {
     & $nodePath "scripts/migrate.mjs"
-    if ($LASTEXITCODE -ne 0) { throw "Database migration failed." }
+    if ($LASTEXITCODE -ne 0) {
+        throw "Database migration failed."
+    }
 } finally {
     Pop-Location
 }
@@ -101,7 +107,9 @@ if ($null -ne $existingTask) {
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     for ($attempt = 1; $attempt -le 20; $attempt++) {
         $state = (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State
-        if ($state -ne "Running") { break }
+        if ($state -ne "Running") {
+            break
+        }
         Start-Sleep -Milliseconds 500
     }
     if ((Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State -eq "Running") {
@@ -152,9 +160,13 @@ if ([string]::IsNullOrWhiteSpace($proxySiteName) -or
 }
 
 $proxyUpstreamHost = Get-RapidRaterParameter -Name "RapidRater.ProxyUpstreamHost"
-if ([string]::IsNullOrWhiteSpace($proxyUpstreamHost)) { $proxyUpstreamHost = "127.0.0.1" }
+if ([string]::IsNullOrWhiteSpace($proxyUpstreamHost)) {
+    $proxyUpstreamHost = "127.0.0.1"
+}
 $proxyHealthAddress = Get-RapidRaterParameter -Name "RapidRater.ProxyHealthAddress"
-if ([string]::IsNullOrWhiteSpace($proxyHealthAddress)) { $proxyHealthAddress = "127.0.0.1" }
+if ([string]::IsNullOrWhiteSpace($proxyHealthAddress)) {
+    $proxyHealthAddress = "127.0.0.1"
+}
 $proxyUpstreamUrl = "http://${proxyUpstreamHost}:$Port"
 $appCmd = "C:\Windows\System32\inetsrv\appcmd.exe"
 $siteState = "Unavailable"
@@ -165,7 +177,9 @@ try {
     New-Item -Path $proxyDir -ItemType Directory -Force | Out-Null
 
     & $appCmd set config /section:system.webServer/proxy /enabled:true /preserveHostHeader:true /reverseRewriteHostInResponseHeaders:false /commit:apphost | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "IIS reverse-proxy support could not be enabled." }
+    if ($LASTEXITCODE -ne 0) {
+        throw "IIS reverse-proxy support could not be enabled."
+    }
 
     $proxyConfig = @"
 <?xml version="1.0" encoding="UTF-8"?>

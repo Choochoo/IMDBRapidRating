@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BuildUserDataPath, EnsureUserDataParent, MigrateLegacyFile } from "./user-data.mjs";
 import { NormalizeLanguageCode, NormalizeTmdbOrigin } from "../shared/title-filters.js";
+import { ReadStreamingCountry } from "../shared/streaming-country.js";
 import { CreateStreamingAvailabilityService } from "./streaming-availability.mjs";
 import { AddTmdbApiKey, BuildTmdbHeaders, TmdbApiUrl } from "./tmdb-request.mjs";
 
@@ -14,7 +15,6 @@ const MovieMediaType = "movie";
 const TvMediaType = "tv";
 const TmdbLanguage = "en-US";
 const TmdbSource = "tmdb";
-const DefaultStreamingCountry = "US";
 const MovieMetadataTtlMilliseconds = 30 * 24 * 60 * 60 * 1000;
 const ActiveTvMetadataTtlMilliseconds = 7 * 24 * 60 * 60 * 1000;
 const PrivateMetadataFields = Object.freeze(["status", "checkedAt", "sourcePayload", "streamingByCountry"]);
@@ -515,7 +515,7 @@ function BuildLocalMetadataEntry(metadata) {
 }
 
 async function ResolveStreamingAvailability(metadata, options) {
-  const country = NormalizeStreamingCountry(options.streamingCountry || DefaultStreamingCountry);
+  const country = ReadStreamingCountry(options.streamingCountry);
   const cached = IsRecord(metadata?.streamingByCountry) ? metadata.streamingByCountry[country] : null;
   const service = options.streamingAvailabilityService || StreamingAvailabilityService;
   if (!service?.get)
@@ -558,11 +558,6 @@ function BuildPublicMetadata(metadata, streamingAvailability) {
   for (const field of PrivateMetadataFields)
     delete payload[field];
   return { ok: true, ...payload, streamingAvailability };
-}
-
-function NormalizeStreamingCountry(value) {
-  const country = String(value || "").trim().toUpperCase();
-  return /^[A-Z]{2}$/.test(country) ? country : DefaultStreamingCountry;
 }
 
 function IsRecord(value) {

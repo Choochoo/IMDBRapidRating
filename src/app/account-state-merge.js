@@ -69,7 +69,7 @@ function NewestRecord(remote, local) {
     return remote;
   const remoteTime = RecordTime(remote);
   const localTime = RecordTime(local);
-  return remoteTime > localTime ? remote : local;
+  return remoteTime >= localTime ? remote : local;
 }
 
 function RecordTime(record) {

@@ -137,16 +137,27 @@ function BuildStatusElements() {
 function BuildConnectionStatusElements() {
   return {
     configureFilters: Element("configure-filters"),
+    quickRateMenu: Element("quick-rate-menu"),
+    quickRateForm: Element("quick-rate-form"),
+    quickRateSearch: Element("quick-rate-search"),
+    quickRateResults: Element("quick-rate-results"),
+    quickRateSelection: Element("quick-rate-selection"),
+    quickRateRating: Element("quick-rate-rating"),
+    quickRateError: Element("quick-rate-error"),
+    quickRateSubmit: Element("quick-rate-submit"),
     dataMenu: Element("data-menu"),
     connectionMenu: Element("connection-menu"),
     connectionSummary: Element("connection-summary"),
     connectionSummaryLabel: Element("connection-summary-label"),
+    connectionSummaryCount: Element("connection-summary-count"),
+    connectionMenuHeading: Element("connection-menu-heading"),
     sourceBadge: Element("source-badge"),
     sourceStatusRow: Element("source-status-row"),
     liveBadge: Element("live-badge"),
     liveStatusRow: Element("live-status-row"),
     imdbStatusLabel: Element("imdb-status-label"),
-    tmdbStatusLabel: Element("tmdb-status-label")
+    tmdbStatusLabel: Element("tmdb-status-label"),
+    openAiStatusLabel: Element("openai-status-label")
   };
 }
 
@@ -276,6 +287,7 @@ function BuildTmdbSetupElements() {
     configureTmdb: Element("configure-tmdb"),
     tmdbDialog: Element("tmdb-dialog"),
     tmdbInput: Element("tmdb-key-input"),
+    tmdbCountry: Element("tmdb-country-input"),
     tmdbError: Element("tmdb-error"),
     tmdbSave: Element("tmdb-save"),
     tmdbClose: Element("tmdb-close"),
@@ -295,6 +307,7 @@ function BuildAiElements() {
 function BuildAiDialogElements() {
   return {
     configureAi: Element("configure-ai"),
+    configureOpenAi: Element("configure-openai"),
     aiDialog: Element("ai-dialog"),
     aiInput: Element("ai-key-input"),
     aiError: Element("ai-error"),

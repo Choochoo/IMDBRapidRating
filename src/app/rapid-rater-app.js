@@ -1,5 +1,5 @@
 import { Config } from "./config.js";
-import { ActiveClass, AiView, AriaPressedAttribute, BackspaceKey, DeleteKey, ImdbSecretType, MovieDisplayName, MovieMediaType, NoStoreCache, NotSeenLabel, NotWatchedLabel, PostMethod, PressedClass, PutMethod, RaterView, SaveApiKeyLabel, SavingLabel, ShowClass, SyncView, TmdbSecretType, TvDisplayName, TvMediaType, TvShowName } from "./app-constants.js";
+import { ActiveClass, AiView, AriaPressedAttribute, BackspaceKey, DeleteKey, ImdbSecretType, MovieDisplayName, MovieMediaType, NoStoreCache, NotSeenLabel, NotWatchedLabel, PostMethod, PressedClass, PutMethod, RaterView, SaveApiKeyLabel, SaveTmdbSettingsLabel, SavingLabel, ShowClass, SyncView, TmdbSecretType, TvDisplayName, TvMediaType, TvShowName } from "./app-constants.js";
 import { InstallFeatureMethods } from "./feature-methods.js";
 import { AccountSyncFeature } from "./features/account-sync.js";
 import { ApplicationLifecycleFeature } from "./features/application-lifecycle.js";
@@ -7,6 +7,7 @@ import { CatalogViewFeature } from "./features/catalog-view.js";
 import { CollectionSyncFeature } from "./features/collection-sync.js";
 import { DataTransferFeature } from "./features/data-transfer.js";
 import { EventBindingsFeature } from "./features/event-bindings.js";
+import { QuickRateFeature } from "./features/quick-rate.js";
 import { RatingWorkflowFeature } from "./features/rating-workflow.js";
 import { RecommendationFeature } from "./features/recommendations.js";
 import { StatusUiFeature } from "./features/status-ui.js";
@@ -26,6 +27,7 @@ import { LoginPath, PathForView } from "./view-routes.js";
 import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../shared/media.js";
 import { NormalizeTitleFilters } from "../../shared/title-filters.js";
 import { NormalizeRecommendationBasis } from "../../shared/recommendation-basis.js";
+import { ReadStreamingCountry } from "../../shared/streaming-country.js";
 import { UpdateTitleFilterButton } from "./title-filter-workflows.js";
 
 const SecretSettingByType = Object.freeze({ imdb: "imdbConfigured", openai: "openAiConfigured", tmdb: "tmdbConfigured" });
@@ -469,7 +471,7 @@ export class RapidRaterApp {
     this.RatingsCsvText = ReadLegacyRatingsCsv();
     await this.ImportLegacySecrets();
     if (this.LegacySettings.openAiModel)
-      await this.SaveAccountPreferences(this.LegacySettings.openAiModel);
+      await this.SaveAccountPreferences({ openAiModel: this.LegacySettings.openAiModel });
     await this.FlushStateSync();
     ClearLegacyBrowserData();
     this.ShowToast("This browser's save is now stored in your account.");
@@ -656,8 +658,10 @@ export class RapidRaterApp {
 
   ShowTmdbDialog() {
     this.ShowTmdbError("");
+    this.Elements.tmdbCountry.value = ReadStreamingCountry(this.Settings.streamingCountry);
     this.Elements.tmdbDialog.hidden = false;
-    window.setTimeout(() => this.Elements.tmdbInput.focus(), 0);
+    const input = this.Settings.tmdbConfigured ? this.Elements.tmdbCountry : this.Elements.tmdbInput;
+    window.setTimeout(() => input.focus(), 0);
   }
 
   HideTmdbDialog() {
@@ -687,9 +691,10 @@ export class RapidRaterApp {
   }
 
   async SaveAccountSecret(type, value) {
-    await this.RequestJson(`/api/account/secrets/${type}`, PutMethod, { value });
+    const result = await this.RequestJson(`/api/account/secrets/${type}`, PutMethod, { value });
     const setting = SecretSettingByType[type] ?? SecretSettingByType.openai;
     this.Settings[setting] = true;
+    return result;
   }
 
   async DeleteAccountSecret(type) {
@@ -708,14 +713,12 @@ export class RapidRaterApp {
     this.ShowToast("The saved credential was removed from your account.");
   }
 
-  async SaveAccountPreferences(model) {
-    const request = {
-      openAiModel: model,
-      openAiModelLag: Number(this.Settings.openAiModelLag) || 2
-    };
+  async SaveAccountPreferences(changes = {}) {
+    const request = BuildAccountPreferences(this.Settings, changes);
     const payload = await this.RequestJson("/api/account/preferences", PutMethod, request);
     this.Settings.openAiModel = payload.openAiModel;
     this.Settings.openAiModelLag = payload.openAiModelLag;
+    this.Settings.streamingCountry = ReadStreamingCountry(payload.streamingCountry);
   }
 
   RefreshVisibleMetadata() {
@@ -741,7 +744,7 @@ export class RapidRaterApp {
 
   SetTmdbSaving(value) {
     this.Elements.tmdbSave.disabled = value;
-    this.Elements.tmdbSave.textContent = value ? SavingLabel : SaveApiKeyLabel;
+    this.Elements.tmdbSave.textContent = value ? SavingLabel : SaveTmdbSettingsLabel;
   }
 
   SetAiSaving(value) {
@@ -834,4 +837,12 @@ export class RapidRaterApp {
 
 }
 
-InstallFeatureMethods(RapidRaterApp, AccountSyncFeature.prototype, ApplicationLifecycleFeature.prototype, CatalogViewFeature.prototype, CollectionSyncFeature.prototype, DataTransferFeature.prototype, EventBindingsFeature.prototype, RatingWorkflowFeature.prototype, RecommendationFeature.prototype, StatusUiFeature.prototype);
+function BuildAccountPreferences(settings, changes) {
+  return {
+    openAiModel: String(changes.openAiModel ?? settings.openAiModel ?? ""),
+    openAiModelLag: Number(changes.openAiModelLag ?? settings.openAiModelLag) || 2,
+    streamingCountry: ReadStreamingCountry(changes.streamingCountry ?? settings.streamingCountry)
+  };
+}
+
+InstallFeatureMethods(RapidRaterApp, AccountSyncFeature.prototype, ApplicationLifecycleFeature.prototype, CatalogViewFeature.prototype, CollectionSyncFeature.prototype, DataTransferFeature.prototype, EventBindingsFeature.prototype, QuickRateFeature.prototype, RatingWorkflowFeature.prototype, RecommendationFeature.prototype, StatusUiFeature.prototype);

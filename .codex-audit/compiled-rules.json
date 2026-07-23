@@ -5,254 +5,4286 @@
     "compiler-analyzer": 2,
     "formatter-linter": 2
   },
-  "generated_at": "2026-07-22T20:02:33Z",
-  "plan_hash": "b4024a459a5008e544a1ed168fe5ebe52d0fd2a1c32876739e352477a16dbd2b",
+  "generated_at": "2026-07-22T22:55:32Z",
+  "plan_hash": "fd31d977a590ba5e9ba0b55ef9615b477b2b379b0197c87bc9587fd9f4ff861d",
   "rules": [
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "about",
+          "agents",
+          "apply.",
+          "asyncly",
+          "audit-01",
+          "commit",
+          "done",
+          "follow",
+          "make",
+          "many",
+          "please",
+          "rules",
+          "spawn",
+          "specialized",
+          "sure",
+          "these"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "2e12ecff9416b5b96236ede324e73b1185fbc1a8f73fd6bf9c63812b0ec88317",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "a85f332306b49ca66e8fc116b3e8a5f85c8fff0902e84d418d2bd8c2e5bbd295",
-      "rule_id": "AUDIT-01"
+      "rule_id": "AUDIT-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "about",
+          "agents",
+          "apply.",
+          "asyncly",
+          "audit-01",
+          "commit",
+          "done",
+          "follow",
+          "make",
+          "many",
+          "please",
+          "rules",
+          "spawn",
+          "specialized",
+          "sure",
+          "these"
+        ],
+        "subject": "repository safety"
+      },
+      "shared_query_hash": "199642217efefe95db250f58e5c3c611e53cc13fedb3a398d9498484752d3152",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "apply",
+          "code",
+          "commands",
+          "git-01",
+          "mess",
+          "stage",
+          "these",
+          "touch",
+          "uncommitted",
+          "unstage"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "7e190a26d0228e9b703b5bc0d326a769c62507ab21493174deb6157bb3d0dc7c",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "medium",
       "rule_hash": "11dc7421dc2287476069c2092e201da1032fdfc56b318a8722a4f2691b42c9b4",
-      "rule_id": "GIT-01"
+      "rule_id": "GIT-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "apply",
+          "code",
+          "commands",
+          "git-01",
+          "mess",
+          "stage",
+          "these",
+          "touch",
+          "uncommitted",
+          "unstage"
+        ],
+        "subject": "repository safety"
+      },
+      "shared_query_hash": "90fbed33283a24680bcab3e0ee0b9e4303d1b2ea4a62d1edcee8bef1814db3af",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "const",
+          "ever",
+          "explicit",
+          "types.",
+          "typescript",
+          "var-01",
+          "vars"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "c9353d0ec879a7a2fe4b7c926b9c16137cb0b379d0142224535826880c3ddefb",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "medium",
       "rule_hash": "171aa64e25cb78752907018ff307e8210a1c914d97d1827177de8f756a6f7744",
-      "rule_id": "VAR-01"
+      "rule_id": "VAR-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "const",
+          "ever",
+          "explicit",
+          "types.",
+          "typescript",
+          "var-01",
+          "vars"
+        ],
+        "subject": "type design"
+      },
+      "shared_query_hash": "5e6cd90a7add02f3a579a1dcf388423555f521b5d2fdda84f94244ebd579c9a6",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "catches",
+          "exception-01",
+          "minimal",
+          "zero"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "6ff7b34025a091d781c3108e9b8b1e918410a4f303044392f6a651117cd09956",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "b7aca835ffaa423008dcfbfdf106f6b4fc5cb4acd2e14a0f414d8977d338e337",
-      "rule_id": "EXCEPTION-01"
+      "rule_id": "EXCEPTION-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "catches",
+          "exception-01",
+          "minimal",
+          "zero"
+        ],
+        "subject": "other"
+      },
+      "shared_query_hash": "abd7e31c59265f6af9e2a5f7792e3731ae94ecee821fa96171b2b65da5d49cfd",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "comment",
+          "comment-01",
+          "inline",
+          "knockout"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "26e80b494a198d562488b4110c2f91e229f7ca2db2f647ab4f7ccb47853bd332",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "2be7d240fa56c71770aa932264d8ac7836e5f688003606945ef9a6bd08257bce",
-      "rule_id": "COMMENT-01"
+      "rule_id": "COMMENT-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "comment",
+          "comment-01",
+          "inline",
+          "knockout"
+        ],
+        "subject": "other"
+      },
+      "shared_query_hash": "8bd3ea2f6f5266c5c4a59bd59f2f551af18ad1e9155b85760e2bec5d4da5d74c",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "brackets.",
+          "condition-01",
+          "else",
+          "have",
+          "like",
+          "line",
+          "never",
+          "something",
+          "statements",
+          "true"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "56b356db36164b4446356ee01826abb826ca77ab3f5ed2f82774a07df0d9de1f",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "medium",
       "rule_hash": "457d1d4fd8b20acb8149cf570af8ca005a0715176f2c896bd4e8367f236ad17d",
-      "rule_id": "CONDITION-01"
+      "rule_id": "CONDITION-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "brackets.",
+          "condition-01",
+          "else",
+          "have",
+          "like",
+          "line",
+          "never",
+          "something",
+          "statements",
+          "true"
+        ],
+        "subject": "other"
+      },
+      "shared_query_hash": "5905e86ff8b35511c54d53151f0d52870b04da44f98e3c5b1e908548f4707289",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "early",
+          "flow-01",
+          "functions.",
+          "possible",
+          "return"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "758a661fa463d37d3048c7ff79e06da90f354ad956fb971785a24ba14026d1f5",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "4918ae91ea5a374ec08a8e55a56880d73893025d9841f24be44a9bd2d8aa81ae",
-      "rule_id": "FLOW-01"
+      "rule_id": "FLOW-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "early",
+          "flow-01",
+          "functions.",
+          "possible",
+          "return"
+        ],
+        "subject": "methods"
+      },
+      "shared_query_hash": "168366585ed1b6c12113e0c3829173c8c8e0c37b1ab7f047088aa9f7cb5fead6",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "capitalized",
+          "function",
+          "name-01",
+          "names",
+          "not.",
+          "private",
+          "typescript"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "422204d2ccdee5e07b943f834f79c82ba3315ff22f88485b68f1e977ba3ce62d",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "d92b3f4d1262a3111b68774a2497d6816203dfaecd798a5a7bd860bcbdc349cb",
-      "rule_id": "NAME-01"
+      "rule_id": "NAME-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "capitalized",
+          "function",
+          "name-01",
+          "names",
+          "not.",
+          "private",
+          "typescript"
+        ],
+        "subject": "naming"
+      },
+      "shared_query_hash": "074d27b14289d5550dd34e7c9319e4214ef133d54fc2ada84820e71f71a06f32",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "computed",
+          "dont",
+          "knockout",
+          "knockout-01",
+          "like",
+          "make",
+          "observables",
+          "observables.",
+          "sure",
+          "variables"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "11b8c1707ac3e86b73a8ab1233a5c16a939e1986a0fc93e2ff05e46d35cb9434",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "78ace96fa242cdd23cf0308d95083362f353abc41a89b9280fdfb72ecdc7f9be",
-      "rule_id": "KNOCKOUT-01"
+      "rule_id": "KNOCKOUT-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "computed",
+          "dont",
+          "knockout",
+          "knockout-01",
+          "like",
+          "make",
+          "observables",
+          "observables.",
+          "sure",
+          "variables"
+        ],
+        "subject": "other"
+      },
+      "shared_query_hash": "adee4acbde2e24f2c9c6d3ec6480f5d517d4167ec46315dba74f8f2317ccef47",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "functions",
+          "make",
+          "modified",
+          "mutability-01",
+          "readonly",
+          "static",
+          "sure",
+          "they",
+          "variables"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "96b5b10c1826d78c4d34dbed137d148f5bd958281b597d02cbb9338478d21a4b",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "4e85e8bf86cd663a4d9492690a891486c68d386a559718e2b9ab0b6b5b9e9950",
-      "rule_id": "MUTABILITY-01"
+      "rule_id": "MUTABILITY-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "functions",
+          "make",
+          "modified",
+          "mutability-01",
+          "readonly",
+          "static",
+          "sure",
+          "they",
+          "variables"
+        ],
+        "subject": "methods"
+      },
+      "shared_query_hash": "e4455d650d592910c9f745bb2446ec36c3bc6196484204ac869c0eb77bbf988f",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "added.",
+          "code",
+          "constructors",
+          "function-01",
+          "functions",
+          "including",
+          "line",
+          "over",
+          "please",
+          "refactor"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "6d775557c4e12b242ff959e188f123fedcbf2cd64ed8ddd1949dd2c926a0c172",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "medium",
       "rule_hash": "5df88a428d545b9a683013475488d4915748948ec74c0e42765dbca1ed45e2d6",
-      "rule_id": "FUNCTION-01"
+      "rule_id": "FUNCTION-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "added.",
+          "code",
+          "constructors",
+          "function-01",
+          "functions",
+          "including",
+          "line",
+          "over",
+          "please",
+          "refactor"
+        ],
+        "subject": "methods"
+      },
+      "shared_query_hash": "5ca9823f1937201e42dcb9b54aba7ac25255c8ff7220e3fb3307bbf22e4784f7",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "deadcode-01",
+          "delete",
+          "empty",
+          "functions.",
+          "remove",
+          "unused",
+          "variables"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "4ea398e796e98772c551921f9344d9d2035ccb22825e863e91bc77a1d0dcca79",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "657d37fdccbd6f66c4ed883bf7ad2f188fd889aaa24c08b8e26ba589cdbc5f00",
-      "rule_id": "DEADCODE-01"
+      "rule_id": "DEADCODE-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "deadcode-01",
+          "delete",
+          "empty",
+          "functions.",
+          "remove",
+          "unused",
+          "variables"
+        ],
+        "subject": "methods"
+      },
+      "shared_query_hash": "fb20c0e7f83dae68fd71b976fab1d4ea48584143ac0250fc74e17b50bd2101b7",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "async",
+          "async-01",
+          "awaitable",
+          "constructor",
+          "function",
+          "loading",
+          "methods",
+          "please",
+          "promise."
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "46b69f4fe07bb51addbdbadbcc4cb352132afb3b26442c32e02253deae4b565f",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "09fada23bc971bf51f2dc74dc6af89b48a3eba1a89f52137ee00dc842efb93bc",
-      "rule_id": "ASYNC-01"
+      "rule_id": "ASYNC-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "async",
+          "async-01",
+          "awaitable",
+          "constructor",
+          "function",
+          "loading",
+          "methods",
+          "please",
+          "promise."
+        ],
+        "subject": "methods"
+      },
+      "shared_query_hash": "6db3f7cbef8caaf4f371b3149210946fc673603cccf582961acd5acd1ed88ebc",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "engine": "compiler-analyzer",
+        "kind": "tool-route"
+      },
       "engine": "compiler-analyzer",
+      "ir_hash": "e39ba0f3cde632efde4b6fd30a6d77bff37e2885bb9c7b56586da9202735d7f1",
+      "proof_contract": {
+        "checker": "deterministic-certificate",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": true,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1279de3187cd6e9b3838f12c6a74846c1e8a55dcd7e6e026666c6f01330debed",
       "review_required": false,
       "risk": "low",
       "rule_hash": "56a4df9361f95684127cefa10f50fc8d48d23eb46d2b4afe3736042613eb75a5",
-      "rule_id": "NULLABLE-01"
+      "rule_id": "NULLABLE-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "about",
+          "default",
+          "different",
+          "everything",
+          "i.e.",
+          "including",
+          "jared",
+          "knows",
+          "make",
+          "matters",
+          "most",
+          "need",
+          "null",
+          "nullable",
+          "nullable-01",
+          "person",
+          "properties",
+          "sure",
+          "than",
+          "these",
+          "values"
+        ],
+        "subject": "null handling"
+      },
+      "shared_query_hash": "6d82db1db07a3c44a3dbd368f6848e61232dfeaf0360cad8c17b2ff341c36a01",
+      "tier": "deterministic"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "dynamics",
+          "expclit",
+          "objects",
+          "type-01",
+          "types"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "7f36a4996c854b03404956fd0ef62ada26a13ccb777ca4fde8be6512ceb9bbb4",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "aec1c06e5ca523fcc8c93e1c994d8c35ae67ea2394ac2bb2dc3e549af62cc67f",
-      "rule_id": "TYPE-01"
+      "rule_id": "TYPE-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "dynamics",
+          "expclit",
+          "objects",
+          "type-01",
+          "types"
+        ],
+        "subject": "type design"
+      },
+      "shared_query_hash": "670414c08870bfcbddba7e3f297c6102a6d8ec4231a414bd02caaee66ec22c31",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "either",
+          "file",
+          "files",
+          "make",
+          "model-01",
+          "models",
+          "models.",
+          "smaller",
+          "sure",
+          "their",
+          "themselves",
+          "they"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "c07888e12fe1818ac113289b8e371f3e23d5aeed51e4894bf2b64a0b50dfaae3",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "04c0418e677e09b8ffa0d89ed7b116602dd9108e70e773d68da04673c07142e6",
-      "rule_id": "MODEL-01"
+      "rule_id": "MODEL-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "either",
+          "file",
+          "files",
+          "make",
+          "model-01",
+          "models",
+          "models.",
+          "smaller",
+          "sure",
+          "their",
+          "themselves",
+          "they"
+        ],
+        "subject": "other"
+      },
+      "shared_query_hash": "60718946c7567184b6152536b5c909d63bf4ff5c53ee13b965ab279ce8cc0b35",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "46f6ead7f3892983652563cc712d16aa657c818001d686f309b2bfc106a04d79",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "controller",
+          "controller-01",
+          "every",
+          "function.",
+          "model.isvalid",
+          "needed",
+          "states"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "ea99b4b5d9a777f5b5d579e246978f944ba1fb7d5864193ca1ff75a3e9223f72",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "00505bd05ec049f13459cd1480b9f2f9fa8d0e3da86905b562d587809085f1aa",
-      "rule_id": "CONTROLLER-01"
+      "rule_id": "CONTROLLER-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [
+          "web_http"
+        ],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "controller",
+          "controller-01",
+          "every",
+          "function.",
+          "model.isvalid",
+          "needed",
+          "states"
+        ],
+        "subject": "methods"
+      },
+      "shared_query_hash": "fd08361a8d82a30328fccbc343e2faac96d890eb82b7fda715bd8612cba69521",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "always",
+          "good",
+          "include",
+          "intellipass.web.data.personnel.personneldataprovider",
+          "models",
+          "name",
+          "namespace-01",
+          "personneldataprovider",
+          "shortcuts",
+          "spaces"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "41ab5f7723b6f91f81824340aeb3f3b67c4242830c67e2aedeab68f35652b3eb",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "medium",
       "rule_hash": "1eeb7b68f5227fa272b29c85e3af42d8a25593bb5e5ad5c7a78be996b4c42144",
-      "rule_id": "NAMESPACE-01"
+      "rule_id": "NAMESPACE-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "always",
+          "good",
+          "include",
+          "intellipass.web.data.personnel.personneldataprovider",
+          "models",
+          "name",
+          "namespace-01",
+          "personneldataprovider",
+          "shortcuts",
+          "spaces"
+        ],
+        "subject": "naming"
+      },
+      "shared_query_hash": "ceb588fc8e713e922fc9579ebd8f7427518ffa2e5884f70fe82b64669bef1ddc",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "arrays",
+          "cannot",
+          "collection-01",
+          "enumerate.empty",
+          "ienumerable",
+          "list",
+          "preferred",
+          "unless"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "2e753e1ac0aa1e88c2b8424937b2faa171c2f980e01c0b5d74c362684158ddb7",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "medium",
       "rule_hash": "fcb41b74822685601c2a5e250fab13c967a9d18d6bbd9a89b5ad2fc249213b21",
-      "rule_id": "COLLECTION-01"
+      "rule_id": "COLLECTION-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "arrays",
+          "cannot",
+          "collection-01",
+          "enumerate.empty",
+          "ienumerable",
+          "list",
+          "preferred",
+          "unless"
+        ],
+        "subject": "collections"
+      },
+      "shared_query_hash": "7a5ee31f3d17d131b4d5fa4904c2cf0e47e79e869abdea7613bd977c25fcae0a",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "endregion",
+          "i.e.",
+          "region",
+          "region-01",
+          "regions"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "cd8fbc4a6fa897da45869d5566423e33e1aef146ee1657b508bccdc508e36a4c",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "0325109ffe6a48047c8595b128f420b64cb1b3baed8e35ae7cc9950897478880",
-      "rule_id": "REGION-01"
+      "rule_id": "REGION-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "endregion",
+          "i.e.",
+          "region",
+          "region-01",
+          "regions"
+        ],
+        "subject": "other"
+      },
+      "shared_query_hash": "26466d04b01f00905d43733bb1719c802bf06a3d4a85f1da4ef14a052b776188",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "1e3c2f79e0feedd720ab5c28d2ee7f7dd3e5e7cefe4eb938acde4873de601419",
+      "detector_spec": {
+        "engine": "formatter-linter",
+        "kind": "tool-route"
+      },
       "engine": "formatter-linter",
+      "ir_hash": "5da557810ddf2d760de289a2e7d48d89d467ec685cd7d5529cc40460e8c31959",
+      "proof_contract": {
+        "checker": "deterministic-certificate",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": true,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1279de3187cd6e9b3838f12c6a74846c1e8a55dcd7e6e026666c6f01330debed",
       "review_required": false,
       "risk": "medium",
       "rule_hash": "ff6b197b4fa473b395620eab46f3dacd2c1f01793a8de8285baded1aff2f0f30",
-      "rule_id": "FORMAT-01"
+      "rule_id": "FORMAT-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [
+          "database_persistence"
+        ],
+        "enforcement": "test or build verification",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "calls",
+          "code",
+          "defaultassignment",
+          "defaulticsroles",
+          "departuredefaultassignmentrow",
+          "departurepobrow",
+          "departurepresetrow",
+          "format-01",
+          "function",
+          "functions",
+          "getdepartureicsroles",
+          "good",
+          "i.e.",
+          "ireadonlydictionary",
+          "line",
+          "matchedpob",
+          "matchedpreset",
+          "multiline",
+          "pobicsroles",
+          "preseticsroles",
+          "private",
+          "static",
+          "string"
+        ],
+        "subject": "formatting"
+      },
+      "shared_query_hash": "4ce5bf83f9c8888c1b04ae4f4bf9aec40a9cae61e7d0ad5aa20a41dbcdf638ad",
+      "tier": "deterministic"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "complicated",
+          "operations.",
+          "overly",
+          "ternary-01",
+          "terniary"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "eaa5b9c2de0d3b733696e6a6356b5f2db72e48b26d319b2f8557db6202b17712",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "57504da133dc655dbb11d4852d87a4cc2619f90d895c9bcdaf88b9405c9bc942",
-      "rule_id": "TERNARY-01"
+      "rule_id": "TERNARY-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "complicated",
+          "operations.",
+          "overly",
+          "ternary-01",
+          "terniary"
+        ],
+        "subject": "other"
+      },
+      "shared_query_hash": "9e30c450b210b2db7ffed8732c36886225e8d124837e71f5588fd07f36875ae1",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "engine": "compiler-analyzer",
+        "kind": "tool-route"
+      },
       "engine": "compiler-analyzer",
+      "ir_hash": "ece840bba73dcdfe709eb5134c3f4af71eca08a37073dec411a4a1357e10da8c",
+      "proof_contract": {
+        "checker": "deterministic-certificate",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": true,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1279de3187cd6e9b3838f12c6a74846c1e8a55dcd7e6e026666c6f01330debed",
       "review_required": false,
       "risk": "low",
       "rule_hash": "2a7774eaf1f957030c96715d39fd355684ce0e7567cd908d736766dd90d0c790",
-      "rule_id": "NULLABLE-02"
+      "rule_id": "NULLABLE-02",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "always",
+          "check",
+          "checked",
+          "doing",
+          "else",
+          "everything",
+          "first",
+          "function",
+          "instantly",
+          "logic",
+          "much",
+          "null",
+          "nullable",
+          "nullable-02",
+          "return",
+          "then",
+          "variable",
+          "variables"
+        ],
+        "subject": "null handling"
+      },
+      "shared_query_hash": "6d82db1db07a3c44a3dbd368f6848e61232dfeaf0360cad8c17b2ff341c36a01",
+      "tier": "deterministic"
     },
     {
+      "applicability_predicate_hash": "1e3c2f79e0feedd720ab5c28d2ee7f7dd3e5e7cefe4eb938acde4873de601419",
+      "detector_spec": {
+        "engine": "formatter-linter",
+        "kind": "tool-route"
+      },
       "engine": "formatter-linter",
+      "ir_hash": "d6ec5874f227f135e1be07ed7b2428a00c4f35f2a0ba743a451958ba8f21d952",
+      "proof_contract": {
+        "checker": "deterministic-certificate",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": true,
+        "read_set": [
+          "configuration"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "7d76499242f4c99e26c5b7f5e57ad371a1dfcef7a50d147373f098a62f27ddf4",
       "review_required": false,
       "risk": "low",
       "rule_hash": "5aab8521b7a0beaeffe0f3172aec354ce442ef427f0997e675cb8ba365654b21",
-      "rule_id": "FORMAT-02"
+      "rule_id": "FORMAT-02",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": true,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [
+          "database_persistence"
+        ],
+        "enforcement": "test or build verification",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "addconflicting",
+          "allowaddconflictingevents",
+          "boolean",
+          "buildconflictdialogoptions",
+          "conflicts",
+          "difference",
+          "easier",
+          "format-02",
+          "functions.",
+          "good",
+          "private",
+          "read",
+          "return",
+          "showaddconflictingbutton",
+          "this.saveconflictingcrewevents",
+          "worksitescheduleconflictdialogoptions",
+          "worksitescheduleeventconflict"
+        ],
+        "subject": "formatting"
+      },
+      "shared_query_hash": "4ce5bf83f9c8888c1b04ae4f4bf9aec40a9cae61e7d0ad5aa20a41dbcdf638ad",
+      "tier": "deterministic"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "created",
+          "functions",
+          "have",
+          "parameter-01",
+          "parameters."
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "5de820da1369bbfdfe291b2a73802d397df4d410dc489ea28560fe68b323ff93",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "medium",
       "rule_hash": "f1978d83dba3e626e616f8b8c22e374db663867bc830f68509047d7963fb7a3d",
-      "rule_id": "PARAMETER-01"
+      "rule_id": "PARAMETER-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "created",
+          "functions",
+          "have",
+          "parameter-01",
+          "parameters."
+        ],
+        "subject": "methods"
+      },
+      "shared_query_hash": "a6118c566f73f29cd38047ce8914b400c202f2a618233b48597d20ee6d814dfe",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "1e3c2f79e0feedd720ab5c28d2ee7f7dd3e5e7cefe4eb938acde4873de601419",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "classes",
+          "database",
+          "database-01",
+          "file",
+          "their",
+          "themselves."
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "f9fd215ad490def20a3c6e02a7699060ca7b7e2e93124c29293e04140a15c82a",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "medium",
       "rule_hash": "b11a5e54d01606d134934d3eff2439bd5a30d5b4c2907b971c14df37685b9da0",
-      "rule_id": "DATABASE-01"
+      "rule_id": "DATABASE-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [
+          "database_persistence"
+        ],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "classes",
+          "database",
+          "database-01",
+          "file",
+          "their",
+          "themselves."
+        ],
+        "subject": "type design"
+      },
+      "shared_query_hash": "455680d09c523b3cacb3a229a3b60acb543367b0eafe18d2b23b2140e39998a6",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "bottom",
+          "classes",
+          "file",
+          "file.",
+          "huge",
+          "lines",
+          "private",
+          "sealed",
+          "their",
+          "them",
+          "type-02"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "83345f80b603b4335d996615f562491cf584dc28436b7df00a97e0c821eccbc9",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "medium",
       "rule_hash": "ac7377c9efbe5206dc05e63c76c2cb7efb4b5bdd15b87a2a5a7c11c8a1535f30",
-      "rule_id": "TYPE-02"
+      "rule_id": "TYPE-02",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "bottom",
+          "classes",
+          "file",
+          "file.",
+          "huge",
+          "lines",
+          "private",
+          "sealed",
+          "their",
+          "them",
+          "type-02"
+        ],
+        "subject": "type design"
+      },
+      "shared_query_hash": "9b974afdd23cb4aa661bf9c34d3d8e54a5bafbfead519d288a54641ef8d6bb34",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "book.",
+          "const",
+          "doescrewconflictpersonnelmatch",
+          "easily",
+          "good",
+          "hasmatchingarrival",
+          "hasmatchingdeparture",
+          "hasmatchingdeparture.",
+          "key.arrivaldate.date",
+          "key.departuredate.date",
+          "like",
+          "personnel",
+          "readability-01",
+          "readable",
+          "return",
+          "scheduleevent",
+          "scheduleevent.arrivaldate.date",
+          "scheduleevent.departuredate.date"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "61bc71c767e5086f5bbc454ead1fb78607ee34624226464072856ffd511938a5",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "6852dfb7197e991b772b65b8dd49dfd587fb337232c3be60142ad9d50900a34e",
-      "rule_id": "READABILITY-01"
+      "rule_id": "READABILITY-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "book.",
+          "const",
+          "doescrewconflictpersonnelmatch",
+          "easily",
+          "good",
+          "hasmatchingarrival",
+          "hasmatchingdeparture",
+          "hasmatchingdeparture.",
+          "key.arrivaldate.date",
+          "key.departuredate.date",
+          "like",
+          "personnel",
+          "readability-01",
+          "readable",
+          "return",
+          "scheduleevent",
+          "scheduleevent.arrivaldate.date",
+          "scheduleevent.departuredate.date"
+        ],
+        "subject": "other"
+      },
+      "shared_query_hash": "1fa8583f99322da14263bd0eec9338f6dc2ec623f997c0d8d65945fb7b1558c3",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "call-01",
+          "cancel",
+          "continue",
+          "does",
+          "fa-times-circle",
+          "fa-trash",
+          "false",
+          "function.",
+          "generically",
+          "going",
+          "here",
+          "human",
+          "into",
+          "line",
+          "mean",
+          "message",
+          "mode",
+          "reads",
+          "right",
+          "skip",
+          "stuff",
+          "they",
+          "think",
+          "this._utils.confirm",
+          "this.issavingevent",
+          "this.saveevent",
+          "true",
+          "understand",
+          "utils",
+          "what",
+          "without"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "ff0ede90f6166f112eef4249bc4f3d28603ccf8bd33652fe990acef6a5b4b410",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "8861c0d24eb3b36a4b2dfc708a6bd2c15b71d81eca3ca1ae19fef188b92ed28e",
-      "rule_id": "CALL-01"
+      "rule_id": "CALL-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "call-01",
+          "cancel",
+          "continue",
+          "does",
+          "fa-times-circle",
+          "fa-trash",
+          "false",
+          "function.",
+          "generically",
+          "going",
+          "here",
+          "human",
+          "into",
+          "line",
+          "mean",
+          "message",
+          "mode",
+          "reads",
+          "right",
+          "skip",
+          "stuff",
+          "they",
+          "think",
+          "this._utils.confirm",
+          "this.issavingevent",
+          "this.saveevent",
+          "true",
+          "understand",
+          "utils",
+          "what",
+          "without"
+        ],
+        "subject": "type design"
+      },
+      "shared_query_hash": "06a7eb45dba4415937056a5ad7ffc88db302b7a662232b2738db059d52ce3346",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "shared-symbol-index",
+        "requires": {
+          "callees": false,
+          "callers": true,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "cast",
+          "createpersonneleventfromcrewevent",
+          "crewpositionids",
+          "good",
+          "like",
+          "lines",
+          "linq-01",
+          "linqs",
+          "null",
+          "personnel",
+          "personnel.select",
+          "personnelitem",
+          "prefer",
+          "return",
+          "scheduleevent",
+          "scheduleevent.copy",
+          "select",
+          "separate",
+          "this.",
+          "tolist",
+          "worksitescheduleevent"
+        ]
+      },
       "engine": "ast-symbol-query",
+      "ir_hash": "ade9d99fbdbce061d88a7651092d9d5b5ba5a44806892624eb0a51c334942cc8",
+      "proof_contract": {
+        "checker": "deterministic-certificate",
+        "closure_required": true,
+        "invalidation_scope": "semantic-neighborhood",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": true,
+        "read_set": [
+          "callers"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "ba5a0f4ef3bf23a3404d65a54c5348e94cce5f82874b485f9781f14285a7262e",
       "review_required": false,
       "risk": "medium",
       "rule_hash": "0ba97894d51cff5ee6c2d8c43cdfd2cfee34880f020f7bba38c50fa98a156114",
-      "rule_id": "LINQ-01"
+      "rule_id": "LINQ-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": true,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "AST or symbol analysis",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "cast",
+          "createpersonneleventfromcrewevent",
+          "crewpositionids",
+          "good",
+          "like",
+          "lines",
+          "linq-01",
+          "linqs",
+          "null",
+          "personnel",
+          "personnel.select",
+          "personnelitem",
+          "prefer",
+          "return",
+          "scheduleevent",
+          "scheduleevent.copy",
+          "select",
+          "separate",
+          "this.",
+          "tolist",
+          "worksitescheduleevent"
+        ],
+        "subject": "null handling"
+      },
+      "shared_query_hash": "cf5611bbff35bdbca492a954f3bb737079f4a3a516b03f3c21249afba4c51aa8",
+      "tier": "deterministic"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": true
+        },
+        "tokens": [
+          "after",
+          "allowed",
+          "before",
+          "function.",
+          "guarantee",
+          "only",
+          "optimization-01",
+          "optimize",
+          "produced",
+          "result",
+          "same",
+          "tests",
+          "through",
+          "unit"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "4fddf472b9e52df2b347ec1d33c3cfabe5e4b7438a7a6abe47edaa0b26a7e416",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "tests"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "ca2b87cae3e81d101c60a67d487f265b2fb91e9019deb816730f9be770962ef5",
       "review_required": true,
       "risk": "low",
       "rule_hash": "ab19e93316265d6d02b2d2ed50e6287fab3316004c9e943896b862bc74ab26f3",
-      "rule_id": "OPTIMIZATION-01"
+      "rule_id": "OPTIMIZATION-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": true
+        },
+        "domains": [],
+        "enforcement": "test or build verification",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "after",
+          "allowed",
+          "before",
+          "function.",
+          "guarantee",
+          "only",
+          "optimization-01",
+          "optimize",
+          "produced",
+          "result",
+          "same",
+          "tests",
+          "through",
+          "unit"
+        ],
+        "subject": "methods"
+      },
+      "shared_query_hash": "79e65ef52c11fae3f0c49af3281a03f8b68d86fd78d39c78c17d6f78981e9759",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "bigger",
+          "code",
+          "constant-01",
+          "enum.",
+          "magic",
+          "make",
+          "mentioned",
+          "more",
+          "once",
+          "part",
+          "string",
+          "strings",
+          "than",
+          "theme",
+          "variable."
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "5d59b996af01de102c45485b26e74934d4ea8f4f2fa3cac53ea6973c69896232",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "4e777936f7ffb8220c6959010c7749a750ed5c07791bfb0c764fe2ccc997c738",
-      "rule_id": "CONSTANT-01"
+      "rule_id": "CONSTANT-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "bigger",
+          "code",
+          "constant-01",
+          "enum.",
+          "magic",
+          "make",
+          "mentioned",
+          "more",
+          "once",
+          "part",
+          "string",
+          "strings",
+          "than",
+          "theme",
+          "variable."
+        ],
+        "subject": "strings and identifiers"
+      },
+      "shared_query_hash": "b7abf15c760b4fe8c4799bcc4c5e5e8cc8f504e1b19cbba739b4723ac91421a2",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "better.",
+          "code",
+          "design-01",
+          "generics.",
+          "kiss",
+          "less",
+          "look",
+          "more",
+          "places",
+          "techniques",
+          "using"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "5a0be32942aba1d48dc75e68634dda7bc83635a635443b715f9d6b131451e26f",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "007375dda066feeed05353ee83aa7fa8ed37481b53112c17b8be6896698c8ff8",
-      "rule_id": "DESIGN-01"
+      "rule_id": "DESIGN-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "better.",
+          "code",
+          "design-01",
+          "generics.",
+          "kiss",
+          "less",
+          "look",
+          "more",
+          "places",
+          "techniques",
+          "using"
+        ],
+        "subject": "type design"
+      },
+      "shared_query_hash": "864547dafb324977b2118c3eeda1a0014d0465efce89a58d5d3524864969fa83",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "code.",
+          "file-01",
+          "files",
+          "line",
+          "over"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "008abc8da82a4e4e979f660b54be264d436deef9d45a9156b5594ba183c040f4",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "low",
       "rule_hash": "8befe5fd576c6f194073f4356eb44ff112286a495992fce4b3868ab499f6990f",
-      "rule_id": "FILE-01"
+      "rule_id": "FILE-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "code.",
+          "file-01",
+          "files",
+          "line",
+          "over"
+        ],
+        "subject": "other"
+      },
+      "shared_query_hash": "31e9debaed12eef2fe7de35b6f3b58b2d02da6734c54c83cc9028fdb5d235e2a",
+      "tier": "local-triage"
     },
     {
+      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "again",
+          "changes",
+          "code",
+          "code.",
+          "finished.",
+          "only",
+          "scope-01",
+          "stop",
+          "touched.",
+          "uncommitted",
+          "until",
+          "verify"
+        ]
+      },
       "engine": "ai-semantic",
+      "ir_hash": "259b8250004b97f7f0138c187ed2c4b00e90d44b3487d438abd77fc5db77cb72",
+      "proof_contract": {
+        "checker": "independent-semantic-review",
+        "closure_required": false,
+        "invalidation_scope": "file",
+        "monotonicity": "unknown",
+        "proof_of_absence_allowed": false,
+        "read_set": [
+          "file-facts"
+        ],
+        "version": 1
+      },
+      "proof_contract_hash": "1247f0da1c5b2ceff974cc67269892cbcebee90d17759aa3edd758ff17645c04",
       "review_required": true,
       "risk": "medium",
       "rule_hash": "ea13ed261e9accae89c0c020c9b94ef676dd2c917cd6ccfcff79dbf23396e91d",
-      "rule_id": "SCOPE-01"
+      "rule_id": "SCOPE-01",
+      "rule_ir": {
+        "candidate_globs": [
+          "**/*"
+        ],
+        "context_requirements": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "domains": [],
+        "enforcement": "semantic reviewer required",
+        "excluded_globs": [
+          ".codex-audit/**",
+          ".codex/project-intelligence/**",
+          ".codex/agents/project-knowledge-reviewer.toml",
+          "docs/project-knowledge/**",
+          ".git/*",
+          "node_modules/**",
+          "vendor/**",
+          "vendors/**",
+          "dist/**",
+          "build/**",
+          "out/**",
+          "target/**",
+          ".next/**",
+          ".nuxt/**",
+          ".cache/**",
+          "__pycache__/**",
+          "*.min.js",
+          "*.map",
+          "*.lock",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "yarn.lock"
+        ],
+        "quoted_terms": [],
+        "semantic_tokens": [
+          "again",
+          "changes",
+          "code",
+          "code.",
+          "finished.",
+          "only",
+          "scope-01",
+          "stop",
+          "touched.",
+          "uncommitted",
+          "until",
+          "verify"
+        ],
+        "subject": "repository safety"
+      },
+      "shared_query_hash": "8a912ab69870a1289106b2bc179a52ceac47d4ce15b4f3db5849f53a2f68d644",
+      "tier": "local-triage"
     }
   ],
-  "version": 1
+  "shared_queries": {
+    "06a7eb45dba4415937056a5ad7ffc88db302b7a662232b2738db059d52ce3346": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "call-01",
+          "cancel",
+          "continue",
+          "does",
+          "fa-times-circle",
+          "fa-trash",
+          "false",
+          "function.",
+          "generically",
+          "going",
+          "here",
+          "human",
+          "into",
+          "line",
+          "mean",
+          "message",
+          "mode",
+          "reads",
+          "right",
+          "skip",
+          "stuff",
+          "they",
+          "think",
+          "this._utils.confirm",
+          "this.issavingevent",
+          "this.saveevent",
+          "true",
+          "understand",
+          "utils",
+          "what",
+          "without"
+        ]
+      },
+      "rule_ids": [
+        "CALL-01"
+      ]
+    },
+    "074d27b14289d5550dd34e7c9319e4214ef133d54fc2ada84820e71f71a06f32": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "capitalized",
+          "function",
+          "name-01",
+          "names",
+          "not.",
+          "private",
+          "typescript"
+        ]
+      },
+      "rule_ids": [
+        "NAME-01"
+      ]
+    },
+    "168366585ed1b6c12113e0c3829173c8c8e0c37b1ab7f047088aa9f7cb5fead6": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "early",
+          "flow-01",
+          "functions.",
+          "possible",
+          "return"
+        ]
+      },
+      "rule_ids": [
+        "FLOW-01"
+      ]
+    },
+    "199642217efefe95db250f58e5c3c611e53cc13fedb3a398d9498484752d3152": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "about",
+          "agents",
+          "apply.",
+          "asyncly",
+          "audit-01",
+          "commit",
+          "done",
+          "follow",
+          "make",
+          "many",
+          "please",
+          "rules",
+          "spawn",
+          "specialized",
+          "sure",
+          "these"
+        ]
+      },
+      "rule_ids": [
+        "AUDIT-01"
+      ]
+    },
+    "1fa8583f99322da14263bd0eec9338f6dc2ec623f997c0d8d65945fb7b1558c3": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "book.",
+          "const",
+          "doescrewconflictpersonnelmatch",
+          "easily",
+          "good",
+          "hasmatchingarrival",
+          "hasmatchingdeparture",
+          "hasmatchingdeparture.",
+          "key.arrivaldate.date",
+          "key.departuredate.date",
+          "like",
+          "personnel",
+          "readability-01",
+          "readable",
+          "return",
+          "scheduleevent",
+          "scheduleevent.arrivaldate.date",
+          "scheduleevent.departuredate.date"
+        ]
+      },
+      "rule_ids": [
+        "READABILITY-01"
+      ]
+    },
+    "26466d04b01f00905d43733bb1719c802bf06a3d4a85f1da4ef14a052b776188": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "endregion",
+          "i.e.",
+          "region",
+          "region-01",
+          "regions"
+        ]
+      },
+      "rule_ids": [
+        "REGION-01"
+      ]
+    },
+    "31e9debaed12eef2fe7de35b6f3b58b2d02da6734c54c83cc9028fdb5d235e2a": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "code.",
+          "file-01",
+          "files",
+          "line",
+          "over"
+        ]
+      },
+      "rule_ids": [
+        "FILE-01"
+      ]
+    },
+    "455680d09c523b3cacb3a229a3b60acb543367b0eafe18d2b23b2140e39998a6": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "classes",
+          "database",
+          "database-01",
+          "file",
+          "their",
+          "themselves."
+        ]
+      },
+      "rule_ids": [
+        "DATABASE-01"
+      ]
+    },
+    "4ce5bf83f9c8888c1b04ae4f4bf9aec40a9cae61e7d0ad5aa20a41dbcdf638ad": {
+      "detector_spec": {
+        "engine": "formatter-linter",
+        "kind": "tool-route"
+      },
+      "rule_ids": [
+        "FORMAT-01",
+        "FORMAT-02"
+      ]
+    },
+    "5905e86ff8b35511c54d53151f0d52870b04da44f98e3c5b1e908548f4707289": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "brackets.",
+          "condition-01",
+          "else",
+          "have",
+          "like",
+          "line",
+          "never",
+          "something",
+          "statements",
+          "true"
+        ]
+      },
+      "rule_ids": [
+        "CONDITION-01"
+      ]
+    },
+    "5ca9823f1937201e42dcb9b54aba7ac25255c8ff7220e3fb3307bbf22e4784f7": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "added.",
+          "code",
+          "constructors",
+          "function-01",
+          "functions",
+          "including",
+          "line",
+          "over",
+          "please",
+          "refactor"
+        ]
+      },
+      "rule_ids": [
+        "FUNCTION-01"
+      ]
+    },
+    "5e6cd90a7add02f3a579a1dcf388423555f521b5d2fdda84f94244ebd579c9a6": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "const",
+          "ever",
+          "explicit",
+          "types.",
+          "typescript",
+          "var-01",
+          "vars"
+        ]
+      },
+      "rule_ids": [
+        "VAR-01"
+      ]
+    },
+    "60718946c7567184b6152536b5c909d63bf4ff5c53ee13b965ab279ce8cc0b35": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "either",
+          "file",
+          "files",
+          "make",
+          "model-01",
+          "models",
+          "models.",
+          "smaller",
+          "sure",
+          "their",
+          "themselves",
+          "they"
+        ]
+      },
+      "rule_ids": [
+        "MODEL-01"
+      ]
+    },
+    "670414c08870bfcbddba7e3f297c6102a6d8ec4231a414bd02caaee66ec22c31": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "dynamics",
+          "expclit",
+          "objects",
+          "type-01",
+          "types"
+        ]
+      },
+      "rule_ids": [
+        "TYPE-01"
+      ]
+    },
+    "6d82db1db07a3c44a3dbd368f6848e61232dfeaf0360cad8c17b2ff341c36a01": {
+      "detector_spec": {
+        "engine": "compiler-analyzer",
+        "kind": "tool-route"
+      },
+      "rule_ids": [
+        "NULLABLE-01",
+        "NULLABLE-02"
+      ]
+    },
+    "6db3f7cbef8caaf4f371b3149210946fc673603cccf582961acd5acd1ed88ebc": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "async",
+          "async-01",
+          "awaitable",
+          "constructor",
+          "function",
+          "loading",
+          "methods",
+          "please",
+          "promise."
+        ]
+      },
+      "rule_ids": [
+        "ASYNC-01"
+      ]
+    },
+    "79e65ef52c11fae3f0c49af3281a03f8b68d86fd78d39c78c17d6f78981e9759": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": true
+        },
+        "tokens": [
+          "after",
+          "allowed",
+          "before",
+          "function.",
+          "guarantee",
+          "only",
+          "optimization-01",
+          "optimize",
+          "produced",
+          "result",
+          "same",
+          "tests",
+          "through",
+          "unit"
+        ]
+      },
+      "rule_ids": [
+        "OPTIMIZATION-01"
+      ]
+    },
+    "7a5ee31f3d17d131b4d5fa4904c2cf0e47e79e869abdea7613bd977c25fcae0a": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "arrays",
+          "cannot",
+          "collection-01",
+          "enumerate.empty",
+          "ienumerable",
+          "list",
+          "preferred",
+          "unless"
+        ]
+      },
+      "rule_ids": [
+        "COLLECTION-01"
+      ]
+    },
+    "864547dafb324977b2118c3eeda1a0014d0465efce89a58d5d3524864969fa83": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "better.",
+          "code",
+          "design-01",
+          "generics.",
+          "kiss",
+          "less",
+          "look",
+          "more",
+          "places",
+          "techniques",
+          "using"
+        ]
+      },
+      "rule_ids": [
+        "DESIGN-01"
+      ]
+    },
+    "8a912ab69870a1289106b2bc179a52ceac47d4ce15b4f3db5849f53a2f68d644": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "again",
+          "changes",
+          "code",
+          "code.",
+          "finished.",
+          "only",
+          "scope-01",
+          "stop",
+          "touched.",
+          "uncommitted",
+          "until",
+          "verify"
+        ]
+      },
+      "rule_ids": [
+        "SCOPE-01"
+      ]
+    },
+    "8bd3ea2f6f5266c5c4a59bd59f2f551af18ad1e9155b85760e2bec5d4da5d74c": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "comment",
+          "comment-01",
+          "inline",
+          "knockout"
+        ]
+      },
+      "rule_ids": [
+        "COMMENT-01"
+      ]
+    },
+    "90fbed33283a24680bcab3e0ee0b9e4303d1b2ea4a62d1edcee8bef1814db3af": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "apply",
+          "code",
+          "commands",
+          "git-01",
+          "mess",
+          "stage",
+          "these",
+          "touch",
+          "uncommitted",
+          "unstage"
+        ]
+      },
+      "rule_ids": [
+        "GIT-01"
+      ]
+    },
+    "9b974afdd23cb4aa661bf9c34d3d8e54a5bafbfead519d288a54641ef8d6bb34": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "bottom",
+          "classes",
+          "file",
+          "file.",
+          "huge",
+          "lines",
+          "private",
+          "sealed",
+          "their",
+          "them",
+          "type-02"
+        ]
+      },
+      "rule_ids": [
+        "TYPE-02"
+      ]
+    },
+    "9e30c450b210b2db7ffed8732c36886225e8d124837e71f5588fd07f36875ae1": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "complicated",
+          "operations.",
+          "overly",
+          "ternary-01",
+          "terniary"
+        ]
+      },
+      "rule_ids": [
+        "TERNARY-01"
+      ]
+    },
+    "a6118c566f73f29cd38047ce8914b400c202f2a618233b48597d20ee6d814dfe": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "created",
+          "functions",
+          "have",
+          "parameter-01",
+          "parameters."
+        ]
+      },
+      "rule_ids": [
+        "PARAMETER-01"
+      ]
+    },
+    "abd7e31c59265f6af9e2a5f7792e3731ae94ecee821fa96171b2b65da5d49cfd": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "catches",
+          "exception-01",
+          "minimal",
+          "zero"
+        ]
+      },
+      "rule_ids": [
+        "EXCEPTION-01"
+      ]
+    },
+    "adee4acbde2e24f2c9c6d3ec6480f5d517d4167ec46315dba74f8f2317ccef47": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "computed",
+          "dont",
+          "knockout",
+          "knockout-01",
+          "like",
+          "make",
+          "observables",
+          "observables.",
+          "sure",
+          "variables"
+        ]
+      },
+      "rule_ids": [
+        "KNOCKOUT-01"
+      ]
+    },
+    "b7abf15c760b4fe8c4799bcc4c5e5e8cc8f504e1b19cbba739b4723ac91421a2": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "bigger",
+          "code",
+          "constant-01",
+          "enum.",
+          "magic",
+          "make",
+          "mentioned",
+          "more",
+          "once",
+          "part",
+          "string",
+          "strings",
+          "than",
+          "theme",
+          "variable."
+        ]
+      },
+      "rule_ids": [
+        "CONSTANT-01"
+      ]
+    },
+    "ceb588fc8e713e922fc9579ebd8f7427518ffa2e5884f70fe82b64669bef1ddc": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "always",
+          "good",
+          "include",
+          "intellipass.web.data.personnel.personneldataprovider",
+          "models",
+          "name",
+          "namespace-01",
+          "personneldataprovider",
+          "shortcuts",
+          "spaces"
+        ]
+      },
+      "rule_ids": [
+        "NAMESPACE-01"
+      ]
+    },
+    "cf5611bbff35bdbca492a954f3bb737079f4a3a516b03f3c21249afba4c51aa8": {
+      "detector_spec": {
+        "kind": "shared-symbol-index",
+        "requires": {
+          "callees": false,
+          "callers": true,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "cast",
+          "createpersonneleventfromcrewevent",
+          "crewpositionids",
+          "good",
+          "like",
+          "lines",
+          "linq-01",
+          "linqs",
+          "null",
+          "personnel",
+          "personnel.select",
+          "personnelitem",
+          "prefer",
+          "return",
+          "scheduleevent",
+          "scheduleevent.copy",
+          "select",
+          "separate",
+          "this.",
+          "tolist",
+          "worksitescheduleevent"
+        ]
+      },
+      "rule_ids": [
+        "LINQ-01"
+      ]
+    },
+    "e4455d650d592910c9f745bb2446ec36c3bc6196484204ac869c0eb77bbf988f": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "functions",
+          "make",
+          "modified",
+          "mutability-01",
+          "readonly",
+          "static",
+          "sure",
+          "they",
+          "variables"
+        ]
+      },
+      "rule_ids": [
+        "MUTABILITY-01"
+      ]
+    },
+    "fb20c0e7f83dae68fd71b976fab1d4ea48584143ac0250fc74e17b50bd2101b7": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "deadcode-01",
+          "delete",
+          "empty",
+          "functions.",
+          "remove",
+          "unused",
+          "variables"
+        ]
+      },
+      "rule_ids": [
+        "DEADCODE-01"
+      ]
+    },
+    "fd08361a8d82a30328fccbc343e2faac96d890eb82b7fda715bd8612cba69521": {
+      "detector_spec": {
+        "kind": "semantic-frontier",
+        "requires": {
+          "callees": false,
+          "callers": false,
+          "configuration": false,
+          "full_file": false,
+          "tests": false
+        },
+        "tokens": [
+          "controller",
+          "controller-01",
+          "every",
+          "function.",
+          "model.isvalid",
+          "needed",
+          "states"
+        ]
+      },
+      "rule_ids": [
+        "CONTROLLER-01"
+      ]
+    }
+  },
+  "shared_query_count": 33,
+  "shared_scope_count": 3,
+  "shared_scopes": {
+    "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd": {
+      "rule_ids": [
+        "AUDIT-01",
+        "GIT-01",
+        "VAR-01",
+        "EXCEPTION-01",
+        "COMMENT-01",
+        "CONDITION-01",
+        "FLOW-01",
+        "NAME-01",
+        "KNOCKOUT-01",
+        "MUTABILITY-01",
+        "FUNCTION-01",
+        "DEADCODE-01",
+        "ASYNC-01",
+        "NULLABLE-01",
+        "TYPE-01",
+        "MODEL-01",
+        "NAMESPACE-01",
+        "COLLECTION-01",
+        "REGION-01",
+        "TERNARY-01",
+        "NULLABLE-02",
+        "PARAMETER-01",
+        "TYPE-02",
+        "READABILITY-01",
+        "CALL-01",
+        "LINQ-01",
+        "OPTIMIZATION-01",
+        "CONSTANT-01",
+        "DESIGN-01",
+        "FILE-01",
+        "SCOPE-01"
+      ]
+    },
+    "1e3c2f79e0feedd720ab5c28d2ee7f7dd3e5e7cefe4eb938acde4873de601419": {
+      "rule_ids": [
+        "FORMAT-01",
+        "FORMAT-02",
+        "DATABASE-01"
+      ]
+    },
+    "46f6ead7f3892983652563cc712d16aa657c818001d686f309b2bfc106a04d79": {
+      "rule_ids": [
+        "CONTROLLER-01"
+      ]
+    }
+  },
+  "version": 2
 }

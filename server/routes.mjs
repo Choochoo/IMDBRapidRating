@@ -2,13 +2,15 @@ import { z } from "zod";
 import { GenerateAiRecommendations, GetAiStatus } from "./ai-recommendations.mjs";
 import { Authenticate, EnsureCsrfToken, HashPassword, LoginLimiter, RegenerateSession, RegistrationLimiter, RegistrationSchema, RequireAuth, RequireCsrf } from "./auth.mjs";
 import { GetOpenAiModels } from "./openai-models.mjs";
-import { DeleteImdbRating, GetImdbStatus, SubmitImdbRating } from "./imdb-ratings.mjs";
+import { GetImdbStatus } from "./imdb-ratings.mjs";
 import { GetTitleMetadata } from "./title-metadata.mjs";
 import { CreateTitleMetadataStore } from "./title-metadata-store.mjs";
 import { HasEncryptionKey } from "./security/secrets.mjs";
 import { NormalizeRecommendationItem, RecommendationKey } from "./recommendation-queue.mjs";
 import { ReadMoviePool, ReadTitlePool } from "./movie-pool.mjs";
+import { CreateRaterEvents } from "./rater-events.mjs";
 import { MediaTypes, NormalizeMediaType, ReadMediaPayload } from "../shared/media.js";
+import { ReadStreamingCountry } from "../shared/streaming-country.js";
 
 const MediaTypeSchema = z.enum(MediaTypes);
 
@@ -60,6 +62,28 @@ const RaterUndoSchema = z.object({
   expectedRevision: z.number().int().positive(),
   titleId: z.string().trim().regex(/^tt\d+$/)
 });
+const QuickRatingSchema = z.object({
+  mediaType: MediaTypeSchema.default("movie"),
+  actionId: z.string().uuid(),
+  titleId: z.string().trim().regex(/^tt\d+$/),
+  rating: z.number().int().min(1).max(10),
+  at: z.string().optional()
+});
+const RateFields = {
+  mediaType: MediaTypeSchema.default("movie"),
+  titleId: z.string().trim().regex(/^tt\d+$/),
+  rating: z.number().int().min(1).max(10),
+  title: z.string().trim().max(500).default(""),
+  year: z.union([z.string(), z.number()]).optional(),
+  at: z.string().optional()
+};
+const DeleteRateFields = {
+  mediaType: MediaTypeSchema.default("movie"),
+  titleId: z.string().trim().regex(/^tt\d+$/),
+  deferAccountState: z.boolean().default(false)
+};
+const RateSchema = z.object(RateFields);
+const DeleteRateSchema = z.object(DeleteRateFields);
 const RaterQueueRestoreSchema = z.object({
   mediaType: MediaTypeSchema.default("movie"),
   expectedRevision: z.number().int().positive(),
@@ -68,11 +92,12 @@ const RaterQueueRestoreSchema = z.object({
 const SecretSchema = z.object({ value: z.string().trim().min(1).max(64 * 1024) });
 const PreferencesSchema = z.object({
   openAiModel: z.string().trim().max(160),
-  openAiModelLag: z.number().int().min(0).max(20)
+  openAiModelLag: z.number().int().min(0).max(20),
+  streamingCountry: z.string().trim().regex(/^[A-Za-z]{2}$/).transform((value) => value.toUpperCase())
 });
 const SecretTypes = new Set(["imdb", "tmdb", "openai"]);
 
-export function RegisterApiRoutes(app, { store, pool, rootPath, submitImdbRating = SubmitImdbRating, deleteImdbRating = DeleteImdbRating, generateAiRecommendations = GenerateAiRecommendations, readMoviePool = ReadMoviePool, readTitlePool = ReadTitlePool, titleMetadataStore, streamingAvailabilityService, raterEvents = { subscribe() {}, publish() {} } }) {
+export function RegisterApiRoutes(app, { store, pool, rootPath, generateAiRecommendations = GenerateAiRecommendations, readMoviePool = ReadMoviePool, readTitlePool = ReadTitlePool, titleMetadataStore, streamingAvailabilityService, raterEvents = CreateRaterEvents() }) {
   const metadataStore = titleMetadataStore || CreateTitleMetadataStore(pool);
   app.get("/health", async (_request, response) => {
     await pool.query("SELECT 1");
@@ -126,8 +151,8 @@ export function RegisterApiRoutes(app, { store, pool, rootPath, submitImdbRating
   app.use("/api", RequireAuth);
 
   app.get("/api/account/state", async (request, response) => {
-    const bundle = await store.getBundle(request.session.userId);
-    response.json({ ok: true, user: SessionUser(request), ...BuildBundle(bundle) });
+    const [bundle, imdbQueue] = await Promise.all([store.getBundle(request.session.userId), ReadImdbQueueStatus(store, request.session.userId)]);
+    response.json({ ok: true, user: SessionUser(request), ...BuildBundle(bundle), imdbQueue });
   });
 
   app.put("/api/account/state", RequireCsrf, async (request, response) => {
@@ -172,6 +197,8 @@ export function RegisterApiRoutes(app, { store, pool, rootPath, submitImdbRating
       committed.recommendations = await store.listRecommendationQueue(request.session.userId, mediaType);
     response.json({ ok: true, ...committed });
   });
+
+  app.put("/api/rater/quick-rating", RequireCsrf, async (request, response) => await HandleQuickRating(request, response, { store, rootPath, readMoviePool, readTitlePool, raterEvents }));
 
   app.put("/api/rater/undo", RequireCsrf, async (request, response) => {
     const parsed = RaterUndoSchema.safeParse(request.body);
@@ -239,7 +266,8 @@ export function RegisterApiRoutes(app, { store, pool, rootPath, submitImdbRating
     if (secretType === "imdb" && !/(?:^|;\s*)at-main=/.test(value))
       return response.status(422).json({ ok: false, code: "COOKIE_NOT_SIGNED_IN", error: "That IMDb cookie does not include at-main." });
     await store.putSecret(request.session.userId, secretType, value);
-    response.json({ ok: true, configured: true });
+    const resumed = secretType === "imdb" ? await store.ResumeImdbRatingJobs(request.session.userId) : null;
+    response.json({ ok: true, configured: true, resumedJobs: resumed?.queued || 0, revision: resumed?.revision });
   });
 
   app.delete("/api/account/secrets/:type", RequireCsrf, async (request, response) => {
@@ -253,36 +281,37 @@ export function RegisterApiRoutes(app, { store, pool, rootPath, submitImdbRating
   app.get("/api/imdb/status", async (request, response) => {
     const cookie = await store.getSecret(request.session.userId, "imdb");
     const tmdb = await store.getSecret(request.session.userId, "tmdb");
-    response.json({ ...GetImdbStatus(), configured: Boolean(cookie) || GetImdbStatus().dryRun, tmdbConfigured: Boolean(tmdb) });
+    const imdbQueue = await store.ReadImdbRatingQueueStatus(request.session.userId);
+    response.json({ ...GetImdbStatus(), configured: Boolean(cookie) || GetImdbStatus().dryRun, tmdbConfigured: Boolean(tmdb), imdbQueue });
   });
 
   app.post("/api/rate", RequireCsrf, async (request, response) => {
     const mediaType = ReadRequestMediaType(request, response);
     if (!mediaType)
       return;
-    const cookie = await store.getSecret(request.session.userId, "imdb");
-    const result = await submitImdbRating(request.body.titleId, request.body.rating, cookie);
-    if (!result.payload?.ok)
-      return SendResult(response, result);
-    const record = BuildSubmittedRatingRecord({ ...request.body, mediaType }, result.payload);
-    const revision = await store.recordRating(request.session.userId, record, mediaType);
-    await store.removeRecommendation(request.session.userId, { ...record, queueKey: RecommendationKey(record) }, mediaType);
+    const parsed = RateSchema.safeParse({ ...request.body, mediaType });
+    if (!parsed.success)
+      return Invalid(response);
+    const record = BuildQueuedRatingRecord(parsed.data);
+    const queued = await store.QueueImdbRating(request.session.userId, record, mediaType);
     await ReconcileRaterQueue(store, request.session.userId, mediaType, rootPath, readMoviePool, readTitlePool, raterEvents);
-    response.status(result.status).json({ ...result.payload, revision });
+    response.status(202).json({ ok: true, queued: true, titleId: record.ttId, rating: record.rating, revision: queued.revision, jobId: queued.job.id });
+  });
+
+  app.post("/api/imdb/retry", RequireCsrf, async (request, response) => {
+    const result = await store.RetryFailedImdbRatingJobs(request.session.userId);
+    response.json({ ok: true, queued: result.queued, revision: result.revision });
   });
 
   app.delete("/api/rate", RequireCsrf, async (request, response) => {
     const mediaType = ReadRequestMediaType(request, response);
     if (!mediaType)
       return;
-    const cookie = await store.getSecret(request.session.userId, "imdb");
-    const result = await deleteImdbRating(request.body.titleId, cookie);
-    if (!result.payload?.ok)
-      return SendResult(response, result);
-    const revision = request.body?.deferAccountState
-      ? undefined
-      : await store.deleteRating(request.session.userId, result.payload.titleId, mediaType);
-    response.status(result.status).json({ ...result.payload, revision });
+    const parsed = DeleteRateSchema.safeParse({ ...request.body, mediaType });
+    if (!parsed.success)
+      return Invalid(response);
+    const queued = await store.QueueImdbDelete(request.session.userId, parsed.data.titleId, mediaType, { deferAccountState: parsed.data.deferAccountState });
+    response.status(202).json({ ok: true, queued: true, deleted: true, titleId: parsed.data.titleId, revision: queued.revision, jobId: queued.job.id });
   });
 
   app.get("/api/ai/status", async (request, response) => {
@@ -354,10 +383,40 @@ export function RegisterApiRoutes(app, { store, pool, rootPath, submitImdbRating
     const titleId = request.params[0];
     if (!await IsCatalogTitle(rootPath, mediaType, titleId, readMoviePool, readTitlePool))
       return UnknownTitle(response);
-    const tmdbApiKey = await store.getSecret(request.session.userId, "tmdb");
     const includeStreaming = request.query.streaming === "1";
-    SendResult(response, await GetTitleMetadata(titleId, { tmdbApiKey, mediaType, metadataStore, streamingAvailabilityService, includeStreaming }));
+    const [tmdbApiKey, preferences] = await Promise.all([
+      store.getSecret(request.session.userId, "tmdb"),
+      includeStreaming ? store.getPreferences(request.session.userId) : Promise.resolve({})
+    ]);
+    const streamingCountry = ReadStreamingCountry(preferences.streamingCountry);
+    SendResult(response, await GetTitleMetadata(titleId, { tmdbApiKey, mediaType, metadataStore, streamingAvailabilityService, includeStreaming, streamingCountry }));
   });
+}
+
+async function HandleQuickRating(request, response, dependencies) {
+  const parsed = QuickRatingSchema.safeParse(request.body);
+  if (!parsed.success)
+    return Invalid(response);
+  const titlePool = await ReadRequestedPool(dependencies.rootPath, parsed.data.mediaType, dependencies.readMoviePool, dependencies.readTitlePool);
+  const title = ReadCatalogTitle(titlePool, parsed.data.titleId);
+  if (!title)
+    return UnknownTitle(response);
+  await dependencies.store.getRaterQueue(request.session.userId, parsed.data.mediaType, titlePool);
+  const decision = BuildQuickRatingDecision(parsed.data, title);
+  const committed = await dependencies.store.CommitQuickRating(request.session.userId, decision);
+  dependencies.raterEvents.publish(request.session.userId, committed.queue.revision, parsed.data.mediaType);
+  const recommendations = await dependencies.store.listRecommendationQueue(request.session.userId, parsed.data.mediaType);
+  response.json({ ok: true, ...committed, recommendations });
+}
+
+function BuildQuickRatingDecision(request, title) {
+  const canonical = { ...request, kind: "rated", title: title.title, year: title.year, genres: Array.isArray(title.genres) ? title.genres : [] };
+  return BuildRaterDecision(canonical);
+}
+
+function ReadCatalogTitle(pool, titleId) {
+  const titles = Array.isArray(pool?.titles) ? pool.titles : [];
+  return titles.find((title) => title.ttId === titleId) || null;
 }
 
 function BuildBundle(bundle) {
@@ -367,7 +426,8 @@ function BuildBundle(bundle) {
       tmdbConfigured: bundle.configured.has("tmdb"),
       openAiConfigured: bundle.configured.has("openai"),
       openAiModel: bundle.preferences.openAiModel || "",
-      openAiModelLag: Number(bundle.preferences.openAiModelLag) || 2
+      openAiModelLag: Number(bundle.preferences.openAiModelLag) || 2,
+      streamingCountry: ReadStreamingCountry(bundle.preferences.streamingCountry)
     },
     payload: bundle.state.payload || {},
     ratingsCsv: bundle.state.ratingsCsv || "",
@@ -375,20 +435,18 @@ function BuildBundle(bundle) {
   };
 }
 
-function BuildSubmittedRatingRecord(request, result) {
-  const submittedAt = new Date().toISOString();
+function BuildQueuedRatingRecord(request) {
   return {
     status: "rated",
-    rating: result.rating,
-    title: String(request.title || "").trim().slice(0, 500),
+    rating: request.rating,
+    title: request.title,
     year: ReadYear(request.year),
-    ttId: result.titleId,
+    ttId: request.titleId,
     mediaType: NormalizeMediaType(request.mediaType),
-    at: ReadTimestamp(request.at, submittedAt),
-    submitStatus: "submitted",
+    at: ReadTimestamp(request.at, new Date().toISOString()),
+    submitStatus: "pending",
     submitError: "",
-    submittedAt,
-    imdbEchoRating: result.rating
+    submittedAt: ""
   };
 }
 
@@ -496,6 +554,12 @@ function SendResult(response, result) {
 
 function Invalid(response) {
   return response.status(422).json({ ok: false, code: "INVALID_REQUEST", error: "The submitted data is invalid." });
+}
+
+async function ReadImdbQueueStatus(store, userId) {
+  if (typeof store.ReadImdbRatingQueueStatus !== "function")
+    return null;
+  return await store.ReadImdbRatingQueueStatus(userId);
 }
 
 async function ReconcileRaterQueue(store, userId, mediaType, rootPath, readMoviePool, readTitlePool, raterEvents) {

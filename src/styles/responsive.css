@@ -50,14 +50,6 @@
     overflow: hidden;
   }
 
-  .recommendation-header {
-    flex-direction: column;
-  }
-
-  .recommendation-actions {
-    justify-content: flex-start;
-  }
-
   .model-panel {
     grid-template-columns: 1fr;
   }
@@ -104,6 +96,14 @@
 
   .brand > span:last-child {
     display: none;
+  }
+
+  .recommendation-header {
+    grid-template-columns: 1fr;
+  }
+
+  .recommendation-actions {
+    justify-content: flex-start;
   }
 }
 
@@ -233,17 +233,16 @@
   }
 
   .data-menu summary .button-icon,
-  .data-menu summary .menu-chevron,
-  .connection-summary .menu-chevron {
+  .data-menu summary .menu-chevron {
     display: none;
   }
 
   .connection-summary {
-    min-width: 128px;
-  }
-
-  .connection-summary small {
-    display: none;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
   }
 
   .logout-action span {
@@ -424,6 +423,15 @@
   .model-controls {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .recommendation-header {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .recommendation-header h1 {
+    font-size: 28px;
   }
 
   .recommendation-count-control {

@@ -4,6 +4,9 @@ import { MergeAccountPayload } from "../src/app/account-state-merge.js";
 import { RapidRaterApp } from "../src/app/rapid-rater-app.js";
 import { ReadMediaPayload } from "../shared/media.js";
 
+test("an idle account refresh updates durable IMDb queue counts without a state revision", VerifyQueueCountRefresh);
+test("equal rating timestamps preserve authoritative server submit state", VerifyRemoteTimestampTie);
+
 test("account conflicts preserve ratings made on both devices", () => {
   const remote = {
     ratings: {
@@ -135,6 +138,27 @@ test("the most recently changed filters win during a device conflict", () => {
   assert.equal(filters.minYear, 2000);
   assert.equal(filters.excludeBollywood, true);
 });
+
+async function VerifyQueueCountRefresh() {
+  const app = Object.create(RapidRaterApp.prototype);
+  app.User = { email: "user@example.com" };
+  app.StateDirty = false;
+  app.AccountRevision = 8;
+  app.State = { live: { queueCounts: {} } };
+  app.FetchJson = async () => ({ revision: 8, imdbQueue: { counts: { failed: 2 } } });
+  app.UpdateStats = () => null;
+  const changed = await app.RefreshAccountStateFromServer();
+  assert.equal(changed, false);
+  assert.deepEqual(app.State.live.queueCounts, { failed: 2 });
+}
+
+function VerifyRemoteTimestampTie() {
+  const timestamp = "2026-07-22T20:00:00.000Z";
+  const remote = { ratings: { tt0113277: { ...Record("tt0113277", 9, timestamp), submitStatus: "failed" } } };
+  const local = { ratings: { tt0113277: { ...Record("tt0113277", 9, timestamp), submitStatus: "pending" } } };
+  const merged = MergeAccountPayload(remote, local);
+  assert.equal(ReadMediaPayload(merged, "movie").ratings.tt0113277.submitStatus, "failed");
+}
 
 test("the most recently changed recommendation basis wins per media section", () => {
   const merged = MergeAccountPayload({
