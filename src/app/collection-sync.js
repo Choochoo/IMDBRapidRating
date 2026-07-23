@@ -1,55 +1,83 @@
 import { ParseCsv, ToCsvRow } from "../../shared/csv.js";
 
-const LetterboxdFileKinds = Object.freeze({
-  "ratings.csv": "ratings",
-  "watched.csv": "watched",
-  "diary.csv": "diary",
-  "watchlist.csv": "watchlist"
-});
+const DiaryKind = "diary";
+const ImportedStatus = "imported";
+const LetterboxdExportName = "Letterboxd export";
+const RatingsKind = "ratings";
+const WatchedKind = "watched";
+const WatchlistKind = "watchlist";
+const Newline = "\n";
+const PathSeparator = "/";
+const SpaceSeparator = " ";
+const LetterboxdFileKinds = {
+  "ratings.csv": RatingsKind,
+  "watched.csv": WatchedKind,
+  "diary.csv": DiaryKind,
+  "watchlist.csv": WatchlistKind
+};
+Object.freeze(LetterboxdFileKinds);
 
-export function ImportLetterboxdCsvFiles(files, movieById, sourceName = "Letterboxd export") {
-  const lookup = BuildMovieLookup(movieById);
-  const items = new Map();
-  const recognizedFiles = [];
-  let importedRows = 0;
-  for (const file of files) {
-    const kind = ReadLetterboxdFileKind(file.name);
-    if (!kind)
-      continue;
-    recognizedFiles.push(file.name);
-    const rows = ParseCsv(String(file.text || ""));
-    if (!rows.length)
-      continue;
-    const indexes = ReadLetterboxdIndexes(rows[0]);
-    for (const row of rows.slice(1)) {
-      const item = BuildLetterboxdItem(row, indexes, kind, lookup, file.name);
-      if (!item)
-        continue;
-      const key = CollectionItemKey(item);
-      items.set(key, MergeLetterboxdItems(items.get(key), item));
-      importedRows++;
-    }
-  }
-  if (!recognizedFiles.length)
-    throw new Error("The file does not contain Letterboxd ratings, watched, diary, or watchlist CSV data.");
+export function ImportLetterboxdCsvFiles(files, movieById, sourceName = LetterboxdExportName) {
+  const state = CreateLetterboxdImportState(movieById);
+  for (const file of files)
+    ImportLetterboxdFile(state, file);
+  EnsureRecognizedLetterboxdFiles(state.recognizedFiles);
+  return BuildImportedLetterboxdState(state, sourceName);
+}
+
+function CreateLetterboxdImportState(movieById) {
   return {
-    sourceName: String(sourceName || "Letterboxd export"),
+    lookup: BuildMovieLookup(movieById),
+    items: new Map(),
+    recognizedFiles: [],
+    importedRows: 0
+  };
+}
+
+function ImportLetterboxdFile(state, file) {
+  const kind = ReadLetterboxdFileKind(file.name);
+  if (!kind)
+    return;
+  state.recognizedFiles.push(file.name);
+  const rows = ParseCsv(String(file.text || ""));
+  if (rows.length)
+    ImportLetterboxdRows(state, rows, kind, file.name);
+}
+
+function ImportLetterboxdRows(state, rows, kind, sourceFile) {
+  const indexes = ReadLetterboxdIndexes(rows[0]);
+  for (const row of rows.slice(1))
+    ImportLetterboxdRow(state, row, indexes, kind, sourceFile);
+}
+
+function ImportLetterboxdRow(state, row, indexes, kind, sourceFile) {
+  const item = BuildLetterboxdItem(row, indexes, kind, state.lookup, sourceFile);
+  if (!item)
+    return;
+  const key = CollectionItemKey(item);
+  state.items.set(key, MergeLetterboxdItems(state.items.get(key), item));
+  state.importedRows++;
+}
+
+function EnsureRecognizedLetterboxdFiles(files) {
+  if (!files.length)
+    throw new Error("The file does not contain Letterboxd ratings, watched, diary, or watchlist CSV data.");
+}
+
+function BuildImportedLetterboxdState(state, sourceName) {
+  return {
+    sourceName: String(sourceName || LetterboxdExportName),
     importedAt: new Date().toISOString(),
-    files: recognizedFiles,
-    importedRows,
-    items: [...items.values()]
+    files: state.recognizedFiles,
+    importedRows: state.importedRows,
+    items: [...state.items.values()]
   };
 }
 
 export function NormalizeLetterboxdState(value, movieById) {
   const source = value && typeof value === "object" ? value : {};
   const lookup = BuildMovieLookup(movieById);
-  const items = new Map();
-  for (const raw of Array.isArray(source.items) ? source.items : []) {
-    const item = NormalizeStoredLetterboxdItem(raw, lookup);
-    if (item)
-      items.set(CollectionItemKey(item), MergeLetterboxdItems(items.get(CollectionItemKey(item)), item));
-  }
+  const items = NormalizeStoredLetterboxdItems(source.items, lookup);
   return {
     sourceName: String(source.sourceName || ""),
     importedAt: String(source.importedAt || ""),
@@ -59,87 +87,159 @@ export function NormalizeLetterboxdState(value, movieById) {
   };
 }
 
+function NormalizeStoredLetterboxdItems(sourceItems, lookup) {
+  const items = new Map();
+  const rawItems = Array.isArray(sourceItems) ? sourceItems : [];
+  for (const raw of rawItems)
+    StoreNormalizedLetterboxdItem(items, raw, lookup);
+  return items;
+}
+
+function StoreNormalizedLetterboxdItem(items, raw, lookup) {
+  const item = NormalizeStoredLetterboxdItem(raw, lookup);
+  if (!item)
+    return;
+  const key = CollectionItemKey(item);
+  items.set(key, MergeLetterboxdItems(items.get(key), item));
+}
+
 export function ReconcileCollections(ratings, letterboxdState) {
+  const collections = ReadReconcileCollections(ratings, letterboxdState);
+  const plan = CreateReconciliationPlan();
+  ReconcileLetterboxdItems(collections.letterboxdItems, collections.imdbByKey, plan);
+  ReconcileImdbRecords(collections.imdbRecords, collections.letterboxdByKey, plan);
+  return BuildReconciliationResult(collections, plan);
+}
+
+function ReadReconcileCollections(ratings, letterboxdState) {
   const imdbRecords = Object.values(ratings || {}).filter(IsRatedRecord);
-  const letterboxdItems = (letterboxdState?.items || []).filter((item) => IsValidRating(item.rating));
-  const watchedOnly = (letterboxdState?.items || []).filter((item) => item.watched && !IsValidRating(item.rating));
-  const imdbByKey = BuildCollectionMap(imdbRecords);
-  const letterboxdByKey = BuildCollectionMap(letterboxdItems);
-  const toImdb = [];
-  const toLetterboxd = [];
-  const conflicts = [];
-  const unmatched = [];
-  let matched = 0;
+  const allItems = letterboxdState?.items || [];
+  const letterboxdItems = allItems.filter((item) => IsValidRating(item.rating));
+  return {
+    imdbRecords,
+    letterboxdItems,
+    watchedOnly: allItems.filter((item) => item.watched && !IsValidRating(item.rating)),
+    imdbByKey: BuildCollectionMap(imdbRecords),
+    letterboxdByKey: BuildCollectionMap(letterboxdItems)
+  };
+}
 
-  for (const item of letterboxdItems) {
-    const record = FindCollectionMatch(item, imdbByKey);
-    if (!record) {
-      if (item.ttId)
-        toImdb.push({ item, record: null });
-      else
-        unmatched.push(item);
-      continue;
-    }
-    if (record.rating !== item.rating) {
-      conflicts.push({ ttId: item.ttId || record.ttId, title: item.title || record.title, year: item.year || record.year, imdbRating: record.rating, letterboxdRating: item.rating });
-      continue;
-    }
-    if (IsPresentOnImdb(record))
-      matched++;
-    else
-      toImdb.push({ item, record });
-  }
+function CreateReconciliationPlan() {
+  return {
+    toImdb: [],
+    toLetterboxd: [],
+    conflicts: [],
+    unmatched: [],
+    matched: 0
+  };
+}
 
-  for (const record of imdbRecords) {
+function ReconcileLetterboxdItems(items, imdbByKey, plan) {
+  for (const item of items)
+    ReconcileLetterboxdItem(item, imdbByKey, plan);
+}
+
+function ReconcileLetterboxdItem(item, imdbByKey, plan) {
+  const record = FindCollectionMatch(item, imdbByKey);
+  if (!record)
+    return ReconcileMissingLetterboxdItem(item, plan);
+  if (record.rating !== item.rating)
+    return plan.conflicts.push(BuildRatingConflict(item, record));
+  if (IsPresentOnImdb(record))
+    plan.matched++;
+  else
+    plan.toImdb.push({ item, record });
+}
+
+function ReconcileMissingLetterboxdItem(item, plan) {
+  if (item.ttId)
+    plan.toImdb.push({ item, record: null });
+  else
+    plan.unmatched.push(item);
+}
+
+function BuildRatingConflict(item, record) {
+  return {
+    ttId: item.ttId || record.ttId,
+    title: item.title || record.title,
+    year: item.year || record.year,
+    imdbRating: record.rating,
+    letterboxdRating: item.rating
+  };
+}
+
+function ReconcileImdbRecords(records, letterboxdByKey, plan) {
+  for (const record of records) {
     const item = FindCollectionMatch(record, letterboxdByKey);
     if (!item || !IsValidRating(item.rating))
-      toLetterboxd.push(record);
+      plan.toLetterboxd.push(record);
   }
+}
 
+function BuildReconciliationResult(collections, plan) {
   return {
-    imdbCount: imdbRecords.filter(IsPresentOnImdb).length,
-    databaseRatedCount: imdbRecords.length,
-    letterboxdCount: letterboxdItems.length,
-    matched,
-    toImdb,
-    toLetterboxd,
-    conflicts,
-    unmatched,
-    watchedOnly
+    imdbCount: collections.imdbRecords.filter(IsPresentOnImdb).length,
+    databaseRatedCount: collections.imdbRecords.length,
+    letterboxdCount: collections.letterboxdItems.length,
+    matched: plan.matched,
+    toImdb: plan.toImdb,
+    toLetterboxd: plan.toLetterboxd,
+    conflicts: plan.conflicts,
+    unmatched: plan.unmatched,
+    watchedOnly: collections.watchedOnly
   };
 }
 
 export function BuildLetterboxdCsvFiles(records, maxBytes = 950_000) {
   const header = ToCsvRow(["imdbID", "Title", "Year", "Rating10", "WatchedDate"]);
-  const rows = records.filter(IsRatedRecord).sort(CompareCollectionDates).map((record) => ToCsvRow([
-    record.ttId,
-    record.title || "",
-    record.year || "",
-    record.rating,
-    ReadCalendarDate(record.at)
-  ]));
+  const rows = BuildLetterboxdCsvRows(records);
   if (!rows.length)
     return [];
+  const chunks = ChunkLetterboxdRows(header, rows, maxBytes);
+  return BuildLetterboxdCsvOutputs(chunks);
+}
+
+function BuildLetterboxdCsvRows(records) {
+  return records.filter(IsRatedRecord).sort(CompareCollectionDates).map(BuildLetterboxdCsvRow);
+}
+
+function BuildLetterboxdCsvRow(record) {
+  return ToCsvRow([record.ttId, record.title || "", record.year || "", record.rating, ReadCalendarDate(record.at)]);
+}
+
+function ChunkLetterboxdRows(header, rows, maxBytes) {
   const chunks = [];
   let current = [header];
   for (const row of rows) {
-    const candidate = [...current, row].join("\n");
-    if (current.length > 1 && ByteLength(candidate) > maxBytes) {
-      chunks.push(current.join("\n"));
+    const candidate = [...current, row].join(Newline);
+    if (ShouldStartLetterboxdChunk(current, candidate, maxBytes)) {
+      chunks.push(current.join(Newline));
       current = [header, row];
-    } else {
-      current.push(row);
+      continue;
     }
+    current.push(row);
   }
-  chunks.push(current.join("\n"));
-  return chunks.map((content, index) => ({
-    name: chunks.length === 1 ? "upload-this-to-letterboxd.csv" : `upload-to-letterboxd-${String(index + 1).padStart(2, "0")}.csv`,
+  chunks.push(current.join(Newline));
+  return chunks;
+}
+
+function ShouldStartLetterboxdChunk(current, candidate, maxBytes) {
+  return current.length > 1 && ByteLength(candidate) > maxBytes;
+}
+
+function BuildLetterboxdCsvOutputs(chunks) {
+  return chunks.map((content, index) => BuildLetterboxdCsvOutput(content, index, chunks.length));
+}
+
+function BuildLetterboxdCsvOutput(content, index, count) {
+  return {
+    name: count === 1 ? "upload-this-to-letterboxd.csv" : `upload-to-letterboxd-${String(index + 1).padStart(2, "0")}.csv`,
     content
-  }));
+  };
 }
 
 function ReadLetterboxdFileKind(name) {
-  const baseName = String(name || "").replaceAll("\\", "/").split("/").pop().toLowerCase();
+  const baseName = String(name || "").replaceAll("\\", PathSeparator).split(PathSeparator).pop().toLowerCase();
   return LetterboxdFileKinds[baseName] || "";
 }
 
@@ -161,41 +261,66 @@ function FindHeader(headers, names) {
 }
 
 function BuildLetterboxdItem(row, indexes, kind, lookup, sourceFile) {
-  const title = ReadCell(row, indexes.title).replace(/\s+/g, " ").trim();
+  const identity = ResolveLetterboxdIdentity(row, indexes, lookup);
+  if (!identity.title && !identity.ttId)
+    return null;
+  return BuildLetterboxdItemRecord(row, indexes, kind, identity, sourceFile);
+}
+
+function ResolveLetterboxdIdentity(row, indexes, lookup) {
+  const title = ReadCell(row, indexes.title).replace(/\s+/g, SpaceSeparator).trim();
   const year = Number(ReadCell(row, indexes.year)) || null;
   const explicitId = NormalizeImdbId(ReadCell(row, indexes.imdbId));
   const movie = explicitId ? lookup.byId.get(explicitId) : FindMovieByTitle(title, year, lookup);
-  const ttId = explicitId || movie?.ttId || "";
-  const resolvedTitle = title || movie?.title || "";
-  if (!resolvedTitle && !ttId)
-    return null;
+  return {
+    ttId: explicitId || movie?.ttId || "",
+    title: title || movie?.title || "",
+    year: year || Number(movie?.year) || null
+  };
+}
+
+function BuildLetterboxdItemRecord(row, indexes, kind, identity, sourceFile) {
   const date = ReadCalendarDate(ReadCell(row, indexes.date));
   return {
-    ttId,
-    title: resolvedTitle,
-    year: year || Number(movie?.year) || null,
+    ...identity,
     letterboxdUri: ReadCell(row, indexes.uri).trim(),
     rating: ReadLetterboxdRating(row, indexes),
-    watched: kind !== "watchlist",
-    watchedAt: kind === "diary" || kind === "watched" ? date : "",
-    ratedAt: kind === "ratings" || kind === "diary" ? date : "",
-    watchlist: kind === "watchlist",
+    ...BuildLetterboxdActivity(kind, date),
     sourceFiles: [String(sourceFile || "")]
   };
 }
 
+function BuildLetterboxdActivity(kind, date) {
+  return {
+    watched: kind !== WatchlistKind,
+    watchedAt: kind === DiaryKind || kind === WatchedKind ? date : "",
+    ratedAt: kind === RatingsKind || kind === DiaryKind ? date : "",
+    watchlist: kind === WatchlistKind
+  };
+}
+
 function NormalizeStoredLetterboxdItem(raw, lookup) {
+  const identity = ResolveStoredLetterboxdIdentity(raw, lookup);
+  if (!identity.title && !identity.ttId)
+    return null;
+  return BuildNormalizedLetterboxdItem(raw, identity);
+}
+
+function ResolveStoredLetterboxdIdentity(raw, lookup) {
   const explicitId = NormalizeImdbId(raw?.ttId);
-  const title = String(raw?.title || "").replace(/\s+/g, " ").trim();
+  const title = String(raw?.title || "").replace(/\s+/g, SpaceSeparator).trim();
   const year = Number(raw?.year) || null;
   const movie = explicitId ? lookup.byId.get(explicitId) : FindMovieByTitle(title, year, lookup);
-  const ttId = explicitId || movie?.ttId || "";
-  if (!title && !movie?.title && !ttId)
-    return null;
   return {
-    ttId,
+    ttId: explicitId || movie?.ttId || "",
     title: title || movie?.title || "",
-    year: year || Number(movie?.year) || null,
+    year: year || Number(movie?.year) || null
+  };
+}
+
+function BuildNormalizedLetterboxdItem(raw, identity) {
+  return {
+    ...identity,
     letterboxdUri: String(raw?.letterboxdUri || ""),
     rating: IsValidRating(Number(raw?.rating)) ? Number(raw.rating) : null,
     watched: Boolean(raw?.watched),
@@ -212,6 +337,12 @@ function MergeLetterboxdItems(current, next) {
   return {
     ...current,
     ...next,
+    ...BuildMergedLetterboxdValues(current, next)
+  };
+}
+
+function BuildMergedLetterboxdValues(current, next) {
+  return {
     ttId: next.ttId || current.ttId,
     title: next.title || current.title,
     year: next.year || current.year,
@@ -221,8 +352,13 @@ function MergeLetterboxdItems(current, next) {
     watchedAt: LatestDate(current.watchedAt, next.watchedAt),
     ratedAt: LatestDate(current.ratedAt, next.ratedAt),
     watchlist: current.watchlist || next.watchlist,
-    sourceFiles: [...new Set([...(current.sourceFiles || []), ...(next.sourceFiles || [])].filter(Boolean))]
+    sourceFiles: MergeSourceFiles(current.sourceFiles, next.sourceFiles)
   };
+}
+
+function MergeSourceFiles(current, next) {
+  const files = [...(current || []), ...(next || [])].filter(Boolean);
+  return [...new Set(files)];
 }
 
 function BuildMovieLookup(movieById) {
@@ -285,7 +421,7 @@ function TitleYearKey(item) {
 }
 
 function NormalizeTitle(value) {
-  return String(value || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+  return String(value || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, SpaceSeparator).trim();
 }
 
 function NormalizeImdbId(value) {
@@ -307,12 +443,12 @@ function ReadCell(row, index) {
 }
 
 function IsRatedRecord(record) {
-  const validStatus = record?.status === "rated" || record?.status === "imported";
+  const validStatus = record?.status === "rated" || record?.status === ImportedStatus;
   return validStatus && /^tt\d+$/.test(String(record?.ttId || "")) && IsValidRating(record?.rating);
 }
 
 function IsPresentOnImdb(record) {
-  return record?.status === "imported" || record?.submitStatus === "submitted";
+  return record?.status === ImportedStatus || record?.submitStatus === "submitted";
 }
 
 function IsValidRating(value) {

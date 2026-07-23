@@ -1,23 +1,52 @@
 import { Config } from "./config.js";
+import { ClickEvent } from "./app-constants.js";
 import { BuildRatingRecord } from "./rating-records.js";
 import { EscapeHtml } from "./util.js";
 
+const RecommendationExclusionSelector = "[data-recommendation-exclusion]";
+const RecommendationRatingSelector = "[data-recommendation-rating]";
+
 export function BindRecommendationRatings(app) {
-  app.Elements.recommendationGrid.addEventListener("click", (event) => HandleRatingClick(app, event));
-  app.Elements.recommendationDetailsContent.addEventListener("click", (event) => HandleRatingClick(app, event));
+  app.Elements.recommendationGrid.addEventListener(ClickEvent, (event) => HandleRatingClick(app, event));
+  app.Elements.recommendationDetailsContent.addEventListener(ClickEvent, (event) => HandleRatingClick(app, event));
 }
 
 function HandleRatingClick(app, event) {
-  const detailsButton = ReadDetailsButton(event.target);
-  if (detailsButton)
-    return app.ShowRecommendationDetails(detailsButton);
-  const exclusionButton = ReadExclusionButton(event.target);
-  if (exclusionButton)
-    return ExcludeRecommendation(app, exclusionButton);
+  const action = ReadRecommendationAction(event.target);
+  if (action)
+    return action(app);
   const button = ReadRatingButton(event.target);
   if (!button)
     return;
   RateRecommendation(app, button).catch((error) => app.ShowRecommendationError(error.message));
+}
+
+function ReadRecommendationAction(target) {
+  const watchButton = ReadWatchButton(target);
+  if (watchButton)
+    return (app) => app.ShowRecommendationWatch(watchButton);
+  const detailsButton = ReadDetailsButton(target);
+  if (detailsButton)
+    return (app) => app.ShowRecommendationDetails(detailsButton);
+  const shareButton = ReadShareButton(target);
+  if (shareButton)
+    return (app) => app.OpenShareDialog(shareButton);
+  const exclusionButton = ReadExclusionButton(target);
+  if (exclusionButton)
+    return (app) => ExcludeRecommendation(app, exclusionButton);
+  return null;
+}
+
+function ReadWatchButton(target) {
+  if (!target?.closest)
+    return null;
+  return target.closest("[data-recommendation-watch]");
+}
+
+function ReadShareButton(target) {
+  if (!target?.closest)
+    return null;
+  return target.closest("[data-share-recommendation]");
 }
 
 function ReadDetailsButton(target) {
@@ -29,13 +58,13 @@ function ReadDetailsButton(target) {
 function ReadExclusionButton(target) {
   if (!target?.closest)
     return null;
-  return target.closest("[data-recommendation-exclusion]");
+  return target.closest(RecommendationExclusionSelector);
 }
 
 function ReadRatingButton(target) {
   if (!target?.closest)
     return null;
-  return target.closest("[data-recommendation-rating]");
+  return target.closest(RecommendationRatingSelector);
 }
 
 async function RateRecommendation(app, button) {
@@ -50,8 +79,7 @@ async function RateRecommendation(app, button) {
 async function SaveRecommendationRating(app, card, button) {
   const request = app.BuildLiveRateRequest(BuildRecommendationRateRecord(app, card, button));
   SetCardSaving(card, true);
-  const payload = await app.PostJson(Config.rateUrl, request, "AI recommendation rating failed.")
-    .finally(() => SetCardSaving(card, false));
+  const payload = await app.PostJson(Config.rateUrl, request).finally(() => SetCardSaving(card, false));
   ApplyRecommendationRating(app, card, request, payload);
 }
 
@@ -70,12 +98,13 @@ function ExcludeRecommendation(app, button) {
   const card = ReadRecommendationContainer(button);
   if (!card)
     return;
-  const exclusion = app.AddRecommendationExclusion({
+  const record = {
     ttId: card.dataset.ttid || "",
     title: card.dataset.title || "",
     year: card.dataset.year || "",
     at: new Date().toISOString()
-  });
+  };
+  const exclusion = app.AddRecommendationExclusion(record);
   if (!exclusion)
     return app.ShowRecommendationError("This recommendation could not be saved to the exclusion list.");
   app.ShowToast(`<strong>${EscapeHtml(exclusion.title)}</strong> won't be recommended again`);
@@ -109,12 +138,13 @@ function BuildRatedMovie(request, payload) {
 function MarkSubmitSuccess(record, payload) {
   if (payload.queued)
     return Object.assign(record, { submitStatus: "pending", submitError: "", submittedAt: "" });
-  Object.assign(record, {
+  const submitState = {
     submitStatus: "submitted",
     submitError: "",
     submittedAt: new Date().toISOString(),
     imdbEchoRating: payload.rating ?? record.rating
-  });
+  };
+  Object.assign(record, submitState);
 }
 
 function FinishLocalRating(app, movie, previous) {
@@ -127,9 +157,9 @@ function FinishLocalRating(app, movie, previous) {
 
 function SetCardSaving(card, value) {
   card.classList.toggle("saving", value);
-  for (const button of card.querySelectorAll("[data-recommendation-rating]"))
+  for (const button of card.querySelectorAll(RecommendationRatingSelector))
     button.disabled = value;
-  const exclusion = card.querySelector("[data-recommendation-exclusion]");
+  const exclusion = card.querySelector(RecommendationExclusionSelector);
   if (exclusion)
     exclusion.disabled = value;
 }

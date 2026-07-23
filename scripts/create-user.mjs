@@ -1,12 +1,15 @@
-import { LoadLocalEnv } from "../server/env.mjs";
+import { InitializeRuntimeEnvironment } from "../server/env.mjs";
 import { CreateDatabase } from "../server/db/client.mjs";
 import { RunMigrations } from "../server/db/migrate.mjs";
 import { CreateAccountStore } from "../server/account-store.mjs";
 import { HashPassword, RegistrationSchema } from "../server/auth.mjs";
 import path from "node:path";
 
+const InputDataEvent = "data";
+const Newline = "\n";
+
 process.env.IMDB_RAPID_RATER_HOME ||= path.join(process.cwd(), ".runtime");
-LoadLocalEnv(process.cwd());
+await InitializeRuntimeEnvironment(process.cwd());
 const email = String(process.argv[2] || "").trim().toLowerCase();
 if (!email)
   throw new Error("Usage: npm run user:create -- <email>");
@@ -30,31 +33,40 @@ function ReadHiddenPassword(prompt) {
   if (!process.stdin.isTTY)
     throw new Error("Account creation must be run from an interactive terminal.");
   process.stdout.write(prompt);
+  EnableHiddenInput();
+  return new Promise(ConfigureHiddenPassword);
+}
+
+function ConfigureHiddenPassword(resolve, reject) {
+  const state = { value: "", resolve, reject, onData: null };
+  state.onData = (char) => HandleHiddenInput(char, state);
+  process.stdin.on(InputDataEvent, state.onData);
+}
+
+function EnableHiddenInput() {
   process.stdin.setRawMode(true);
   process.stdin.resume();
   process.stdin.setEncoding("utf8");
-  return new Promise((resolve, reject) => {
-    let value = "";
-    const onData = (char) => {
-      if (char === "\r" || char === "\n") {
-        Cleanup();
-        process.stdout.write("\n");
-        return resolve(value);
-      }
-      if (char === "\u0003") {
-        Cleanup();
-        return reject(new Error("Cancelled."));
-      }
-      if (char === "\u007f" || char === "\b")
-        value = value.slice(0, -1);
-      else
-        value += char;
-    };
-    const Cleanup = () => {
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      process.stdin.off("data", onData);
-    };
-    process.stdin.on("data", onData);
-  });
+}
+
+function HandleHiddenInput(char, state) {
+  if (char === "\r" || char === Newline) {
+    FinishHiddenInput(state);
+    process.stdout.write(Newline);
+    return state.resolve(state.value);
+  }
+  if (char === "\u0003") {
+    FinishHiddenInput(state);
+    return state.reject(new Error("Cancelled."));
+  }
+  if (char === "\u007f" || char === "\b")
+    state.value = state.value.slice(0, -1);
+  else
+    state.value += char;
+}
+
+function FinishHiddenInput(state) {
+  process.stdin.setRawMode(false);
+  process.stdin.pause();
+  process.stdin.off(InputDataEvent, state.onData);
 }

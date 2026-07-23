@@ -1,10 +1,23 @@
-const SuffixByView = Object.freeze({ rater: "rate", ai: "wishlist", sync: "sync" });
-export const LoginPath = "/login";
+import { AiSettingsView, AiView, FriendsView, MovieMediaType, RaterView, SettingsView, SyncView, TvMediaType } from "./app-constants.js";
 
-export function PathForView(view, mediaType = "movie") {
-  const media = mediaType === "tv" ? "tv" : "movies";
-  const safeView = mediaType === "tv" && view === "sync" ? "rater" : view;
-  return `/${media}/${SuffixByView[safeView] || SuffixByView.rater}`;
+const MoviesPathSegment = "movies";
+const RatePathSegment = "rate";
+const RootPath = "/";
+const CanonicalViewPathPattern = /^\/(movies|tv)\/(rate|wishlist|sync|friends)$/;
+const PathSegmentByView = Object.freeze({ [RaterView]: RatePathSegment, [AiView]: "wishlist", [SyncView]: SyncView, [FriendsView]: FriendsView });
+export const LoginPath = "/login";
+export const SettingsPath = "/settings";
+export const ShortcutSettingsPath = "/settings/shortcuts";
+export const AiSettingsPath = "/settings/ai";
+
+export function PathForView(view, mediaType = MovieMediaType) {
+  if (view === AiSettingsView)
+    return AiSettingsPath;
+  if (view === SettingsView)
+    return SettingsPath;
+  const media = mediaType === TvMediaType ? TvMediaType : MoviesPathSegment;
+  const safeView = mediaType === TvMediaType && view === SyncView ? RaterView : view;
+  return `/${media}/${PathSegmentByView[safeView] || PathSegmentByView[RaterView]}`;
 }
 
 export function ViewFromPathname(pathname) {
@@ -17,17 +30,25 @@ export function MediaTypeFromPathname(pathname) {
 
 export function RouteFromPathname(pathname) {
   const path = NormalizePath(pathname);
-  const mediaType = path.startsWith("/tv/") ? "tv" : "movie";
-  if (path.endsWith("/wishlist") || path === "/wishlist")
-    return { mediaType, view: "ai" };
-  if (mediaType === "movie" && (path.endsWith("/sync") || path === "/sync"))
-    return { mediaType, view: "sync" };
-  return { mediaType, view: "rater" };
+  const mediaType = path.startsWith(`/${TvMediaType}/`) ? TvMediaType : MovieMediaType;
+  if (MatchesRouteSegment(path, FriendsView))
+    return { mediaType, view: FriendsView };
+  if (path === AiSettingsPath)
+    return { mediaType, view: AiSettingsView };
+  if (path === SettingsPath || path === ShortcutSettingsPath)
+    return { mediaType, view: SettingsView };
+  if (MatchesRouteSegment(path, PathSegmentByView[AiView]))
+    return { mediaType, view: AiView };
+  if (mediaType === MovieMediaType && MatchesRouteSegment(path, SyncView))
+    return { mediaType, view: SyncView };
+  return { mediaType, view: RaterView };
 }
 
 export function IsCanonicalViewPath(pathname) {
   const path = NormalizePath(pathname);
-  return /^\/(movies|tv)\/(rate|wishlist|sync)$/.test(path) && !(path === "/tv/sync");
+  if ([AiSettingsPath, SettingsPath, ShortcutSettingsPath].includes(path))
+    return true;
+  return CanonicalViewPathPattern.test(path) && path !== `/${TvMediaType}/${SyncView}`;
 }
 
 export function IsLoginPath(pathname) {
@@ -35,6 +56,10 @@ export function IsLoginPath(pathname) {
 }
 
 function NormalizePath(value) {
-  const path = String(value || "/").toLowerCase().replace(/\/+$/, "");
-  return path || "/";
+  const path = String(value || RootPath).toLowerCase().replace(/\/+$/, "");
+  return path || RootPath;
+}
+
+function MatchesRouteSegment(path, segment) {
+  return path.endsWith(`/${segment}`) || path === `/${segment}`;
 }

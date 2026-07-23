@@ -7,6 +7,7 @@ const Country = "US";
 const ApiKey = "api-key";
 const TmdbId = 101;
 const SubscriptionType = "subscription";
+const UnsafeLogoName = "Unsafe Logo";
 const NetflixName = "Netflix";
 const NetflixLogoPath = "/netflix.jpg";
 const AppleTvName = "Apple TV";
@@ -26,7 +27,7 @@ async function VerifyWatchProviderFetch() {
   const calls = [];
   const result = await FetchTmdbWatchProviders(MovieMediaType, TmdbId, ApiKey, Country, { fetchImpl: CreateProviderFetch(calls), now: () => Now });
   assert.match(calls[0].url, /\/movie\/101\/watch\/providers\?api_key=api-key$/);
-  assert.deepEqual(result.providers.map((provider) => provider.type), ["subscription", "ads", "free", "rent", "buy"]);
+  assert.deepEqual(result.providers.map((provider) => provider.type), [SubscriptionType, "ads", "free", "rent", "buy"]);
   assert.equal(result.fetchedAt, Now.toISOString());
 }
 
@@ -35,11 +36,11 @@ function VerifyProviderNormalization() {
     { provider_id: 8, provider_name: ` ${NetflixName} `, logo_path: NetflixLogoPath, display_priority: 1 },
     { provider_id: 0, provider_name: "Invalid" },
     { provider_id: 9, provider_name: "", logo_path: "/blank.jpg" },
-    { provider_id: 10, provider_name: "Unsafe Logo", logo_path: "/../secret" }
+    { provider_id: 10, provider_name: UnsafeLogoName, logo_path: "/../secret" }
   ];
   const expected = [
     { type: SubscriptionType, id: 8, name: NetflixName, logoPath: NetflixLogoPath, displayPriority: 1 },
-    { type: SubscriptionType, id: 10, name: "Unsafe Logo", logoPath: "", displayPriority: 0 }
+    { type: SubscriptionType, id: 10, name: UnsafeLogoName, logoPath: "", displayPriority: 0 }
   ];
   assert.deepEqual(NormalizeWatchProviders(SubscriptionType, providers), expected);
   assert.deepEqual(NormalizeWatchProviders("unknown", [{ provider_id: 8, provider_name: NetflixName }]), []);

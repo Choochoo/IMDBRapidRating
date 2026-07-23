@@ -6,291 +6,305 @@ import test from "node:test";
 import { HashPassword } from "../server/auth.mjs";
 import { RegisterApiRoutes } from "../server/routes.mjs";
 
+const TestEmail = "user@example.com";
+const TestPassword = "correct horse battery staple";
+const AuthSessionPath = "/api/auth/session";
+const AuthLoginPath = "/api/auth/login";
+const CsrfHeader = "x-csrf-token";
+const TestAiBaseUrl = "https://ai.example.test/v1";
+const TestAiModel = "test-model";
+const TestAiKey = "ai-key";
+const AccountStatePath = "/api/account/state";
+const AuthRegisterPath = "/api/auth/register";
+const CrimeGenre = "Crime";
+const DramaGenre = "Drama";
+const GrumpyTitle = "Grumpy Old Men";
+const GrumpyTitleId = "tt0107050";
+const GrumpyTimestamp = "2026-07-16T20:00:00.000Z";
+const HeatQueueKey = "heat|1995";
+const HeatTitle = "Heat";
+const HeatTitleId = "tt0113277";
+const MovieMediaType = "movie";
+const NewEmail = "New_User@Example.com";
+const NewNormalizedEmail = "new_user@example.com";
+const PendingStatus = "pending";
+const PoolVersion = "pool-v1";
+const QuickRatingPath = "/api/rater/quick-rating";
+const RatePath = "/api/rate";
+const RatedStatus = "rated";
+const RegistrationPassword = "12345678";
+const SpeedTitle = "Speed";
+const SpeedTitleId = "tt0111257";
+const SpeedTimestamp = "2026-07-16T21:00:00.000Z";
+const TakenEmail = "taken@example.com";
+const ThiefTitle = "Thief";
+const ThiefTitleId = "tt0083190";
+const TvMediaType = "tv";
+
 const TestMoviePool = {
-  ids: ["tt0113277", "tt0083190"],
+  ids: [HeatTitleId, ThiefTitleId],
   titles: [
-    { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime", "Drama"] },
-    { ttId: "tt0083190", title: "Thief", year: 1981, genres: ["Crime"] }
+    { ttId: HeatTitleId, title: HeatTitle, year: 1995, genres: [CrimeGenre, DramaGenre] },
+    { ttId: ThiefTitleId, title: ThiefTitle, year: 1981, genres: [CrimeGenre] }
   ],
-  version: "pool-v1"
+  version: PoolVersion
 };
 
-test("email login establishes an authenticated session and CSRF protects account writes", async () => {
-  const user = { id: "8133d1c3-2620-42fa-85e6-6b6ec6204301", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
-  let saved = null;
-  const store = {
-    findUserByEmail: async (email) => email === "user@example.com" ? user : null,
-    getBundle: async () => ({
-      preferences: { openAiModel: "", openAiModelLag: 2 },
-      state: { payload: {}, ratingsCsv: "", revision: 0 },
-      configured: new Set()
-    }),
+test("email login establishes an authenticated session and CSRF protects account writes", VerifyEmailLogin);
+test("logout destroys the authenticated session", VerifyLogout);
+test("public registration validates input, creates account data, and signs the user in", VerifyRegistration);
+
+async function VerifyEmailLogin() {
+  const user = await BuildTestUser("8133d1c3-2620-42fa-85e6-6b6ec6204301");
+  const state = { saved: null };
+  const session = await OpenTestSession(BuildStateStore(user, state));
+  assert.equal(session.anonymous.body.authenticated, false);
+  await session.agent.post(AuthLoginPath).send({ email: TestEmail, password: TestPassword }).expect(403);
+  const login = await AuthenticateSession(session, user);
+  await session.agent.put(AccountStatePath).send({ payload: {}, ratingsCsv: "", revision: 0 }).expect(403);
+  await session.agent.put(AccountStatePath).set(CsrfHeader, login.body.csrfToken).send({ payload: { ratings: {} }, ratingsCsv: "", revision: 0 }).expect(200);
+  assert.deepEqual(state.saved.payload, { ratings: {} });
+}
+
+function BuildStateStore(user, state) {
+  return {
+    findUserByEmail: async (email) => email === TestEmail ? user : null,
+    getBundle: async () => BuildEmptyBundle(),
     saveState: async (_userId, payload, ratingsCsv, revision) => {
-      saved = { payload, ratingsCsv, revision };
+      state.saved = { payload, ratingsCsv, revision };
       return { ok: true, revision: revision + 1 };
     }
   };
-  const app = express();
-  app.use(express.json());
-  app.use(session({ secret: "a-secure-test-secret-that-is-long-enough", resave: false, saveUninitialized: false }));
-  RegisterApiRoutes(app, { store, pool: { query: async () => ({ rows: [] }) }, rootPath: process.cwd() });
-  const agent = request.agent(app);
+}
 
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  assert.equal(anonymous.body.authenticated, false);
-  await agent.post("/api/auth/login").send({ email: "user@example.com", password: "correct horse battery staple" }).expect(403);
-  const login = await agent.post("/api/auth/login")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: "user@example.com", password: "correct horse battery staple" })
-    .expect(200);
-  assert.equal(login.body.user.email, "user@example.com");
+async function VerifyLogout() {
+  const user = await BuildTestUser("40c9da79-e7d1-4357-947a-85b1e21b1a75");
+  const authenticated = await LoginTestUser({ findUserByEmail: async () => user }, user);
+  await authenticated.agent.post("/api/auth/logout").set(CsrfHeader, authenticated.csrfToken).send({}).expect(200);
+  const current = await authenticated.agent.get(AuthSessionPath).expect(200);
+  assert.equal(current.body.authenticated, false);
+}
 
-  await agent.put("/api/account/state").send({ payload: {}, ratingsCsv: "", revision: 0 }).expect(403);
-  await agent.put("/api/account/state")
-    .set("x-csrf-token", login.body.csrfToken)
-    .send({ payload: { ratings: {} }, ratingsCsv: "", revision: 0 })
-    .expect(200);
-  assert.deepEqual(saved.payload, { ratings: {} });
-});
-
-test("logout destroys the authenticated session", async () => {
-  const user = { id: "40c9da79-e7d1-4357-947a-85b1e21b1a75", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
-  const agent = request.agent(BuildTestApp({
-    findUserByEmail: async () => user
-  }));
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  const login = await agent.post("/api/auth/login")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: user.email, password: "correct horse battery staple" })
-    .expect(200);
-
-  await agent.post("/api/auth/logout")
-    .set("x-csrf-token", login.body.csrfToken)
-    .send({})
-    .expect(200);
-
-  const session = await agent.get("/api/auth/session").expect(200);
-  assert.equal(session.body.authenticated, false);
-});
-
-test("public registration validates input, creates account data, and signs the user in", async () => {
+async function VerifyRegistration() {
   const users = new Map();
-  const store = {
+  const session = await OpenTestSession(BuildRegistrationStore(users));
+  assert.equal(session.anonymous.body.registrationEnabled, true);
+  await session.agent.post(AuthRegisterPath).set(CsrfHeader, session.csrfToken).send({ email: "not-an-email", password: RegistrationPassword }).expect(422);
+  const created = await session.agent.post(AuthRegisterPath).set(CsrfHeader, session.csrfToken).send({ email: NewEmail, password: RegistrationPassword }).expect(201);
+  AssertRegisteredUser(created, users);
+  const current = await session.agent.get(AuthSessionPath).expect(200);
+  assert.equal(current.body.authenticated, true);
+  assert.equal(current.body.user.email, NewNormalizedEmail);
+}
+
+function BuildRegistrationStore(users) {
+  return {
     findUserByEmail: async (email) => users.get(email) || null,
     createUser: async ({ email, passwordHash }) => {
       const user = { id: "504cf9d4-7f91-4621-9c53-dcc27e13620c", email, passwordHash };
       users.set(email, user);
       return user;
     },
-    getBundle: async () => ({
-      preferences: { openAiModel: "", openAiModelLag: 2 },
-      state: { payload: {}, ratingsCsv: "", revision: 0 },
-      configured: new Set()
-    })
+    getBundle: async () => BuildEmptyBundle()
   };
-  const app = BuildTestApp(store);
-  const agent = request.agent(app);
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  assert.equal(anonymous.body.registrationEnabled, true);
+}
 
-  await agent.post("/api/auth/register")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: "not-an-email", password: "12345678" })
-    .expect(422);
-
-  const created = await agent.post("/api/auth/register")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: "New_User@Example.com", password: "12345678" })
-    .expect(201);
-  assert.equal(created.body.user.email, "new_user@example.com");
+function AssertRegisteredUser(created, users) {
+  assert.equal(created.body.user.email, NewNormalizedEmail);
   assert.equal("username" in created.body.user, false);
   assert.equal("displayName" in created.body.user, false);
-  assert.notEqual(users.get("new_user@example.com").passwordHash, "12345678");
+  assert.notEqual(users.get(NewNormalizedEmail).passwordHash, RegistrationPassword);
+}
 
-  const session = await agent.get("/api/auth/session").expect(200);
-  assert.equal(session.body.authenticated, true);
-  assert.equal(session.body.user.email, "new_user@example.com");
-});
+test("registration rejects missing CSRF and unavailable email addresses", VerifyRegistrationRejection);
 
-test("registration rejects missing CSRF and unavailable email addresses", async () => {
-  const existing = { id: "99d197c6-b299-4ee8-a223-616a4c5fb575", email: "taken@example.com" };
+async function VerifyRegistrationRejection() {
+  const existing = { id: "99d197c6-b299-4ee8-a223-616a4c5fb575", email: TakenEmail };
   const store = {
-    findUserByEmail: async (email) => email === "taken@example.com" ? existing : null,
+    findUserByEmail: async (email) => email === TakenEmail ? existing : null,
     createUser: async () => { throw new Error("createUser should not run"); }
   };
-  const agent = request.agent(BuildTestApp(store));
-  await agent.post("/api/auth/register")
-    .send({ email: "taken@example.com", password: "12345678" })
-    .expect(403);
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  const duplicate = await agent.post("/api/auth/register")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: "taken@example.com", password: "12345678" })
-    .expect(409);
+  const session = await OpenTestSession(store);
+  await session.agent.post(AuthRegisterPath).send({ email: TakenEmail, password: RegistrationPassword }).expect(403);
+  const duplicate = await session.agent.post(AuthRegisterPath).set(CsrfHeader, session.csrfToken).send({ email: TakenEmail, password: RegistrationPassword }).expect(409);
   assert.equal(duplicate.body.code, "EMAIL_UNAVAILABLE");
-});
+}
 
-test("IMDb rating requests are persisted for background delivery", async () => {
-  const user = { id: "0ed7ef61-71e6-4c9b-92ba-76a680af3b2d", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
-  let recorded = null;
-  let queuedDelete = null;
-  const store = {
+test("IMDb rating requests are persisted for background delivery", VerifyImdbPersistence);
+
+async function VerifyImdbPersistence() {
+  const user = await BuildTestUser("0ed7ef61-71e6-4c9b-92ba-76a680af3b2d");
+  const state = { recorded: null, queuedDelete: null };
+  const authenticated = await LoginTestUser(BuildImdbStore(user, state), user);
+  const rated = await authenticated.agent.post(RatePath).set(CsrfHeader, authenticated.csrfToken).send(BuildImdbRating()).expect(202);
+  AssertImdbRating(rated, state.recorded, user);
+  const removed = await authenticated.agent.delete(RatePath).set(CsrfHeader, authenticated.csrfToken).send({ titleId: GrumpyTitleId }).expect(202);
+  AssertImdbDelete(removed, state.queuedDelete, user);
+}
+
+function BuildImdbStore(user, state) {
+  return {
     findUserByEmail: async () => user,
     QueueImdbRating: async (userId, record, mediaType) => {
-      recorded = { userId, record, mediaType };
+      state.recorded = { userId, record, mediaType };
       return { revision: 17, job: { id: 41 } };
     },
     QueueImdbDelete: async (userId, ttId, mediaType, options) => {
-      queuedDelete = { userId, ttId, mediaType, options };
+      state.queuedDelete = { userId, ttId, mediaType, options };
       return { job: { id: 42 }, revision: 18 };
     }
   };
-  const app = BuildTestApp(store);
-  const agent = request.agent(app);
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  const login = await agent.post("/api/auth/login")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: user.email, password: "correct horse battery staple" })
-    .expect(200);
+}
 
-  const rated = await agent.post("/api/rate")
-    .set("x-csrf-token", login.body.csrfToken)
-    .send({ titleId: "tt0107050", rating: 8, title: "Grumpy Old Men", year: 1993, at: "2026-07-16T20:00:00.000Z" })
-    .expect(202);
-  assert.equal(rated.body.revision, 17);
-  assert.equal(rated.body.queued, true);
-  assert.equal(rated.body.jobId, 41);
+function BuildImdbRating() {
+  return { titleId: GrumpyTitleId, rating: 8, title: GrumpyTitle, year: 1993, at: GrumpyTimestamp };
+}
+
+function AssertImdbRating(response, recorded, user) {
+  assert.deepEqual([response.body.revision, response.body.queued, response.body.jobId], [17, true, 41]);
   assert.equal(recorded.userId, user.id);
-  assert.deepEqual(recorded.record, {
-    status: "rated",
+  assert.deepEqual(recorded.record, BuildExpectedImdbRecord());
+}
+
+function BuildExpectedImdbRecord() {
+  return {
+    status: RatedStatus,
     rating: 8,
-    title: "Grumpy Old Men",
+    title: GrumpyTitle,
     year: 1993,
-    ttId: "tt0107050",
-    mediaType: "movie",
-    at: "2026-07-16T20:00:00.000Z",
-    submitStatus: "pending",
+    ttId: GrumpyTitleId,
+    mediaType: MovieMediaType,
+    at: GrumpyTimestamp,
+    submitStatus: PendingStatus,
     submitError: "",
     submittedAt: ""
-  });
+  };
+}
 
-  const removed = await agent.delete("/api/rate")
-    .set("x-csrf-token", login.body.csrfToken)
-    .send({ titleId: "tt0107050" })
-    .expect(202);
-  assert.equal(removed.body.revision, 18);
-  assert.equal(removed.body.queued, true);
-  assert.deepEqual(queuedDelete, { userId: user.id, ttId: "tt0107050", mediaType: "movie", options: { deferAccountState: false } });
-});
+function AssertImdbDelete(response, queuedDelete, user) {
+  assert.equal(response.body.revision, 18);
+  assert.equal(response.body.queued, true);
+  assert.deepEqual(queuedDelete, { userId: user.id, ttId: GrumpyTitleId, mediaType: MovieMediaType, options: { deferAccountState: false } });
+}
 
-test("not-seen decisions are committed directly to account state", async () => {
-  const user = { id: "241c7a98-53a7-42b3-bde7-3fd3a27db9dc", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
-  let recorded = null;
-  const store = {
+test("not-seen decisions are committed directly to account state", VerifyNotSeenDecision);
+
+async function VerifyNotSeenDecision() {
+  const user = await BuildTestUser("241c7a98-53a7-42b3-bde7-3fd3a27db9dc");
+  const state = { recorded: null };
+  const authenticated = await LoginTestUser(BuildNotSeenStore(user, state), user);
+  const saved = await authenticated.agent.put("/api/account/not-seen").set(CsrfHeader, authenticated.csrfToken).send(BuildNotSeenBody()).expect(200);
+  assert.equal(saved.body.revision, 23);
+  assert.equal(state.recorded.userId, user.id);
+  assert.deepEqual(state.recorded.record, BuildExpectedNotSeenRecord());
+}
+
+function BuildNotSeenStore(user, state) {
+  return {
     findUserByEmail: async () => user,
     recordRating: async (userId, record, mediaType) => {
-      recorded = { userId, record, mediaType };
+      state.recorded = { userId, record, mediaType };
       return 23;
     }
   };
-  const agent = request.agent(BuildTestApp(store));
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  const login = await agent.post("/api/auth/login")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: user.email, password: "correct horse battery staple" })
-    .expect(200);
+}
 
-  const saved = await agent.put("/api/account/not-seen")
-    .set("x-csrf-token", login.body.csrfToken)
-    .send({ titleId: "tt0111257", title: "Speed", year: 1994, at: "2026-07-16T21:00:00.000Z" })
-    .expect(200);
+function BuildNotSeenBody() {
+  return { titleId: SpeedTitleId, title: SpeedTitle, year: 1994, at: SpeedTimestamp };
+}
 
-  assert.equal(saved.body.revision, 23);
-  assert.equal(recorded.userId, user.id);
-  assert.deepEqual(recorded.record, {
+function BuildExpectedNotSeenRecord() {
+  return {
     status: "notSeen",
     rating: null,
-    title: "Speed",
+    title: SpeedTitle,
     year: 1994,
-    ttId: "tt0111257",
-    mediaType: "movie",
-    at: "2026-07-16T21:00:00.000Z",
+    ttId: SpeedTitleId,
+    mediaType: MovieMediaType,
+    at: SpeedTimestamp,
     submitStatus: "skipped",
     submitError: "",
     submittedAt: ""
-  });
-});
+  };
+}
 
-test("rater decisions require the current queue head and return the canonical next queue", async () => {
-  const user = { id: "d3039098-ed05-4740-bc99-b929927b0dd7", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
-  const initialQueue = { revision: 12, poolVersion: "pool-v1", queueIds: ["tt0113277", "tt0083190"] };
-  let received = null;
-  const store = {
+test("rater decisions require the current queue head and return the canonical next queue", VerifyRaterDecision);
+
+async function VerifyRaterDecision() {
+  const user = await BuildTestUser("d3039098-ed05-4740-bc99-b929927b0dd7");
+  const initialQueue = { revision: 12, poolVersion: PoolVersion, queueIds: [HeatTitleId, ThiefTitleId] };
+  const state = { received: null };
+  const authenticated = await LoginTestUser(BuildRaterStore(user, initialQueue, state), user);
+  const response = await authenticated.agent.put("/api/rater/decision").set(CsrfHeader, authenticated.csrfToken).send(BuildRaterDecision()).expect(200);
+  AssertRaterDecision(state.received, response.body);
+}
+
+function BuildRaterStore(user, initialQueue, state) {
+  return {
     findUserByEmail: async () => user,
     getRaterQueue: async (_userId, mediaType, moviePool) => {
-      assert.equal(mediaType, "movie");
+      assert.equal(mediaType, MovieMediaType);
       assert.equal(moviePool, TestMoviePool);
       return initialQueue;
     },
     commitRaterDecision: async (_userId, decision) => {
-      received = decision;
-      return {
-        ok: true,
-        duplicate: false,
-        stateRevision: 21,
-        record: decision.record,
-        previous: null,
-        queue: { revision: 13, poolVersion: "pool-v1", queueIds: ["tt0083190"] }
-      };
+      state.received = decision;
+      return BuildCommittedRaterDecision(decision);
     }
   };
-  const agent = request.agent(BuildTestApp(store));
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  const login = await agent.post("/api/auth/login")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: user.email, password: "correct horse battery staple" })
-    .expect(200);
+}
 
-  const response = await agent.put("/api/rater/decision")
-    .set("x-csrf-token", login.body.csrfToken)
-    .send({
-      actionId: "4dd7a964-024b-441b-a83c-174cdf53f4db",
-      expectedRevision: 12,
-      kind: "rated",
-      titleId: "tt0113277",
-      title: "Heat",
-      year: 1995,
-      rating: 9,
-      at: "2026-07-19T19:00:00.000Z"
-    })
-    .expect(200);
+function BuildCommittedRaterDecision(decision) {
+  return {
+    ok: true,
+    duplicate: false,
+    stateRevision: 21,
+    record: decision.record,
+    previous: null,
+    queue: { revision: 13, poolVersion: PoolVersion, queueIds: [ThiefTitleId] }
+  };
+}
 
-  assert.equal(received.ttId, "tt0113277");
-  assert.equal(received.mediaType, "movie");
+function BuildRaterDecision() {
+  return {
+    actionId: "4dd7a964-024b-441b-a83c-174cdf53f4db",
+    expectedRevision: 12,
+    kind: RatedStatus,
+    titleId: HeatTitleId,
+    title: HeatTitle,
+    year: 1995,
+    rating: 9,
+    at: "2026-07-19T19:00:00.000Z"
+  };
+}
+
+function AssertRaterDecision(received, response) {
+  assert.equal(received.ttId, HeatTitleId);
+  assert.equal(received.mediaType, MovieMediaType);
   assert.equal(received.expectedRevision, 12);
-  assert.equal(received.record.submitStatus, "pending");
-  assert.equal(response.body.queue.revision, 13);
-  assert.deepEqual(response.body.queue.queueIds, ["tt0083190"]);
-});
+  assert.equal(received.record.submitStatus, PendingStatus);
+  assert.equal(response.queue.revision, 13);
+  assert.deepEqual(response.queue.queueIds, [ThiefTitleId]);
+}
 
 test("quick ratings use canonical catalog details and create a pending IMDb write", VerifyQuickRatingRoute);
 test("quick ratings reject title IDs outside the selected catalog", VerifyUnknownQuickRating);
 
 async function VerifyQuickRatingRoute() {
-  const user = { id: "9fdfd065-5aa8-49ec-9b7f-c17b28e8c221", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = await BuildTestUser("9fdfd065-5aa8-49ec-9b7f-c17b28e8c221");
   const scenario = BuildQuickRatingScenario(user);
   const authenticated = await LoginTestUser(scenario.store, user);
-  const body = { actionId: "496bf6a2-1fb2-4ad9-83d2-ed7685ea0b96", titleId: "tt0113277", rating: 9, at: "2026-07-22T20:00:00.000Z" };
-  const response = await authenticated.agent.put("/api/rater/quick-rating").set("x-csrf-token", authenticated.csrfToken).send(body).expect(200);
+  const body = { actionId: "496bf6a2-1fb2-4ad9-83d2-ed7685ea0b96", titleId: HeatTitleId, rating: 9, at: "2026-07-22T20:00:00.000Z" };
+  const response = await authenticated.agent.put(QuickRatingPath).set(CsrfHeader, authenticated.csrfToken).send(body).expect(200);
   VerifyQuickRatingResult(scenario.ReadReceived(), response.body);
 }
 
 async function VerifyUnknownQuickRating() {
-  const user = { id: "667368a1-185b-4f4d-84ad-8b42d4330524", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+  const user = await BuildTestUser("667368a1-185b-4f4d-84ad-8b42d4330524");
   const store = { findUserByEmail: async () => user };
   const authenticated = await LoginTestUser(store, user);
   const body = { actionId: "304628ee-b652-4e27-931d-729946ab3a26", titleId: "tt9999999", rating: 8 };
-  const response = await authenticated.agent.put("/api/rater/quick-rating").set("x-csrf-token", authenticated.csrfToken).send(body).expect(404);
+  const response = await authenticated.agent.put(QuickRatingPath).set(CsrfHeader, authenticated.csrfToken).send(body).expect(404);
   assert.equal(response.body.code, "TITLE_NOT_FOUND");
 }
 
@@ -298,179 +312,218 @@ function BuildQuickRatingScenario(user) {
   let received = null;
   const store = {
     findUserByEmail: async () => user,
-    getRaterQueue: async () => ({ revision: 12, poolVersion: "pool-v1", queueIds: TestMoviePool.ids }),
+    getRaterQueue: async () => ({ revision: 12, poolVersion: PoolVersion, queueIds: TestMoviePool.ids }),
     CommitQuickRating: async (_userId, decision) => {
       received = decision;
-      return { ok: true, stateRevision: 24, record: decision.record, previous: null, queue: { revision: 13, poolVersion: "pool-v1", queueIds: ["tt0083190"] } };
+      return { ok: true, stateRevision: 24, record: decision.record, previous: null, queue: { revision: 13, poolVersion: PoolVersion, queueIds: [ThiefTitleId] } };
     },
     listRecommendationQueue: async () => []
   };
   return { store, ReadReceived: () => received };
 }
 
-async function LoginTestUser(store, user) {
-  const agent = request.agent(BuildTestApp(store));
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  const login = await agent.post("/api/auth/login").set("x-csrf-token", anonymous.body.csrfToken).send({ email: user.email, password: "correct horse battery staple" }).expect(200);
-  return { agent, csrfToken: login.body.csrfToken };
+async function LoginTestUser(store, user, dependencies = {}) {
+  const opened = await OpenTestSession(store, dependencies);
+  const login = await AuthenticateSession(opened, user);
+  return { agent: opened.agent, csrfToken: login.body.csrfToken };
+}
+
+async function BuildTestUser(id) {
+  return { id, email: TestEmail, passwordHash: await HashPassword(TestPassword) };
+}
+
+function BuildEmptyBundle() {
+  return {
+    preferences: {},
+    state: {},
+    ratingsCsv: "",
+    revision: 0,
+    configured: { imdb: false, ai: false }
+  };
+}
+
+async function OpenTestSession(store, dependencies = {}) {
+  const agent = request.agent(BuildTestApp(store, dependencies));
+  const anonymous = await agent.get(AuthSessionPath).expect(200);
+  return { agent, anonymous, csrfToken: anonymous.body.csrfToken };
+}
+
+async function AuthenticateSession(opened, user) {
+  return opened.agent.post(AuthLoginPath).set(CsrfHeader, opened.csrfToken).send({ email: user.email, password: TestPassword }).expect(200);
 }
 
 function VerifyQuickRatingResult(received, response) {
-  assert.equal(received.record.title, "Heat");
+  assert.equal(received.record.title, HeatTitle);
   assert.equal(received.record.year, 1995);
   assert.equal(received.record.rating, 9);
-  assert.equal(received.record.submitStatus, "pending");
-  assert.deepEqual(response.queue.queueIds, ["tt0083190"]);
+  assert.equal(received.record.submitStatus, PendingStatus);
+  assert.deepEqual(response.queue.queueIds, [ThiefTitleId]);
   assert.deepEqual(response.recommendations, []);
 }
 
-test("the TV queue route selects the independent TV catalog and queue namespace", async () => {
-  const user = { id: "95c3cf3e-c6d8-4ba5-aec1-53f5870a6279", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
+test("the TV queue route selects the independent TV catalog and queue namespace", VerifyTvQueue);
+test("generated picks append to the saved per-user recommendation queue", VerifyGeneratedPicks);
+test("a rating-system movie can be added directly to the saved watchlist", VerifyWatchlistAppend);
+test("don't recommend moves a saved pick into the account exclusion list", VerifyRecommendationExclusion);
+
+async function VerifyTvQueue() {
+  const user = await BuildTestUser("95c3cf3e-c6d8-4ba5-aec1-53f5870a6279");
   const tvPool = { ids: ["tt0903747"], version: "tv-pool-v1" };
-  let received = null;
-  const store = {
+  const state = { received: null };
+  const authenticated = await LoginTestUser(BuildTvQueueStore(user, state), user, BuildTvQueueDependencies(tvPool));
+  const response = await authenticated.agent.get("/api/rater/queue?media=tv").expect(200);
+  assert.deepEqual(state.received, { userId: user.id, mediaType: TvMediaType, titlePool: tvPool });
+  assert.deepEqual(response.body.queue.queueIds, tvPool.ids);
+}
+
+function BuildTvQueueStore(user, state) {
+  return {
     findUserByEmail: async () => user,
     getRaterQueue: async (userId, mediaType, titlePool) => {
-      received = { userId, mediaType, titlePool };
+      state.received = { userId, mediaType, titlePool };
       return { revision: 3, poolVersion: titlePool.version, queueIds: titlePool.ids };
     }
   };
-  const agent = request.agent(BuildTestApp(store, {
+}
+
+function BuildTvQueueDependencies(tvPool) {
+  return {
     readTitlePool: async (_rootPath, mediaType) => {
-      assert.equal(mediaType, "tv");
+      assert.equal(mediaType, TvMediaType);
       return tvPool;
     }
-  }));
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  await agent.post("/api/auth/login")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: user.email, password: "correct horse battery staple" })
-    .expect(200);
+  };
+}
 
-  const response = await agent.get("/api/rater/queue?media=tv").expect(200);
+async function VerifyGeneratedPicks() {
+  const user = await BuildTestUser("3accb042-54e8-4e14-8eb5-8444d10433b4");
+  const existing = { queueKey: HeatQueueKey, ttId: HeatTitleId, title: HeatTitle, year: 1995, genres: [CrimeGenre], why: { tasteMatch: CrimeGenre } };
+  const generated = { queueKey: "thief|1981", ttId: ThiefTitleId, title: ThiefTitle, year: 1981, genres: [CrimeGenre], why: { tasteMatch: CrimeGenre } };
+  const state = { queue: [existing], received: null };
+  const dependencies = BuildGeneratedDependencies(generated, state);
+  const authenticated = await LoginTestUser(BuildGeneratedStore(user, state), user, dependencies);
+  const body = { count: 9, profile: { ratings: [{ title: "Collateral", year: 2004, genres: [CrimeGenre], rating: 9 }], exclusions: [] } };
+  const response = await authenticated.agent.post("/api/ai/recommendations").set(CsrfHeader, authenticated.csrfToken).send(body).expect(200);
+  AssertGeneratedPicks(state.received, response.body, existing, generated);
+}
 
-  assert.deepEqual(received, { userId: user.id, mediaType: "tv", titlePool: tvPool });
-  assert.deepEqual(response.body.queue.queueIds, ["tt0903747"]);
-});
-
-test("generated picks append to the saved per-user recommendation queue", async () => {
-  const user = { id: "3accb042-54e8-4e14-8eb5-8444d10433b4", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
-  const existing = { queueKey: "heat|1995", ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"], why: { tasteMatch: "Crime" } };
-  const generated = { queueKey: "thief|1981", ttId: "tt0083190", title: "Thief", year: 1981, genres: ["Crime"], why: { tasteMatch: "Crime" } };
-  const queue = [existing];
-  let received = null;
-  const store = {
+function BuildGeneratedStore(user, state) {
+  return {
     findUserByEmail: async () => user,
-    getBundle: async () => ({ preferences: { openAiModel: "gpt-test", openAiModelLag: 2 } }),
-    getSecret: async () => "openai-key",
-    listRecommendationQueue: async () => [...queue],
+    getBundle: async () => BuildConfiguredAiBundle(),
+    getSecret: async (_userId, type) => type === "ai" ? TestAiKey : "",
+    listRecommendationQueue: async () => [...state.queue],
     appendRecommendationQueue: async (_userId, items) => {
-      queue.push(...items);
+      state.queue.push(...items);
       return items;
     }
   };
-  const app = BuildTestApp(store, {
+}
+
+function BuildConfiguredAiBundle() {
+  return {
+    preferences: {
+      aiBaseUrl: TestAiBaseUrl,
+      aiModel: TestAiModel,
+      aiConfigured: true
+    }
+  };
+}
+
+function BuildGeneratedDependencies(generated, state) {
+  return {
     generateAiRecommendations: async (_rootPath, options) => {
-      received = options;
-      return { status: 200, payload: { ok: true, summary: "A crime double feature.", recommendations: [generated] } };
+      state.received = options;
+      return BuildGeneratedPayload(generated);
     }
-  });
-  const agent = request.agent(app);
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  const login = await agent.post("/api/auth/login")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: user.email, password: "correct horse battery staple" })
-    .expect(200);
+  };
+}
 
-  const response = await agent.post("/api/ai/recommendations")
-    .set("x-csrf-token", login.body.csrfToken)
-    .send({ count: 9, profile: { ratings: [{ title: "Collateral", year: 2004, genres: ["Crime"], rating: 9 }], exclusions: [] } })
-    .expect(200);
+function BuildGeneratedPayload(generated) {
+  return {
+    status: 200,
+    payload: {
+      ok: true,
+      summary: "A crime double feature.",
+      recommendations: [generated]
+    }
+  };
+}
 
+function AssertGeneratedPicks(received, response, existing, generated) {
   assert.equal(received.count, 9);
+  assert.equal(received.baseUrl, TestAiBaseUrl);
+  assert.equal(received.model, TestAiModel);
+  assert.equal(received.apiKey, TestAiKey);
   assert.deepEqual(received.queue, [existing]);
-  assert.equal(response.body.addedCount, 1);
-  assert.equal(response.body.requestedCount, 9);
-  assert.deepEqual(response.body.recommendations, [existing, generated]);
-});
+  assert.equal(response.addedCount, 1);
+  assert.equal(response.requestedCount, 9);
+  assert.deepEqual(response.recommendations, [existing, generated]);
+}
 
-test("a rating-system movie can be added directly to the saved watchlist", async () => {
-  const user = { id: "c95c1ff0-325f-4f64-a763-669403435215", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
-  const queue = [];
-  let appended = null;
-  const store = {
+async function VerifyWatchlistAppend() {
+  const user = await BuildTestUser("c95c1ff0-325f-4f64-a763-669403435215");
+  const state = { queue: [], appended: null };
+  const authenticated = await LoginTestUser(BuildWatchlistStore(user, state), user);
+  const body = { ttId: HeatTitleId, title: HeatTitle, year: 1995, genres: [CrimeGenre, DramaGenre] };
+  const response = await authenticated.agent.put("/api/ai/recommendations/queue").set(CsrfHeader, authenticated.csrfToken).send(body).expect(200);
+  AssertWatchlistAppend(state.appended, response.body, user);
+}
+
+function BuildWatchlistStore(user, state) {
+  return {
     findUserByEmail: async () => user,
-    listRecommendationQueue: async () => [...queue],
+    listRecommendationQueue: async () => [...state.queue],
     appendRecommendationQueue: async (userId, items) => {
-      appended = { userId, items };
-      queue.push(...items);
+      state.appended = { userId, items };
+      state.queue.push(...items);
       return items;
     }
   };
-  const agent = request.agent(BuildTestApp(store));
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  const login = await agent.post("/api/auth/login")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: user.email, password: "correct horse battery staple" })
-    .expect(200);
+}
 
-  const response = await agent.put("/api/ai/recommendations/queue")
-    .set("x-csrf-token", login.body.csrfToken)
-    .send({ ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime", "Drama"] })
-    .expect(200);
-
+function AssertWatchlistAppend(appended, response, user) {
   assert.equal(appended.userId, user.id);
-  assert.equal(response.body.addedCount, 1);
-  assert.equal(response.body.count, 1);
-  assert.equal(response.body.recommendation.source, "rating-system");
-  assert.equal(response.body.recommendation.queueKey, "heat|1995");
-  assert.equal(response.body.recommendation.why.tasteMatch, "Added from the rating queue.");
-  assert.deepEqual(response.body.recommendations, appended.items);
-});
+  assert.equal(response.addedCount, 1);
+  assert.equal(response.count, 1);
+  assert.equal(response.recommendation.source, "rating-system");
+  assert.equal(response.recommendation.queueKey, HeatQueueKey);
+  assert.equal(response.recommendation.why.tasteMatch, "Added from the rating queue.");
+  assert.deepEqual(response.recommendations, appended.items);
+}
 
-test("don't recommend moves a saved pick into the account exclusion list", async () => {
-  const user = { id: "a772239d-a772-4489-8ddc-aa0f95071669", email: "user@example.com", passwordHash: await HashPassword("correct horse battery staple") };
-  let saved = null;
-  const store = {
+async function VerifyRecommendationExclusion() {
+  const user = await BuildTestUser("a772239d-a772-4489-8ddc-aa0f95071669");
+  const state = { saved: null };
+  const authenticated = await LoginTestUser(BuildExclusionStore(user, state), user);
+  const body = { ttId: HeatTitleId, title: HeatTitle, year: 1995, at: "2026-07-16T22:00:00.000Z" };
+  const response = await authenticated.agent.put("/api/account/recommendation-exclusions").set(CsrfHeader, authenticated.csrfToken).send(body).expect(200);
+  assert.equal(response.body.revision, 31);
+  assert.equal(state.saved.userId, user.id);
+  assert.deepEqual(state.saved.exclusion, { ...body, queueKey: HeatQueueKey });
+}
+
+function BuildExclusionStore(user, state) {
+  return {
     findUserByEmail: async () => user,
     excludeRecommendation: async (userId, exclusion) => {
-      saved = { userId, exclusion };
+      state.saved = { userId, exclusion };
       return 31;
     }
   };
-  const agent = request.agent(BuildTestApp(store));
-  const anonymous = await agent.get("/api/auth/session").expect(200);
-  const login = await agent.post("/api/auth/login")
-    .set("x-csrf-token", anonymous.body.csrfToken)
-    .send({ email: user.email, password: "correct horse battery staple" })
-    .expect(200);
-
-  const response = await agent.put("/api/account/recommendation-exclusions")
-    .set("x-csrf-token", login.body.csrfToken)
-    .send({ ttId: "tt0113277", title: "Heat", year: 1995, at: "2026-07-16T22:00:00.000Z" })
-    .expect(200);
-
-  assert.equal(response.body.revision, 31);
-  assert.equal(saved.userId, user.id);
-  assert.deepEqual(saved.exclusion, {
-    ttId: "tt0113277",
-    title: "Heat",
-    year: 1995,
-    at: "2026-07-16T22:00:00.000Z",
-    queueKey: "heat|1995"
-  });
-});
+}
 
 function BuildTestApp(store, dependencies = {}) {
   const app = express();
   app.use(express.json());
   app.use(session({ secret: "a-secure-test-secret-that-is-long-enough", resave: false, saveUninitialized: false }));
-  RegisterApiRoutes(app, {
+  const routeDependencies = {
     store,
     pool: { query: async () => ({ rows: [] }) },
     rootPath: process.cwd(),
     readMoviePool: async () => TestMoviePool,
     ...dependencies
-  });
+  };
+  RegisterApiRoutes(app, routeDependencies);
   return app;
 }

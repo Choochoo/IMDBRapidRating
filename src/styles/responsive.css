@@ -50,10 +50,6 @@
     overflow: hidden;
   }
 
-  .model-panel {
-    grid-template-columns: 1fr;
-  }
-
   .stage {
     min-height: 0;
   }
@@ -64,6 +60,7 @@
   }
 
   .movie-strip {
+    display: flex;
     flex-wrap: wrap;
   }
 
@@ -146,9 +143,10 @@
   }
 
   .app-header,
-  .stage,
-  .recommendation-view,
-  .sync-view,
+    .stage,
+    .recommendation-view,
+    .sync-view,
+    .friends-view,
   .footer {
     padding-left: 12px;
     padding-right: 12px;
@@ -204,13 +202,13 @@
     grid-column: 1;
     grid-row: 2;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
     gap: 2px;
   }
 
   body.tv-mode .view-tabs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .view-tab {
@@ -448,8 +446,7 @@
     font-size: 9px;
   }
 
-  .recommendation-actions,
-  .model-controls {
+  .recommendation-actions {
     display: grid;
     grid-template-columns: 1fr;
   }
@@ -486,9 +483,15 @@
   }
 
   .recommendation-generator-panel {
-    position: static;
     width: 100%;
-    margin-top: 8px;
+  }
+
+  .recommendation-pick-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .recommendation-pick-filter-controls {
+    justify-content: flex-start;
   }
 
   .recommendation-list-toolbar {

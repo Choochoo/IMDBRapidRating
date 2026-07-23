@@ -1,19 +1,26 @@
 import { Config } from "./config.js";
-import { ActiveClass, AiView, AriaPressedAttribute, BackspaceKey, DeleteKey, ImdbSecretType, MovieDisplayName, MovieMediaType, NoStoreCache, NotSeenLabel, NotWatchedLabel, PostMethod, PressedClass, PutMethod, RaterView, SaveApiKeyLabel, SaveTmdbSettingsLabel, SavingLabel, ShowClass, SyncView, TmdbSecretType, TvDisplayName, TvMediaType, TvShowName } from "./app-constants.js";
+import { ActiveClass, AiSettingsView, AiView, AriaPressedAttribute, BackspaceKey, DeleteKey, FriendsView, ImdbSecretType, MovieDisplayName, MovieMediaType, NoStoreCache, NotSeenLabel, NotWatchedLabel, PostMethod, PressedClass, PutMethod, RaterView, SavingLabel, SettingsView, ShowClass, SyncView, TvDisplayName, TvMediaType, TvShowName, UndoShortcutAction } from "./app-constants.js";
 import { InstallFeatureMethods } from "./feature-methods.js";
 import { AccountSyncFeature } from "./features/account-sync.js";
+import { AiSettingsFeature } from "./features/ai-settings.js";
 import { ApplicationLifecycleFeature } from "./features/application-lifecycle.js";
 import { CatalogViewFeature } from "./features/catalog-view.js";
 import { CollectionSyncFeature } from "./features/collection-sync.js";
 import { DataTransferFeature } from "./features/data-transfer.js";
 import { EventBindingsFeature } from "./features/event-bindings.js";
+import { FriendsFeature } from "./features/friends.js";
+import { HelpRemindersFeature } from "./features/help-reminders.js";
 import { QuickRateFeature } from "./features/quick-rate.js";
 import { RatingWorkflowFeature } from "./features/rating-workflow.js";
 import { RecommendationFeature } from "./features/recommendations.js";
 import { StatusUiFeature } from "./features/status-ui.js";
+import { SocialContextFeature } from "./features/social-context.js";
+import { SetupGuideFeature } from "./features/setup-guide.js";
+import { SettingsFeature } from "./features/settings.js";
 import { DescribeSource, MakeSignature, NormalizeMovieList } from "./movies.js";
 import {
   ApplyAccountSettings,
+  BuildAccountPreferences,
   ClearLegacyBrowserData,
   HasLegacyBrowserData,
   ReadLegacyRatingsCsv,
@@ -29,12 +36,20 @@ import { NormalizeTitleFilters } from "../../shared/title-filters.js";
 import { NormalizeRecommendationBasis } from "../../shared/recommendation-basis.js";
 import { ReadStreamingCountry } from "../../shared/streaming-country.js";
 import { UpdateTitleFilterButton } from "./title-filter-workflows.js";
+import { NormalizeKeyboardShortcuts, ReadShortcutAction, ReadShortcutRating, SkipShortcutAction } from "../../shared/keyboard-shortcuts.js";
+import { NormalizeHelpPreferences } from "../../shared/help-preferences.js";
 
-const SecretSettingByType = Object.freeze({ imdb: "imdbConfigured", openai: "openAiConfigured", tmdb: "tmdbConfigured" });
+const SecretSettingByType = Object.freeze({ imdb: "imdbConfigured" });
+const MovieWatchlistLabel = "Movie Watchlist";
+const QueryDelimiter = "?";
+const RenderQueueAfterSnapshot = true;
+const TvWatchlistLabel = "TV Watchlist";
 
 export class RapidRaterApp {
   constructor() {
     this.InitializeBrowserState();
+    this.InitializeSetupGuideState();
+    this.InitializeHelpReminderState();
     this.InitializeAccountState();
     this.InitializeSynchronizationState();
     this.InitializeSubmissionState();
@@ -77,18 +92,23 @@ export class RapidRaterApp {
     this.UpdateViewVisibility(view);
     this.UpdateViewTabs(view);
     this.UpdateActiveView(view);
+    this.ScheduleHelpReminder(view);
   }
 
   UpdateViewClasses(view) {
     document.body.classList.toggle("rater-active", view === RaterView);
     document.body.classList.toggle("ai-active", view === AiView);
+    document.body.classList.toggle("settings-active", this.IsSettingsView(view));
     document.body.classList.toggle("sync-active", view === SyncView);
+    document.body.classList.toggle("friends-active", view === FriendsView);
   }
 
   UpdateViewVisibility(view) {
     this.Elements.raterView.hidden = view !== RaterView;
     this.Elements.recommendationView.hidden = view !== AiView;
+    this.Elements.settingsView.hidden = !this.IsSettingsView(view);
     this.Elements.syncView.hidden = view !== SyncView;
+    this.Elements.friendsView.hidden = view !== FriendsView;
     this.Elements.ratingFooter.hidden = view !== RaterView;
     this.Elements.mobileRatingBar.hidden = view !== RaterView;
   }
@@ -97,15 +117,29 @@ export class RapidRaterApp {
     this.Elements.tabRater.classList.toggle(ActiveClass, view === RaterView);
     this.Elements.tabAi.classList.toggle(ActiveClass, view === AiView);
     this.Elements.tabSync.classList.toggle(ActiveClass, view === SyncView);
+    this.Elements.tabFriends.classList.toggle(ActiveClass, view === FriendsView);
   }
 
   UpdateActiveView(view) {
+    this.UpdateActiveSettingsView(view);
     if (view === AiView) {
       this.UpdateRecommendationBasisControl();
       this.UpdateRecommendationStatus();
     }
     if (view === SyncView)
       this.UpdateSyncView();
+    if (view === FriendsView)
+      this.RenderFriendLists();
+  }
+
+  UpdateActiveSettingsView(view) {
+    if (!this.IsSettingsView(view))
+      return;
+    this.SelectSettingsSection(view);
+    if (view === AiSettingsView)
+      return this.SyncAiSettingsForm();
+    if (view === SettingsView)
+      this.SyncShortcutSettingsForm();
   }
 
   UpdateMediaUx() {
@@ -113,7 +147,7 @@ export class RapidRaterApp {
     this.UpdateMediaIdentity(isTv);
     this.UpdateMediaNavigation(isTv);
     this.UpdateMediaLabels(isTv);
-    this.UpdateMediaShortcut(isTv);
+    this.UpdateMediaShortcut();
     this.UpdateRecommendationBasisControl();
     UpdateTitleFilterButton(this);
   }
@@ -133,21 +167,23 @@ export class RapidRaterApp {
   UpdateMediaNavigation(isTv) {
     this.Elements.viewTabs.setAttribute("aria-label", isTv ? "TV show views" : "Movie views");
     this.Elements.tabRater.textContent = isTv ? "Rate Shows" : "Rate Movies";
-    this.Elements.tabAi.textContent = isTv ? "TV Watchlist" : "Movie Watchlist";
+    this.Elements.tabAi.textContent = isTv ? TvWatchlistLabel : MovieWatchlistLabel;
     this.Elements.tabRater.href = PathForView(RaterView, this.State.mediaType);
     this.Elements.tabAi.href = PathForView(AiView, this.State.mediaType);
     this.Elements.tabSync.href = PathForView(SyncView, MovieMediaType);
+    this.Elements.tabFriends.href = PathForView(FriendsView, this.State.mediaType);
   }
 
   UpdateMediaLabels(isTv) {
     this.Elements.ratedLabel.textContent = isTv ? "Shows rated" : "Movies rated";
     this.Elements.skipLabel.textContent = isTv ? NotWatchedLabel : NotSeenLabel;
     this.Elements.poolLabel.textContent = isTv ? "Show pool" : "Movie pool";
-    this.Elements.recommendationTitle.textContent = isTv ? "TV Watchlist" : "Movie Watchlist";
+    this.Elements.recommendationTitle.textContent = isTv ? TvWatchlistLabel : MovieWatchlistLabel;
     this.Elements.recommendationDescription.textContent = this.ReadRecommendationDescription(isTv);
     this.Elements.watchlistTitle.textContent = isTv ? "Saved TV watchlist" : "Saved movie watchlist";
     this.Elements.emptyTitle.textContent = isTv ? "TV show pool exhausted" : "Movie pool exhausted";
     this.Elements.touchNotSeen.textContent = isTv ? NotWatchedLabel : NotSeenLabel;
+    this.Elements.desktopNotSeen.querySelector("span").textContent = isTv ? NotWatchedLabel : NotSeenLabel;
   }
 
   ReadRecommendationDescription(isTv) {
@@ -156,10 +192,11 @@ export class RapidRaterApp {
     return "A saved movie library shaped by your ratings, filters, and exclusions.";
   }
 
-  UpdateMediaShortcut(isTv) {
+  UpdateMediaShortcut() {
     const shortcutCopy = this.Elements.ratingFooter.querySelector(".shortcut-copy span");
     if (shortcutCopy)
-      shortcutCopy.textContent = `1-9 rate IMDb, 0 = 10/10. \` = ${isTv ? "not watched" : "not seen"}, Backspace = go back.`;
+      shortcutCopy.textContent = `Choose a score or use your assigned keys. Backspace = go back.`;
+    this.ApplyShortcutUi();
   }
 
   HandleKeyDown(event) {
@@ -171,9 +208,8 @@ export class RapidRaterApp {
       return;
     if (event.altKey || event.ctrlKey || event.metaKey)
       return;
-    if (this.HandleControlKey(event))
-      return;
-    this.HandleRatingKey(event);
+    if (!this.HandleControlKey(event))
+      this.HandleShortcutKey(event);
   }
 
   IsDialogOpen() {
@@ -183,10 +219,11 @@ export class RapidRaterApp {
   ReadSetupDialogs() {
     return [
       this.Elements.imdbDialog,
-      this.Elements.tmdbDialog,
-      this.Elements.aiDialog,
+      this.Elements.regionDialog,
       this.Elements.filtersDialog,
-      this.Elements.recommendationDetails
+      this.Elements.recommendationDetails,
+      this.Elements.shareDialog,
+      this.Elements.setupGuideDialog
     ];
   }
 
@@ -199,43 +236,32 @@ export class RapidRaterApp {
   HandleControlKey(event) {
     if (event.key === BackspaceKey || event.key === DeleteKey) {
       event.preventDefault();
-      this.FlashShortcutKey(event.key);
+      this.FlashShortcutAction(UndoShortcutAction);
       this.Undo().catch((error) => this.ShowToast(EscapeHtml(error.message || "Could not go back.")));
       return true;
     }
-    if (event.key !== Config.skipKey)
-      return false;
-    event.preventDefault();
-    this.FlashShortcutKey(event.key);
-    this.MarkActive(null, "notSeen");
-    return true;
+    return false;
   }
 
-  HandleRatingKey(event) {
-    if (!Object.hasOwn(Config.ratingKeys, event.key))
+  HandleShortcutKey(event) {
+    const action = ReadShortcutAction(this.Settings.keyboardShortcuts, event.key);
+    if (!action)
       return;
     event.preventDefault();
-    this.FlashShortcutKey(event.key);
-    this.MarkActive(Config.ratingKeys[event.key], "rated");
+    this.FlashShortcutAction(action);
+    if (action === SkipShortcutAction)
+      return this.MarkActive(null, "notSeen");
+    this.MarkActive(ReadShortcutRating(action), "rated");
   }
 
-  FlashShortcutKey(key) {
-    const id = this.ShortcutIdForKey(key);
-    const element = this.Elements.ratingFooter.querySelector(`[data-shortcut="${id}"]`);
+  FlashShortcutAction(action) {
+    const element = this.Elements.ratingFooter.querySelector(`[data-shortcut-action="${action}"]`);
     if (!element)
       return;
     element.classList.remove(PressedClass);
     void element.offsetWidth;
     element.classList.add(PressedClass);
     window.setTimeout(() => element.classList.remove(PressedClass), 180);
-  }
-
-  ShortcutIdForKey(key) {
-    if (key === BackspaceKey || key === DeleteKey)
-      return "undo";
-    if (key === Config.skipKey)
-      return "skip";
-    return `rate-${key}`;
   }
 
   async ActivateMedia(mediaType, view = RaterView) {
@@ -321,7 +347,7 @@ export class RapidRaterApp {
 
   async LoadRaterQueue() {
     const payload = await this.FetchJson(this.MediaUrl(Config.raterQueueUrl));
-    this.ApplyRaterQueueSnapshot(payload.queue, true);
+    this.ApplyRaterQueueSnapshot(payload.queue, RenderQueueAfterSnapshot);
   }
 
   async RefreshRaterQueue() {
@@ -332,7 +358,7 @@ export class RapidRaterApp {
     const changed = !this.State.queueReady || revision !== this.State.queueRevision
       || String(payload.queue?.poolVersion || "") !== this.State.queuePoolVersion;
     if (changed)
-      this.ApplyRaterQueueSnapshot(payload.queue, true);
+      this.ApplyRaterQueueSnapshot(payload.queue, RenderQueueAfterSnapshot);
     return changed;
   }
 
@@ -344,14 +370,14 @@ export class RapidRaterApp {
       return await this.RequestRaterQueueReplacement(request);
     } catch (error) {
       if (error?.payload?.current)
-        this.ApplyRaterQueueSnapshot(error.payload.current, true);
+        this.ApplyRaterQueueSnapshot(error.payload.current, RenderQueueAfterSnapshot);
       throw error;
     }
   }
 
   async RequestRaterQueueReplacement(request) {
     const payload = await this.RequestJson(Config.raterQueueUrl, PutMethod, request);
-    this.ApplyRaterQueueSnapshot(payload.queue, true);
+    this.ApplyRaterQueueSnapshot(payload.queue, RenderQueueAfterSnapshot);
     return true;
   }
 
@@ -399,7 +425,7 @@ export class RapidRaterApp {
   }
 
   MediaUrl(url, mediaType = this.State.mediaType) {
-    return `${url}${url.includes("?") ? "&" : "?"}media=${mediaType}`;
+    return `${url}${url.includes(QueryDelimiter) ? "&" : QueryDelimiter}media=${mediaType}`;
   }
 
   async FetchJson(url, options = {}) {
@@ -428,6 +454,8 @@ export class RapidRaterApp {
   async LoadAccountState() {
     const account = await this.FetchJson("/api/account/state");
     ApplyAccountSettings(this.Settings, account.settings);
+    this.ApplyShortcutUi();
+    this.SyncHelpPreferenceUi();
     this.AccountPayload = NormalizeAccountPayload(account.payload);
     this.RatingsCsvText = account.ratingsCsv || "";
     this.AccountRevision = Number(account.revision) || 0;
@@ -467,15 +495,13 @@ export class RapidRaterApp {
     this.AccountPayload = NormalizeAccountPayload(ReadLegacyState());
     this.RatingsCsvText = ReadLegacyRatingsCsv();
     await this.ImportLegacySecrets();
-    if (this.LegacySettings.openAiModel)
-      await this.SaveAccountPreferences({ openAiModel: this.LegacySettings.openAiModel });
     await this.FlushStateSync();
     ClearLegacyBrowserData();
     this.ShowToast("This browser's save is now stored in your account.");
   }
 
   async ImportLegacySecrets() {
-    const secrets = [[ImdbSecretType, this.LegacySettings.imdbCookie], [TmdbSecretType, this.LegacySettings.tmdbApiKey], ["openai", this.LegacySettings.openAiApiKey]];
+    const secrets = [[ImdbSecretType, this.LegacySettings.imdbCookie], ["openai", this.LegacySettings.openAiApiKey]];
     for (const [type, value] of secrets) {
       if (value)
         await this.SaveAccountSecret(type, value);
@@ -506,8 +532,7 @@ export class RapidRaterApp {
     const status = await this.FetchJson(Config.aiStatusUrl);
     this.State.ai = BuildCheckedAiState(status);
     this.UpdateAiControls();
-    if (this.State.ai.configured)
-      await this.RefreshAiModels().catch(() => null);
+    this.SyncAiSettingsForm();
   }
 
   ApplyMovieData(raw, sourceLabel, mediaType = this.State.mediaType) {
@@ -623,9 +648,8 @@ export class RapidRaterApp {
   BuildSavedQueue(activeIds, queuedIds) {
     if (!this.State.savedQueueIds)
       return [];
-    return this.State.savedQueueIds
-      .map((ttId) => this.State.movieById.get(ttId))
-      .filter((movie) => this.CanRestoreQueuedMovie(movie, activeIds, queuedIds));
+    const movies = this.State.savedQueueIds.map((ttId) => this.State.movieById.get(ttId));
+    return movies.filter((movie) => this.CanRestoreQueuedMovie(movie, activeIds, queuedIds));
   }
 
   CanRestoreQueuedMovie(movie, activeIds, queuedIds) {
@@ -646,76 +670,50 @@ export class RapidRaterApp {
   }
 
   HideImdbDialog() {
-    if (!this.State.live.configured)
-      return;
     this.Elements.imdbInput.value = "";
     this.ShowImdbError("");
     this.Elements.imdbDialog.hidden = true;
   }
 
-  ShowTmdbDialog() {
-    this.ShowTmdbError("");
-    this.Elements.tmdbCountry.value = ReadStreamingCountry(this.Settings.streamingCountry);
-    this.Elements.tmdbDialog.hidden = false;
-    const input = this.Settings.tmdbConfigured ? this.Elements.tmdbCountry : this.Elements.tmdbInput;
-    window.setTimeout(() => input.focus(), 0);
+  ShowRegionDialog() {
+    this.ShowRegionError("");
+    this.Elements.regionCountry.value = ReadStreamingCountry(this.Settings.streamingCountry);
+    this.Elements.regionDialog.hidden = false;
+    window.setTimeout(() => this.Elements.regionCountry.focus(), 0);
   }
 
-  HideTmdbDialog() {
-    this.Elements.tmdbInput.value = "";
-    this.ShowTmdbError("");
-    this.Elements.tmdbDialog.hidden = true;
+  HideRegionDialog() {
+    this.ShowRegionError("");
+    this.Elements.regionDialog.hidden = true;
   }
 
-  ShowAiDialog() {
-    this.ShowAiError("");
-    this.Elements.aiDialog.hidden = false;
-    window.setTimeout(() => this.Elements.aiInput.focus(), 0);
-  }
-
-  HideAiDialog() {
-    this.Elements.aiInput.value = "";
-    this.ShowAiError("");
-    this.Elements.aiDialog.hidden = true;
-  }
-
-  async PostJson(url, body, message) {
-    try {
-      return await this.RequestJson(url, PostMethod, body);
-    } catch (error) {
-      throw new Error(error.message || message);
-    }
+  async PostJson(url, body) {
+    return await this.RequestJson(url, PostMethod, body);
   }
 
   async SaveAccountSecret(type, value) {
     const result = await this.RequestJson(`/api/account/secrets/${type}`, PutMethod, { value });
-    const setting = SecretSettingByType[type] ?? SecretSettingByType.openai;
-    this.Settings[setting] = true;
+    const setting = SecretSettingByType[type];
+    if (setting)
+      this.Settings[setting] = true;
     return result;
   }
 
   async DeleteAccountSecret(type) {
     await this.RequestJson(`/api/account/secrets/${type}`, "DELETE", {});
-    if (type === ImdbSecretType) {
-      this.Elements.imdbDialog.hidden = true;
-      await this.RefreshLiveStatus();
-    } else if (type === TmdbSecretType) {
-      this.Elements.tmdbDialog.hidden = true;
-      await this.RefreshLiveStatus();
-      this.RefreshVisibleMetadata();
-    } else {
-      this.Elements.aiDialog.hidden = true;
-      await this.RefreshAiStatus();
-    }
+    this.Elements.imdbDialog.hidden = true;
+    await this.RefreshLiveStatus();
     this.ShowToast("The saved credential was removed from your account.");
   }
 
   async SaveAccountPreferences(changes = {}) {
     const request = BuildAccountPreferences(this.Settings, changes);
     const payload = await this.RequestJson("/api/account/preferences", PutMethod, request);
-    this.Settings.openAiModel = payload.openAiModel;
-    this.Settings.openAiModelLag = payload.openAiModelLag;
     this.Settings.streamingCountry = ReadStreamingCountry(payload.streamingCountry);
+    this.Settings.keyboardShortcuts = NormalizeKeyboardShortcuts(payload.keyboardShortcuts);
+    this.Settings.helpPreferences = NormalizeHelpPreferences(payload.helpPreferences);
+    this.ApplyShortcutUi();
+    this.SyncHelpPreferenceUi();
   }
 
   RefreshVisibleMetadata() {
@@ -739,14 +737,9 @@ export class RapidRaterApp {
     this.Elements.imdbSave.textContent = value ? "Connecting..." : "Connect IMDb";
   }
 
-  SetTmdbSaving(value) {
-    this.Elements.tmdbSave.disabled = value;
-    this.Elements.tmdbSave.textContent = value ? SavingLabel : SaveTmdbSettingsLabel;
-  }
-
-  SetAiSaving(value) {
-    this.Elements.aiSave.disabled = value;
-    this.Elements.aiSave.textContent = value ? SavingLabel : SaveApiKeyLabel;
+  SetRegionSaving(value) {
+    this.Elements.regionSave.disabled = value;
+    this.Elements.regionSave.textContent = value ? SavingLabel : "Save viewing region";
   }
 
   SetAiControlsDisabled(value) {
@@ -754,26 +747,14 @@ export class RapidRaterApp {
     this.Elements.generateRecommendations.disabled = disabled;
     this.Elements.recommendationCount.disabled = disabled;
     this.Elements.recommendationBasis.disabled = Boolean(value);
-    this.Elements.refreshAiModels.disabled = disabled;
-    this.Elements.aiModelSelect.disabled = disabled;
-  }
-
-  SetAiModelSaving(value) {
-    this.State.ai.loading = value;
-    this.SetAiControlsDisabled(value);
-    this.SetRecommendationStatus(value ? "Saving model selection..." : "");
   }
 
   ShowImdbError(message) {
     this.Elements.imdbError.textContent = message || "";
   }
 
-  ShowTmdbError(message) {
-    this.Elements.tmdbError.textContent = message || "";
-  }
-
-  ShowAiError(message) {
-    this.Elements.aiError.textContent = message || "";
+  ShowRegionError(message) {
+    this.Elements.regionError.textContent = message || "";
   }
 
   async Undo() {
@@ -834,12 +815,4 @@ export class RapidRaterApp {
 
 }
 
-function BuildAccountPreferences(settings, changes) {
-  return {
-    openAiModel: String(changes.openAiModel ?? settings.openAiModel ?? ""),
-    openAiModelLag: Number(changes.openAiModelLag ?? settings.openAiModelLag) || 2,
-    streamingCountry: ReadStreamingCountry(changes.streamingCountry ?? settings.streamingCountry)
-  };
-}
-
-InstallFeatureMethods(RapidRaterApp, AccountSyncFeature.prototype, ApplicationLifecycleFeature.prototype, CatalogViewFeature.prototype, CollectionSyncFeature.prototype, DataTransferFeature.prototype, EventBindingsFeature.prototype, QuickRateFeature.prototype, RatingWorkflowFeature.prototype, RecommendationFeature.prototype, StatusUiFeature.prototype);
+InstallFeatureMethods(RapidRaterApp, AccountSyncFeature.prototype, AiSettingsFeature.prototype, ApplicationLifecycleFeature.prototype, CatalogViewFeature.prototype, CollectionSyncFeature.prototype, DataTransferFeature.prototype, EventBindingsFeature.prototype, FriendsFeature.prototype, HelpRemindersFeature.prototype, QuickRateFeature.prototype, RatingWorkflowFeature.prototype, RecommendationFeature.prototype, SettingsFeature.prototype, SetupGuideFeature.prototype, SocialContextFeature.prototype, StatusUiFeature.prototype);

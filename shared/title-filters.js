@@ -1,8 +1,11 @@
-export const DefaultTitleFilters = Object.freeze({
+const AnyDocumentaryMode = "any";
+const OnlyDocumentaryMode = "only";
+const ExcludeDocumentaryMode = "exclude";
+const DefaultTitleFilterValues = {
   minYear: null,
   maxYear: null,
   includedGenres: Object.freeze([]),
-  documentaryMode: "any",
+  documentaryMode: AnyDocumentaryMode,
   minImdbRating: null,
   maxRuntimeMinutes: null,
   includedOriginCountries: Object.freeze([]),
@@ -12,7 +15,8 @@ export const DefaultTitleFilters = Object.freeze({
   excludeBollywood: false,
   includeUnknownOrigin: true,
   updatedAt: ""
-});
+};
+export const DefaultTitleFilters = Object.freeze(DefaultTitleFilterValues);
 
 export function NormalizeTitleFilters(value) {
   const source = ReadObject(value);
@@ -66,9 +70,9 @@ export function NormalizeTmdbOrigin(mediaType, findResult, details) {
     ? details.production_countries.map((country) => country?.iso_3166_1)
     : [];
   const tvCountries = mediaType === "tv" && Array.isArray(details?.origin_country) ? details.origin_country : [];
+  const normalizedCountries = [...tvCountries, ...productionCountries].map(NormalizeCountryCode).filter(Boolean);
   return {
-    originCountries: [...new Set([...tvCountries, ...productionCountries]
-      .map(NormalizeCountryCode).filter(Boolean))].sort(),
+    originCountries: [...new Set(normalizedCountries)].sort(),
     originalLanguage: NormalizeLanguageCode(details?.original_language || findResult?.original_language)
   };
 }
@@ -105,9 +109,9 @@ function IsGenreAllowed(title, filters) {
   const isDocumentary = genres.includes("documentary");
   if (included.length && !included.some((genre) => genres.includes(genre)))
     return false;
-  if (filters.documentaryMode === "only" && !isDocumentary)
+  if (filters.documentaryMode === OnlyDocumentaryMode && !isDocumentary)
     return false;
-  return filters.documentaryMode !== "exclude" || !isDocumentary;
+  return filters.documentaryMode !== ExcludeDocumentaryMode || !isDocumentary;
 }
 
 function IsRatingAllowed(title, filters) {
@@ -155,18 +159,7 @@ function IsExcludedOriginAllowed(origin, filters) {
 
 export function HasActiveTitleFilters(value) {
   const filters = NormalizeTitleFilters(value);
-  return Boolean(filters.minYear
-    || filters.maxYear
-    || filters.includedGenres.length
-    || filters.documentaryMode !== "any"
-    || filters.minImdbRating
-    || filters.maxRuntimeMinutes
-    || filters.includedOriginCountries.length
-    || filters.includedOriginalLanguages.length
-    || filters.excludedOriginCountries.length
-    || filters.excludedOriginalLanguages.length
-    || filters.excludeBollywood
-    || !filters.includeUnknownOrigin);
+  return CountCatalogFilters(filters) + CountOriginFilters(filters) > 0;
 }
 
 export function CountActiveTitleFilters(value) {
@@ -177,7 +170,7 @@ export function CountActiveTitleFilters(value) {
 function CountCatalogFilters(filters) {
   let count = filters.includedGenres.length;
   count += filters.minYear || filters.maxYear ? 1 : 0;
-  count += filters.documentaryMode !== "any" ? 1 : 0;
+  count += filters.documentaryMode !== AnyDocumentaryMode ? 1 : 0;
   count += filters.minImdbRating ? 1 : 0;
   count += filters.maxRuntimeMinutes ? 1 : 0;
   return count;
@@ -221,7 +214,7 @@ function NormalizeGenres(value) {
 }
 
 function NormalizeDocumentaryMode(value) {
-  return ["any", "exclude", "only"].includes(value) ? value : "any";
+  return [AnyDocumentaryMode, ExcludeDocumentaryMode, OnlyDocumentaryMode].includes(value) ? value : AnyDocumentaryMode;
 }
 
 function NormalizeRating(value) {

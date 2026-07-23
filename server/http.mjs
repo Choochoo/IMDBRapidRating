@@ -1,3 +1,5 @@
+const ContentTypeHeader = "content-type";
+
 export function SendText(response, status, body) {
   response.writeHead(status, BuildContentHeaders("text/plain;charset=utf-8"));
   response.end(body);
@@ -40,13 +42,13 @@ function ParseJsonBody(body) {
 
 function BuildContentHeaders(contentType) {
   return {
-    "content-type": contentType
+    [ContentTypeHeader]: contentType
   };
 }
 
 function BuildJsonHeaders() {
   return {
-    "content-type": "application/json;charset=utf-8",
+    [ContentTypeHeader]: "application/json;charset=utf-8",
     "cache-control": "no-store"
   };
 }

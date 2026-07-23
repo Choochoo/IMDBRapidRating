@@ -1,5 +1,7 @@
 import { EscapeHtml } from "./util.js";
 
+const SubmittedStatus = "submitted";
+
 export async function UndoRating(app) {
   if (app.State.locked || !app.State.history.length)
     return;
@@ -21,7 +23,7 @@ async function UndoLatestRating(app) {
 }
 
 function ShouldUndoLive(record) {
-  return record?.submitStatus === "submitted";
+  return record?.submitStatus === SubmittedStatus;
 }
 
 function ShouldRestorePreviousLive(previous) {
@@ -29,7 +31,7 @@ function ShouldRestorePreviousLive(previous) {
     return false;
   if (previous.rating < 1 || previous.rating > 10)
     return false;
-  return previous.status === "imported" || previous.submitStatus === "submitted";
+  return previous.status === "imported" || previous.submitStatus === SubmittedStatus;
 }
 
 async function RestoreUndo(app, last, movie, message) {

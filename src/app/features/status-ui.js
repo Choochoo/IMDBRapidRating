@@ -1,10 +1,10 @@
 import { BuildAiPreferenceProfile } from "../rating-records.js";
-import { RenderFailure, RenderModelOptions } from "../rendering.js";
+import { RenderFailure } from "../rendering.js";
 import { CountRatings } from "../stats.js";
 import { FormatCount } from "../util.js";
 import { ReadMediaPayload } from "../../../shared/media.js";
 import { NormalizeRecommendationBasis } from "../../../shared/recommendation-basis.js";
-import { IsTitleAllowed } from "../../../shared/title-filters.js";
+import { ReadStreamingCountry } from "../../../shared/streaming-country.js";
 
 const ReadyTone = "ready";
 const CheckingTone = "checking";
@@ -22,6 +22,7 @@ const OtherRecommendationBasis = "other";
 const ConnectedLabel = "Connected";
 const LoadingLabel = "Loading";
 const AriaLabelAttribute = "aria-label";
+const ImdbServiceName = "IMDb";
 
 export class StatusUiFeature {
   UpdateStats() {
@@ -63,7 +64,7 @@ export class StatusUiFeature {
     this.UpdateSettingsButtons();
     this.UpdateRetryButtons(counts);
     const status = this.BuildLiveBadgeStatus(counts);
-    this.SetLiveBadge(status.tone, status.text, status.tooltip, counts);
+    this.SetLiveBadge(status.tone, status.text, status.tooltip);
   }
 
   BuildLiveBadgeStatus(counts) {
@@ -84,21 +85,22 @@ export class StatusUiFeature {
     return { tone, text, tooltip };
   }
 
-  SetLiveBadge(tone, text, tooltip, counts) {
+  SetLiveBadge(tone, text, tooltip) {
     this.Elements.liveBadge.textContent = text;
     this.SetConnectionStatus(this.Elements.liveStatusRow, tone, tooltip, `Live rating sync: ${text}`);
-    this.UpdateConnectionSummary(counts);
+    this.UpdateConnectionSummary();
   }
 
   UpdateSettingsButtons() {
     this.UpdateImdbButton();
-    this.UpdateTmdbButton();
-    this.UpdateOpenAiButton();
+    this.UpdateRegionButton();
+    this.UpdateAiButton();
   }
 
   UpdateImdbButton() {
     const status = this.BuildImdbButtonStatus();
-    this.ApplySettingsButtonStatus(this.Elements.configureImdb, this.Elements.imdbStatusLabel, "IMDb", status);
+    this.ApplySettingsButtonStatus(this.Elements.configureImdb, this.Elements.imdbStatusLabel, ImdbServiceName, status);
+    this.Elements.settingsImdbStatus.textContent = status.text;
   }
 
   BuildImdbButtonStatus() {
@@ -112,35 +114,26 @@ export class StatusUiFeature {
     return this.BuildStatusDescriptor(IssueTone, "Action required", tooltip);
   }
 
-  UpdateTmdbButton() {
-    const status = this.BuildTmdbButtonStatus();
-    this.ApplySettingsButtonStatus(this.Elements.configureTmdb, this.Elements.tmdbStatusLabel, "TMDB", status);
+  UpdateRegionButton() {
+    const country = ReadStreamingCountry(this.Settings.streamingCountry);
+    const status = this.BuildStatusDescriptor(ReadyTone, `${country} services`, "Choose the country used for streaming availability.");
+    this.ApplySettingsButtonStatus(this.Elements.configureRegion, this.Elements.regionStatusLabel, "Viewing region", status);
+    this.Elements.settingsRegionStatus.textContent = status.text;
   }
 
-  BuildTmdbButtonStatus() {
-    const connectedTooltip = "TMDB is ready to supply posters, summaries, cast, and other title details.";
-    const missingTooltip = "Add a TMDB key to load posters, summaries, cast, and other title details.";
-    const tooltip = this.State.live.tmdbConfigured ? connectedTooltip : missingTooltip;
-    if (!this.State.live.checked)
-      return this.BuildStatusDescriptor(CheckingTone, CheckingLabel, tooltip);
-    if (this.State.live.tmdbConfigured)
-      return this.BuildStatusDescriptor(ReadyTone, ReadyLabel, tooltip);
-    return this.BuildStatusDescriptor(AttentionTone, "Key needed", tooltip);
+  UpdateAiButton() {
+    const status = this.BuildAiButtonStatus();
+    this.ApplySettingsButtonStatus(this.Elements.configureAiService, this.Elements.aiStatusLabel, "AI recommendations", status);
   }
 
-  UpdateOpenAiButton() {
-    const status = this.BuildOpenAiButtonStatus();
-    this.ApplySettingsButtonStatus(this.Elements.configureOpenAi, this.Elements.openAiStatusLabel, "OpenAI", status);
-  }
-
-  BuildOpenAiButtonStatus() {
-    const connectedTooltip = "OpenAI is ready to generate recommendations from your ratings.";
-    const missingTooltip = "Add an OpenAI key to generate recommendations.";
+  BuildAiButtonStatus() {
+    const connectedTooltip = "Your AI service is ready to generate recommendations from your ratings.";
+    const missingTooltip = "Connect an AI service to generate recommendations.";
     if (!this.State.ai.checked)
       return this.BuildStatusDescriptor(CheckingTone, CheckingLabel, missingTooltip);
     if (this.State.ai.configured)
       return this.BuildStatusDescriptor(ReadyTone, ReadyLabel, connectedTooltip);
-    return this.BuildStatusDescriptor(AttentionTone, "Key needed", missingTooltip);
+    return this.BuildStatusDescriptor(AttentionTone, "Setup needed", missingTooltip);
   }
 
   ApplySettingsButtonStatus(button, label, prefix, status) {
@@ -180,25 +173,24 @@ export class StatusUiFeature {
       return this.BuildStatusDescriptor(CheckingTone, "Checking connections", "Connections are still being checked. Open for details.");
     const summary = this.ReadConnectionSummary();
     if (summary.connected === 0)
-      return this.BuildStatusDescriptor(IssueTone, "0 of 3 connected", summary.tooltip);
+      return this.BuildStatusDescriptor(IssueTone, `0 of ${summary.total} connected`, summary.tooltip);
     if (summary.connected < summary.total)
       return this.BuildStatusDescriptor(AttentionTone, `${summary.connected} of ${summary.total} connected`, summary.tooltip);
-    return this.BuildStatusDescriptor(ReadyTone, "3 of 3 connected", summary.tooltip);
+    return this.BuildStatusDescriptor(ReadyTone, `${summary.total} of ${summary.total} connected`, summary.tooltip);
   }
 
   ReadConnectionSummary() {
     const services = this.ReadConnectionServices();
     const connected = services.filter((service) => service.connected).length;
     const missing = services.filter((service) => !service.connected).map((service) => service.name);
-    const tooltip = missing.length ? `${connected} of ${services.length} connected. Missing: ${missing.join(", ")}.` : "All 3 services are connected.";
+    const tooltip = missing.length ? `${connected} of ${services.length} connected. Missing: ${missing.join(", ")}.` : `All ${services.length} services are connected.`;
     return { connected, total: services.length, tooltip };
   }
 
   ReadConnectionServices() {
     return [
-      { name: "IMDb", connected: Boolean(this.State.live.configured) },
-      { name: "TMDB", connected: Boolean(this.State.live.tmdbConfigured) },
-      { name: "OpenAI", connected: Boolean(this.State.ai.configured) }
+      { name: ImdbServiceName, connected: Boolean(this.State.live.configured) },
+      { name: "AI", connected: Boolean(this.State.ai.configured) }
     ];
   }
 
@@ -206,7 +198,7 @@ export class StatusUiFeature {
     this.Elements.connectionSummary.classList.remove("connection-ready", "connection-attention", "connection-issue", "connection-checking");
     this.Elements.connectionSummary.classList.add(`connection-${status.tone}`);
     this.Elements.connectionSummaryLabel.textContent = status.text;
-    this.Elements.connectionMenuHeading.textContent = `${status.text}. Select a service to manage it.`;
+    this.Elements.connectionMenuHeading.textContent = `${status.text}. Select a service or preference to manage it.`;
     this.Elements.connectionSummary.title = status.tooltip;
     this.Elements.connectionSummary.setAttribute(AriaLabelAttribute, `Connections: ${status.text}. ${status.tooltip}`);
   }
@@ -218,30 +210,15 @@ export class StatusUiFeature {
   }
 
   UpdateAiControls() {
-    this.Elements.configureAi.textContent = this.State.ai.configured ? "OpenAI connected" : "Set OpenAI Key";
+    this.Elements.configureAi.textContent = this.State.ai.configured ? "AI connected" : "Connect AI";
     this.UpdateSettingsButtons();
     this.UpdateConnectionSummary();
     this.SetAiControlsDisabled(this.State.ai.loading);
-    this.UpdateModelFeed();
     this.UpdateRecommendationStatus();
   }
 
   UpdateRecommendationStatus() {
-    if (!this.State.ai.configured)
-      return this.SetRecommendationStatus("Add an OpenAI API key to generate recommendations.");
-    const saved = this.State.recommendationQueue.length;
-    const visible = this.State.recommendationQueue.filter((item) => IsTitleAllowed(item, this.State.filters)).length;
-    const queue = this.BuildRecommendationQueueStatus(saved, visible);
-    this.SetRecommendationStatus(`Ready with ${this.ReadAiModelLabel()}.${queue}`);
-  }
-
-  BuildRecommendationQueueStatus(saved, visible) {
-    if (!saved)
-      return "";
-    const label = saved === 1 ? "pick" : "picks";
-    if (visible === saved)
-      return ` ${FormatCount(saved)} saved ${label} in your watchlist.`;
-    return ` ${FormatCount(visible)} of ${FormatCount(saved)} saved ${label} match the active filters.`;
+    this.SetRecommendationStatus("");
   }
 
   UpdateRecommendationBasisControl() {
@@ -322,27 +299,6 @@ export class StatusUiFeature {
     this.Elements.recommendationStatus.textContent = message;
   }
 
-  ReadAiModelLabel() {
-    return this.State.ai.selectedModel || this.State.ai.model || "auto model";
-  }
-
-  UpdateModelFeed() {
-    this.Elements.aiModelStatus.textContent = `Model: ${this.ReadAiModelLabel()}`;
-    this.Elements.aiModelDetail.textContent = this.BuildModelDetailText();
-    this.UpdateModelSelect();
-  }
-
-  BuildModelDetailText() {
-    if (this.State.ai.model)
-      return "Manual OPENAI_MODEL override is active.";
-    return `Auto-selecting ${FormatCount(this.State.ai.modelLag)} versions behind newest eligible GPT model.`;
-  }
-
-  UpdateModelSelect() {
-    this.Elements.aiModelSelect.innerHTML = RenderModelOptions(this.State.ai);
-    this.Elements.aiModelSelect.value = this.State.ai.model || "";
-  }
-
   UpdateFailurePanel() {
     const failures = this.ReadRecentFailures();
     if (!failures.length)
@@ -352,10 +308,10 @@ export class StatusUiFeature {
   }
 
   ReadRecentFailures() {
-    return Object.values(this.State.ratings)
-      .filter((record) => record.submitStatus === "failed")
-      .sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")))
-      .slice(0, 5);
+    const ratings = Object.values(this.State.ratings);
+    const failures = ratings.filter((record) => record.submitStatus === "failed");
+    failures.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
+    return failures.slice(0, 5);
   }
 
   HideFailurePanel() {

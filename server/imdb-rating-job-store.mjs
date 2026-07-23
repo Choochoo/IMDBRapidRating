@@ -13,6 +13,10 @@ const DeleteOperation = "delete";
 const DefaultImdbError = "IMDb request failed.";
 const LeaseSeconds = 120;
 const RecoverySuccessCount = 100;
+const MovieMediaType = "movie";
+const ImdbRatingJobsTable = "imdb_rating_jobs";
+const ImdbRatingDispatchStateTable = "imdb_rating_dispatch_state";
+const UserStatesTable = "user_states";
 
 export function CreateImdbRatingJobStore(pool) {
   return { ...BuildQueueMethods(pool), ...BuildDispatchMethods(pool), ...BuildRecoveryMethods(pool) };
@@ -21,7 +25,7 @@ export function CreateImdbRatingJobStore(pool) {
 function BuildQueueMethods(pool) {
   return {
     QueueImdbRating: async (userId, record, mediaType = record?.mediaType) => await RunTransaction(pool, async (client) => await QueueRating(client, userId, record, mediaType)),
-    QueueImdbDelete: async (userId, ttId, mediaType = "movie", options = {}) => await RunTransaction(pool, async (client) => await QueueDelete(client, userId, ttId, mediaType, Boolean(options.deferAccountState))),
+    QueueImdbDelete: async (userId, ttId, mediaType = MovieMediaType, options = {}) => await RunTransaction(pool, async (client) => await QueueDelete(client, userId, ttId, mediaType, Boolean(options.deferAccountState))),
     ReadImdbRatingQueueStatus: async (userId) => await ReadQueueStatus(pool, userId)
   };
 }
@@ -47,7 +51,7 @@ function BuildRecoveryMethods(pool) {
 export async function UpsertImdbRatingJob(client, userId, record, mediaType = record?.mediaType) {
   const key = NormalizeMediaType(mediaType);
   const payload = { ...record, mediaType: key, submitStatus: PendingStatus, submitError: "", submittedAt: "" };
-  const result = await client.query(`INSERT INTO ${Qualified("imdb_rating_jobs")} AS jobs (user_id, media_type, tt_id, operation, rating, payload) VALUES ($1, $2, $3, '${RateOperation}', $4, $5::jsonb) ON CONFLICT (user_id, media_type, tt_id) DO UPDATE SET operation='${RateOperation}', rating=EXCLUDED.rating, payload=EXCLUDED.payload, status='${PendingStatus}', generation=jobs.generation+1, attempt_count=0, available_at=now(), lease_expires_at=NULL, last_http_status=NULL, last_error='', updated_at=now(), completed_at=NULL RETURNING id, generation, status`, [userId, key, record.ttId, record.rating, JSON.stringify(payload)]);
+  const result = await client.query(`INSERT INTO ${Qualified(ImdbRatingJobsTable)} AS jobs (user_id, media_type, tt_id, operation, rating, payload) VALUES ($1, $2, $3, '${RateOperation}', $4, $5::jsonb) ON CONFLICT (user_id, media_type, tt_id) DO UPDATE SET operation='${RateOperation}', rating=EXCLUDED.rating, payload=EXCLUDED.payload, status='${PendingStatus}', generation=jobs.generation+1, attempt_count=0, available_at=now(), lease_expires_at=NULL, last_http_status=NULL, last_error='', updated_at=now(), completed_at=NULL RETURNING id, generation, status`, [userId, key, record.ttId, record.rating, JSON.stringify(payload)]);
   return result.rows[0];
 }
 
@@ -55,7 +59,7 @@ export async function UpsertPendingImdbJobs(client, userId, payload) {
   const jobs = BuildPendingJobs(payload);
   if (!jobs.length)
     return 0;
-  const sql = `INSERT INTO ${Qualified("imdb_rating_jobs")} AS jobs (user_id, media_type, tt_id, operation, rating, payload) SELECT $1, item->>'mediaType', item->>'ttId', '${RateOperation}', (item->>'rating')::smallint, item->'payload' FROM jsonb_array_elements($2::jsonb) item ON CONFLICT (user_id, media_type, tt_id) DO UPDATE SET operation='${RateOperation}', rating=EXCLUDED.rating, payload=EXCLUDED.payload, status='${PendingStatus}', generation=jobs.generation+1, attempt_count=0, available_at=now(), lease_expires_at=NULL, last_http_status=NULL, last_error='', updated_at=now(), completed_at=NULL WHERE jobs.operation<>'${RateOperation}' OR jobs.rating IS DISTINCT FROM EXCLUDED.rating OR (jobs.status IN ('${PendingStatus}', '${ProcessingStatus}') AND jobs.payload IS DISTINCT FROM EXCLUDED.payload)`;
+  const sql = `INSERT INTO ${Qualified(ImdbRatingJobsTable)} AS jobs (user_id, media_type, tt_id, operation, rating, payload) SELECT $1, item->>'mediaType', item->>'ttId', '${RateOperation}', (item->>'rating')::smallint, item->'payload' FROM jsonb_array_elements($2::jsonb) item ON CONFLICT (user_id, media_type, tt_id) DO UPDATE SET operation='${RateOperation}', rating=EXCLUDED.rating, payload=EXCLUDED.payload, status='${PendingStatus}', generation=jobs.generation+1, attempt_count=0, available_at=now(), lease_expires_at=NULL, last_http_status=NULL, last_error='', updated_at=now(), completed_at=NULL WHERE jobs.operation<>'${RateOperation}' OR jobs.rating IS DISTINCT FROM EXCLUDED.rating OR (jobs.status IN ('${PendingStatus}', '${ProcessingStatus}') AND jobs.payload IS DISTINCT FROM EXCLUDED.payload)`;
   const result = await client.query(sql, [userId, JSON.stringify(jobs)]);
   return result.rowCount;
 }
@@ -94,17 +98,17 @@ async function QueueDelete(client, userId, ttId, mediaType, deferAccountState) {
 export async function UpsertImdbDeleteJob(client, userId, ttId, mediaType) {
   const key = NormalizeMediaType(mediaType);
   const payload = JSON.stringify({ ttId, mediaType: key });
-  const result = await client.query(`INSERT INTO ${Qualified("imdb_rating_jobs")} AS jobs (user_id, media_type, tt_id, operation, rating, payload) VALUES ($1, $2, $3, '${DeleteOperation}', NULL, $4::jsonb) ON CONFLICT (user_id, media_type, tt_id) DO UPDATE SET operation='${DeleteOperation}', rating=NULL, payload=EXCLUDED.payload, status='${PendingStatus}', generation=jobs.generation+1, attempt_count=0, available_at=now(), lease_expires_at=NULL, last_http_status=NULL, last_error='', updated_at=now(), completed_at=NULL RETURNING id, generation, status`, [userId, key, ttId, payload]);
+  const result = await client.query(`INSERT INTO ${Qualified(ImdbRatingJobsTable)} AS jobs (user_id, media_type, tt_id, operation, rating, payload) VALUES ($1, $2, $3, '${DeleteOperation}', NULL, $4::jsonb) ON CONFLICT (user_id, media_type, tt_id) DO UPDATE SET operation='${DeleteOperation}', rating=NULL, payload=EXCLUDED.payload, status='${PendingStatus}', generation=jobs.generation+1, attempt_count=0, available_at=now(), lease_expires_at=NULL, last_http_status=NULL, last_error='', updated_at=now(), completed_at=NULL RETURNING id, generation, status`, [userId, key, ttId, payload]);
   return result.rows[0];
 }
 
 async function ReadJobStatus(client, userId, ttId, mediaType) {
-  const result = await client.query(`SELECT status FROM ${Qualified("imdb_rating_jobs")} WHERE user_id=$1 AND media_type=$2 AND tt_id=$3 FOR UPDATE`, [userId, NormalizeMediaType(mediaType), ttId]);
+  const result = await client.query(`SELECT status FROM ${Qualified(ImdbRatingJobsTable)} WHERE user_id=$1 AND media_type=$2 AND tt_id=$3 FOR UPDATE`, [userId, NormalizeMediaType(mediaType), ttId]);
   return result.rows[0]?.status || "";
 }
 
 async function DeleteJob(client, userId, ttId, mediaType) {
-  await client.query(`DELETE FROM ${Qualified("imdb_rating_jobs")} WHERE user_id=$1 AND media_type=$2 AND tt_id=$3`, [userId, NormalizeMediaType(mediaType), ttId]);
+  await client.query(`DELETE FROM ${Qualified(ImdbRatingJobsTable)} WHERE user_id=$1 AND media_type=$2 AND tt_id=$3`, [userId, NormalizeMediaType(mediaType), ttId]);
 }
 
 function HasRating(record) {
@@ -114,7 +118,7 @@ function HasRating(record) {
 }
 
 function BuildPendingJobs(payload) {
-  return ["movie", "tv"].flatMap((mediaType) => BuildMediaPendingJobs(payload, mediaType));
+  return [MovieMediaType, "tv"].flatMap((mediaType) => BuildMediaPendingJobs(payload, mediaType));
 }
 
 function BuildMediaPendingJobs(payload, mediaType) {
@@ -142,18 +146,18 @@ async function ClaimNextJob(client) {
 }
 
 async function LockDispatchState(client) {
-  const result = await client.query(`SELECT maximum_rps, current_rps, next_attempt_at, success_streak FROM ${Qualified("imdb_rating_dispatch_state")} WHERE singleton=true FOR UPDATE`);
+  const result = await client.query(`SELECT maximum_rps, current_rps, next_attempt_at, success_streak FROM ${Qualified(ImdbRatingDispatchStateTable)} WHERE singleton=true FOR UPDATE`);
   return result.rows[0];
 }
 
 async function ClaimAvailableJob(client) {
-  const sql = `WITH user_history AS (SELECT user_id, max(last_attempt_at) last_attempt_at FROM ${Qualified("imdb_rating_jobs")} GROUP BY user_id), candidates AS (SELECT DISTINCT ON (jobs.user_id) jobs.id, jobs.available_at, history.last_attempt_at user_last_attempt FROM ${Qualified("imdb_rating_jobs")} jobs LEFT JOIN user_history history ON history.user_id=jobs.user_id WHERE (jobs.status='${PendingStatus}' AND jobs.available_at<=now()) OR (jobs.status='${ProcessingStatus}' AND jobs.lease_expires_at<=now()) ORDER BY jobs.user_id, jobs.available_at, jobs.id), chosen AS (SELECT id FROM candidates ORDER BY user_last_attempt NULLS FIRST, available_at, id LIMIT 1) UPDATE ${Qualified("imdb_rating_jobs")} jobs SET status='${ProcessingStatus}', attempt_count=attempt_count+1, last_attempt_at=now(), lease_expires_at=now()+interval '${LeaseSeconds} seconds', updated_at=now() WHERE jobs.id=(SELECT id FROM chosen) RETURNING jobs.*`;
+  const sql = `WITH user_history AS (SELECT user_id, max(last_attempt_at) last_attempt_at FROM ${Qualified(ImdbRatingJobsTable)} GROUP BY user_id), candidates AS (SELECT DISTINCT ON (jobs.user_id) jobs.id, jobs.available_at, history.last_attempt_at user_last_attempt FROM ${Qualified(ImdbRatingJobsTable)} jobs LEFT JOIN user_history history ON history.user_id=jobs.user_id WHERE (jobs.status='${PendingStatus}' AND jobs.available_at<=now()) OR (jobs.status='${ProcessingStatus}' AND jobs.lease_expires_at<=now()) ORDER BY jobs.user_id, jobs.available_at, jobs.id), chosen AS (SELECT id FROM candidates ORDER BY user_last_attempt NULLS FIRST, available_at, id LIMIT 1) UPDATE ${Qualified(ImdbRatingJobsTable)} jobs SET status='${ProcessingStatus}', attempt_count=attempt_count+1, last_attempt_at=now(), lease_expires_at=now()+interval '${LeaseSeconds} seconds', updated_at=now() WHERE jobs.id=(SELECT id FROM chosen) RETURNING jobs.*`;
   const result = await client.query(sql);
   return result.rows[0] || null;
 }
 
 async function ReserveDispatchSlot(client) {
-  await client.query(`UPDATE ${Qualified("imdb_rating_dispatch_state")} SET next_attempt_at=now()+(interval '1 second'/current_rps::double precision), updated_at=now() WHERE singleton=true`);
+  await client.query(`UPDATE ${Qualified(ImdbRatingDispatchStateTable)} SET next_attempt_at=now()+(interval '1 second'/current_rps::double precision), updated_at=now() WHERE singleton=true`);
 }
 
 async function CompleteJob(client, job, result) {
@@ -169,7 +173,7 @@ async function CompleteJob(client, job, result) {
 }
 
 async function MarkJobSucceeded(client, job, httpStatus) {
-  const result = await client.query(`UPDATE ${Qualified("imdb_rating_jobs")} SET status='${SucceededStatus}', lease_expires_at=NULL, last_http_status=$3, last_error='', completed_at=now(), updated_at=now() WHERE id=$1 AND generation=$2 AND status='${ProcessingStatus}' RETURNING id`, [job.id, job.generation, httpStatus]);
+  const result = await client.query(`UPDATE ${Qualified(ImdbRatingJobsTable)} SET status='${SucceededStatus}', lease_expires_at=NULL, last_http_status=$3, last_error='', completed_at=now(), updated_at=now() WHERE id=$1 AND generation=$2 AND status='${ProcessingStatus}' RETURNING id`, [job.id, job.generation, httpStatus]);
   return Boolean(result.rowCount);
 }
 
@@ -188,20 +192,20 @@ function BuildSubmittedRecord(record, rating) {
 }
 
 async function NoteDispatchSuccess(client) {
-  const sql = `UPDATE ${Qualified("imdb_rating_dispatch_state")} SET current_rps=LEAST(maximum_rps, current_rps+CASE WHEN success_streak+1>=${RecoverySuccessCount} THEN 1 ELSE 0 END), success_streak=CASE WHEN success_streak+1>=${RecoverySuccessCount} THEN 0 ELSE success_streak+1 END, updated_at=now() WHERE singleton=true`;
+  const sql = `UPDATE ${Qualified(ImdbRatingDispatchStateTable)} SET current_rps=LEAST(maximum_rps, current_rps+CASE WHEN success_streak+1>=${RecoverySuccessCount} THEN 1 ELSE 0 END), success_streak=CASE WHEN success_streak+1>=${RecoverySuccessCount} THEN 0 ELSE success_streak+1 END, updated_at=now() WHERE singleton=true`;
   await client.query(sql);
 }
 
 async function RetryJob(pool, job, error, delayMs) {
   const message = String(error?.payload?.error || error?.message || DefaultImdbError);
   const status = Number(error?.status) || null;
-  const result = await pool.query(`UPDATE ${Qualified("imdb_rating_jobs")} SET status='${PendingStatus}', available_at=now()+($3::double precision*interval '1 millisecond'), lease_expires_at=NULL, last_http_status=$4, last_error=$5, updated_at=now() WHERE id=$1 AND generation=$2 AND status='${ProcessingStatus}'`, [job.id, job.generation, delayMs, status, message]);
+  const result = await pool.query(`UPDATE ${Qualified(ImdbRatingJobsTable)} SET status='${PendingStatus}', available_at=now()+($3::double precision*interval '1 millisecond'), lease_expires_at=NULL, last_http_status=$4, last_error=$5, updated_at=now() WHERE id=$1 AND generation=$2 AND status='${ProcessingStatus}'`, [job.id, job.generation, delayMs, status, message]);
   return Boolean(result.rowCount);
 }
 
 async function ThrottleJob(client, job, error, delayMs) {
   await LockDispatchState(client);
-  await client.query(`UPDATE ${Qualified("imdb_rating_dispatch_state")} SET current_rps=GREATEST(0.25, current_rps/2), next_attempt_at=GREATEST(next_attempt_at, now()+($1::double precision*interval '1 millisecond')), success_streak=0, updated_at=now() WHERE singleton=true`, [delayMs]);
+  await client.query(`UPDATE ${Qualified(ImdbRatingDispatchStateTable)} SET current_rps=GREATEST(0.25, current_rps/2), next_attempt_at=GREATEST(next_attempt_at, now()+($1::double precision*interval '1 millisecond')), success_streak=0, updated_at=now() WHERE singleton=true`, [delayMs]);
   return await RetryJob(client, job, error, delayMs);
 }
 
@@ -226,14 +230,14 @@ async function FailAuthentication(client, job, error, state) {
 async function PauseUserJobs(client, userId, error) {
   const message = String(error?.payload?.error || error?.message || DefaultImdbError);
   const httpStatus = Number(error?.status) || null;
-  const result = await client.query(`UPDATE ${Qualified("imdb_rating_jobs")} SET status='${AuthRequiredStatus}', generation=generation+1, lease_expires_at=NULL, last_http_status=$2, last_error=$3, updated_at=now() WHERE user_id=$1 AND status IN ('${PendingStatus}', '${ProcessingStatus}')`, [userId, httpStatus, message]);
+  const result = await client.query(`UPDATE ${Qualified(ImdbRatingJobsTable)} SET status='${AuthRequiredStatus}', generation=generation+1, lease_expires_at=NULL, last_http_status=$2, last_error=$3, updated_at=now() WHERE user_id=$1 AND status IN ('${PendingStatus}', '${ProcessingStatus}')`, [userId, httpStatus, message]);
   return Boolean(result.rowCount);
 }
 
 async function MarkJobFailed(client, job, error, status) {
   const message = String(error?.payload?.error || error?.message || DefaultImdbError);
   const httpStatus = Number(error?.status) || null;
-  const result = await client.query(`UPDATE ${Qualified("imdb_rating_jobs")} SET status=$3, lease_expires_at=NULL, last_http_status=$4, last_error=$5, updated_at=now() WHERE id=$1 AND generation=$2 AND status='${ProcessingStatus}' RETURNING id`, [job.id, job.generation, status, httpStatus, message]);
+  const result = await client.query(`UPDATE ${Qualified(ImdbRatingJobsTable)} SET status=$3, lease_expires_at=NULL, last_http_status=$4, last_error=$5, updated_at=now() WHERE id=$1 AND generation=$2 AND status='${ProcessingStatus}' RETURNING id`, [job.id, job.generation, status, httpStatus, message]);
   return Boolean(result.rowCount);
 }
 
@@ -251,7 +255,7 @@ async function WriteRatingState(client, payload, userId, mediaType, record) {
   const media = ReadMediaPayload(payload, mediaType);
   const ratings = { ...(media.ratings || {}), [record.ttId]: record };
   const nextPayload = WriteMediaPayload(payload, mediaType, { ...media, ratings });
-  const result = await client.query(`UPDATE ${Qualified("user_states")} SET payload=$2::jsonb, revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`, [userId, JSON.stringify(nextPayload)]);
+  const result = await client.query(`UPDATE ${Qualified(UserStatesTable)} SET payload=$2::jsonb, revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`, [userId, JSON.stringify(nextPayload)]);
   return Number(result.rows[0]?.revision) || 0;
 }
 
@@ -264,7 +268,7 @@ async function DeleteRatingState(client, payload, userId, mediaType, ttId) {
 }
 
 async function ReadUserState(client, userId) {
-  const result = await client.query(`SELECT payload, revision FROM ${Qualified("user_states")} WHERE user_id=$1 FOR UPDATE`, [userId]);
+  const result = await client.query(`SELECT payload, revision FROM ${Qualified(UserStatesTable)} WHERE user_id=$1 FOR UPDATE`, [userId]);
   return result.rows[0] || { payload: {}, revision: 0 };
 }
 
@@ -274,19 +278,19 @@ async function DeleteRecommendation(client, userId, ttId, mediaType) {
 
 async function ConfigureDispatchRate(pool, maximumRps) {
   const rate = Math.max(0.25, Number(maximumRps) || 10);
-  const result = await pool.query(`UPDATE ${Qualified("imdb_rating_dispatch_state")} SET maximum_rps=$1, current_rps=LEAST(current_rps, $1), updated_at=now() WHERE singleton=true RETURNING maximum_rps, current_rps`, [rate]);
+  const result = await pool.query(`UPDATE ${Qualified(ImdbRatingDispatchStateTable)} SET maximum_rps=$1, current_rps=LEAST(current_rps, $1), updated_at=now() WHERE singleton=true RETURNING maximum_rps, current_rps`, [rate]);
   return { maximumRps: Number(result.rows[0].maximum_rps), currentRps: Number(result.rows[0].current_rps) };
 }
 
 async function ReadQueueStatus(pool, userId) {
-  const jobs = await pool.query(`SELECT status, count(*)::integer count FROM ${Qualified("imdb_rating_jobs")} WHERE user_id=$1 GROUP BY status`, [userId]);
-  const dispatch = await pool.query(`SELECT maximum_rps, current_rps, next_attempt_at FROM ${Qualified("imdb_rating_dispatch_state")} WHERE singleton=true`);
+  const jobs = await pool.query(`SELECT status, count(*)::integer count FROM ${Qualified(ImdbRatingJobsTable)} WHERE user_id=$1 GROUP BY status`, [userId]);
+  const dispatch = await pool.query(`SELECT maximum_rps, current_rps, next_attempt_at FROM ${Qualified(ImdbRatingDispatchStateTable)} WHERE singleton=true`);
   return BuildQueueStatus(jobs.rows, dispatch.rows[0]);
 }
 
 async function RequeueUserJobs(client, userId, statuses) {
   const state = await ReadUserState(client, userId);
-  const result = await client.query(`UPDATE ${Qualified("imdb_rating_jobs")} SET status='${PendingStatus}', generation=generation+1, available_at=now(), lease_expires_at=NULL, last_http_status=NULL, last_error='', completed_at=NULL, updated_at=now() WHERE user_id=$1 AND status=ANY($2::varchar[]) RETURNING media_type, tt_id, rating, operation`, [userId, statuses]);
+  const result = await client.query(`UPDATE ${Qualified(ImdbRatingJobsTable)} SET status='${PendingStatus}', generation=generation+1, available_at=now(), lease_expires_at=NULL, last_http_status=NULL, last_error='', completed_at=NULL, updated_at=now() WHERE user_id=$1 AND status=ANY($2::varchar[]) RETURNING media_type, tt_id, rating, operation`, [userId, statuses]);
   const payload = MarkRequeuedRatings(state.payload, result.rows);
   const revision = payload === state.payload ? Number(state.revision) || 0 : await WriteUserPayload(client, userId, payload);
   return { queued: result.rowCount, revision };
@@ -314,7 +318,7 @@ function NextRecordTimestamp(record) {
 }
 
 async function WriteUserPayload(client, userId, payload) {
-  const result = await client.query(`UPDATE ${Qualified("user_states")} SET payload=$2::jsonb, revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`, [userId, JSON.stringify(payload)]);
+  const result = await client.query(`UPDATE ${Qualified(UserStatesTable)} SET payload=$2::jsonb, revision=revision+1, updated_at=now() WHERE user_id=$1 RETURNING revision`, [userId, JSON.stringify(payload)]);
   return Number(result.rows[0]?.revision) || 0;
 }
 

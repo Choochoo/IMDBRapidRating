@@ -1,8 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { BuildUserDataPath, MigrateLegacyFile } from "./user-data.mjs";
+import { LoadAzureRuntimeSecrets } from "./security/azure-runtime-secrets.mjs";
 
 const SettingsEnvFile = "settings.env";
+const SettingsPathEnvironmentName = "RAPID_RATER_SETTINGS_PATH";
+const DoubleQuote = "\"";
+const SingleQuote = "'";
 
 export function LoadLocalEnv(rootPath) {
   const envPath = BuildSettingsEnvPath(rootPath);
@@ -12,11 +16,19 @@ export function LoadLocalEnv(rootPath) {
     LoadEnvLine(line);
 }
 
+export async function InitializeRuntimeEnvironment(rootPath) {
+  LoadLocalEnv(rootPath);
+  await LoadAzureRuntimeSecrets();
+}
+
 export function IsDryRun() {
   return String(process.env.IMDB_DRY_RUN || "").toLowerCase() === "true";
 }
 
 function BuildSettingsEnvPath(rootPath) {
+  const configuredPath = String(process.env[SettingsPathEnvironmentName] || "").trim();
+  if (configuredPath)
+    return path.resolve(configuredPath);
   const envPath = BuildUserDataPath(SettingsEnvFile);
   if (rootPath)
     MigrateLegacyFile(path.join(rootPath, ".env.local"), envPath);
@@ -37,6 +49,6 @@ function LoadEnvLine(line) {
 }
 
 function StripQuotes(value) {
-  const quoted = (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+  const quoted = (value.startsWith(DoubleQuote) && value.endsWith(DoubleQuote)) || (value.startsWith(SingleQuote) && value.endsWith(SingleQuote));
   return quoted ? value.slice(1, -1) : value;
 }

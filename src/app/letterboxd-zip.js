@@ -13,9 +13,9 @@ export async function ReadLetterboxdUpload(file) {
 
 export function ReadLetterboxdArchive(buffer, { unzipSync, strFromU8 }) {
   const archive = unzipSync(new Uint8Array(buffer));
-  return Object.entries(archive)
-    .filter(([entryName]) => CsvFilePattern.test(entryName))
-    .map(([entryName, bytes]) => ({ name: entryName, text: strFromU8(bytes) }));
+  const entries = Object.entries(archive);
+  const csvEntries = entries.filter(([entryName]) => CsvFilePattern.test(entryName));
+  return csvEntries.map(([entryName, bytes]) => ({ name: entryName, text: strFromU8(bytes) }));
 }
 
 export async function BuildLetterboxdDownload(files) {

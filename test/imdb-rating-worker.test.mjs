@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { CreateImdbRatingWorker } from "../server/imdb-rating-worker.mjs";
 
+const ImdbCookie = "cookie";
+
 test("the IMDb worker configures a global ten request per second ceiling", VerifyConfiguredRate);
 test("the IMDb worker honors a dispatch wait below its empty-queue delay", VerifyDispatchWait);
 test("queued ratings complete only after IMDb confirms the write", VerifySuccessfulRating);
@@ -31,7 +33,7 @@ async function VerifySuccessfulRating() {
   await worker.ProcessNext();
   assert.equal(calls.length, 1);
   assert.equal(calls[0].completed, job);
-  assert.equal(calls[0].result.payload.cookieSeen, "cookie");
+  assert.equal(calls[0].result.payload.cookieSeen, ImdbCookie);
 }
 
 async function VerifyFailureClassification() {
@@ -53,7 +55,7 @@ function BuildStore(overrides = {}) {
   return {
     ConfigureImdbDispatchRate: async () => null,
     ClaimImdbRatingJob: async () => ({ job: null, waitMs: 250 }),
-    getSecret: async () => "cookie",
+    getSecret: async () => ImdbCookie,
     CompleteImdbRatingJob: async () => null,
     RetryImdbRatingJob: async () => null,
     ThrottleImdbRatingJob: async () => null,

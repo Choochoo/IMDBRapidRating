@@ -9,12 +9,19 @@ import { CreateStreamingAvailabilityService } from "./streaming-availability.mjs
 import { AddTmdbApiKey, BuildTmdbHeaders, TmdbApiUrl } from "./tmdb-request.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const CachePath = BuildTitleMetadataCachePath();
 const TmdbImageUrl = "https://image.tmdb.org/t/p/w342";
 const MovieMediaType = "movie";
 const TvMediaType = "tv";
 const TmdbLanguage = "en-US";
 const TmdbSource = "tmdb";
+const ObjectType = "object";
+const AcceptHeader = "accept";
+const UserAgentHeader = "user-agent";
+const MetadataTypeAttribute = "@type";
+const TextEncoding = "utf8";
+const CacheDirectoryName = "cache";
+const MetadataCacheFileName = "title-metadata.json";
+const CachePath = BuildTitleMetadataCachePath();
 const MovieMetadataTtlMilliseconds = 30 * 24 * 60 * 60 * 1000;
 const ActiveTvMetadataTtlMilliseconds = 7 * 24 * 60 * 60 * 1000;
 const PrivateMetadataFields = Object.freeze(["status", "checkedAt", "sourcePayload", "streamingByCountry"]);
@@ -343,7 +350,7 @@ export function ReadActorNames(value) {
   const actors = Array.isArray(value) ? value : value ? [value] : [];
   const names = [];
   for (const actor of actors) {
-    const rawName = actor && typeof actor === "object" ? actor.name : actor;
+    const rawName = actor && typeof actor === ObjectType ? actor.name : actor;
     const name = CleanMetadataText(rawName);
     if (name && !names.includes(name))
       names.push(name);
@@ -355,10 +362,9 @@ export function ReadActorNames(value) {
 
 export function PickTmdbTrailerUrl(value) {
   const videos = Array.isArray(value) ? value : [];
-  const candidates = videos
-    .filter((video) => String(video?.site || "").toLowerCase() === "youtube" && /^[a-z0-9_-]+$/i.test(String(video?.key || "")))
-    .map((video, index) => ({ video, index, score: ScoreTmdbTrailer(video) }))
-    .sort((left, right) => right.score - left.score || left.index - right.index);
+  const youtubeVideos = videos.filter((video) => String(video?.site || "").toLowerCase() === "youtube" && /^[a-z0-9_-]+$/i.test(String(video?.key || "")));
+  const candidates = youtubeVideos.map((video, index) => ({ video, index, score: ScoreTmdbTrailer(video) }));
+  candidates.sort((left, right) => right.score - left.score || left.index - right.index);
   const key = String(candidates[0]?.video?.key || "");
   return key ? `https://www.youtube.com/watch?v=${encodeURIComponent(key)}` : "";
 }
@@ -383,7 +389,7 @@ function ScoreTmdbTrailer(video) {
 }
 
 function ReadImdbTrailerUrl(value) {
-  const trailer = value && typeof value === "object" ? value : {};
+  const trailer = value && typeof value === ObjectType ? value : {};
   return FirstTrailerUrl(trailer.url, trailer.embedUrl, trailer.contentUrl);
 }
 
@@ -411,8 +417,8 @@ function BuildSuggestionUrl(titleId) {
 
 function BuildSuggestionHeaders() {
   return {
-    "accept": "application/json",
-    "user-agent": "Mozilla/5.0"
+    [AcceptHeader]: "application/json",
+    [UserAgentHeader]: "Mozilla/5.0"
   };
 }
 
@@ -561,14 +567,14 @@ function BuildPublicMetadata(metadata, streamingAvailability) {
 }
 
 function IsRecord(value) {
-  return value && typeof value === "object" && !Array.isArray(value);
+  return value && typeof value === ObjectType && !Array.isArray(value);
 }
 
 function BuildTitleHeaders() {
   return {
-    "accept": "text/html,application/xhtml+xml",
+    [AcceptHeader]: "text/html,application/xhtml+xml",
     "accept-language": "en-US,en;q=0.9",
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36"
+    [UserAgentHeader]: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36"
   };
 }
 
@@ -597,8 +603,8 @@ function FindTitleMetadataItem(items) {
 }
 
 function IsTitleMetadataItem(item) {
-  const isMovie = item?.["@type"] === "Movie";
-  const isSeries = item?.["@type"] === "TVSeries";
+  const isMovie = item?.[MetadataTypeAttribute] === "Movie";
+  const isSeries = item?.[MetadataTypeAttribute] === "TVSeries";
   const hasMetadata = Boolean(item?.description || item?.image);
   return isMovie || isSeries || hasMetadata;
 }
@@ -615,20 +621,20 @@ function CleanMetadataText(value) {
 }
 
 function DecodeHtmlEntities(value) {
-  return String(value || "")
-    .replace(/&quot;/g, "\"")
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+  let decoded = String(value || "");
+  decoded = decoded.replace(/&quot;/g, "\"");
+  decoded = decoded.replace(/&#39;|&apos;/g, "'");
+  decoded = decoded.replace(/&amp;/g, "&");
+  decoded = decoded.replace(/&lt;/g, "<");
+  return decoded.replace(/&gt;/g, ">");
 }
 
 function LoadMetadataCache() {
   if (!existsSync(CachePath))
     return {};
   try {
-    const parsed = JSON.parse(readFileSync(CachePath, "utf8"));
-    return parsed && typeof parsed === "object" ? parsed : {};
+    const parsed = JSON.parse(readFileSync(CachePath, TextEncoding));
+    return parsed && typeof parsed === ObjectType ? parsed : {};
   } catch (error) {
     console.warn(`Title metadata cache read failed at ${CachePath}: ${error.message}`);
     return {};
@@ -647,13 +653,13 @@ function ReportMetadataCacheWriteFailure(error) {
 async function WriteMetadataCache() {
   EnsureUserDataParent(CachePath);
   const temporaryPath = `${CachePath}.tmp`;
-  await writeFile(temporaryPath, `${JSON.stringify(MetadataCache, null, 2)}\n`, "utf8");
+  await writeFile(temporaryPath, `${JSON.stringify(MetadataCache, null, 2)}\n`, TextEncoding);
   await rename(temporaryPath, CachePath);
 }
 
 function BuildTitleMetadataCachePath() {
-  const cachePath = BuildUserDataPath("cache", "title-metadata.json");
-  MigrateLegacyFile(path.join(RootPath, "cache", "title-metadata.json"), cachePath);
+  const cachePath = BuildUserDataPath(CacheDirectoryName, MetadataCacheFileName);
+  MigrateLegacyFile(path.join(RootPath, CacheDirectoryName, MetadataCacheFileName), cachePath);
   return cachePath;
 }
 

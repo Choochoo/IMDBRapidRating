@@ -3,44 +3,79 @@ import test from "node:test";
 import { CreateAccountStore } from "../server/account-store.mjs";
 import { ReadMediaPayload, WriteMediaPayload } from "../shared/media.js";
 
-test("account saves enqueue every pending IMDb rating in the same transaction", VerifyPendingRatingEnqueue);
+const BeginTransaction = "BEGIN";
+const CommitTransaction = "COMMIT";
+const HeatQueueKey = "heat|1995";
+const HeatTitle = "Heat";
+const HeatTitleId = "tt0113277";
+const MovieMediaType = "movie";
+const QueryCall = "query";
+const RatedStatus = "rated";
+const UserId = "user-1";
 
-test("successful IMDb writes update the matching PostgreSQL rating atomically", async () => {
+test("account saves enqueue every pending IMDb rating in the same transaction", VerifyPendingRatingEnqueue);
+test("successful IMDb writes update the matching PostgreSQL rating atomically", VerifyAtomicRatingWrites);
+test("recommendation queue store appends, lists, and removes per-user picks", VerifyRecommendationQueueStore);
+test("excluding a recommendation updates account state and removes the queue row in one transaction", VerifyRecommendationExclusion);
+
+async function VerifyAtomicRatingWrites() {
+  const scenario = BuildRatingScenario();
+  const record = { ttId: "tt0107050", status: RatedStatus, rating: 8 };
+  const savedRevision = await scenario.store.recordRating(UserId, record);
+  const deletedRevision = await scenario.store.deleteRating(UserId, record.ttId);
+  AssertRatingWrites(scenario, record, savedRevision, deletedRevision);
+}
+
+function BuildRatingScenario() {
   const calls = [];
-  let revision = 10;
-  let payload = {};
-  const client = {
+  const state = { revision: 10, payload: {} };
+  const client = BuildRatingClient(calls, state);
+  const pool = { connect: async () => client };
+  return { calls, state, store: CreateAccountStore({ db: {}, pool }) };
+}
+
+function BuildRatingClient(calls, state) {
+  return {
     async query(sql, parameters) {
       calls.push({ sql, parameters });
       if (/^SELECT payload/.test(sql))
-        return { rows: [{ payload, revision }], rowCount: 1 };
+        return { rows: [{ payload: state.payload, revision: state.revision }], rowCount: 1 };
       if (/^UPDATE/.test(sql)) {
-        payload = JSON.parse(parameters[1]);
-        return { rows: [{ revision: ++revision }], rowCount: 1 };
+        state.payload = JSON.parse(parameters[1]);
+        return { rows: [{ revision: ++state.revision }], rowCount: 1 };
       }
       return { rows: [], rowCount: 0 };
     },
     release() {}
   };
-  const pool = { connect: async () => client };
-  const store = CreateAccountStore({ db: {}, pool });
-  const record = { ttId: "tt0107050", status: "rated", rating: 8 };
+}
 
-  const savedRevision = await store.recordRating("user-1", record);
-  const deletedRevision = await store.deleteRating("user-1", record.ttId);
-
+function AssertRatingWrites(scenario, record, savedRevision, deletedRevision) {
   assert.equal(savedRevision, 11);
   assert.equal(deletedRevision, 12);
-  const updates = calls.filter((call) => /^UPDATE/.test(call.sql));
+  const updates = scenario.calls.filter((call) => /^UPDATE/.test(call.sql));
   assert.equal(updates.length, 2);
-  assert.equal(Object.keys(ReadMediaPayload(JSON.parse(updates[0].parameters[1]), "movie").ratings)[0], record.ttId);
-  assert.deepEqual(ReadMediaPayload(payload, "movie").ratings, {});
-});
+  assert.equal(Object.keys(ReadMediaPayload(JSON.parse(updates[0].parameters[1]), MovieMediaType).ratings)[0], record.ttId);
+  assert.deepEqual(ReadMediaPayload(scenario.state.payload, MovieMediaType).ratings, {});
+}
 
-test("recommendation queue store appends, lists, and removes per-user picks", async () => {
+async function VerifyRecommendationQueueStore() {
+  const scenario = BuildRecommendationScenario();
+  const listed = await scenario.store.listRecommendationQueue(UserId);
+  const inserted = await scenario.store.appendRecommendationQueue(UserId, [scenario.saved]);
+  const removed = await scenario.store.removeRecommendation(UserId, scenario.saved);
+  AssertRecommendationStore(scenario, listed, inserted, removed);
+}
+
+function BuildRecommendationScenario() {
   const calls = [];
-  const saved = { queueKey: "heat|1995", ttId: "tt0113277", title: "Heat", year: 1995 };
-  const pool = {
+  const saved = { queueKey: HeatQueueKey, ttId: HeatTitleId, title: HeatTitle, year: 1995 };
+  const pool = BuildRecommendationPool(calls, saved);
+  return { calls, saved, store: CreateAccountStore({ db: {}, pool }) };
+}
+
+function BuildRecommendationPool(calls, saved) {
+  return {
     async query(sql, parameters) {
       calls.push({ sql, parameters });
       if (/^SELECT payload/.test(sql))
@@ -50,26 +85,44 @@ test("recommendation queue store appends, lists, and removes per-user picks", as
       return { rows: [], rowCount: 1 };
     }
   };
-  const store = CreateAccountStore({ db: {}, pool });
+}
 
-  const listed = await store.listRecommendationQueue("user-1");
-  const inserted = await store.appendRecommendationQueue("user-1", [saved]);
-  const removed = await store.removeRecommendation("user-1", saved);
-
-  assert.deepEqual(listed, [saved]);
-  assert.deepEqual(inserted, [saved]);
+function AssertRecommendationStore(scenario, listed, inserted, removed) {
+  assert.deepEqual(listed, [scenario.saved]);
+  assert.deepEqual(inserted, [scenario.saved]);
   assert.equal(removed, 1);
-  assert.match(calls[0].sql, /ORDER BY id/);
-  assert.match(calls[1].sql, /ON CONFLICT DO NOTHING/);
-  assert.equal(calls[0].parameters[1], "movie");
-  assert.deepEqual(JSON.parse(calls[1].parameters[2]), [{ itemKey: "heat|1995", ttId: "tt0113277", title: "Heat", year: 1995, payload: { ...saved, mediaType: "movie" } }]);
-  assert.match(calls[2].sql, /DELETE FROM/);
-});
+  assert.match(scenario.calls[0].sql, /ORDER BY id/);
+  assert.match(scenario.calls[1].sql, /ON CONFLICT DO NOTHING/);
+  assert.equal(scenario.calls[0].parameters[1], MovieMediaType);
+  assert.deepEqual(JSON.parse(scenario.calls[1].parameters[2]), [BuildExpectedQueueRow(scenario.saved)]);
+  assert.match(scenario.calls[2].sql, /DELETE FROM/);
+}
 
-test("excluding a recommendation updates account state and removes the queue row in one transaction", async () => {
+function BuildExpectedQueueRow(saved) {
+  return {
+    itemKey: HeatQueueKey, ttId: HeatTitleId, title: HeatTitle, year: 1995,
+    payload: { ...saved, mediaType: MovieMediaType }
+  };
+}
+
+async function VerifyRecommendationExclusion() {
+  const scenario = BuildExclusionScenario();
+  const revision = await scenario.store.excludeRecommendation(UserId, scenario.exclusion);
+  AssertRecommendationExclusion(scenario, revision);
+}
+
+function BuildExclusionScenario() {
   const calls = [];
-  let released = false;
-  const client = {
+  const state = { released: false };
+  const client = BuildExclusionClient(calls, state);
+  const pool = { connect: async () => client };
+  const store = CreateAccountStore({ db: {}, pool });
+  const exclusion = { queueKey: HeatQueueKey, ttId: HeatTitleId, title: HeatTitle, year: 1995 };
+  return { calls, state, store, exclusion };
+}
+
+function BuildExclusionClient(calls, state) {
+  return {
     async query(sql, parameters) {
       calls.push({ sql, parameters });
       if (/^SELECT payload/.test(sql))
@@ -78,34 +131,36 @@ test("excluding a recommendation updates account state and removes the queue row
         return { rows: [{ revision: 41 }], rowCount: 1 };
       return { rows: [], rowCount: 1 };
     },
-    release() { released = true; }
+    release() { state.released = true; }
   };
-  const store = CreateAccountStore({ db: {}, pool: { connect: async () => client } });
-  const exclusion = { queueKey: "heat|1995", ttId: "tt0113277", title: "Heat", year: 1995 };
+}
 
-  const revision = await store.excludeRecommendation("user-1", exclusion);
-
+function AssertRecommendationExclusion(scenario, revision) {
   assert.equal(revision, 41);
-  assert.equal(calls[0].sql, "BEGIN");
-  assert.match(calls[1].sql, /^SELECT payload/);
-  assert.match(calls[2].sql, /^UPDATE/);
-  assert.equal(ReadMediaPayload(JSON.parse(calls[2].parameters[1]), "movie").recommendationExclusions.length, 1);
-  assert.match(calls[3].sql, /DELETE FROM/);
-  assert.equal(calls[4].sql, "COMMIT");
-  assert.equal(released, true);
-});
+  assert.equal(scenario.calls[0].sql, BeginTransaction);
+  assert.match(scenario.calls[1].sql, /^SELECT payload/);
+  assert.match(scenario.calls[2].sql, /^UPDATE/);
+  assert.equal(ReadMediaPayload(JSON.parse(scenario.calls[2].parameters[1]), MovieMediaType).recommendationExclusions.length, 1);
+  assert.match(scenario.calls[3].sql, /DELETE FROM/);
+  assert.equal(scenario.calls[4].sql, CommitTransaction);
+  assert.equal(scenario.state.released, true);
+}
 
 async function VerifyPendingRatingEnqueue() {
   const calls = [];
   const client = BuildPendingRatingClient(calls);
   const store = CreateAccountStore({ db: {}, pool: { connect: async () => client } });
-  const rating = { ttId: "tt0113277", status: "rated", rating: 9, submitStatus: "pending" };
-  const payload = WriteMediaPayload({}, "movie", { ratings: { [rating.ttId]: rating } });
-  const result = await store.saveState("user-1", payload, "", 4);
+  const rating = { ttId: HeatTitleId, status: RatedStatus, rating: 9, submitStatus: "pending" };
+  const payload = WriteMediaPayload({}, MovieMediaType, { ratings: { [rating.ttId]: rating } });
+  const result = await store.saveState(UserId, payload, "", 4);
   assert.deepEqual(result, { ok: true, revision: 5 });
   const insert = calls.find((call) => /INSERT INTO .*imdb_rating_jobs/.test(call.sql));
   assert.equal(JSON.parse(insert.parameters[1])[0].ttId, rating.ttId);
-  assert.deepEqual(calls.map((call) => call.sql === "BEGIN" || call.sql === "COMMIT" ? call.sql : "query"), ["BEGIN", "query", "query", "COMMIT"]);
+  assert.deepEqual(calls.map(ReadCallKind), [BeginTransaction, QueryCall, QueryCall, CommitTransaction]);
+}
+
+function ReadCallKind(call) {
+  return call.sql === BeginTransaction || call.sql === CommitTransaction ? call.sql : QueryCall;
 }
 
 function BuildPendingRatingClient(calls) {

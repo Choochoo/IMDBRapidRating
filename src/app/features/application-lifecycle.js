@@ -16,6 +16,7 @@ export class ApplicationLifecycleFeature {
     this.RecommendationDetailTrigger = null;
     this.State = BuildState();
     this.Catalogs = {};
+    this.InitializeSettingsState();
   }
 
   InitializeAccountState() {
@@ -24,6 +25,7 @@ export class ApplicationLifecycleFeature {
     this.AccountRevision = 0;
     this.CsrfToken = "";
     this.User = null;
+    this.InitializeSocialState();
   }
 
   InitializeSynchronizationState() {
@@ -58,7 +60,7 @@ export class ApplicationLifecycleFeature {
     this.State.mediaType = this.PendingRoute.mediaType;
     this.UpdateMediaUx();
     this.ShowView(this.PendingRoute.view);
-    this.BeginSession().catch((error) => this.ShowStartupError(error));
+    this.BeginSession().catch((error) => this.HandleStartupFailure(error));
   }
 
   async Initialize() {
@@ -68,11 +70,12 @@ export class ApplicationLifecycleFeature {
     await this.InitializeAccountData();
     await this.InitializeMediaData();
     this.StartBackgroundSynchronization();
-    this.RequireImdbSignIn();
+    this.StartHelpReminders();
   }
 
   async InitializeAccountData() {
     await this.LoadAccountState();
+    await this.LoadSocialState();
     await this.OfferLegacyMigration();
     await this.RefreshLiveStatus();
     await this.RefreshAiStatus();
@@ -103,9 +106,24 @@ export class ApplicationLifecycleFeature {
     const session = await this.FetchJson("/api/auth/session");
     this.CsrfToken = session.csrfToken || "";
     if (!session.authenticated)
-      return this.ShowAuthLanding(session.registrationEnabled !== false);
+      return this.CompleteAnonymousSession(session);
     this.EnterAuthenticatedApp(session.user);
     await this.Initialize();
+    this.CompleteStartup();
+  }
+
+  CompleteAnonymousSession(session) {
+    this.ShowAuthLanding(session.registrationEnabled !== false);
+    this.CompleteStartup();
+  }
+
+  CompleteStartup() {
+    document.body.classList.add("startup-complete");
+  }
+
+  HandleStartupFailure(error) {
+    this.CompleteStartup();
+    this.ShowStartupError(error);
   }
 
   async HandleLogin(event) {

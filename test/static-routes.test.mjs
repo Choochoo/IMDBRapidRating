@@ -4,63 +4,48 @@ import request from "supertest";
 import test from "node:test";
 import { RegisterStaticRoutes } from "../server/app.mjs";
 
-test("browser module graph can load the shared CSV helper", async () => {
+const ContentTypeHeader = "content-type";
+const JavaScriptContentType = /javascript/;
+const WishlistPath = "/wishlist";
+const ModuleRouteCaseValues = [
+  ["shared CSV helper", "/shared/csv.js", /export function ParseCsv/],
+  ["shared media helper", "/shared/media.js", /export function NormalizeMediaType/],
+  ["shared title filter helper", "/shared/title-filters.js", /export function IsTitleAllowed/],
+  ["recommendation basis helper", "/shared/recommendation-basis.js", /export function NormalizeRecommendationBasis/],
+  ["keyboard shortcut helper", "/shared/keyboard-shortcuts.js", /export function NormalizeKeyboardShortcuts/],
+  ["local ZIP implementation without a CDN", "/vendor/fflate.js", /function unzipSync/]
+];
+const ModuleRouteCases = Object.freeze(ModuleRouteCaseValues);
+
+for (const [name, path, exportPattern] of ModuleRouteCases)
+  test(`browser module graph can load the ${name}`, () => VerifyBrowserModule(path, exportPattern));
+
+async function VerifyBrowserModule(path, exportPattern) {
   const app = express();
   RegisterStaticRoutes(app, process.cwd());
-  const response = await request(app).get("/shared/csv.js").expect(200);
-  assert.match(response.text, /export function ParseCsv/);
-  assert.match(response.headers["content-type"], /javascript/);
-});
+  const response = await request(app).get(path).expect(200);
+  assert.match(response.text, exportPattern);
+  assert.match(response.headers[ContentTypeHeader], JavaScriptContentType);
+}
 
-test("browser module graph can load the shared media helper", async () => {
+test("each top-level view has a refreshable browser route", VerifyViewRoutes);
+test("trailing slashes redirect to asset-safe view URLs", VerifyTrailingSlashRedirect);
+
+async function VerifyViewRoutes() {
   const app = express();
   RegisterStaticRoutes(app, process.cwd());
-  const response = await request(app).get("/shared/media.js").expect(200);
-  assert.match(response.text, /export function NormalizeMediaType/);
-  assert.match(response.headers["content-type"], /javascript/);
-});
-
-test("browser module graph can load the shared title filter helper", async () => {
-  const app = express();
-  RegisterStaticRoutes(app, process.cwd());
-  const response = await request(app).get("/shared/title-filters.js").expect(200);
-  assert.match(response.text, /export function IsTitleAllowed/);
-  assert.match(response.headers["content-type"], /javascript/);
-});
-
-test("browser module graph can load the recommendation basis helper", async () => {
-  const app = express();
-  RegisterStaticRoutes(app, process.cwd());
-  const response = await request(app).get("/shared/recommendation-basis.js").expect(200);
-  assert.match(response.text, /export function NormalizeRecommendationBasis/);
-  assert.match(response.headers["content-type"], /javascript/);
-});
-
-test("browser can load the local ZIP implementation without a CDN", async () => {
-  const app = express();
-  RegisterStaticRoutes(app, process.cwd());
-  const response = await request(app).get("/vendor/fflate.js").expect(200);
-  assert.match(response.text, /function unzipSync/);
-  assert.match(response.headers["content-type"], /javascript/);
-});
-
-test("each top-level view has a refreshable browser route", async () => {
-  const app = express();
-  RegisterStaticRoutes(app, process.cwd());
-
-  for (const path of ["/login", "/rate", "/wishlist", "/sync", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"]) {
+  for (const path of ["/login", "/rate", WishlistPath, "/sync", "/settings", "/settings/shortcuts", "/settings/ai", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"]) {
     const response = await request(app).get(path).expect(200);
     assert.match(response.text, /<title>IMDb Rapid Rater<\/title>/);
     assert.match(response.text, /<base href="\/">/);
     assert.match(response.text, /src="\/src\/app\.js"/);
-    assert.match(response.headers["content-type"], /html/);
+    assert.match(response.headers[ContentTypeHeader], /html/);
   }
-});
+}
 
-test("trailing slashes redirect to asset-safe view URLs", async () => {
+async function VerifyTrailingSlashRedirect() {
   const app = express();
   RegisterStaticRoutes(app, process.cwd());
-
   const response = await request(app).get("/wishlist/").expect(308);
-  assert.equal(response.headers.location, "/wishlist");
-});
+  assert.equal(response.headers.location, WishlistPath);
+}

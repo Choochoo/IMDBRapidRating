@@ -12,10 +12,18 @@ const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const CacheDir = path.join(RootPath, "cache");
 const DataDir = path.join(RootPath, "data");
 const SourceBase = "https://datasets.imdbws.com";
-const Files = Object.freeze({
+const MovieMediaType = "movie";
+const TvMediaType = "tv";
+const TextEncoding = "utf8";
+const MovieCollectionKey = "movies";
+const TvSeriesTitleType = "tvSeries";
+const TvMiniSeriesTitleType = "tvMiniSeries";
+const TrueValue = "true";
+const FileValues = {
   basics: "title.basics.tsv.gz",
   ratings: "title.ratings.tsv.gz"
-});
+};
+const Files = Object.freeze(FileValues);
 const Options = ReadOptions();
 
 await mkdir(CacheDir, { recursive: true });
@@ -28,14 +36,14 @@ const Ratings = await ReadRatings(path.join(CacheDir, Files.ratings));
 console.log(`Kept ${Ratings.size.toLocaleString()} rated titles.`);
 console.log("Reading title basics and building separate movie and TV series pools...");
 const Catalogs = await ReadBasics(path.join(CacheDir, Files.basics), Ratings);
-await WriteCatalog("movie", ApplyLimit(SortTitles(Catalogs.movie)));
-await WriteCatalog("tv", ApplyLimit(SortTitles(Catalogs.tv)));
+await WriteCatalog(MovieMediaType, ApplyLimit(SortTitles(Catalogs.movie)));
+await WriteCatalog(TvMediaType, ApplyLimit(SortTitles(Catalogs.tv)));
 
 async function WriteCatalog(mediaType, titles) {
-  const fileName = mediaType === "tv" ? "shows.json" : "movies.json";
+  const fileName = mediaType === TvMediaType ? "shows.json" : "movies.json";
   const outputPath = path.join(DataDir, fileName);
-  await writeFile(outputPath, `${JSON.stringify(BuildPayload(titles, mediaType), null, 2)}\n`, "utf8");
-  const label = mediaType === "tv" ? "TV shows" : "movies";
+  await writeFile(outputPath, `${JSON.stringify(BuildPayload(titles, mediaType), null, 2)}\n`, TextEncoding);
+  const label = mediaType === TvMediaType ? "TV shows" : MovieCollectionKey;
   console.log(`Wrote ${titles.length.toLocaleString()} ${label} to ${outputPath}`);
 }
 
@@ -131,10 +139,10 @@ function IsEligibleTitle(columns, header, rating, mediaType) {
 }
 
 function ReadMediaType(titleType) {
-  if (titleType === "movie")
-    return "movie";
-  if (titleType === "tvSeries" || titleType === "tvMiniSeries")
-    return "tv";
+  if (titleType === MovieMediaType)
+    return MovieMediaType;
+  if (titleType === TvSeriesTitleType || titleType === TvMiniSeriesTitleType)
+    return TvMediaType;
   return "";
 }
 
@@ -152,7 +160,7 @@ function BuildTitlePayload(columns, header, rating, tconst, startYear, title, me
     ttId: tconst,
     title,
     year: startYear,
-    endYear: mediaType === "tv" ? ParseNullableInt(columns[header.endYear]) : null,
+    endYear: mediaType === TvMediaType ? ParseNullableInt(columns[header.endYear]) : null,
     mediaType,
     titleType: columns[header.titleType],
     runtimeMinutes: ParseNullableInt(columns[header.runtimeMinutes]),
@@ -194,7 +202,7 @@ function ReadOptions() {
     recentYearCutoff: currentYear - recentYears,
     minYear: ReadNumber(args, "minYear", 1900),
     maxYear: ReadNumber(args, "maxYear", currentYear + 1),
-    refresh: args.get("refresh") === "true"
+    refresh: args.get("refresh") === TrueValue
   };
 }
 
@@ -202,7 +210,7 @@ function ReadArgs() {
   const args = new Map();
   for (const raw of process.argv.slice(2)) {
     const [key, value] = raw.replace(/^--/, "").split("=");
-    args.set(key, value ?? "true");
+    args.set(key, value ?? TrueValue);
   }
   return args;
 }
@@ -251,10 +259,10 @@ function CompareTitles(left, right) {
 }
 
 function BuildPayload(titles, mediaType) {
-  const collectionKey = mediaType === "tv" ? "shows" : "movies";
+  const collectionKey = mediaType === TvMediaType ? "shows" : MovieCollectionKey;
   return {
     generatedAt: new Date().toISOString(),
-    poolVersion: createHash("sha256").update(titles.map((title) => title.ttId).join("\n"), "utf8").digest("hex"),
+    poolVersion: createHash("sha256").update(titles.map((title) => title.ttId).join("\n"), TextEncoding).digest("hex"),
     mediaType,
     source: BuildSourceMetadata(mediaType),
     [collectionKey]: titles
@@ -273,7 +281,7 @@ function BuildSourceMetadata(mediaType) {
 
 function BuildSourceFilters(mediaType) {
   return {
-    titleTypes: mediaType === "tv" ? ["tvSeries", "tvMiniSeries"] : ["movie"],
+    titleTypes: mediaType === TvMediaType ? [TvSeriesTitleType, TvMiniSeriesTitleType] : [MovieMediaType],
     isAdult: false,
     minVotes: Options.minVotes,
     recentMinVotes: Options.recentMinVotes,

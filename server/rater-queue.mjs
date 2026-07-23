@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 
+const HexEncoding = "hex";
+
 export function CreateQueueSeed() {
-  return randomBytes(32).toString("hex");
+  return randomBytes(32).toString(HexEncoding);
 }
 
 export function ReconcileQueueIds(savedValue, poolValue, unavailableValue, seed) {
@@ -36,7 +38,7 @@ function CompareSeededIds(seed, left, right) {
 }
 
 function SeededHash(seed, ttId) {
-  return createHash("sha256").update(`${seed}:${ttId}`, "utf8").digest("hex");
+  return createHash("sha256").update(`${seed}:${ttId}`, "utf8").digest(HexEncoding);
 }
 
 function UniqueMovieIds(value) {

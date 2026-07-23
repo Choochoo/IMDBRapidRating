@@ -10,6 +10,7 @@ test("streaming metadata does not schedule while a request is in flight", Verify
 test("streaming metadata clears its refreshing state after retry exhaustion", VerifyStreamingRefreshExhaustion);
 test("late streaming responses are ignored after fresher metadata arrives", VerifyLateStreamingResponseIgnored);
 test("streaming follow-up responses are applied to the visible title", VerifyStreamingRefreshApplication);
+test("rate cards defer streaming provider requests to the watchlist", VerifyRaterStreamingDeferred);
 
 function VerifyStreamingRefreshSchedule() {
   const calls = [];
@@ -105,4 +106,11 @@ async function VerifyStreamingRefreshApplication() {
   const feature = { FetchTitleMetadata: async () => metadata, ApplyTitleMetadata: (ttId, value) => { state.applied = { ttId, value }; } };
   await CatalogViewFeature.prototype.RefreshStreamingMetadata.call(feature, TitleId);
   assert.deepEqual(state.applied, { ttId: TitleId, value: metadata });
+}
+
+function VerifyRaterStreamingDeferred() {
+  const calls = [];
+  const feature = { EnrichTitleMetadata: (...parameters) => calls.push(parameters) };
+  CatalogViewFeature.prototype.EnrichVisibleMovies.call(feature, [{ ttId: TitleId }]);
+  assert.deepEqual(calls, [[TitleId]]);
 }

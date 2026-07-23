@@ -5,6 +5,12 @@ const MaximumResults = 6;
 const MinimumSearchLength = 2;
 const RatedStatus = "rated";
 const PutMethod = "PUT";
+const AriaExpandedAttribute = "aria-expanded";
+const AriaActiveDescendantAttribute = "aria-activedescendant";
+const ArrowDownKey = "ArrowDown";
+const EnterKey = "Enter";
+const FalseValue = "false";
+const SpaceSeparator = " ";
 
 export class QuickRateFeature {
   InitializeQuickRateState() {
@@ -30,7 +36,7 @@ export class QuickRateFeature {
   RenderQuickRateResults(query) {
     const hasQuery = String(query || "").trim().length >= MinimumSearchLength;
     this.Elements.quickRateResults.hidden = !hasQuery;
-    this.Elements.quickRateSearch.setAttribute("aria-expanded", String(hasQuery));
+    this.Elements.quickRateSearch.setAttribute(AriaExpandedAttribute, String(hasQuery));
     if (!hasQuery)
       return this.ClearQuickRateResults();
     this.Elements.quickRateResults.innerHTML = this.QuickRateMatches.length ? this.QuickRateMatches.map((movie, index) => this.RenderQuickRateResult(movie, index)).join("") : `<p class="quick-rate-empty">No matching title is in this catalog.</p>`;
@@ -53,7 +59,7 @@ export class QuickRateFeature {
 
   ClearQuickRateResults() {
     this.Elements.quickRateResults.innerHTML = "";
-    this.Elements.quickRateSearch.removeAttribute("aria-activedescendant");
+    this.Elements.quickRateSearch.removeAttribute(AriaActiveDescendantAttribute);
   }
 
   HandleQuickRateResultsClick(event) {
@@ -63,12 +69,12 @@ export class QuickRateFeature {
   }
 
   HandleQuickRateSearchKey(event) {
-    if (!["ArrowDown", "ArrowUp", "Enter"].includes(event.key))
+    if (![ArrowDownKey, "ArrowUp", EnterKey].includes(event.key))
       return;
     event.preventDefault();
-    if (event.key === "Enter")
+    if (event.key === EnterKey)
       return this.SelectActiveQuickRateTitle();
-    this.MoveQuickRateActiveOption(event.key === "ArrowDown" ? 1 : -1);
+    this.MoveQuickRateActiveOption(event.key === ArrowDownKey ? 1 : -1);
   }
 
   MoveQuickRateActiveOption(direction) {
@@ -85,7 +91,7 @@ export class QuickRateFeature {
       option.setAttribute("aria-selected", String(index === this.QuickRateActiveIndex));
     const active = options[this.QuickRateActiveIndex];
     if (active)
-      this.Elements.quickRateSearch.setAttribute("aria-activedescendant", active.id);
+      this.Elements.quickRateSearch.setAttribute(AriaActiveDescendantAttribute, active.id);
   }
 
   SelectActiveQuickRateTitle() {
@@ -114,8 +120,8 @@ export class QuickRateFeature {
 
   HideQuickRateResults() {
     this.Elements.quickRateResults.hidden = true;
-    this.Elements.quickRateSearch.setAttribute("aria-expanded", "false");
-    this.Elements.quickRateSearch.removeAttribute("aria-activedescendant");
+    this.Elements.quickRateSearch.setAttribute(AriaExpandedAttribute, FalseValue);
+    this.Elements.quickRateSearch.removeAttribute(AriaActiveDescendantAttribute);
   }
 
   ClearQuickRateSelection() {
@@ -217,7 +223,7 @@ export class QuickRateFeature {
     this.ClearQuickRateSelection();
     this.ClearQuickRateResults();
     this.Elements.quickRateResults.hidden = true;
-    this.Elements.quickRateSearch.setAttribute("aria-expanded", "false");
+    this.Elements.quickRateSearch.setAttribute(AriaExpandedAttribute, FalseValue);
     this.ShowQuickRateError("");
   }
 }
@@ -241,8 +247,8 @@ function BuildSearchCriteria(value) {
     return null;
   const id = raw.match(/tt\d+/i)?.[0]?.toLowerCase() || "";
   const year = Number(raw.match(/\b(?:18|19|20|21)\d{2}\b/)?.[0]) || null;
-  const text = NormalizeQuickRateText(raw.replace(/https?:\/\/\S+/gi, " ").replace(/tt\d+/gi, " ").replace(/\b(?:18|19|20|21)\d{2}\b/g, " "));
-  const words = text.split(" ").filter(Boolean);
+  const text = NormalizeQuickRateText(raw.replace(/https?:\/\/\S+/gi, SpaceSeparator).replace(/tt\d+/gi, SpaceSeparator).replace(/\b(?:18|19|20|21)\d{2}\b/g, SpaceSeparator));
+  const words = text.split(SpaceSeparator).filter(Boolean);
   return { id, year, text, words };
 }
 
@@ -272,5 +278,5 @@ function CompareQuickRateMatches(left, right) {
 }
 
 function NormalizeQuickRateText(value) {
-  return String(value || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+  return String(value || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, SpaceSeparator).trim();
 }

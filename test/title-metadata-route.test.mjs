@@ -7,6 +7,8 @@ import { RegisterApiRoutes } from "../server/routes.mjs";
 const ValidTitleId = "tt0113277";
 const InvalidTitleId = "tt9999999";
 const MovieMediaType = "movie";
+const StreamingCountry = "CA";
+const ServerTmdbKey = "server-tmdb-key";
 const CachedMetadataData = {
   titleId: ValidTitleId,
   mediaType: MovieMediaType,
@@ -39,8 +41,9 @@ async function VerifyStreamingCountry() {
   const state = { reads: 0 };
   const app = BuildApp(state);
   const response = await request(app).get(`/api/title/${ValidTitleId}?media=${MovieMediaType}&streaming=1`).expect(200);
-  assert.equal(state.streamingRequest.country, "CA");
-  assert.equal(response.body.streamingAvailability.country, "CA");
+  assert.equal(state.streamingRequest.country, StreamingCountry);
+  assert.equal(state.streamingRequest.apiKey, ServerTmdbKey);
+  assert.equal(response.body.streamingAvailability.country, StreamingCountry);
 }
 
 function BuildApp(state) {
@@ -57,9 +60,10 @@ function AddSession(requestMessage, _response, next) {
 
 function BuildDependencies(state) {
   return {
-    store: { getSecret: async () => "tmdb-key", getPreferences: async () => ({ streamingCountry: "CA" }) },
+    store: { getPreferences: async () => ({ streamingCountry: StreamingCountry }) },
     pool: { query: async () => ({ rows: [] }) },
     rootPath: process.cwd(),
+    tmdbApiKey: ServerTmdbKey,
     readMoviePool: async () => ({ ids: [ValidTitleId] }),
     titleMetadataStore: { readOne: async () => ReadMetadata(state) },
     streamingAvailabilityService: { get: async (value) => ReadStreaming(state, value) }

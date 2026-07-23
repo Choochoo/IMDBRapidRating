@@ -3,17 +3,19 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import { SendText } from "./http.mjs";
 
-const ContentTypes = Object.freeze({
+const JpegContentType = "image/jpeg";
+const ContentTypeValues = {
   ".html": "text/html;charset=utf-8",
   ".js": "text/javascript;charset=utf-8",
   ".css": "text/css;charset=utf-8",
   ".json": "application/json;charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
+  ".jpg": JpegContentType,
+  ".jpeg": JpegContentType,
   ".ico": "image/x-icon"
-});
+};
+const ContentTypes = Object.freeze(ContentTypeValues);
 
 export async function ServeStaticFile(url, response, rootPath) {
   const requestedPath = url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);

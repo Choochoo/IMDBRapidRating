@@ -4,8 +4,23 @@ $InstallDir = "C:\inetpub\wwwroot\IMDBRapidRating"
 $TaskName = "IMDB Rapid Rating Server"
 $Port = 5012
 $RuntimeDir = Join-Path $InstallDir ".runtime"
-$LauncherPath = Join-Path $RuntimeDir "StartServer.ps1"
+$ConfigDir = Join-Path $InstallDir ".config"
+$LauncherPath = Join-Path $ConfigDir "StartServer.ps1"
 $ServerLogPath = Join-Path $RuntimeDir "server.log"
+$SettingsFileName = "settings.env"
+$RuntimeSettingsPath = Join-Path $ConfigDir $SettingsFileName
+$LegacySettingsPath = Join-Path $RuntimeDir $SettingsFileName
+$ServiceAccountName = "NT AUTHORITY\LOCAL SERVICE"
+$ServiceAccountSid = "S-1-5-19"
+$LegacyProtectionMode = "legacy"
+$RunningTaskState = "Running"
+$UnavailableSiteState = "Unavailable"
+$LoopbackAddress = "127.0.0.1"
+$AppOriginVariable = "APP_ORIGIN"
+$AppOriginParameter = "RapidRater.AppOrigin"
+$ReadExecuteAcl = "*$($ServiceAccountSid):(OI)(CI)RX"
+$SystemFullControlAcl = "SYSTEM:(OI)(CI)F"
+$AdministratorsFullControlAcl = "Administrators:(OI)(CI)F"
 
 function Get-RapidRaterParameter {
     param([string]$Name)
@@ -21,6 +36,7 @@ Write-Host "Configuring IMDb Rapid Rating deployment..." -ForegroundColor Cyan
 New-Item -Path (Join-Path $InstallDir "data") -ItemType Directory -Force | Out-Null
 New-Item -Path (Join-Path $InstallDir "cache") -ItemType Directory -Force | Out-Null
 New-Item -Path $RuntimeDir -ItemType Directory -Force | Out-Null
+New-Item -Path $ConfigDir -ItemType Directory -Force | Out-Null
 
 $nodeCandidates = @(
     "C:\Program Files\nodejs\node.exe",
@@ -36,25 +52,50 @@ if (-not (Test-Path -LiteralPath $npmPath)) {
     $npmPath = (Get-Command npm.cmd -ErrorAction Stop).Source
 }
 
-$escapedInstallDir = $InstallDir.Replace("'", "''")
-$escapedNodePath = $nodePath.Replace("'", "''")
-$escapedServerLogPath = $ServerLogPath.Replace("'", "''")
+$singleQuote = "'"
+$escapedSingleQuote = "''"
+$escapedInstallDir = $InstallDir.Replace($singleQuote, $escapedSingleQuote)
+$escapedNodePath = $nodePath.Replace($singleQuote, $escapedSingleQuote)
+$escapedServerLogPath = $ServerLogPath.Replace($singleQuote, $escapedSingleQuote)
+$escapedRuntimeDir = $RuntimeDir.Replace($singleQuote, $escapedSingleQuote)
+$escapedRuntimeSettingsPath = $RuntimeSettingsPath.Replace($singleQuote, $escapedSingleQuote)
 $launcherScript = @"
 Set-Location -LiteralPath '$escapedInstallDir'
+`$env:IMDB_RAPID_RATER_HOME = '$escapedRuntimeDir'
+`$env:RAPID_RATER_SETTINGS_PATH = '$escapedRuntimeSettingsPath'
 & '$escapedNodePath' 'scripts/server.mjs' *>> '$escapedServerLogPath'
 exit `$LASTEXITCODE
 "@
 $launcherScript | Set-Content -LiteralPath $LauncherPath -Encoding UTF8
 
-$runtimeSettingsPath = Join-Path $InstallDir ".runtime\settings.env"
-$requiredVariables = @{
-    "POSTGRES_CONNECTION_STRING" = "RapidRater.PostgresConnectionString"
-    "SESSION_SECRET"             = "RapidRater.SessionSecret"
-    "DATA_ENCRYPTION_KEY"        = "RapidRater.DataEncryptionKey"
-    "APP_ORIGIN"                 = "RapidRater.AppOrigin"
+if (-not (Test-Path -LiteralPath $RuntimeSettingsPath) -and (Test-Path -LiteralPath $LegacySettingsPath)) {
+    Copy-Item -LiteralPath $LegacySettingsPath -Destination $RuntimeSettingsPath
+}
+$secretProtectionMode = (Get-RapidRaterParameter -Name "RapidRater.SecretProtectionMode").Trim().ToLowerInvariant()
+if ([string]::IsNullOrWhiteSpace($secretProtectionMode)) {
+    $secretProtectionMode = $LegacyProtectionMode
+}
+if ($secretProtectionMode -notin @($LegacyProtectionMode, "dual", "vault")) {
+    throw "RapidRater.SecretProtectionMode must be legacy, dual, or vault."
+}
+$requiredVariables = if ($secretProtectionMode -eq $LegacyProtectionMode) {
+    @{
+        "POSTGRES_CONNECTION_STRING" = "RapidRater.PostgresConnectionString"
+        "SESSION_SECRET"             = "RapidRater.SessionSecret"
+        "DATA_ENCRYPTION_KEY"        = "RapidRater.DataEncryptionKey"
+        "TMDB_API_KEY"               = "RapidRater.TmdbApiKey"
+        $AppOriginVariable           = $AppOriginParameter
+    }
+} else {
+    @{
+        "AZURE_KEY_VAULT_URL"    = "RapidRater.AzureKeyVaultUrl"
+        "AZURE_KEY_VAULT_KEY_ID" = "RapidRater.AzureKeyVaultKeyId"
+        $AppOriginVariable       = $AppOriginParameter
+    }
 }
 $defaultSettingsLines = @(
     "RAPID_RATER_DB_SCHEMA=imdb_rapid_rater",
+    "SECRET_PROTECTION_MODE=$secretProtectionMode",
     "TRUST_PROXY_HOPS=1",
     "IMDB_DRY_RUN=false",
     "IMDB_MAX_REQUESTS_PER_SECOND=10",
@@ -66,7 +107,7 @@ $usePreservedSettings = $false
 foreach ($entry in $requiredVariables.GetEnumerator()) {
     $value = Get-RapidRaterParameter -Name $entry.Value
     if ([string]::IsNullOrWhiteSpace($value)) {
-        if (-not (Test-Path -LiteralPath $runtimeSettingsPath)) {
+        if (-not (Test-Path -LiteralPath $RuntimeSettingsPath)) {
             throw "Required sensitive Octopus variable '$($entry.Value)' is not configured."
         }
         $usePreservedSettings = $true
@@ -75,15 +116,33 @@ foreach ($entry in $requiredVariables.GetEnumerator()) {
     $settingsLines += "$($entry.Key)=$value"
 }
 if ($usePreservedSettings) {
-    $settingsLines = Get-Content -LiteralPath $runtimeSettingsPath
+    if ($secretProtectionMode -ne $LegacyProtectionMode) {
+        throw "Azure vault modes require complete current Octopus configuration and cannot reuse a preserved settings file."
+    }
+    $settingsLines = Get-Content -LiteralPath $RuntimeSettingsPath
+}
+$managedIdentityClientId = Get-RapidRaterParameter -Name "RapidRater.AzureManagedIdentityClientId"
+if (-not [string]::IsNullOrWhiteSpace($managedIdentityClientId)) {
+    $settingsLines += "AZURE_MANAGED_IDENTITY_CLIENT_ID=$managedIdentityClientId"
 }
 $allowedOrigins = Get-RapidRaterParameter -Name "RapidRater.AllowedOrigins"
 if (-not [string]::IsNullOrWhiteSpace($allowedOrigins)) {
     $settingsLines = @($settingsLines | Where-Object { $_ -notmatch '^APP_ALLOWED_ORIGINS=' })
     $settingsLines += "APP_ALLOWED_ORIGINS=$allowedOrigins"
 }
-$settingsLines | Set-Content -LiteralPath $runtimeSettingsPath -Encoding UTF8
-icacls $runtimeSettingsPath /inheritance:r /grant:r "SYSTEM:F" "Administrators:F" /Q | Out-Null
+$privateAiOrigins = Get-RapidRaterParameter -Name "RapidRater.AiAllowedPrivateOrigins"
+if (-not [string]::IsNullOrWhiteSpace($privateAiOrigins)) {
+    $settingsLines = @($settingsLines | Where-Object { $_ -notmatch '^AI_ALLOWED_PRIVATE_ORIGINS=' })
+    $settingsLines += "AI_ALLOWED_PRIVATE_ORIGINS=$privateAiOrigins"
+}
+$settingsLines | Set-Content -LiteralPath $RuntimeSettingsPath -Encoding UTF8
+icacls $InstallDir /grant:r $ReadExecuteAcl /Q | Out-Null
+icacls $ConfigDir /inheritance:r /grant:r $SystemFullControlAcl $AdministratorsFullControlAcl $ReadExecuteAcl /Q | Out-Null
+icacls $RuntimeDir /inheritance:r /grant:r $SystemFullControlAcl $AdministratorsFullControlAcl "*$($ServiceAccountSid):(OI)(CI)M" /Q | Out-Null
+icacls $RuntimeSettingsPath /inheritance:r /grant:r "SYSTEM:F" "Administrators:F" "*$($ServiceAccountSid):R" /Q | Out-Null
+if (Test-Path -LiteralPath $LegacySettingsPath) {
+    Remove-Item -LiteralPath $LegacySettingsPath -Force
+}
 
 Write-Host "Installing production dependencies..."
 & $npmPath ci --omit=dev --no-audit --no-fund --prefix $InstallDir
@@ -94,6 +153,8 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Applying PostgreSQL migrations..."
 Push-Location $InstallDir
 try {
+    $env:IMDB_RAPID_RATER_HOME = $RuntimeDir
+    $env:RAPID_RATER_SETTINGS_PATH = $RuntimeSettingsPath
     & $nodePath "scripts/migrate.mjs"
     if ($LASTEXITCODE -ne 0) {
         throw "Database migration failed."
@@ -103,17 +164,10 @@ try {
 }
 
 $powerShellPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-$action = New-ScheduledTaskAction `
-    -Execute $powerShellPath `
-    -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$LauncherPath`"" `
-    -WorkingDirectory $InstallDir
+$action = New-ScheduledTaskAction -Execute $powerShellPath -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$LauncherPath`"" -WorkingDirectory $InstallDir
 $trigger = New-ScheduledTaskTrigger -AtStartup
-$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-$settings = New-ScheduledTaskSettingsSet `
-    -StartWhenAvailable `
-    -RestartCount 5 `
-    -RestartInterval (New-TimeSpan -Minutes 1) `
-    -ExecutionTimeLimit ([TimeSpan]::Zero)
+$principal = New-ScheduledTaskPrincipal -UserId $ServiceAccountName -LogonType ServiceAccount -RunLevel Limited
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)
 
 $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 if ($null -ne $existingTask) {
@@ -121,23 +175,17 @@ if ($null -ne $existingTask) {
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     for ($attempt = 1; $attempt -le 20; $attempt++) {
         $state = (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State
-        if ($state -ne "Running") {
+        if ($state -ne $RunningTaskState) {
             break
         }
         Start-Sleep -Milliseconds 500
     }
-    if ((Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State -eq "Running") {
+    if ((Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State -eq $RunningTaskState) {
         throw "The existing IMDb Rapid Rating scheduled task did not stop."
     }
 }
 
-Register-ScheduledTask `
-    -TaskName $TaskName `
-    -Action $action `
-    -Trigger $trigger `
-    -Principal $principal `
-    -Settings $settings `
-    -Force | Out-Null
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 
 Set-Content -LiteralPath $ServerLogPath -Value "" -Encoding UTF8
 Start-ScheduledTask -TaskName $TaskName
@@ -155,7 +203,7 @@ for ($attempt = 1; $attempt -le 20; $attempt++) {
     } catch {
         $taskState = (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State
         Write-Host "Health check attempt $attempt is still waiting (task state: $taskState)..."
-        if ($taskState -ne "Running") {
+        if ($taskState -ne $RunningTaskState) {
             break
         }
     }
@@ -186,15 +234,15 @@ if ([string]::IsNullOrWhiteSpace($proxySiteName) -or
 
 $proxyUpstreamHost = Get-RapidRaterParameter -Name "RapidRater.ProxyUpstreamHost"
 if ([string]::IsNullOrWhiteSpace($proxyUpstreamHost)) {
-    $proxyUpstreamHost = "127.0.0.1"
+    $proxyUpstreamHost = $LoopbackAddress
 }
 $proxyHealthAddress = Get-RapidRaterParameter -Name "RapidRater.ProxyHealthAddress"
 if ([string]::IsNullOrWhiteSpace($proxyHealthAddress)) {
-    $proxyHealthAddress = "127.0.0.1"
+    $proxyHealthAddress = $LoopbackAddress
 }
 $proxyUpstreamUrl = "http://${proxyUpstreamHost}:$Port"
 $appCmd = "C:\Windows\System32\inetsrv\appcmd.exe"
-$siteState = "Unavailable"
+$siteState = $UnavailableSiteState
 try {
     if (-not (Test-Path -LiteralPath $appCmd)) {
         throw "IIS appcmd.exe is unavailable."
@@ -226,10 +274,10 @@ try {
     Copy-Item -LiteralPath $proxyConfigPath -Destination (Join-Path $proxyDir "web.config") -Force
     $siteState = (& $appCmd list site $proxySiteName /text:state 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) {
-        $siteState = "Unavailable"
+        $siteState = $UnavailableSiteState
     }
 } catch {
-    $siteState = "Unavailable"
+    $siteState = $UnavailableSiteState
     Write-Warning "The optional IIS proxy configuration could not be refreshed: $($_.Exception.Message)"
 }
 Write-Host "IIS proxy site state: $siteState"

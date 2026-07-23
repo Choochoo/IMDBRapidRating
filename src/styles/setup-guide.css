@@ -1,0 +1,393 @@
+.setup-guide-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 24px;
+  background: rgba(10, 13, 16, 0.84);
+  backdrop-filter: blur(10px);
+}
+
+.setup-guide-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(960px, 100%);
+  max-height: min(820px, calc(100dvh - 48px));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.setup-guide-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.setup-guide-heading {
+  min-width: 0;
+}
+
+.setup-guide-heading h1 {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 28px);
+  line-height: 1.1;
+}
+
+.setup-guide-heading > span {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.setup-guide-heading p {
+  max-width: 720px;
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.setup-guide-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.setup-guide-hub {
+  overflow: auto;
+  padding: 20px;
+}
+
+.setup-guide-hub-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.setup-guide-flow {
+  display: grid;
+  gap: 5px;
+  min-height: 98px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  transition: border-color var(--anim), background var(--anim), transform var(--anim);
+}
+
+.setup-guide-flow:hover {
+  border-color: var(--accent-border);
+  background: rgba(var(--accent-rgb), 0.08);
+  transform: translateY(-1px);
+}
+
+.setup-guide-flow:focus-visible {
+  border-color: var(--blue);
+  outline: 3px solid rgba(126, 182, 255, 0.18);
+}
+
+.setup-guide-flow strong {
+  color: var(--accent-text);
+  font-size: 15px;
+}
+
+.setup-guide-flow span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.setup-guide-step {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.setup-guide-step-main {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.72fr) minmax(420px, 1.28fr);
+  min-height: 0;
+  overflow: auto;
+}
+
+.setup-guide-copy {
+  padding: clamp(22px, 4vw, 38px);
+  border-right: 1px solid var(--line);
+}
+
+.setup-guide-progress {
+  display: block;
+  margin: 0 0 12px;
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.setup-guide-copy h2 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+#setup-guide-step-body {
+  margin: 14px 0 0;
+  color: #c8d1da;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.setup-guide-action {
+  width: fit-content;
+  margin-top: 22px;
+  text-decoration: none;
+}
+
+.setup-guide-media {
+  display: grid;
+  min-height: 360px;
+  margin: 0;
+  place-items: center;
+  overflow: auto;
+  padding: 18px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(var(--accent-rgb), 0.09), transparent 48%),
+    var(--surface-soft);
+}
+
+.setup-guide-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 520px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  object-fit: contain;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
+}
+
+.setup-guide-image-fallback {
+  display: grid;
+  width: min(430px, 100%);
+  min-height: 250px;
+  padding: 28px;
+  place-items: center;
+  border: 1px dashed #566473;
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.setup-guide-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.setup-guide-footer > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.setup-guide-footer-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.help-reminder {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 7;
+  display: grid;
+  width: min(370px, calc(100vw - 36px));
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 96%, var(--accent) 4%);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38);
+  animation: help-reminder-enter 180ms ease-out;
+}
+
+.help-reminder-eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--accent-text);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.help-reminder h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.help-reminder p {
+  margin: 7px 0 0;
+  color: #c4cdd7;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.help-reminder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.help-reminder-settings {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.help-reminder-settings:hover {
+  color: var(--text);
+}
+
+.help-reminder-hide {
+  justify-self: start;
+  padding: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.help-settings-card {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 20px;
+}
+
+.help-settings-card h2,
+.help-settings-card p {
+  margin-bottom: 0;
+}
+
+.help-reminders-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.help-reminders-toggle span {
+  display: grid;
+  gap: 3px;
+}
+
+.help-reminders-toggle small,
+.help-settings-actions p {
+  color: var(--muted);
+}
+
+.help-settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.help-settings-actions p {
+  margin: 0;
+  font-size: 12px;
+}
+
+@keyframes help-reminder-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (max-width: 760px) {
+  .setup-guide-dialog {
+    padding: 0;
+  }
+
+  .setup-guide-panel {
+    width: 100%;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .setup-guide-header {
+    padding: 14px;
+  }
+
+  .setup-guide-hub {
+    padding: 14px;
+  }
+
+  .setup-guide-hub-list,
+  .setup-guide-step-main {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-guide-step-main {
+    align-content: start;
+  }
+
+  .setup-guide-copy {
+    padding: 22px 18px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .setup-guide-media {
+    min-height: 260px;
+    padding: 12px;
+  }
+
+  .setup-guide-footer {
+    position: sticky;
+    bottom: 0;
+    padding: 12px 14px;
+    background: var(--surface);
+  }
+
+  .help-reminder {
+    right: 10px;
+    bottom: calc(92px + env(safe-area-inset-bottom));
+    width: calc(100vw - 20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setup-guide-flow,
+  .help-reminder {
+    animation: none;
+    transition: none;
+  }
+}

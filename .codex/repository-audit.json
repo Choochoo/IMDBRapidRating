@@ -17,7 +17,7 @@
   "localTriageCommand": "",
   "projectProfileFile": "docs/engineering/PROJECT_PROFILE.md",
   "proofToolchainRoot": "",
-  "remediationStrategy": "semantic_refactor_first",
+  "remediationStrategy": "rule_order",
   "requireIndependentReview": true,
   "requireProjectIntelligence": true,
   "requireRuleApproval": true,

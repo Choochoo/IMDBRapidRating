@@ -25,6 +25,9 @@ const EnglishLanguage = "en";
 const KoreanLanguage = "ko";
 const HindiLanguage = "hi";
 const TurkishLanguage = "tr";
+const DramaGenre = "Drama";
+const CrimeGenre = "Crime";
+const NoOp = () => undefined;
 
 test("title filters normalize ranges and deduplicate origin selections", VerifyTitleFilterNormalization);
 test("year, country, language, Bollywood, and unknown-origin filters compose", VerifyComposedTitleFilters);
@@ -82,10 +85,10 @@ function BuildComposedTitleFilters() {
 }
 
 function VerifyRecommendationFilters() {
-  const filters = NormalizeTitleFilters({ includedGenres: ["Crime"], documentaryMode: "exclude", minImdbRating: 7, maxRuntimeMinutes: 130, includedOriginalLanguages: [KoreanLanguage] });
-  const match = { genres: ["Crime", "Drama"], imdbRating: 8.1, runtimeMinutes: 125, originalLanguage: KoreanLanguage };
+  const filters = NormalizeTitleFilters({ includedGenres: [CrimeGenre], documentaryMode: "exclude", minImdbRating: 7, maxRuntimeMinutes: 130, includedOriginalLanguages: [KoreanLanguage] });
+  const match = { genres: [CrimeGenre, DramaGenre], imdbRating: 8.1, runtimeMinutes: 125, originalLanguage: KoreanLanguage };
   assert.equal(IsTitleAllowed(match, filters), true);
-  assert.equal(IsTitleAllowed({ ...match, genres: ["Documentary", "Crime"] }, filters), false);
+  assert.equal(IsTitleAllowed({ ...match, genres: ["Documentary", CrimeGenre] }, filters), false);
   assert.equal(IsTitleAllowed({ ...match, imdbRating: 6.9 }, filters), false);
   assert.equal(IsTitleAllowed({ ...match, runtimeMinutes: 131 }, filters), false);
   assert.equal(IsTitleAllowed({ ...match, originalLanguage: "" }, filters), false);
@@ -166,7 +169,7 @@ async function VerifyMissingTmdbDetails() {
     requests.push(url);
     return requests.length === 1 ? JsonResponse({ movie_results: [{ id: 101 }] }) : ErrorResponse(404);
   };
-  const result = await FetchTitleMetadata({ ttId: MovieId, mediaType: MovieMediaType }, null, TestApiKey, fetchImpl, () => {});
+  const result = await FetchTitleMetadata({ ttId: MovieId, mediaType: MovieMediaType }, null, TestApiKey, fetchImpl, NoOp);
   assert.equal(result.status, NotFoundStatus);
   assert.equal(result.tmdbId, null);
   assert.equal(requests.length, 2);

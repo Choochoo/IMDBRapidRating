@@ -1,77 +1,99 @@
 {
-  "generated_at": "2026-07-22T23:39:37Z",
+  "generated_at": "2026-07-23T22:47:44Z",
   "record_hashes": {
     "K001": {
-      "package.json": "49e68ee9d2fe721dc3e30426e4ffdb1f705d014c9c4445de3f912feee518734b"
+      "package.json": "60c5f1cc2b2bbb2f16fec60afff0d97b42309fea08378b00a2db4bfb9203f7ff"
     },
     "K002": {
-      ".github/workflows/deploy-octopus.yml": "1dda49ffbdbde0c12ea7b0f3b927dccec98bdbd865cf4fc19fa34967fdaa5e0b"
+      ".github/workflows/deploy-octopus.yml": "fb111bca879c319d43535ef76cfd41dda61e23aa61bb2eb511cf17296d683eb4"
     },
     "K003": {
-      "package-lock.json": "63fe3d9e29842f58996d043cfde70120f21b7f4ed2a30d68cfa79cd0608e258f"
+      "package-lock.json": "1a5949a4352a55132ec44c5d3d311cc7cd3b8ec7d0e5c05ccc3cb0036fe67407"
     },
     "K004": {
-      "package.json": "49e68ee9d2fe721dc3e30426e4ffdb1f705d014c9c4445de3f912feee518734b"
+      "package.json": "60c5f1cc2b2bbb2f16fec60afff0d97b42309fea08378b00a2db4bfb9203f7ff"
     },
     "K005": {
-      ".codex/repository-audit.json": "a85a167d1dc21fdd90a9c3acc81ff8a56b820c1bcb20fc8e9925ca2ef9d73ed6"
+      ".codex/repository-audit.json": "c47c3e49e3f092faa127d565e57d731acabddb9768de4350defca629dfddded5"
     },
     "K006": {
-      "tsconfig.json": "3ce148b8edcb420901b79f1568780598eafa8394a3b96d2a887e9179ba208681"
+      "docs/setup/screenshots.json": "61f203a1070879edc278fde6450bb8c6730afc0a5b557a09bf58728a7ca9f979"
     },
     "K007": {
-      ".codex/repository-audit.json": "a85a167d1dc21fdd90a9c3acc81ff8a56b820c1bcb20fc8e9925ca2ef9d73ed6"
+      "tsconfig.json": "3ce148b8edcb420901b79f1568780598eafa8394a3b96d2a887e9179ba208681"
     },
     "K008": {
-      ".github/workflows/deploy-octopus.yml": "1dda49ffbdbde0c12ea7b0f3b927dccec98bdbd865cf4fc19fa34967fdaa5e0b"
+      ".codex/repository-audit.json": "c47c3e49e3f092faa127d565e57d731acabddb9768de4350defca629dfddded5"
     },
     "K009": {
-      "docs/engineering/CODING_STANDARDS.md": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
-      "docs/engineering/PROJECT_EXCEPTIONS.md": "8b0d20de49c1120cf38110568735b4dd8a57ca93c418637fa7f7c058476892c4",
-      "docs/engineering/PROJECT_PROFILE.md": "eb37a1c95a658ea913c4fced35a3e45e0fda06423da2a63d02b159a9543613f6"
+      ".github/workflows/deploy-octopus.yml": "fb111bca879c319d43535ef76cfd41dda61e23aa61bb2eb511cf17296d683eb4"
     },
     "K010": {
-      "shared/csv.js": "8c24860ae22837ab81a116d334ede1d88d0997e57d33ca5916b27f8a1c7e0d30",
-      "shared/media.js": "901b1067e1c6ad2b8223f5813fee3532c2972f8b9d5364a9d5997f22857f39d2",
-      "shared/recommendation-basis.js": "7d79dc8388bfa629fc893dfe5d157162faf0a81725b7d682e1e4d3fdfc4493b3",
-      "shared/streaming-country.js": "91dc2cf6ff44a1324b67bb09e7899de1562619d74866502e540b4ac734357f10",
-      "shared/title-filters.js": "8558b511c4895a337eb200c23bd0a87e5efbb320fd8add1352d9ad97c7cc622e"
+      "docs/engineering/CODING_STANDARDS.md": "d8d2fe9048a93ed27d1df96b4067a069dcced59ff4a8f0dda1352dee44f63247",
+      "docs/engineering/PROJECT_EXCEPTIONS.md": "8b0d20de49c1120cf38110568735b4dd8a57ca93c418637fa7f7c058476892c4",
+      "docs/engineering/PROJECT_PROFILE.md": "eb37a1c95a658ea913c4fced35a3e45e0fda06423da2a63d02b159a9543613f6",
+      "docs/setup/README.md": "88210324f113dbacd3c12acedd542968063ccf885c5ebe044515b366f652e657",
+      "docs/setup/azure-key-vault-migration.md": "b8b22725468781791bf7618cbbc0ec5a9ccc00ddcdb69ccd4a6f52d71016ce35",
+      "docs/setup/connect-imdb.md": "b7e82f561957e591f6da3118b9291b6c6b74e68e3a6e1ec8bd27155331c037a6",
+      "docs/setup/connect-openai.md": "bac78b3b81eae7c497d9fb038af455052b99ec57f8372f6cc27fee9801a2f3af",
+      "docs/setup/import-imdb-ratings.md": "c346c9a00b207b0e49b1b89b46f6332f9253a7b438e8ba384928a0d35a929708",
+      "docs/setup/import-letterboxd.md": "1ab7fdffb8d9900f38329e077852ffa7a7226527ce9b66829f308c341777a1b2",
+      "docs/setup/letterboxd-to-imdb.md": "6083a4bab024299ae68bb022199635d14c1bbea7903ee796da7f9448f3a41584",
+      "docs/setup/rapid-rater-to-letterboxd.md": "43565a9d74b825e48a35adfd6ffc490aaaaac280c292ffe86e8da51196f54f55",
+      "docs/setup/screenshots.json": "61f203a1070879edc278fde6450bb8c6730afc0a5b557a09bf58728a7ca9f979"
     },
     "K011": {
-      "src/app.js": "f3a440ecd6e216194705876bb0b60dabfdbd0ed5a8c96d39c530529bd81bc6af",
-      "src/app/account-state-merge.js": "827fc5ca6c539ac83d55fcd22bd074ecf0ada4efea3d2ef4e03574aa24d171ae",
-      "src/app/app-constants.js": "ed406cd0314b5af8ef9ca0ac569e1640293f71f9d20543b00ab06f66ecfb7951",
-      "src/app/browser-settings.js": "9c51d702bf68bae018ab5c56c320ec356eeaf05cf85b44bb6d577dc1374ce9db",
-      "src/app/collection-sync.js": "19fc4d52645e01d8ccaf1abe9d23325502d16f61a73d931d70257aa29fd68f13",
-      "src/app/config.js": "78d03bb926a4e0d0ebf2209589617e303aee7d457741df11fc3b0ee91e332c60",
-      "src/app/elements.js": "9e9cae2ee045965d3377d6cd0d0e09b585ddf63a51e1a1fb3f6f236b2bc18336",
-      "src/app/feature-methods.js": "87b856b1c08f32e0bf89058fb6832b781aa6aa83cc19a5e9f691d788b159c906",
-      "src/app/features/account-sync.js": "47c4ec9bd48e7110cf7354936fd6c5f35fc586c362711ef507b1747a7ab16129",
-      "src/app/features/application-lifecycle.js": "8b7ce42566049def6628081d6a70e38371fc5818fbf8031a87930949915ad944",
-      "src/app/features/catalog-view.js": "cd6af9740914882b87e0b50b2df1ebf1a38e559ea2a7e1b96dbf21a9efab8dbc",
-      "src/app/features/collection-sync.js": "8cbaad86ba2865ac1345a49d8d1414425f763c19478a8c8df1f2c6d7d89c03e9",
-      "src/app/features/data-transfer.js": "1767dfadc3a3c8149b7dd7b870c98b6db80a2049af3deefaf530a95a81fb371b",
-      "src/app/features/event-bindings.js": "b54c3cc5305c692854e93f6d1c31ec457385ca754591137845f058da33326f3d",
-      "src/app/features/quick-rate.js": "dc473204e81f50cdba5d75a3ca32ee2ce569cd57535d6d012951933cdb00f088",
-      "src/app/features/rating-workflow.js": "94018e903e46762ef47a44f3c67c1367736a3bebaa6ea4aebb024919dd56d69c",
-      "src/app/features/recommendations.js": "f40a7de9b9a883b2321b2058c857b5a05eeee865d765a07b819aaeffa64396f1",
-      "src/app/features/status-ui.js": "1f753b335d7f279e73c4606683075d67f31accccf23dd9aa4f3a519f225dc1f4",
-      "src/app/letterboxd-zip.js": "dbcf2227f5d0a921e9428c6cdead1c36a6b9608b19be8ae73b58aa365d9dee79",
-      "src/app/movies.js": "23dd533e95c685c045de0e24269cb09916674070e1bf13b48182d55c5121df60",
-      "src/app/rapid-rater-app.js": "5f5fc549659a8ad1d5138c9d17958b40fd793a2d00bc533ddeda678d3536cf17",
-      "src/app/rating-records.js": "71b1aebdee11bb58e968558d523f507158ff0fa3d13e8a6cb7457df94be46b85",
-      "src/app/recommendation-ratings.js": "8637eacc42078778447cfc69171636e3f0cc1078305cf4560b4c10459bb43e0d",
-      "src/app/rendering.js": "4e7975e435fc376f242410405ad45281b14f6fc0fa04c99093316a61d2352b20",
-      "src/app/settings-workflows.js": "12bf5e7edbcd7f7cef34684887a5ac338a7d3bbd607a7508650f5070d5cc8b6b",
-      "src/app/state.js": "15a82c3a53ae55a3686eeb9cf40f6afeb5ca947f27aec528eeccaaa6f91ae66a",
-      "src/app/stats.js": "0aef18337d984855da87c1d49a4e4311ac87ca77d206edee85240aec99ccc71e",
-      "src/app/title-filter-workflows.js": "191ead783c8b2d96232b408aa0a97e2ce336199e8f4419390fbacc32a169f48a",
-      "src/app/undo-rating.js": "64acdfb1acccd14ec7ea352631c19b74b179d0456beef4bf41c0bdea4bf141c9",
-      "src/app/util.js": "a48f3d8d2df72684fcd030860c87618d8a56912f606f9374473a4648bdf6472f",
-      "src/app/view-routes.js": "7c9ae4fb160bd1bd138e039cddfdc0c857051a5dc6d1b0784846ca4efba8cc7e"
+      "shared/csv.js": "1de39eb8960fbd5d3e6c629c0eb796b954d0c0088cdcfdd656106f6fc1062263",
+      "shared/help-preferences.js": "940cfb9b30ccb73f598dc0a2b9f5f6779ab7371cdb91228aca648ea951ed8406",
+      "shared/keyboard-shortcuts.js": "6a896c41df8dfefbb61acdb71c93d0f0a23a853b76d48aa98d0add0903224517",
+      "shared/media.js": "ca38fb1b30bcd9ec87b6337b7fb91079f3bf7198c3da9fec92b9ef401627e331",
+      "shared/recommendation-basis.js": "ab8692f83779f171bec244ad8da62bf0ab2dab4519addc0048b35a73618f7aee",
+      "shared/streaming-country.js": "91dc2cf6ff44a1324b67bb09e7899de1562619d74866502e540b4ac734357f10",
+      "shared/title-filters.js": "3968f101c036f09b254d08ff8a0ee86f871d8f6a8006f655459040faff5a01a0"
     },
     "K012": {
-      "src/app/features/data-transfer.js": "1767dfadc3a3c8149b7dd7b870c98b6db80a2049af3deefaf530a95a81fb371b"
+      "src/app.js": "7a9ee76d5b2e34257bcae01c8c7b5be52d403d33f0ab9f82b3c14c46bcba91c3",
+      "src/app/account-state-merge.js": "73d45fd4e0de93053b40e21c6cc6be15f7957297613190e9054ee96c61ad0e84",
+      "src/app/app-constants.js": "cab0a7834a623c9b37001cc11db85778857adf598c57dde97af22e8610936beb",
+      "src/app/browser-settings.js": "c252371a486e2e413fff16f0ed2b63864c6620e7a37cfb499fb9ce7a5b285c98",
+      "src/app/collection-sync.js": "cb1d305c901ae3d6f70fcabceb9ac1f8b505e94e41a9885d581375bf9f966974",
+      "src/app/config.js": "a62007cfdf2912bf8aca0516553373796b7118b9f09f8506b0894fcd5c3791fd",
+      "src/app/elements.js": "83da2eb6ec7f73c86739bf82f10a7870e454506e84cbedefaef89a05f5642271",
+      "src/app/feature-methods.js": "87b856b1c08f32e0bf89058fb6832b781aa6aa83cc19a5e9f691d788b159c906",
+      "src/app/features/account-sync.js": "23c84d4f63db885df061ad5bde7838ca46ce4dda7db9c826879eeaa1390330a6",
+      "src/app/features/ai-settings.js": "059a6c66a1731344a28b5bb7188e19284f80cb920c9113c20c8d2d643e299552",
+      "src/app/features/application-lifecycle.js": "940073591051f8260864d63096a836b96066d937b7b89200e85de82e3766b2b6",
+      "src/app/features/catalog-view.js": "3b1cace67e42c0844a60ab7d77c3ef76994f94dfd612f6f7190c7bb9665d2995",
+      "src/app/features/collection-sync.js": "8d2016e3594fd5073424976d4ac2677e52c8458ecd5ad8485d435423999ad30c",
+      "src/app/features/data-transfer.js": "1767dfadc3a3c8149b7dd7b870c98b6db80a2049af3deefaf530a95a81fb371b",
+      "src/app/features/event-bindings.js": "60bfd2e1b184d70274d45852bb0dd9079f6484b40d7bf0b53b7dd22720b0d825",
+      "src/app/features/friends.js": "228514b3a3f6d1c0528ab23884a7e27f05e13f0b172a34fbd3d582be3481f312",
+      "src/app/features/help-reminders.js": "c960cba21bc3dea2ce119a5622e026e790d3072b65adc37b6db1cbfc1da3ae63",
+      "src/app/features/quick-rate.js": "97e21b3a4e093bdfc500c4ec89fcf715f9195ff4482b6580ff95233561383b13",
+      "src/app/features/rating-workflow.js": "0b9c02cb085f7a313b76d02824d8801b6144de41d0b7d23e253aaa5e114cfd22",
+      "src/app/features/recommendations.js": "1b4d23a9632f8a01a960e9924b2431bd7f69f8fbd4c34ec5cd790707b4ef7f3c",
+      "src/app/features/settings.js": "725c96bd1f30ac0ca9756c5e4d7a589073efda2cd58d1379a093714a259e5c35",
+      "src/app/features/setup-guide.js": "9b2dbd61cba1c9156ab70486c0b28e0ef9c65544bdd239f7f4f843962c511c86",
+      "src/app/features/social-context.js": "a21a1db4876fffc3eefa2ddb16d75ff2debb0895cbeb0dbe1739bb1defcd58a4",
+      "src/app/features/status-ui.js": "fdf38b1a79aef4eb3605e2c8fdcccdca229c739621ced21736e077ac189ce091",
+      "src/app/help-reminder-policy.js": "4f733f6ac8c8ec6a369ec37b0567ab0f509bc9f3a8909f3c1329aed96a095041",
+      "src/app/icons.js": "43daad7d425bff81ab2e3a9321cae27043c39ecca345aa9a229d39cf12062e47",
+      "src/app/letterboxd-zip.js": "5acce19de28bb1b745578d7dfbdcd6736f706be651616d3660fbf348edb11284",
+      "src/app/movies.js": "5f63ac56b9ccc2abe2983f13482f77b8351eed16f12be293fa6ff720affb69b3",
+      "src/app/rapid-rater-app.js": "acc757541f07407d6661e4fbb130be9ea0817d99d9147160ac493af0cb8fb853",
+      "src/app/rating-records.js": "58ae262fc7285d3dea5845e77dcb9c9bb3d76e463dccf15db12aa5dba304ccf8",
+      "src/app/recommendation-ratings.js": "a8e0c6ec120c1b54a7ea7ac762774ba8bdb9746343047cc9041050ae2745155c",
+      "src/app/rendering.js": "1bb4cb28f95c4c51332a3e42483fffe2f0e1bb11085e23af21d5e900c0b3a4fe",
+      "src/app/settings-workflows.js": "4fa12fbcdc1787e2c2d16dcf610d0542dcefa1481d6063e9176128f81e42e7a5",
+      "src/app/setup-guide-definitions.js": "c46796ab271f1184a8487f282ebf5e9953c185a635b0378bc36f587e793a4768",
+      "src/app/setup-guide-state.js": "1ff93802f2f7207419a267223ee2339e2ba8af4558554a09c5500e0adccdc84c",
+      "src/app/social-rendering.js": "c8e4413be47e0535c037ab57e214781072a7557c1979abc95883e17a12eb9a41",
+      "src/app/state.js": "0f9b47c828a5fc281367a6bf46df17b6b2ce09493fe166f82e464e365ddd59ac",
+      "src/app/stats.js": "0aef18337d984855da87c1d49a4e4311ac87ca77d206edee85240aec99ccc71e",
+      "src/app/title-filter-workflows.js": "72e437f61d5b051ac00f6bd264afaa42a74096bbb2edd8875c117586ae93f16d",
+      "src/app/undo-rating.js": "d1b08e36f797c212c8dc85d02b919609b5b7f0307d3c8536052c4d9082c44dfe",
+      "src/app/util.js": "80071b616ebf952e0e68a5407a7732f3ae93a6d68139904644d819a27cbdcb4a",
+      "src/app/view-routes.js": "342eff5672a0294fd72ffa1d074f5cb20da1e693526ae61a090297463f9520c6"
     }
   },
   "stale_record_ids": []

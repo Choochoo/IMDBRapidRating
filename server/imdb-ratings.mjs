@@ -2,6 +2,9 @@ import { IsDryRun } from "./env.mjs";
 
 const GraphqlUrl = "https://api.graphql.imdb.com/";
 const ImdbRequestTimeoutMs = 30_000;
+const PostMethod = "POST";
+const MissingCookieCode = "IMDB_COOKIE_MISSING";
+const MissingCookieMessage = "This browser needs a signed-in IMDb cookie.";
 const RateMutation = "mutation UpdateTitleRating($rating: Int!, $titleId: ID!) { " +
   "rateTitle(input: {rating: $rating, titleId: $titleId}) { rating { value __typename } __typename }}";
 const DeleteMutation = "mutation DeleteTitleRating($titleId: ID!) { " +
@@ -11,7 +14,6 @@ export function GetImdbStatus() {
   return {
     configured: IsDryRun(),
     dryRun: IsDryRun(),
-    tmdbConfigured: false,
     endpoint: "/api/rate",
     ratingScale: "1-10"
   };
@@ -25,7 +27,7 @@ export async function SubmitImdbRating(titleId, rating, cookie) {
     return Ok(BuildDryRunPayload(request));
   const authCookie = NormalizeCookie(cookie);
   if (!HasImdbAuthCookie(authCookie))
-    return Fail(503, "IMDB_COOKIE_MISSING", "This browser needs a signed-in IMDb cookie.");
+    return Fail(503, MissingCookieCode, MissingCookieMessage);
   return await PostRatingToImdb(request.titleId, request.rating, authCookie);
 }
 
@@ -37,7 +39,7 @@ export async function DeleteImdbRating(titleId, cookie) {
     return Ok(BuildDryRunDeletePayload(request));
   const authCookie = NormalizeCookie(cookie);
   if (!HasImdbAuthCookie(authCookie))
-    return Fail(503, "IMDB_COOKIE_MISSING", "This browser needs a signed-in IMDb cookie.");
+    return Fail(503, MissingCookieCode, MissingCookieMessage);
   return await DeleteRatingFromImdb(request.titleId, authCookie);
 }
 
@@ -100,7 +102,7 @@ async function DeleteRatingFromImdb(titleId, cookie) {
 
 function BuildRatingFetchOptions(titleId, rating, cookie) {
   return {
-    method: "POST",
+    method: PostMethod,
     headers: BuildHeaders(titleId, cookie),
     body: JSON.stringify(BuildRateBody(titleId, rating)),
     signal: AbortSignal.timeout(ImdbRequestTimeoutMs)
@@ -109,7 +111,7 @@ function BuildRatingFetchOptions(titleId, rating, cookie) {
 
 function BuildDeleteFetchOptions(titleId, cookie) {
   return {
-    method: "POST",
+    method: PostMethod,
     headers: BuildHeaders(titleId, cookie),
     body: JSON.stringify(BuildDeleteBody(titleId)),
     signal: AbortSignal.timeout(ImdbRequestTimeoutMs)

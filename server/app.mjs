@@ -19,7 +19,7 @@ const HttpsSource = "https:";
 const SelfSource = "'self'";
 const RootRoute = "/";
 const AllowedOriginProtocols = Object.freeze(["http:", HttpsSource]);
-const FrontendRoutes = Object.freeze([RootRoute, "/login", "/rate", "/wishlist", "/sync", "/movies/rate", "/movies/wishlist", "/movies/sync", "/tv/rate", "/tv/wishlist"]);
+const FrontendRoutes = Object.freeze([RootRoute, "/login", "/rate", "/wishlist", "/sync", "/friends", "/settings", "/settings/shortcuts", "/settings/ai", "/movies/rate", "/movies/wishlist", "/movies/sync", "/movies/friends", "/tv/rate", "/tv/wishlist", "/tv/friends"]);
 const PostgresSessionStore = connectPgSimple(session);
 
 export async function CreateApp(rootPath) {
@@ -29,11 +29,15 @@ export async function CreateApp(rootPath) {
   const store = CreateAccountStore({ db, pool });
   const raterEvents = CreateRaterEvents();
   const imdbRatingWorker = CreateImdbRatingWorker({ store });
-  RegisterApiRoutes(app, { store, pool, rootPath, raterEvents });
+  RegisterApiRoutes(app, { store, pool, rootPath, raterEvents, tmdbApiKey: ReadTmdbApiKey() });
   RegisterStaticRoutes(app, rootPath);
   app.use(HandleAppError);
   await imdbRatingWorker.Start();
   return { app, pool, store, imdbRatingWorker };
+}
+
+function ReadTmdbApiKey() {
+  return String(process.env.TMDB_API_KEY || "").trim();
 }
 
 function BuildExpressApp(pool) {
@@ -80,6 +84,7 @@ function RegisterSharedRoutes(app, rootPath) {
   app.get("/shared/csv.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/csv.js")));
   app.get("/shared/media.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/media.js")));
   app.get("/shared/recommendation-basis.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/recommendation-basis.js")));
+  app.get("/shared/keyboard-shortcuts.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/keyboard-shortcuts.js")));
   app.get("/shared/title-filters.js", (_request, response) => response.sendFile(path.join(rootPath, "shared/title-filters.js")));
   app.get("/vendor/bootstrap.min.css", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/bootstrap/dist/css/bootstrap.min.css")));
   app.get("/vendor/fflate.js", (_request, response) => response.sendFile(path.join(rootPath, "node_modules/fflate/esm/browser.js")));
@@ -104,14 +109,11 @@ export function VerifyOrigin(request, response, next) {
 }
 
 export function ReadAllowedOrigins(request) {
-  const configured = [
-    `${request.protocol}://${request.get("host")}`,
-    process.env.APP_ORIGIN,
-    ...(process.env.APP_ALLOWED_ORIGINS || "").split(",")
-  ]
-    .map((value) => String(value || "").trim())
-    .filter(Boolean);
-  return new Set(configured.map(NormalizeOrigin).filter(Boolean));
+  const additionalOrigins = (process.env.APP_ALLOWED_ORIGINS || "").split(",");
+  const configured = [`${request.protocol}://${request.get("host")}`, process.env.APP_ORIGIN, ...additionalOrigins];
+  const normalized = configured.map((value) => String(value || "").trim());
+  const populated = normalized.filter(Boolean);
+  return new Set(populated.map(NormalizeOrigin).filter(Boolean));
 }
 
 function NormalizeOrigin(value) {

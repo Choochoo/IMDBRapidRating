@@ -166,7 +166,7 @@ export class RatingWorkflowFeature {
   async RetryImdbFailures() {
     if (!this.State.live.configured)
       return this.RequireImdbSignIn();
-    const result = await this.PostJson(Config.imdbRetryUrl, {}, "IMDb retries could not be queued.");
+    const result = await this.PostJson(Config.imdbRetryUrl, {});
     await this.RefreshRemoteState();
     this.ShowToast(`Queued <strong>${FormatCount(result.queued)}</strong> IMDb retries`);
     this.UpdateStats();

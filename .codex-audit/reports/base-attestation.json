@@ -2,27 +2,27 @@
   "authentication": {
     "algorithm": "hmac-sha256",
     "key_id": "local",
-    "mac": "ccfff145b6e78282c35356cd64da7d8cb6978736da22a8c2f8154920735b6a18"
+    "mac": "fb3a195c4f1d366b95a3676c157c4a8d61ce220c7aec4d35228b3cb2e32c18e6"
   },
   "format": "repository-audit-attestation-v1",
   "payload": {
-    "evidence_root": "1666ae28d65929e2675618618e5f976b4e9595d445661f2ff63e4c83e8d85eb7",
+    "evidence_root": "2dd6af79d918ac93b6a75dffdc16c42efc699c9ff072f5a3476dd07b9514a107",
     "generation": {
       "components": {
-        "applicability_root": "cea6e7b0adaa13f8eca7ac3183f72f645f68d53cb8da999200e9262e72c71ec2",
-        "config_root": "5bfba6cc48a583acf01ff3b6221d64c403418e39531430b46538bf60ac1025ac",
-        "dependency_root": "49d21cc1cf89497a7467bf759c73a468c2ead1f4c8d7c69eeb5c173e3ee37de8",
-        "repository_root": "30194a94b9c7447ae799f01e65ccfea754f1d4095e440bb43f9c577a3813a12d",
-        "result_root": "7a9420be89e6cd388267d1e528b9c5174961b3e297b9f077216c214d5117c132",
+        "applicability_root": "bf446314d18f09ad5b97c32d796ab21f84021348ec0318b5edce17a5fe11ca45",
+        "config_root": "41e7990c9090ec6bb864ac1434c79983cbd914bbec69d6a9e177ee77565c37a3",
+        "dependency_root": "fada736dcef4b819ce189150973f7cbc386a85fb9296776134b2fcc045f8a4a7",
+        "repository_root": "c899510e1261a4b056833af655030cbf2fe2799819c801c7f4eed8b5fab08731",
+        "result_root": "e6451d68b5b5c7c935ec288b290a4865593d53eaeac9b43ee4752f84ea544f00",
         "rule_root": "46d61ba7424a8107c6f0aa3383fe42820b77367f4060f298ca522b60aaafbbd4",
         "support_root": "d188bdb51cd6040e2e8c6f733fcd90b0196e2e20d1c89563a9ce71c931011444",
         "toolchain_root": "9f96160ce52f7908ed2e91107f819d407af7cc773397edcfeff53830f73127e8",
         "validation_root": "1bb3d088c94302ca37745324b225f9e4e96231f8710c534b414cd97e9037439c"
       },
-      "root": "0c2cbe306636f39a43f6aaf044ffbc114122aa1a16a8d9c8fb44adfd48d56ea6",
+      "root": "a47ef865af6be87ad46a581eabd7fce5e3476aa534ba736b41ab8948faeebb7e",
       "version": 1
     },
-    "issued_at_ns": 1784764048395327300,
+    "issued_at_ns": 1784847535536584100,
     "issuer": "24c64586703550c4d5596a4b65555ab675f3feb5ecbbbd7e035c7195a624cd2f",
     "kind": "base",
     "verdict": "pass",

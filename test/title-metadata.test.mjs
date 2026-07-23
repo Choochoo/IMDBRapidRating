@@ -12,6 +12,17 @@ const TmdbSynopsis = "TMDB synopsis.";
 const StoredSynopsis = "Stored locally.";
 const ActorName = "Actor One";
 const NetflixName = "Netflix";
+const EnglishLanguage = "en";
+const YoutubeSite = "YouTube";
+const OfficialTrailerKey = "official_trailer";
+const TrailerType = "Trailer";
+const AlPacino = "Al Pacino";
+const RobertDeNiro = "Robert De Niro";
+const ValKilmer = "Val Kilmer";
+const AmyAdams = "Amy Adams";
+const JeremyRenner = "Jeremy Renner";
+const ImdbVideoUrl = "https://www.imdb.com/video/vi123";
+const TvMediaType = "tv";
 const TmdbHost = "api.themoviedb.org";
 const ImdbTitleHost = "imdb.com/title";
 const PosterUrl = "https://image.tmdb.org/t/p/w342/poster.jpg";
@@ -19,10 +30,10 @@ const TmdbDetailsData = {
   id: 101,
   poster_path: "/poster.jpg",
   overview: TmdbSynopsis,
-  original_language: "en",
+  original_language: EnglishLanguage,
   production_countries: [{ iso_3166_1: Country }],
   credits: { cast: [{ name: ActorName }] },
-  videos: { results: [{ site: "YouTube", key: "official_trailer", type: "Trailer", official: true }] }
+  videos: { results: [{ site: YoutubeSite, key: OfficialTrailerKey, type: TrailerType, official: true }] }
 };
 const TmdbDetails = Object.freeze(TmdbDetailsData);
 const StreamingService = Object.freeze({ get: async ({ cached }) => cached || null });
@@ -41,22 +52,22 @@ test("concurrent metadata misses share one outbound metadata load", VerifyMetada
 test("cold metadata requests recover when every source rejects", VerifyAllSourceRecovery);
 
 function VerifyActorShapes() {
-  const actors = [{ "@type": "Person", name: "Al Pacino" }, { id: 380, name: "Robert De Niro" }, "Val Kilmer", { name: "Jon Voight" }];
-  assert.deepEqual(ReadActorNames(actors), ["Al Pacino", "Robert De Niro", "Val Kilmer"]);
+  const actors = [{ "@type": "Person", name: AlPacino }, { id: 380, name: RobertDeNiro }, ValKilmer, { name: "Jon Voight" }];
+  assert.deepEqual(ReadActorNames(actors), [AlPacino, RobertDeNiro, ValKilmer]);
 }
 
 function VerifyActorDeduplication() {
-  assert.deepEqual(ReadActorNames(["Amy Adams", "", {}, { name: "Amy Adams" }, { name: "Jeremy Renner" }]), ["Amy Adams", "Jeremy Renner"]);
+  assert.deepEqual(ReadActorNames([AmyAdams, "", {}, { name: AmyAdams }, { name: JeremyRenner }]), [AmyAdams, JeremyRenner]);
 }
 
 function VerifyTrailerSelection() {
-  const videos = [{ site: "YouTube", key: "teaser", type: "Teaser", official: true }, { site: "Vimeo", key: "ignored", type: "Trailer", official: true }, { site: "YouTube", key: "official_trailer", type: "Trailer", official: true }];
-  assert.equal(PickTmdbTrailerUrl(videos), "https://www.youtube.com/watch?v=official_trailer");
+  const videos = [{ site: YoutubeSite, key: "teaser", type: "Teaser", official: true }, { site: "Vimeo", key: "ignored", type: TrailerType, official: true }, { site: YoutubeSite, key: OfficialTrailerKey, type: TrailerType, official: true }];
+  assert.equal(PickTmdbTrailerUrl(videos), `https://www.youtube.com/watch?v=${OfficialTrailerKey}`);
 }
 
 function VerifyTrailerProtocol() {
   assert.equal(NormalizeTrailerUrl("javascript:alert(1)"), "");
-  assert.equal(NormalizeTrailerUrl("https://www.imdb.com/video/vi123"), "https://www.imdb.com/video/vi123");
+  assert.equal(NormalizeTrailerUrl(ImdbVideoUrl), ImdbVideoUrl);
 }
 
 async function VerifyFreshDatabaseMetadata() {
@@ -96,9 +107,9 @@ async function VerifyFallbackUpgrade() {
 
 async function VerifyExpectedTmdbMediaType() {
   const titleId = TestTitleId(7);
-  const store = CreateMemoryStore({ ...BuildOriginMetadata(titleId), mediaType: "tv", tmdbId: null });
+  const store = CreateMemoryStore({ ...BuildOriginMetadata(titleId), mediaType: TvMediaType, tmdbId: null });
   const state = { urls: [] };
-  const result = await GetTitleMetadata(titleId, { ...BuildOptions(store, CreateCrossMediaFetch(state)), mediaType: "tv", tmdbApiKey: ApiKey });
+  const result = await GetTitleMetadata(titleId, { ...BuildOptions(store, CreateCrossMediaFetch(state)), mediaType: TvMediaType, tmdbApiKey: ApiKey });
   assert.notEqual(result.payload.source, TmdbSource);
   assert.equal(result.payload.tmdbId, null);
   assert.equal(state.urls.some((url) => /api\.themoviedb\.org\/3\/movie\/202/.test(url)), false);
@@ -156,7 +167,7 @@ function TestTitleId(index) {
 }
 
 function BuildOriginMetadata(titleId) {
-  const origin = { titleId, mediaType: MovieMediaType, status: "matched", tmdbId: 101, originCountries: [Country], originalLanguage: "en", checkedAt: OldTimestamp };
+  const origin = { titleId, mediaType: MovieMediaType, status: "matched", tmdbId: 101, originCountries: [Country], originalLanguage: EnglishLanguage, checkedAt: OldTimestamp };
   const metadata = { metadataCheckedAt: "", source: "", sourcePayload: {}, actors: [], trailerUrl: "", streamingByCountry: {} };
   return {
     ...origin,

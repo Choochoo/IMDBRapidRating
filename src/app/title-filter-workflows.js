@@ -4,10 +4,23 @@ import {
   NormalizeTitleFilters,
   NormalizeTitleOrigin
 } from "../../shared/title-filters.js";
+import { TvMediaType, TvShowName } from "./app-constants.js";
 import { FormatCount } from "./util.js";
 
+const AnyFilterLabel = "Any";
+const AriaLabelAttribute = "aria-label";
+const EnglishLocale = "en";
+const PluralSuffix = "s";
+const InvalidYearRangeMessage = "The starting year must be before the ending year.";
+const ShowLabel = "show";
+const MovieLabel = "movie";
 const CommonCountries = Object.freeze(["US", "GB", "CA", "AU", "FR", "DE", "ES", "IT", "JP", "KR", "IN", "MX"]);
-const CommonLanguages = Object.freeze(["en", "es", "fr", "de", "it", "ja", "ko", "hi", "pt", "zh"]);
+const CommonLanguages = Object.freeze([EnglishLocale, "es", "fr", "de", "it", "ja", "ko", "hi", "pt", "zh"]);
+const CountryOptionType = "country";
+const GenreOptionType = "genre";
+const InvalidEndYearMessage = "Enter a valid ending year.";
+const InvalidStartYearMessage = "Enter a valid starting year.";
+const LanguageOptionType = "language";
 
 export function ShowTitleFilterDialog(app) {
   PopulateTitleFilterDialog(app, app.State.filters);
@@ -38,18 +51,31 @@ export async function ApplyTitleFilters(app) {
   const error = ReadYearError(filters, app);
   if (error)
     return ShowTitleFilterValidation(app, error);
-  return await SaveTitleFilters(app, filters, true);
+  return await SaveTitleFilters(app, filters, { hideDialog: true, announce: true });
+}
+
+export async function ApplyRecommendationYearFilters(app) {
+  const result = ReadRecommendationYearDraft(app);
+  if (!result.ok) {
+    app.ShowRecommendationError(result.error);
+    return false;
+  }
+  if (HaveSameRecommendationYears(app.State.filters, result.filters))
+    return true;
+  await SaveTitleFilters(app, result.filters, { hideDialog: false, announce: false });
+  return true;
 }
 
 export function UpdateTitleFilterButton(app) {
   const count = CountActiveTitleFilters(app.State.filters);
   SetFilterButtonState(app.Elements.configureFilters, app.Elements.filterActiveCount, count);
   SetFilterButtonState(app.Elements.recommendationFilterMore, app.Elements.recommendationFilterCount, count);
-  app.Elements.configureFilters.title = count ? `${count} active filter${count === 1 ? "" : "s"}` : "Filter ratings and recommendations";
-  app.Elements.configureFilters.setAttribute("aria-label", app.Elements.configureFilters.title);
-  app.Elements.recommendationFilterMore.title = count ? `${count} active filter${count === 1 ? "" : "s"}. Open advanced filters.` : "Open advanced watchlist filters";
-  app.Elements.recommendationFilterMore.setAttribute("aria-label", app.Elements.recommendationFilterMore.title);
-  app.Elements.recommendationFilterPreview.textContent = count ? `${count} active filter${count === 1 ? "" : "s"} shape the rating queue and watchlist.` : "No extra filters are active.";
+  SetFilterButtonState(app.Elements.recommendationFilterEdit, app.Elements.recommendationGeneratorFilterCount, count);
+  app.Elements.configureFilters.title = count ? `${count} active filter${count === 1 ? "" : PluralSuffix}` : "Filter ratings and recommendations";
+  app.Elements.configureFilters.setAttribute(AriaLabelAttribute, app.Elements.configureFilters.title);
+  app.Elements.recommendationFilterMore.title = count ? `${count} active filter${count === 1 ? "" : PluralSuffix}. Open advanced filters.` : "Open advanced watchlist filters";
+  app.Elements.recommendationFilterMore.setAttribute(AriaLabelAttribute, app.Elements.recommendationFilterMore.title);
+  UpdateRecommendationFilterControls(app);
 }
 
 function SetFilterButtonState(button, badge, count) {
@@ -63,11 +89,11 @@ function ShowTitleFilterValidation(app, error) {
   return false;
 }
 
-async function SaveTitleFilters(app, filters, hideDialog) {
+async function SaveTitleFilters(app, filters, options) {
   SetFilterSaving(app, true);
   try {
     await PersistTitleFilters(app, filters);
-    CompleteTitleFilterApply(app, hideDialog);
+    CompleteTitleFilterApply(app, options);
     return true;
   } finally {
     SetFilterSaving(app, false);
@@ -81,14 +107,57 @@ async function PersistTitleFilters(app, filters) {
   await app.RefreshRaterQueue();
 }
 
-function CompleteTitleFilterApply(app, hideDialog) {
+function CompleteTitleFilterApply(app, options) {
   UpdateTitleFilterButton(app);
   app.RenderRecommendationQueue();
   app.UpdateRecommendationStatus();
-  if (hideDialog)
+  if (options.hideDialog)
     HideTitleFilterDialog(app);
+  if (!options.announce)
+    return;
   const count = CountFilterMatches(app, app.State.filters).catalog;
   app.ShowToast(`<strong>Filters applied.</strong> ${FormatCount(count)} catalog titles can be recommended.`);
+}
+
+function UpdateRecommendationFilterControls(app) {
+  const filters = NormalizeTitleFilters(app.State.filters);
+  const [firstYear, lastYear] = ReadCatalogYearRange(app.State.movies);
+  SetYearInput(app.Elements.recommendationMinYear, firstYear, lastYear, filters.minYear);
+  SetYearInput(app.Elements.recommendationMaxYear, firstYear, lastYear, filters.maxYear);
+  app.Elements.recommendationPickFilterSummary.textContent = BuildRecommendationFilterSummary(app, filters);
+}
+
+function BuildRecommendationFilterSummary(app, filters) {
+  const from = filters.minYear || AnyFilterLabel;
+  const through = filters.maxYear || AnyFilterLabel;
+  const count = CountFilterMatches(app, filters).catalog;
+  return `${from}–${through} · ${FormatCount(count)} ${MediaLabel(app, count)} match`;
+}
+
+function ReadRecommendationYearDraft(app) {
+  const minYear = ReadRecommendationYearValue(app.Elements.recommendationMinYear);
+  const maxYear = ReadRecommendationYearValue(app.Elements.recommendationMaxYear);
+  if (Number.isNaN(minYear))
+    return { ok: false, error: InvalidStartYearMessage };
+  if (Number.isNaN(maxYear))
+    return { ok: false, error: InvalidEndYearMessage };
+  if (minYear && maxYear && minYear > maxYear)
+    return { ok: false, error: InvalidYearRangeMessage };
+  return { ok: true, filters: NormalizeTitleFilters({ ...app.State.filters, minYear, maxYear }) };
+}
+
+function ReadRecommendationYearValue(input) {
+  if (!String(input.value || "").trim())
+    return null;
+  const year = Number(input.value);
+  const minimum = Number(input.min) || 1870;
+  const maximum = Number(input.max) || 2200;
+  return Number.isInteger(year) && year >= minimum && year <= maximum ? year : Number.NaN;
+}
+
+function HaveSameRecommendationYears(current, next) {
+  const filters = NormalizeTitleFilters(current);
+  return filters.minYear === next.minYear && filters.maxYear === next.maxYear;
 }
 
 function SetFilterSaving(app, value) {
@@ -107,9 +176,9 @@ function PopulateTitleFilterDialog(app, value) {
 }
 
 function PopulateDialogCopy(app) {
-  const isTv = app.State.mediaType === "tv";
-  app.Elements.filtersTitle.textContent = `${isTv ? "TV show" : "Movie"} filters`;
-  app.Elements.filtersDescription.textContent = `Choose exactly what can appear in ${isTv ? "show" : "movie"} recommendations and the rating queue. Saved watchlist titles outside the filter stay saved.`;
+  const isTv = app.State.mediaType === TvMediaType;
+  app.Elements.filtersTitle.textContent = `${isTv ? TvShowName : "Movie"} filters`;
+  app.Elements.filtersDescription.textContent = `Choose exactly what can appear in ${isTv ? ShowLabel : MovieLabel} recommendations and the rating queue. Saved watchlist titles outside the filter stay saved.`;
 }
 
 function PopulateDialogYears(app, filters) {
@@ -137,9 +206,9 @@ function RenderDialogOptions(app, filters) {
   const counts = ReadCatalogOptionCounts(app.State.movies);
   SeedOptions(counts.countries, CommonCountries);
   SeedOptions(counts.languages, CommonLanguages);
-  RenderOptionList(app.Elements.filterGenreOptions, counts.genres, filters.includedGenres, "genre");
-  RenderOptionList(app.Elements.filterCountryOptions, counts.countries, filters.includedOriginCountries, "country");
-  RenderOptionList(app.Elements.filterLanguageOptions, counts.languages, filters.includedOriginalLanguages, "language");
+  RenderOptionList(app.Elements.filterGenreOptions, counts.genres, filters.includedGenres, GenreOptionType);
+  RenderOptionList(app.Elements.filterCountryOptions, counts.countries, filters.includedOriginCountries, CountryOptionType);
+  RenderOptionList(app.Elements.filterLanguageOptions, counts.languages, filters.includedOriginalLanguages, LanguageOptionType);
   UpdateOriginNote(app, counts.knownOrigins);
 }
 
@@ -158,7 +227,7 @@ function UpdateFilterSectionSummaries(app, filters) {
 }
 
 function SetFilterSectionSummary(element, count) {
-  element.textContent = count ? `${count} selected` : "Any";
+  element.textContent = count ? `${count} selected` : AnyFilterLabel;
 }
 
 function RenderOptionList(container, counts, selected, type) {
@@ -169,10 +238,9 @@ function RenderOptionList(container, counts, selected, type) {
 }
 
 function BuildOptions(counts, type) {
-  const names = type === "genre" ? null : DisplayNames(type);
-  return [...counts.entries()]
-    .map(([code, count]) => ({ code, count, name: ReadOptionName(names, code) }))
-    .sort((left, right) => left.name.localeCompare(right.name));
+  const names = type === GenreOptionType ? null : DisplayNames(type);
+  const options = [...counts.entries()].map(([code, count]) => ({ code, count, name: ReadOptionName(names, code) }));
+  return options.sort((left, right) => left.name.localeCompare(right.name));
 }
 
 function BuildOption(option, checked, type) {
@@ -197,7 +265,7 @@ function BuildCheckbox(code, checked, dataKey) {
 }
 
 function ReadTitleFilterForm(app) {
-  return NormalizeTitleFilters({
+  const filters = {
     minYear: app.Elements.filterMinYear.value,
     maxYear: app.Elements.filterMaxYear.value,
     includedGenres: ReadCheckedCodes(app.Elements.filterGenreOptions, "filterGenre"),
@@ -208,7 +276,8 @@ function ReadTitleFilterForm(app) {
     includedOriginalLanguages: ReadCheckedCodes(app.Elements.filterLanguageOptions, "filterLanguage"),
     excludeBollywood: app.Elements.filterBollywood.checked,
     includeUnknownOrigin: app.Elements.filterIncludeUnknown.checked
-  });
+  };
+  return NormalizeTitleFilters(filters);
 }
 
 function ReadCheckedCodes(container, key) {
@@ -267,17 +336,17 @@ function ReadYearError(filters, app) {
   const min = Number(app.Elements.filterMinYear.value);
   const max = Number(app.Elements.filterMaxYear.value);
   if (app.Elements.filterMinYear.value && !filters.minYear)
-    return "Enter a valid starting year.";
+    return InvalidStartYearMessage;
   if (app.Elements.filterMaxYear.value && !filters.maxYear)
-    return "Enter a valid ending year.";
+    return InvalidEndYearMessage;
   if (min && max && min > max)
-    return "The starting year must be before the ending year.";
+    return InvalidYearRangeMessage;
   return "";
 }
 
 function DisplayNames(type) {
   try {
-    return new Intl.DisplayNames([globalThis.navigator?.language || "en"], { type: type === "country" ? "region" : "language" });
+    return new Intl.DisplayNames([globalThis.navigator?.language || EnglishLocale], { type: type === CountryOptionType ? "region" : LanguageOptionType });
   } catch {
     return { of: (value) => value.toUpperCase() };
   }
@@ -302,7 +371,7 @@ function Capitalize(value) {
 }
 
 function MediaLabel(app, count) {
-  if (app.State.mediaType === "tv")
-    return count === 1 ? "show" : "shows";
-  return count === 1 ? "movie" : "movies";
+  if (app.State.mediaType === TvMediaType)
+    return count === 1 ? ShowLabel : "shows";
+  return count === 1 ? MovieLabel : "movies";
 }

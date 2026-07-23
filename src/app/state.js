@@ -26,7 +26,6 @@ export function BuildCheckedLiveState(status) {
     checked: true,
     configured: Boolean(status.configured),
     dryRun: Boolean(status.dryRun),
-    tmdbConfigured: Boolean(status.tmdbConfigured),
     queueCounts: status.imdbQueue?.counts || {},
     submitting: false,
     lastError: status.lastError || ""
@@ -37,9 +36,9 @@ export function BuildCheckedAiState(status) {
   return {
     checked: true,
     configured: Boolean(status.configured),
+    baseUrl: String(status.baseUrl || ""),
     model: status.model || "",
-    modelLag: Number(status.modelLag) || 2,
-    selectedModel: "",
+    hasApiKey: Boolean(status.hasApiKey),
     models: [],
     loading: false
   };
@@ -62,14 +61,20 @@ function BuildMovieState() {
     movieById: new Map(),
     queue: [],
     ratings: {},
-    recommendationQueue: [],
-    recommendationExclusions: [],
+    ...BuildRecommendationQueueState(),
     letterboxd: BuildLetterboxdState(),
     history: [],
     filters: NormalizeTitleFilters(),
     recommendationBasis: NormalizeRecommendationBasis(),
     sourceLabel: "",
     signature: ""
+  };
+}
+
+function BuildRecommendationQueueState() {
+  return {
+    recommendationQueue: [],
+    recommendationExclusions: []
   };
 }
 
@@ -88,7 +93,6 @@ function BuildLiveState() {
     checked: false,
     configured: false,
     dryRun: false,
-    tmdbConfigured: false,
     queueCounts: {},
     submitting: false,
     lastError: ""
@@ -99,9 +103,9 @@ function BuildAiState() {
   return {
     checked: false,
     configured: false,
+    baseUrl: "",
     model: "",
-    modelLag: 2,
-    selectedModel: "",
+    hasApiKey: false,
     models: [],
     loading: false
   };

@@ -1,12 +1,14 @@
-export const DefaultRecommendationBasis = Object.freeze({
-  source: "current",
+const CurrentRecommendationSource = "current";
+const DefaultRecommendationBasisValue = {
+  source: CurrentRecommendationSource,
   updatedAt: ""
-});
+};
+export const DefaultRecommendationBasis = Object.freeze(DefaultRecommendationBasisValue);
 
 export function NormalizeRecommendationBasis(value) {
   const source = typeof value === "string" ? value : value?.source;
   return {
-    source: ["current", "other", "both"].includes(source) ? source : DefaultRecommendationBasis.source,
+    source: [CurrentRecommendationSource, "other", "both"].includes(source) ? source : DefaultRecommendationBasis.source,
     updatedAt: NormalizeTimestamp(typeof value === "object" ? value?.updatedAt : "")
   };
 }

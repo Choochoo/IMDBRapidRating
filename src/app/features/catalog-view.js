@@ -5,10 +5,12 @@ import { CountRatings } from "../stats.js";
 const StreamingRefreshStates = new Map();
 const MaximumStreamingRefreshAttempts = 4;
 const StreamingRefreshDelayMilliseconds = 750;
+const IncludeStreamingAvailability = true;
 
 export class CatalogViewFeature {
   Render() {
     this.UpdateStats();
+    this.UpdateDesktopRatingControlState();
     this.Elements.sourceBadge.textContent = this.State.sourceLabel;
     this.UpdateSourceStatus();
     this.UpdateConnectionSummary(CountRatings(this.State.ratings));
@@ -17,6 +19,14 @@ export class CatalogViewFeature {
     if (!this.State.queue.length)
       return this.ShowComplete();
     this.RenderVisibleCards();
+  }
+
+  UpdateDesktopRatingControlState() {
+    const disabled = this.State.locked || !this.State.queueReady || !this.State.queue.length;
+    for (const button of this.Elements.desktopRatingButtons.querySelectorAll("button"))
+      button.disabled = disabled;
+    this.Elements.desktopNotSeen.disabled = disabled;
+    this.Elements.desktopUndo.disabled = this.State.locked || !this.State.history.length;
   }
 
   ShowQueueSynchronization() {
@@ -32,6 +42,8 @@ export class CatalogViewFeature {
     this.Elements.strip.classList.remove("rating");
     this.Elements.strip.innerHTML = visible.map((movie, index) => this.BuildCardHtml(movie, index)).join("");
     this.EnrichVisibleMovies(visible);
+    this.EnsureSocialTitleContext(visible.map((movie) => movie.ttId)).catch(() => null);
+    this.ApplySocialContextToCards();
   }
 
   BuildCardHtml(movie, index) {
@@ -41,7 +53,7 @@ export class CatalogViewFeature {
 
   EnrichVisibleMovies(movies) {
     for (const movie of movies)
-      this.EnrichTitleMetadata(movie.ttId, true);
+      this.EnrichTitleMetadata(movie.ttId);
   }
 
   EnrichTitleMetadata(ttId, includeStreaming = false) {
@@ -154,7 +166,7 @@ export class CatalogViewFeature {
   }
 
   async RefreshStreamingMetadata(ttId, refreshState = ReadStreamingRefreshState(ttId)) {
-    const metadata = await this.FetchTitleMetadata(ttId, true).catch(() => null);
+    const metadata = await this.FetchTitleMetadata(ttId, IncludeStreamingAvailability).catch(() => null);
     if (StreamingRefreshStates.get(ttId) !== refreshState)
       return;
     refreshState.inFlight = false;
@@ -190,6 +202,7 @@ export class CatalogViewFeature {
       for (const recommendation of container.querySelectorAll(selector)) {
         UpdateRecommendationPoster(recommendation, metadata);
         UpdateTrailerLink(recommendation, metadata);
+        UpdateStreamingAvailability(recommendation, metadata);
       }
   }
 }

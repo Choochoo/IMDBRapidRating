@@ -1,6 +1,15 @@
 import { ParseCsv, ToCsvRow } from "../../shared/csv.js";
 import { ToNumber } from "./util.js";
 
+const MovieMediaType = "movie";
+const TvMediaType = "tv";
+const RatedStatus = "rated";
+const ImportedStatus = "imported";
+const NotConfiguredStatus = "notConfigured";
+const PendingStatus = "pending";
+const TitleFieldName = "title";
+const YearFieldName = "year";
+
 export function BuildRatingRecord(movie, rating, status, liveConfigured) {
   return {
     status,
@@ -8,32 +17,32 @@ export function BuildRatingRecord(movie, rating, status, liveConfigured) {
     title: movie.title,
     year: movie.year || "",
     ttId: movie.ttId,
-    mediaType: movie.mediaType === "tv" ? "tv" : "movie",
+    mediaType: movie.mediaType === TvMediaType ? TvMediaType : MovieMediaType,
     at: new Date().toISOString(),
     ...InitialSubmitState(status, rating, liveConfigured)
   };
 }
 
 export function InitialSubmitState(status, rating, liveConfigured) {
-  if (status !== "rated")
+  if (status !== RatedStatus)
     return { submitStatus: "skipped", submitError: "", submittedAt: "" };
   if (!IsValidImdbRating(rating))
     return { submitStatus: "localOnly", submitError: "IMDb only accepts ratings from 1 to 10.", submittedAt: "" };
   if (!liveConfigured)
-    return { submitStatus: "notConfigured", submitError: "IMDb sign-in is required in this browser.", submittedAt: "" };
-  return { submitStatus: "pending", submitError: "", submittedAt: "" };
+    return { submitStatus: NotConfiguredStatus, submitError: "IMDb sign-in is required in this browser.", submittedAt: "" };
+  return { submitStatus: PendingStatus, submitError: "", submittedAt: "" };
 }
 
 export function CanSubmitLive(record, liveConfigured) {
   if (!record)
     return false;
-  return record.status === "rated" && liveConfigured && IsValidImdbRating(record.rating);
+  return record.status === RatedStatus && liveConfigured && IsValidImdbRating(record.rating);
 }
 
 export function IsRetryableImdbSubmit(record) {
   if (!record)
     return false;
-  const isRetryableStatus = ["failed", "notConfigured", "pending"].includes(record.submitStatus);
+  const isRetryableStatus = ["failed", NotConfiguredStatus, PendingStatus].includes(record.submitStatus);
   return IsValidRatedRecord(record) && isRetryableStatus && !IsCsvSyncFailure(record);
 }
 
@@ -48,7 +57,7 @@ export function BuildRateRequest(record) {
     title: record.title || "",
     year: record.year || "",
     at: record.at || new Date().toISOString(),
-    mediaType: record.mediaType === "tv" ? "tv" : "movie"
+    mediaType: record.mediaType === TvMediaType ? TvMediaType : MovieMediaType
   };
 }
 
@@ -57,7 +66,7 @@ export function BuildAiPreferenceProfile(records, movieById, recommendationExclu
     ratings: BuildAiRatings(records, movieById),
     exclusions: BuildAiExclusions(recommendationExclusions),
     ratingScale: "1-10",
-    fieldsSent: ["title", "year", "genres", "rating", "excludedTitle", "excludedYear"]
+    fieldsSent: [TitleFieldName, YearFieldName, "genres", "rating", "excludedTitle", "excludedYear"]
   };
 }
 
@@ -87,7 +96,7 @@ function IsValidRatedRecord(record) {
 }
 
 function IsRatedLikeRecord(record) {
-  return record.status === "rated" || record.status === "imported";
+  return record.status === RatedStatus || record.status === ImportedStatus;
 }
 
 function IsValidImdbRating(rating) {
@@ -99,9 +108,9 @@ function ReadCsvIndexes(headers) {
   return {
     constIndex: normalized.indexOf("const"),
     ratingIndex: normalized.indexOf("your rating"),
-    titleIndex: normalized.indexOf("title"),
+    titleIndex: normalized.indexOf(TitleFieldName),
     titleTypeIndex: normalized.indexOf("title type"),
-    yearIndex: normalized.indexOf("year"),
+    yearIndex: normalized.indexOf(YearFieldName),
     dateIndex: normalized.indexOf("date rated")
   };
 }
@@ -133,23 +142,23 @@ function BuildImportedRatingFromRow(row, indexes, movieById, options) {
 }
 
 function ShouldImportTitle(ttId, row, indexes, movieById, options) {
-  const mediaType = options.mediaType === "tv" ? "tv" : "movie";
+  const mediaType = options.mediaType === TvMediaType ? TvMediaType : MovieMediaType;
   if (movieById.has(ttId))
     return true;
   if (options.otherTitleIds?.has(ttId))
     return false;
   if (indexes.titleTypeIndex < 0)
-    return mediaType === "movie";
+    return mediaType === MovieMediaType;
   const titleType = String(row[indexes.titleTypeIndex] || "").toLowerCase().replace(/[^a-z]/g, "");
-  if (mediaType === "tv")
+  if (mediaType === TvMediaType)
     return titleType === "tvseries" || titleType === "tvminiseries";
-  return titleType === "movie";
+  return titleType === MovieMediaType;
 }
 
 function RemoveStaleImportedRatings(ratings, nextImported) {
   let removed = 0;
   for (const [ttId, record] of Object.entries(ratings)) {
-    if (record?.status !== "imported" || nextImported.has(ttId))
+    if (record?.status !== ImportedStatus || nextImported.has(ttId))
       continue;
     delete ratings[ttId];
     removed++;
@@ -169,7 +178,7 @@ function ApplyImportedRatings(ratings, nextImported) {
 }
 
 function ShouldKeepExistingRating(ratings, ttId) {
-  return ratings[ttId]?.status === "rated";
+  return ratings[ttId]?.status === RatedStatus;
 }
 
 function BuildImportResult(count, applied, removed, changed) {
@@ -178,14 +187,14 @@ function BuildImportResult(count, applied, removed, changed) {
 
 function BuildImportedRating(ttId, row, indexes, known, mediaType) {
   return {
-    status: "imported",
+    status: ImportedStatus,
     rating: indexes.ratingIndex >= 0 ? ToNumber(row[indexes.ratingIndex]) : null,
     title: known?.title || row[indexes.titleIndex] || "",
     year: known?.year || ToNumber(row[indexes.yearIndex]) || "",
     ttId,
-    mediaType: mediaType === "tv" ? "tv" : "movie",
+    mediaType: mediaType === TvMediaType ? TvMediaType : MovieMediaType,
     at: row[indexes.dateIndex] || new Date().toISOString(),
-    submitStatus: "imported",
+    submitStatus: ImportedStatus,
     submitError: "",
     submittedAt: ""
   };
@@ -199,7 +208,7 @@ function ExportCsvRecord(record) {
   return [
     record.ttId,
     record.title || "",
-    record.mediaType || "movie",
+    record.mediaType || MovieMediaType,
     record.year || "",
     record.rating ?? "",
     record.status,
@@ -219,10 +228,15 @@ function BuildAiRatings(records, movieById) {
 }
 
 function BuildAiExclusions(exclusions) {
-  return exclusions.map((item) => ({
+  const normalized = exclusions.map(BuildAiExclusion);
+  return normalized.filter((item) => item.title);
+}
+
+function BuildAiExclusion(item) {
+  return {
     title: String(item?.title || "").trim(),
     year: Number(item?.year) || null
-  })).filter((item) => item.title);
+  };
 }
 
 function BuildAiRating(record, movieById) {

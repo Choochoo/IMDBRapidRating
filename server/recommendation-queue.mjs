@@ -1,3 +1,5 @@
+const SpaceSeparator = " ";
+
 export function NormalizeRecommendationQueue(value) {
   const items = Array.isArray(value) ? value : [];
   const normalized = [];
@@ -15,7 +17,16 @@ export function NormalizeRecommendationItem(value) {
   if (!title)
     return null;
   const year = ReadYear(value?.year);
-  const ttId = /^tt\d+$/.test(String(value?.ttId || "").trim()) ? String(value.ttId).trim() : "";
+  const ttId = ReadRecommendationId(value?.ttId);
+  return BuildRecommendationItem(value, title, year, ttId);
+}
+
+function ReadRecommendationId(value) {
+  const ttId = String(value || "").trim();
+  return /^tt\d+$/.test(ttId) ? ttId : "";
+}
+
+function BuildRecommendationItem(value, title, year, ttId) {
   return {
     ...value,
     queueKey: RecommendationKey({ title, year, ttId }),
@@ -52,7 +63,7 @@ export function SameRecommendation(left, right) {
 }
 
 export function NormalizeTitle(value) {
-  return CleanText(value).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+  return CleanText(value).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, SpaceSeparator).trim();
 }
 
 function NormalizeWhy(value) {
@@ -80,5 +91,5 @@ function ReadTimestamp(value) {
 }
 
 function CleanText(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
+  return String(value || "").replace(/\s+/g, SpaceSeparator).trim();
 }

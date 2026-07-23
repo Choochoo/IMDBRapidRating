@@ -4,34 +4,45 @@ import path from "node:path";
 import { HasActiveTitleFilters, IsTitleAllowed, NormalizeTitleOrigin } from "../shared/title-filters.js";
 
 const Cache = new Map();
+const MovieMediaType = "movie";
+const TvMediaType = "tv";
+const Utf8Encoding = "utf8";
 
 export async function ReadMoviePool(rootPath) {
-  return await ReadTitlePool(rootPath, "movie");
+  return await ReadTitlePool(rootPath, MovieMediaType);
 }
 
-export async function ReadTitlePool(rootPath, mediaType = "movie") {
-  const fileName = mediaType === "tv" ? "shows.json" : "movies.json";
-  const filePath = path.join(rootPath, "data", fileName);
+export async function ReadTitlePool(rootPath, mediaType = MovieMediaType) {
+  const filePath = ReadTitlePoolPath(rootPath, mediaType);
   const file = await stat(filePath);
   const cached = Cache.get(filePath);
   if (cached?.modifiedAt === file.mtimeMs)
     return cached.value;
-  const raw = JSON.parse(await readFile(filePath, "utf8"));
+  return await LoadTitlePool(filePath, file.mtimeMs, mediaType);
+}
+
+function ReadTitlePoolPath(rootPath, mediaType) {
+  const fileName = mediaType === TvMediaType ? "shows.json" : "movies.json";
+  return path.join(rootPath, "data", fileName);
+}
+
+async function LoadTitlePool(filePath, modifiedAt, mediaType) {
+  const raw = JSON.parse(await readFile(filePath, Utf8Encoding));
   const titles = NormalizeTitles(raw);
   const ids = titles.map((title) => title.ttId);
-  if (!ids.length)
-    throw new Error(`The ${mediaType === "tv" ? "TV show" : "movie"} pool does not contain any valid IMDb IDs.`);
-  const value = {
-    titles,
-    ids,
-    version: ReadPoolVersion(raw.poolVersion, ids)
-  };
-  Cache.set(filePath, { modifiedAt: file.mtimeMs, value });
+  ValidateTitlePool(ids, mediaType);
+  const value = { titles, ids, version: ReadPoolVersion(raw.poolVersion, ids) };
+  Cache.set(filePath, { modifiedAt, value });
   return value;
 }
 
+function ValidateTitlePool(ids, mediaType) {
+  if (!ids.length)
+    throw new Error(`The ${mediaType === TvMediaType ? "TV show" : MovieMediaType} pool does not contain any valid IMDb IDs.`);
+}
+
 export function CalculatePoolVersion(ids) {
-  return createHash("sha256").update(ids.join("\n"), "utf8").digest("hex");
+  return createHash("sha256").update(ids.join("\n"), Utf8Encoding).digest("hex");
 }
 
 export function FilterTitlePool(pool, filters) {
@@ -43,20 +54,36 @@ export function FilterTitlePool(pool, filters) {
 }
 
 function NormalizeTitles(raw) {
-  const titles = Array.isArray(raw) ? raw : raw?.movies || raw?.shows || raw?.titles;
+  const titles = ReadTitleValues(raw);
   if (!Array.isArray(titles))
     return [];
   const seen = new Set();
   const normalized = [];
-  for (const title of titles) {
-    const ttId = String(title?.ttId || title?.tconst || title?.id || "").trim();
-    if (!/^tt\d+$/.test(ttId) || seen.has(ttId))
-      continue;
-    seen.add(ttId);
-    const year = Number(title?.year || title?.startYear) || null;
-    normalized.push({ ...title, ttId, year, ...NormalizeTitleOrigin(title) });
-  }
+  for (const title of titles)
+    AddNormalizedTitle(normalized, seen, title);
   return normalized;
+}
+
+function ReadTitleValues(raw) {
+  return Array.isArray(raw) ? raw : raw?.movies || raw?.shows || raw?.titles;
+}
+
+function AddNormalizedTitle(normalized, seen, title) {
+  const ttId = ReadTitleId(title);
+  if (!ttId || seen.has(ttId))
+    return;
+  seen.add(ttId);
+  normalized.push(NormalizeTitle(title, ttId));
+}
+
+function ReadTitleId(title) {
+  const ttId = String(title?.ttId || title?.tconst || title?.id || "").trim();
+  return /^tt\d+$/.test(ttId) ? ttId : "";
+}
+
+function NormalizeTitle(title, ttId) {
+  const year = Number(title?.year || title?.startYear) || null;
+  return { ...title, ttId, year, ...NormalizeTitleOrigin(title) };
 }
 
 function ReadPoolVersion(value, ids) {

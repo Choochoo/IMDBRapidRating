@@ -1,0 +1,444 @@
+{
+  "version": 1,
+  "command": "npm run --silent setup:screenshots",
+  "safety": [
+    "Use disposable test accounts and non-personal sample data.",
+    "Cover cookies, API keys, emails, names, and identifiers with solid opaque blocks before saving.",
+    "Never blur a secret and never place an unredacted source image in the repository.",
+    "Inspect the final image at full resolution and remove metadata before adding it."
+  ],
+  "summary": {
+    "total": 26,
+    "captured": 0,
+    "needed": 26
+  },
+  "screenshots": [
+    {
+      "flowId": "connect-imdb",
+      "flowTitle": "Connect IMDb",
+      "stepId": "sign-in-imdb",
+      "stepTitle": "Sign in to IMDb",
+      "file": "src/assets/setup/connect-imdb/01-sign-in-imdb.webp",
+      "imageSrc": "/src/assets/setup/connect-imdb/01-sign-in-imdb.webp",
+      "alt": "IMDb home page with a signed-in account",
+      "capture": "IMDb home page in desktop Chrome showing a disposable test account signed in.",
+      "redact": [
+        "Account name",
+        "Account avatar",
+        "Personal recommendations"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "connect-imdb",
+      "flowTitle": "Connect IMDb",
+      "stepId": "open-network-tools",
+      "stepTitle": "Open Network tools",
+      "file": "src/assets/setup/connect-imdb/02-open-network-tools.webp",
+      "imageSrc": "/src/assets/setup/connect-imdb/02-open-network-tools.webp",
+      "alt": "Chrome DevTools open to the Network tab beside IMDb",
+      "capture": "IMDb in desktop Chrome with DevTools docked and the Network tab selected after a refresh.",
+      "redact": [
+        "Account name",
+        "Personal page content"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "connect-imdb",
+      "flowTitle": "Connect IMDb",
+      "stepId": "select-document-request",
+      "stepTitle": "Choose the IMDb request",
+      "file": "src/assets/setup/connect-imdb/03-select-document-request.webp",
+      "imageSrc": "/src/assets/setup/connect-imdb/03-select-document-request.webp",
+      "alt": "IMDb document request selected in Chrome Network tools",
+      "capture": "Chrome Network request list with the main www.imdb.com document row selected and Headers visible.",
+      "redact": [
+        "Request identifiers containing account data",
+        "Account name"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "connect-imdb",
+      "flowTitle": "Connect IMDb",
+      "stepId": "copy-cookie-header",
+      "stepTitle": "Copy the Cookie value",
+      "file": "src/assets/setup/connect-imdb/04-copy-cookie-header.webp",
+      "imageSrc": "/src/assets/setup/connect-imdb/04-copy-cookie-header.webp",
+      "alt": "Cookie request header location in Chrome DevTools",
+      "capture": "Request Headers section with the Cookie row highlighted and its value covered by a solid redaction.",
+      "redact": [
+        "Complete Cookie header value",
+        "Account email or name",
+        "Account identifiers"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "connect-imdb",
+      "flowTitle": "Connect IMDb",
+      "stepId": "save-imdb-connection",
+      "stepTitle": "Save the connection",
+      "file": "src/assets/setup/connect-imdb/05-save-imdb-connection.webp",
+      "imageSrc": "/src/assets/setup/connect-imdb/05-save-imdb-connection.webp",
+      "alt": "Connect IMDb form in Rapid Rater",
+      "capture": "Rapid Rater IMDb connection form with a safe fake value or a fully covered cookie field.",
+      "redact": [
+        "Cookie field",
+        "Signed-in email"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "connect-openai",
+      "flowTitle": "Connect OpenAI",
+      "stepId": "create-openai-key",
+      "stepTitle": "Create an API key",
+      "file": "src/assets/setup/connect-openai/01-create-openai-key.webp",
+      "imageSrc": "/src/assets/setup/connect-openai/01-create-openai-key.webp",
+      "alt": "Create new secret key control on the OpenAI API keys page",
+      "capture": "OpenAI API keys page in desktop Chrome with Create new secret key clearly visible.",
+      "redact": [
+        "Organization name",
+        "Project name",
+        "Account email",
+        "Existing key names"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "connect-openai",
+      "flowTitle": "Connect OpenAI",
+      "stepId": "copy-openai-key",
+      "stepTitle": "Copy it now",
+      "file": "src/assets/setup/connect-openai/02-copy-openai-key.webp",
+      "imageSrc": "/src/assets/setup/connect-openai/02-copy-openai-key.webp",
+      "alt": "New OpenAI API key dialog with its copy control",
+      "capture": "New secret key dialog with the copy control visible and the complete key covered by a solid redaction.",
+      "redact": [
+        "Complete API key",
+        "Key name",
+        "Project name",
+        "Account email"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "connect-openai",
+      "flowTitle": "Connect OpenAI",
+      "stepId": "find-openai-models",
+      "stepTitle": "Find available models",
+      "file": "src/assets/setup/connect-openai/03-find-openai-models.webp",
+      "imageSrc": "/src/assets/setup/connect-openai/03-find-openai-models.webp",
+      "alt": "Rapid Rater AI settings ready to find OpenAI models",
+      "capture": "Rapid Rater AI settings with the OpenAI base URL filled in and Find models highlighted.",
+      "redact": [
+        "API key field",
+        "Signed-in email"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "connect-openai",
+      "flowTitle": "Connect OpenAI",
+      "stepId": "test-and-save-openai",
+      "stepTitle": "Test and save",
+      "file": "src/assets/setup/connect-openai/04-test-and-save-openai.webp",
+      "imageSrc": "/src/assets/setup/connect-openai/04-test-and-save-openai.webp",
+      "alt": "OpenAI model selected in Rapid Rater AI settings",
+      "capture": "Rapid Rater AI settings with a model selected and the Test and save button enabled.",
+      "redact": [
+        "API key field",
+        "Signed-in email"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "import-imdb-ratings",
+      "flowTitle": "Import IMDb ratings",
+      "stepId": "open-imdb-exports",
+      "stepTitle": "Open IMDb exports",
+      "file": "src/assets/setup/import-imdb-ratings/01-open-imdb-exports.webp",
+      "imageSrc": "/src/assets/setup/import-imdb-ratings/01-open-imdb-exports.webp",
+      "alt": "IMDb exports page for a signed-in account",
+      "capture": "IMDb exports page in desktop Chrome using a disposable account with ratings.",
+      "redact": [
+        "Account name",
+        "Account identifiers",
+        "Private list names"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "import-imdb-ratings",
+      "flowTitle": "Import IMDb ratings",
+      "stepId": "download-imdb-ratings",
+      "stepTitle": "Download your ratings",
+      "file": "src/assets/setup/import-imdb-ratings/02-download-imdb-ratings.webp",
+      "imageSrc": "/src/assets/setup/import-imdb-ratings/02-download-imdb-ratings.webp",
+      "alt": "Export control for Your ratings on IMDb",
+      "capture": "IMDb exports page with the Your ratings row and its Export control clearly highlighted.",
+      "redact": [
+        "Account name",
+        "Export identifiers",
+        "Private list names"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "import-imdb-ratings",
+      "flowTitle": "Import IMDb ratings",
+      "stepId": "choose-imdb-csv",
+      "stepTitle": "Choose the CSV",
+      "file": "src/assets/setup/import-imdb-ratings/03-choose-imdb-csv.webp",
+      "imageSrc": "/src/assets/setup/import-imdb-ratings/03-choose-imdb-csv.webp",
+      "alt": "Import IMDb CSV control in Rapid Rater",
+      "capture": "Rapid Rater import area with Import IMDb CSV highlighted before the system file picker opens.",
+      "redact": [
+        "Signed-in email"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "import-imdb-ratings",
+      "flowTitle": "Import IMDb ratings",
+      "stepId": "confirm-imdb-import",
+      "stepTitle": "You are ready",
+      "file": "src/assets/setup/import-imdb-ratings/04-confirm-imdb-import.webp",
+      "imageSrc": "/src/assets/setup/import-imdb-ratings/04-confirm-imdb-import.webp",
+      "alt": "Successful IMDb ratings import summary in Rapid Rater",
+      "capture": "Rapid Rater immediately after a successful IMDb CSV import, showing the movie and TV totals.",
+      "redact": [
+        "Signed-in email",
+        "Personally identifying rating history"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "import-letterboxd",
+      "flowTitle": "Import Letterboxd",
+      "stepId": "open-letterboxd-data",
+      "stepTitle": "Open your data settings",
+      "file": "src/assets/setup/import-letterboxd/01-open-letterboxd-data.webp",
+      "imageSrc": "/src/assets/setup/import-letterboxd/01-open-letterboxd-data.webp",
+      "alt": "Letterboxd data settings page",
+      "capture": "Letterboxd data settings page in desktop Chrome using a disposable test account.",
+      "redact": [
+        "Member name",
+        "Profile image",
+        "Account email"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "import-letterboxd",
+      "flowTitle": "Import Letterboxd",
+      "stepId": "download-letterboxd-export",
+      "stepTitle": "Download your export",
+      "file": "src/assets/setup/import-letterboxd/02-download-letterboxd-export.webp",
+      "imageSrc": "/src/assets/setup/import-letterboxd/02-download-letterboxd-export.webp",
+      "alt": "Export your data control in Letterboxd settings",
+      "capture": "Letterboxd data settings with the Export your data control and ready download clearly visible.",
+      "redact": [
+        "Member name",
+        "Export identifiers",
+        "Account email"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "import-letterboxd",
+      "flowTitle": "Import Letterboxd",
+      "stepId": "choose-letterboxd-export",
+      "stepTitle": "Choose the ZIP",
+      "file": "src/assets/setup/import-letterboxd/03-choose-letterboxd-export.webp",
+      "imageSrc": "/src/assets/setup/import-letterboxd/03-choose-letterboxd-export.webp",
+      "alt": "Import Letterboxd control in Rapid Rater Sync Movies",
+      "capture": "Rapid Rater Sync Movies page with Import Letterboxd highlighted before the system file picker opens.",
+      "redact": [
+        "Signed-in email"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "import-letterboxd",
+      "flowTitle": "Import Letterboxd",
+      "stepId": "review-letterboxd-import",
+      "stepTitle": "Review the comparison",
+      "file": "src/assets/setup/import-letterboxd/04-review-letterboxd-import.webp",
+      "imageSrc": "/src/assets/setup/import-letterboxd/04-review-letterboxd-import.webp",
+      "alt": "Letterboxd comparison summary in Rapid Rater",
+      "capture": "Rapid Rater Sync Movies after import, with non-sensitive example counts and review sections visible.",
+      "redact": [
+        "Signed-in email",
+        "Personally identifying watch history"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "rapid-rater-to-letterboxd",
+      "flowTitle": "Send Rapid Rater ratings to Letterboxd",
+      "stepId": "refresh-sync-sources",
+      "stepTitle": "Start with fresh exports",
+      "file": "src/assets/setup/rapid-rater-to-letterboxd/01-refresh-sync-sources.webp",
+      "imageSrc": "/src/assets/setup/rapid-rater-to-letterboxd/01-refresh-sync-sources.webp",
+      "alt": "Current IMDb and Letterboxd import status in Rapid Rater",
+      "capture": "Rapid Rater Sync Movies showing both source imports complete with safe example totals.",
+      "redact": [
+        "Signed-in email",
+        "Personally identifying watch history"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "rapid-rater-to-letterboxd",
+      "flowTitle": "Send Rapid Rater ratings to Letterboxd",
+      "stepId": "download-letterboxd-file",
+      "stepTitle": "Download the import file",
+      "file": "src/assets/setup/rapid-rater-to-letterboxd/02-download-letterboxd-file.webp",
+      "imageSrc": "/src/assets/setup/rapid-rater-to-letterboxd/02-download-letterboxd-file.webp",
+      "alt": "Download file to upload to Letterboxd control",
+      "capture": "Rapid Rater to Letterboxd sync section with the download control highlighted and a safe count.",
+      "redact": [
+        "Signed-in email",
+        "Personally identifying titles"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "rapid-rater-to-letterboxd",
+      "flowTitle": "Send Rapid Rater ratings to Letterboxd",
+      "stepId": "open-letterboxd-import",
+      "stepTitle": "Open Letterboxd import",
+      "file": "src/assets/setup/rapid-rater-to-letterboxd/03-open-letterboxd-import.webp",
+      "imageSrc": "/src/assets/setup/rapid-rater-to-letterboxd/03-open-letterboxd-import.webp",
+      "alt": "Letterboxd import page",
+      "capture": "Letterboxd import page before a file is chosen, using a disposable test account.",
+      "redact": [
+        "Member name",
+        "Profile image"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "rapid-rater-to-letterboxd",
+      "flowTitle": "Send Rapid Rater ratings to Letterboxd",
+      "stepId": "upload-letterboxd-file",
+      "stepTitle": "Upload the file",
+      "file": "src/assets/setup/rapid-rater-to-letterboxd/04-upload-letterboxd-file.webp",
+      "imageSrc": "/src/assets/setup/rapid-rater-to-letterboxd/04-upload-letterboxd-file.webp",
+      "alt": "CSV file selected in the Letterboxd importer",
+      "capture": "Letterboxd importer after a sanitized generated CSV is selected and before final confirmation.",
+      "redact": [
+        "Member name",
+        "Local file path",
+        "Personally identifying titles"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "rapid-rater-to-letterboxd",
+      "flowTitle": "Send Rapid Rater ratings to Letterboxd",
+      "stepId": "confirm-letterboxd-import",
+      "stepTitle": "Review and confirm",
+      "file": "src/assets/setup/rapid-rater-to-letterboxd/05-confirm-letterboxd-import.webp",
+      "imageSrc": "/src/assets/setup/rapid-rater-to-letterboxd/05-confirm-letterboxd-import.webp",
+      "alt": "Letterboxd import review and confirmation screen",
+      "capture": "Letterboxd import preview with safe sample films and the final confirmation control visible.",
+      "redact": [
+        "Member name",
+        "Personally identifying titles",
+        "Import identifiers"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "letterboxd-to-imdb",
+      "flowTitle": "Send Letterboxd ratings to IMDb",
+      "stepId": "import-current-snapshots",
+      "stepTitle": "Import both fresh exports",
+      "file": "src/assets/setup/letterboxd-to-imdb/01-import-current-snapshots.webp",
+      "imageSrc": "/src/assets/setup/letterboxd-to-imdb/01-import-current-snapshots.webp",
+      "alt": "IMDb and Letterboxd snapshots imported in Rapid Rater",
+      "capture": "Rapid Rater Sync Movies with current IMDb and Letterboxd sources and safe example totals.",
+      "redact": [
+        "Signed-in email",
+        "Personally identifying watch history"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "letterboxd-to-imdb",
+      "flowTitle": "Send Letterboxd ratings to IMDb",
+      "stepId": "review-imdb-actions",
+      "stepTitle": "Review what will be sent",
+      "file": "src/assets/setup/letterboxd-to-imdb/02-review-imdb-actions.webp",
+      "imageSrc": "/src/assets/setup/letterboxd-to-imdb/02-review-imdb-actions.webp",
+      "alt": "Letterboxd to IMDb review in Rapid Rater",
+      "capture": "Rapid Rater expanded review showing safe sample matches, a conflict, and an unmatched title.",
+      "redact": [
+        "Signed-in email",
+        "Personally identifying titles"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "letterboxd-to-imdb",
+      "flowTitle": "Send Letterboxd ratings to IMDb",
+      "stepId": "check-imdb-connection",
+      "stepTitle": "Check the IMDb connection",
+      "file": "src/assets/setup/letterboxd-to-imdb/03-check-imdb-connection.webp",
+      "imageSrc": "/src/assets/setup/letterboxd-to-imdb/03-check-imdb-connection.webp",
+      "alt": "IMDb connection status in Rapid Rater",
+      "capture": "Rapid Rater connection status and IMDb connection control, with no cookie visible.",
+      "redact": [
+        "Signed-in email",
+        "Cookie value"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    },
+    {
+      "flowId": "letterboxd-to-imdb",
+      "flowTitle": "Send Letterboxd ratings to IMDb",
+      "stepId": "queue-letterboxd-ratings",
+      "stepTitle": "Send the missing ratings",
+      "file": "src/assets/setup/letterboxd-to-imdb/04-queue-letterboxd-ratings.webp",
+      "imageSrc": "/src/assets/setup/letterboxd-to-imdb/04-queue-letterboxd-ratings.webp",
+      "alt": "Send missing ratings to IMDb control and queue status",
+      "capture": "Letterboxd to IMDb section with the send control, safe example count, and delivery status visible.",
+      "redact": [
+        "Signed-in email",
+        "Personally identifying titles",
+        "Cookie value"
+      ],
+      "lastVerified": null,
+      "status": "needed"
+    }
+  ]
+}

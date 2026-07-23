@@ -1,6 +1,7 @@
 import { Config } from "../config.js";
+import { RecommendationSortFields } from "../app-constants.js";
 import { BuildAiPreferenceProfile } from "../rating-records.js";
-import { RenderRecommendationCard, RenderRecommendationDetails, RenderRecommendationEmpty, RenderRecommendationFilteredEmpty, RenderRecommendationSkeletons } from "../rendering.js";
+import { RenderRecommendationCard, RenderRecommendationDetails, RenderRecommendationEmpty, RenderRecommendationFilteredEmpty, RenderRecommendationSkeletons, RenderRecommendationWatch } from "../rendering.js";
 import { EscapeHtml, FormatCount } from "../util.js";
 import { ReadMediaPayload } from "../../../shared/media.js";
 import { NormalizeRecommendationBasis } from "../../../shared/recommendation-basis.js";
@@ -20,9 +21,10 @@ const TvMediaType = "tv";
 export class RecommendationFeature {
   async GenerateRecommendations() {
     if (!this.State.ai.configured)
-      return this.ShowAiDialog();
+      return this.OpenAiSettings();
     const count = this.ReadRecommendationCount();
     const mediaType = this.State.mediaType;
+    this.SetRecommendationError("");
     this.PendingRecommendationCount = count;
     this.SetAiLoading(true, count);
     const payload = await this.RequestRecommendations(count).finally(() => this.SetAiLoading(false, count));
@@ -41,7 +43,7 @@ export class RecommendationFeature {
   }
 
   async RequestRecommendations(count) {
-    return await this.PostJson(Config.recommendationsUrl, await this.BuildRecommendationRequest(count), "AI recommendation request failed.");
+    return await this.PostJson(Config.recommendationsUrl, await this.BuildRecommendationRequest(count));
   }
 
   async BuildRecommendationRequest(count = this.ReadRecommendationCount()) {
@@ -50,10 +52,12 @@ export class RecommendationFeature {
     const targetProfile = BuildAiPreferenceProfile(this.State.ratings, this.State.movieById, this.State.recommendationExclusions);
     const tasteRatings = await this.BuildTasteRatings(basis, mediaType, targetProfile);
     const profile = this.BuildRecommendationProfile(targetProfile, basis, tasteRatings);
+    const socialTaste = this.ReadRecommendationSocialTaste();
     return {
       count,
       mediaType,
-      profile
+      profile,
+      socialTaste
     };
   }
 
@@ -163,21 +167,6 @@ export class RecommendationFeature {
     return String(value || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, NormalizedTitleSpace).trim();
   }
 
-  async RefreshAiModels() {
-    if (!this.State.ai.configured)
-      return;
-    const payload = await this.FetchJson(Config.aiModelsUrl, {});
-    this.ApplyAiModelFeed(payload);
-  }
-
-  ApplyAiModelFeed(payload) {
-    this.State.ai.model = payload.explicitModel || "";
-    this.State.ai.selectedModel = payload.selectedModel || "";
-    this.State.ai.models = Array.isArray(payload.models) ? payload.models : [];
-    this.State.ai.modelLag = Number(payload.modelLag) || this.State.ai.modelLag;
-    this.UpdateAiControls();
-  }
-
   SetAiLoading(value, count = this.PendingRecommendationCount) {
     this.State.ai.loading = value;
     this.SetAiControlsDisabled(value);
@@ -239,9 +228,9 @@ export class RecommendationFeature {
     const ratingQueueChanged = this.RemoveWishlistedMoviesFromRatingQueue();
     const added = Number(payload.addedCount) || 0;
     const total = this.State.recommendationQueue.length;
-    const summary = payload.summary ? ` ${payload.summary}` : "";
     const label = this.ReadRecommendationPickLabel(added);
-    this.SetRecommendationStatus(`Added ${FormatCount(added)} new ${label}. ${FormatCount(total)} saved in your watchlist.${summary}`);
+    this.SetRecommendationStatus(`Added ${FormatCount(added)} new ${label}. ${FormatCount(total)} saved in your watchlist.`);
+    this.ShowToast(`Added <strong>${FormatCount(added)}</strong> new ${label} to your watchlist.`);
     this.RenderRecommendationQueue();
     if (ratingQueueChanged)
       this.Render();
@@ -254,12 +243,14 @@ export class RecommendationFeature {
     this.Elements.recommendationGrid.setAttribute(AriaBusyAttribute, "false");
     this.Elements.recommendationGrid.innerHTML = this.BuildRecommendationQueueHtml(items);
     this.UpdateRecommendationLibraryCount(items.length);
+    this.EnsureSocialTitleContext(this.State.recommendationQueue.map((item) => item.ttId)).catch(() => null);
+    this.ApplySocialContextToCards();
     for (const item of items)
       this.EnrichTitleMetadata(item.ttId);
   }
 
   ReadVisibleRecommendations() {
-    const visible = this.State.recommendationQueue.filter((item) => IsTitleAllowed(item, this.State.filters));
+    const visible = this.State.recommendationQueue.filter((item) => IsTitleAllowed(item, this.State.filters) && this.IsSocialRecommendationVisible(item));
     return this.SortRecommendations(visible);
   }
 
@@ -272,7 +263,8 @@ export class RecommendationFeature {
   }
 
   BuildRecommendationCards(items) {
-    return items.map((item, index) => RenderRecommendationCard(item, index)).join("");
+    const sortField = this.Elements.recommendationSort.value || RecommendationSortFields.addedAt;
+    return items.map((item, index) => RenderRecommendationCard(item, index, sortField)).join("");
   }
 
   SortRecommendations(items) {
@@ -288,7 +280,7 @@ export class RecommendationFeature {
 
   CompareRecommendationField(left, right) {
     const field = this.Elements.recommendationSort.value;
-    if (field === "title")
+    if (field === RecommendationSortFields.title)
       return this.CompareRecommendationTitles(left, right);
     const leftValue = this.ReadRecommendationSortNumber(left, field);
     const rightValue = this.ReadRecommendationSortNumber(right, field);
@@ -296,9 +288,9 @@ export class RecommendationFeature {
   }
 
   ReadRecommendationSortNumber(item, field) {
-    if (field === "year")
+    if (field === RecommendationSortFields.year)
       return Number(item?.year) || 0;
-    if (field === "imdbRating")
+    if (field === RecommendationSortFields.imdbRating)
       return Number(item?.imdbRating) || 0;
     const timestamp = Date.parse(String(item?.addedAt || ""));
     return Number.isFinite(timestamp) ? timestamp : 0;
@@ -309,7 +301,7 @@ export class RecommendationFeature {
   }
 
   HandleRecommendationSortChange() {
-    this.RecommendationSortDescending = this.Elements.recommendationSort.value !== "title";
+    this.RecommendationSortDescending = this.Elements.recommendationSort.value !== RecommendationSortFields.title;
     this.UpdateRecommendationSortDirection();
     this.RenderRecommendationQueue();
   }
@@ -337,10 +329,23 @@ export class RecommendationFeature {
     const item = this.FindRecommendationFromElement(button);
     if (!item)
       return;
-    this.RecommendationDetailTrigger = button;
-    this.Elements.recommendationDetailsContent.innerHTML = RenderRecommendationDetails(item);
-    this.Elements.recommendationDetails.hidden = false;
+    this.OpenRecommendationDialog(button, RenderRecommendationDetails(item));
     this.EnrichTitleMetadata(item.ttId);
+    this.ApplySocialContextToCards();
+  }
+
+  ShowRecommendationWatch(button) {
+    const item = this.FindRecommendationFromElement(button);
+    if (!item)
+      return;
+    this.OpenRecommendationDialog(button, RenderRecommendationWatch(item, this.State.metadata[item.ttId]));
+    this.EnrichTitleMetadata(item.ttId, true);
+  }
+
+  OpenRecommendationDialog(trigger, content) {
+    this.RecommendationDetailTrigger = trigger;
+    this.Elements.recommendationDetailsContent.innerHTML = content;
+    this.Elements.recommendationDetails.hidden = false;
     this.Elements.recommendationDetailsClose.focus();
   }
 
@@ -407,13 +412,20 @@ export class RecommendationFeature {
   }
 
   NormalizeRecommendationQueueItem(item) {
-    const title = this.ReadRecommendationTitle(item);
+    const ttId = this.ReadRecommendationTtId(item);
+    const movie = this.State?.movieById?.get?.(ttId) || {};
+    const title = this.ReadRecommendationTitle(item, movie);
     if (!title)
       return null;
-    const year = Number(item?.year) || null;
+    const year = Number(item?.year || movie.year) || null;
+    return this.BuildNormalizedRecommendationQueueItem(item, movie, ttId, title, year);
+  }
+
+  BuildNormalizedRecommendationQueueItem(item, movie, ttId, title, year) {
     return {
+      ...movie,
       ...item,
-      ttId: this.ReadRecommendationTtId(item),
+      ttId,
       title,
       year,
       queueKey: String(item?.queueKey || this.RecommendationExclusionKey({ title, year }))
@@ -458,14 +470,20 @@ export class RecommendationFeature {
   }
 
   RecommendationQueueSignature(value) {
-    return this.NormalizeRecommendationQueue(value)
-      .map((item) => `${item.queueKey}|${item.addedAt || ""}`)
-      .join("\n");
+    return this.NormalizeRecommendationQueue(value).map((item) => `${item.queueKey}|${item.addedAt || ""}`).join("\n");
   }
 
   ShowRecommendationError(message) {
     this.SetAiLoading(false);
     this.RenderRecommendationQueue();
-    this.SetRecommendationStatus(message || "Could not generate recommendations.");
+    const error = message || "Could not generate recommendations.";
+    this.SetRecommendationStatus(error);
+    this.SetRecommendationError(error);
+    this.Elements.recommendationGenerator.open = true;
+  }
+
+  SetRecommendationError(message) {
+    this.Elements.recommendationGeneratorError.textContent = message;
+    this.Elements.recommendationGeneratorError.hidden = !message;
   }
 }

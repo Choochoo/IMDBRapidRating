@@ -4,6 +4,10 @@ import path from "node:path";
 import { ParseCsv, ToCsvRow } from "../shared/csv.js";
 import { BuildUserDataPath, EnsureUserDataParent, MigrateLegacyFile } from "./user-data.mjs";
 
+const TextEncoding = "utf8";
+const Newline = "\n";
+const TvMediaType = "tv";
+
 export const RatingsCsvMaxBytes = 10 * 1024 * 1024;
 
 const RatingsCsvFile = "imdb-ratings.csv";
@@ -13,7 +17,7 @@ export function ReadSavedRatingsCsv(rootPath) {
   const filePath = BuildRatingsCsvPath(rootPath);
   if (!existsSync(filePath))
     return Fail(404, "RATINGS_CSV_MISSING", "No saved IMDb ratings CSV exists yet.");
-  const csv = readFileSync(filePath, "utf8");
+  const csv = readFileSync(filePath, TextEncoding);
   return Ok({ csv, ...BuildCsvStatus(csv) });
 }
 
@@ -70,7 +74,7 @@ function ValidateRatingsCsv(csv) {
 function ReadExistingOrDefaultCsv(rootPath) {
   const filePath = BuildRatingsCsvPath(rootPath);
   if (existsSync(filePath))
-    return readFileSync(filePath, "utf8");
+    return readFileSync(filePath, TextEncoding);
   return `${ToCsvRow(DefaultHeaders)}\n`;
 }
 
@@ -84,7 +88,7 @@ function BuildUpsertedCsv(csv, record) {
     UpdateCsvRow(existing, indexes, record);
   else
     dataRows.push(BuildCsvRow(headers, indexes, record));
-  return `${[headers, ...dataRows].map(ToCsvRow).join("\n")}\n`;
+  return `${[headers, ...dataRows].map(ToCsvRow).join(Newline)}\n`;
 }
 
 function BuildRemovedCsv(csv, ttId) {
@@ -93,7 +97,7 @@ function BuildRemovedCsv(csv, ttId) {
   const indexes = BuildHeaderIndexes(headers);
   const dataRows = NormalizeDataRows(rows.slice(1), headers.length);
   const keptRows = dataRows.filter((row) => row[indexes.constIndex] !== ttId);
-  return `${[headers, ...keptRows].map(ToCsvRow).join("\n")}\n`;
+  return `${[headers, ...keptRows].map(ToCsvRow).join(Newline)}\n`;
 }
 
 function EnsureHeaders(headers) {
@@ -146,7 +150,7 @@ function UpdateCsvRow(row, indexes, record) {
   SetCsvValue(row, indexes.ratingIndex, record.rating);
   SetCsvValue(row, indexes.dateIndex, FormatCsvDate(record.at));
   SetCsvValue(row, indexes.titleIndex, record.title);
-  SetCsvValue(row, indexes.titleTypeIndex, record.mediaType === "tv" ? "TV Series" : "Movie");
+  SetCsvValue(row, indexes.titleTypeIndex, record.mediaType === TvMediaType ? "TV Series" : "Movie");
   SetCsvValue(row, indexes.yearIndex, record.year);
 }
 
@@ -178,7 +182,7 @@ function BuildValidRatingRecord(record, ttId, rating) {
     ttId,
     rating,
     title: String(record?.title || ""),
-    mediaType: record?.mediaType === "tv" ? "tv" : "movie",
+    mediaType: record?.mediaType === TvMediaType ? TvMediaType : "movie",
     year: record?.year || "",
     at: record?.at || new Date().toISOString()
   };
@@ -194,7 +198,7 @@ function FormatCsvDate(value) {
 async function WriteRatingsCsv(rootPath, csv) {
   const filePath = BuildRatingsCsvPath(rootPath);
   EnsureUserDataParent(filePath);
-  await writeFile(filePath, csv, "utf8");
+  await writeFile(filePath, csv, TextEncoding);
 }
 
 function BuildCsvStatus(csv) {

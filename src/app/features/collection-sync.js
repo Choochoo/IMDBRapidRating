@@ -99,10 +99,9 @@ export class CollectionSyncFeature {
   RenderSyncConflicts(conflicts) {
     if (!conflicts.length)
       return "<li>No conflicts.</li>";
-    return conflicts
-      .slice(0, SyncPreviewLimit)
-      .map((item) => this.RenderSyncConflict(item))
-      .join("");
+    const preview = conflicts.slice(0, SyncPreviewLimit);
+    const rendered = preview.map((item) => this.RenderSyncConflict(item));
+    return rendered.join("");
   }
 
   RenderSyncConflict(item) {
@@ -113,10 +112,9 @@ export class CollectionSyncFeature {
   RenderSyncUnmatched(items) {
     if (!items.length)
       return "<li>No unmatched rated titles.</li>";
-    return items
-      .slice(0, SyncPreviewLimit)
-      .map((item) => this.RenderSyncUnmatchedItem(item))
-      .join("");
+    const preview = items.slice(0, SyncPreviewLimit);
+    const rendered = preview.map((item) => this.RenderSyncUnmatchedItem(item));
+    return rendered.join("");
   }
 
   RenderSyncUnmatchedItem(item) {

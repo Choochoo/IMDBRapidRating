@@ -1,7 +1,18 @@
 import { EscapeHtml, FormatCount } from "./util.js";
 import { IsCsvSyncFailure } from "./rating-records.js";
+import { RecommendationSortFields, TvMediaType } from "./app-constants.js";
 
-export const MissingSynopsis = "To see the synopsis, set up a TMDB key.";
+export const MissingSynopsis = "No synopsis is available for this title.";
+export const MissingStreamingAvailability = "No watching options are available for this title.";
+const MetaBadgeClass = "badge rounded-pill text-bg-dark border";
+const HrefAttribute = "href";
+const MetadataSeparator = " · ";
+const PosterImageClass = "poster-image";
+const RecommendationSortValueClass = "recommendation-tile-sort-value";
+const RecommendationSortValueClassAttribute = ` class="${RecommendationSortValueClass}"`;
+const HiddenAttribute = " hidden";
+const UntitledLabel = "Untitled";
+const SpaceSeparator = " ";
 
 export function RenderCard(movie, index, metadata) {
   const tone = ToneFromId(movie.ttId);
@@ -15,16 +26,23 @@ export function UpdatePoster(card, metadata) {
   const poster = card.querySelector(".poster");
   if (!poster || !metadata.posterUrl)
     return;
-  poster.classList.add("has-image");
-  poster.innerHTML = `<img class="poster-image" src="${EscapeHtml(metadata.posterUrl)}" alt="">`;
+  UpdatePosterImage(poster, metadata.posterUrl, PosterImageClass, false);
 }
 
 export function UpdateRecommendationPoster(card, metadata) {
   const poster = card.querySelector(".recommendation-poster");
   if (!poster || !metadata.posterUrl)
     return;
+  UpdatePosterImage(poster, metadata.posterUrl, "recommendation-poster-image", true);
+}
+
+function UpdatePosterImage(poster, posterUrl, className, lazy) {
   poster.classList.add("has-image");
-  poster.innerHTML = `<img src="${EscapeHtml(metadata.posterUrl)}" alt="" loading="lazy">`;
+  const image = poster.querySelector(`.${className}`);
+  if (image)
+    return image.setAttribute("src", posterUrl);
+  const loading = lazy ? ` loading="lazy"` : "";
+  poster.insertAdjacentHTML("afterbegin", `<img class="${className}" src="${EscapeHtml(posterUrl)}" alt=""${loading}>`);
 }
 
 export function UpdateSynopsis(card, metadata) {
@@ -41,7 +59,7 @@ export function UpdateActors(card, metadata) {
   cast.hidden = actors.length === 0;
   const names = cast.querySelector("span");
   if (names)
-    names.textContent = actors.join(" · ");
+    names.textContent = actors.join(MetadataSeparator);
 }
 
 export function UpdateTrailerLink(card, metadata) {
@@ -51,9 +69,9 @@ export function UpdateTrailerLink(card, metadata) {
   const url = ReadTrailerUrl(metadata);
   link.hidden = !url;
   if (url)
-    link.setAttribute("href", url);
+    link.setAttribute(HrefAttribute, url);
   else
-    link.removeAttribute("href");
+    link.removeAttribute(HrefAttribute);
 }
 
 export function UpdateSeriesDetails(card, movie, metadata) {
@@ -66,8 +84,8 @@ export function UpdateStreamingAvailability(card, metadata) {
   const container = card.querySelector("[data-streaming-availability]");
   if (!container)
     return;
-  const content = RenderStreamingAvailabilityContent(metadata?.streamingAvailability);
-  container.hidden = !content;
+  const content = RenderStreamingAvailabilityContent(metadata?.streamingAvailability) || RenderStreamingEmpty();
+  container.hidden = false;
   container.innerHTML = content;
 }
 
@@ -78,41 +96,41 @@ export function RenderFailure(record) {
   return `<li><span>${title}</span>${details}<em>${error}</em></li>`;
 }
 
-export function RenderModelOptions(aiState) {
-  const label = EscapeHtml(aiState.selectedModel || "loading");
-  const options = [`<option value="">Auto (${label})</option>`];
-  if (ShouldRenderExplicitModel(aiState))
-    options.push(RenderModelOption({ id: aiState.model }));
-  for (const model of aiState.models)
-    options.push(RenderModelOption(model));
-  return options.join("");
-}
-
-export function RenderRecommendationCard(item, index = 0) {
-  const title = EscapeHtml(item.title || "Untitled");
+export function RenderRecommendationCard(item, index = 0, sortField = RecommendationSortFields.addedAt) {
+  const title = EscapeHtml(item.title || UntitledLabel);
   const tone = ToneFromId(item.ttId || item.title || String(index));
   const label = `Open details for ${title}`;
-  const content = `<span class="recommendation-tile-copy"><strong>${title}</strong>${RenderRecommendationTileFacts(item)}</span>`;
-  return `<article class="recommendation-card" style="--card-index:${index};--tone:${tone}"${RenderRecommendationData(item)}><button type="button" class="recommendation-tile-button" data-recommendation-details aria-label="${label}">${RenderRecommendationPoster(item)}${content}</button></article>`;
+  const content = `<span class="recommendation-tile-copy"><strong${RenderRecommendationTitleClass(sortField)}>${title}</strong>${RenderRecommendationTileFacts(item, sortField)}</span>`;
+  const poster = `<div class="recommendation-poster-stack"><button type="button" class="recommendation-tile-button" data-recommendation-details aria-label="${label}">${RenderRecommendationPoster(item)}</button><button type="button" class="recommendation-watch-button btn btn-primary" data-recommendation-watch aria-label="Where to Watch for ${title}">Where to Watch</button></div>`;
+  return `<article class="recommendation-card" style="--card-index:${index};--tone:${tone}"${RenderRecommendationData(item)}>${poster}${content}</article>`;
 }
 
 export function RenderRecommendationDetails(item) {
-  const title = EscapeHtml(item.title || "Untitled");
-  const heading = `<h2 id="recommendation-details-title">${title}${RenderRecommendationYear(item)}</h2>`;
+  const heading = RenderRecommendationHeading(item);
   const kicker = `<div class="recommendation-card-kicker"><span>Saved to watchlist</span><span>${FormatRelativeDate(item.addedAt)}</span></div>`;
   const body = `${kicker}${heading}${RenderRecommendationGenres(item)}${RenderRecommendationWhy(item)}${RenderRecommendationActions(item)}`;
   return `<article class="recommendation-details-card"${RenderRecommendationData(item)}>${RenderRecommendationPoster(item)}<div class="recommendation-card-body d-flex flex-column">${body}</div></article>`;
 }
 
+export function RenderRecommendationWatch(item, metadata = {}) {
+  const heading = RenderRecommendationHeading(item);
+  const body = `<span class="recommendation-kicker">Watching options</span>${heading}${RenderRecommendationStreaming(metadata)}`;
+  return `<article class="recommendation-watch-dialog-card"${RenderRecommendationData(item)}>${body}</article>`;
+}
+
 export function RenderRecommendationSkeletons(count = 9) {
-  return Array.from({ length: count }, (_, index) => `
+  return Array.from({ length: count }, (_, index) => RenderRecommendationSkeleton(index)).join("");
+}
+
+function RenderRecommendationSkeleton(index) {
+  return `
     <article class="recommendation-card recommendation-skeleton" aria-hidden="true" style="--card-index:${index}">
       <div class="recommendation-poster skeleton-block"></div>
       <div class="recommendation-tile-copy">
         <div class="skeleton-line skeleton-title"></div>
         <div class="skeleton-line skeleton-short"></div>
       </div>
-    </article>`).join("");
+    </article>`;
 }
 
 export function RenderRecommendationEmpty() {
@@ -146,18 +164,29 @@ export function ToneFromId(ttId) {
 function RenderCardBody(movie, index, metadata) {
   const synopsis = EscapeHtml(metadata.synopsis || "Loading synopsis...");
   const title = `<h2 class="title">${EscapeHtml(movie.title)}</h2>`;
-  const series = movie.mediaType === "tv" ? `<div class="series-details">${RenderSeriesDetailsContent(movie, metadata)}</div>` : "";
-  const streaming = index === 0 ? RenderStreamingAvailability(metadata.streamingAvailability) : "";
-  const body = `${RenderMovieId(movie)}${title}${series}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>${streaming}`;
+  const series = movie.mediaType === TvMediaType ? `<div class="series-details">${RenderSeriesDetailsContent(movie, metadata)}</div>` : "";
+  const body = `${RenderMovieId(movie)}${title}${series}${RenderActors(metadata)}<p class="synopsis">${synopsis}</p>`;
   const wishlist = index === 0 ? `<button type="button" class="movie-wishlist-action btn btn-primary" data-add-active-to-wishlist><span aria-hidden="true">&#9734;</span> Add to watchlist</button>` : "";
   const trailer = index === 0 ? RenderTrailerLink(metadata, "movie-trailer-link") : "";
   const actions = index === 0 ? `<div class="movie-card-actions d-grid">${trailer}${wishlist}</div>` : "";
   return `<div class="movie-body">${body}<div class="meta d-flex flex-wrap">${RenderMeta(movie)}</div>${actions}</div>`;
 }
 
+function RenderRecommendationStreaming(metadata) {
+  if (!metadata.streamingRequested)
+    return RenderStreamingLoading();
+  const content = RenderStreamingAvailabilityContent(metadata.streamingAvailability) || RenderStreamingEmpty();
+  return `<section class="streaming-availability" data-streaming-availability>${content}</section>`;
+}
+
+function RenderStreamingLoading() {
+  const heading = `<div class="streaming-heading"><div><span>Where to watch</span></div><span class="streaming-refreshing">Loading</span></div>`;
+  return `<section class="streaming-availability" data-streaming-availability>${heading}<p class="streaming-empty">Checking streaming, rental, and purchase options…</p></section>`;
+}
+
 export function RenderStreamingAvailability(availability) {
   const content = RenderStreamingAvailabilityContent(availability);
-  const hidden = content ? "" : " hidden";
+  const hidden = content ? "" : HiddenAttribute;
   return `<section class="streaming-availability" data-streaming-availability${hidden}>${content}</section>`;
 }
 
@@ -167,8 +196,12 @@ function RenderStreamingAvailabilityContent(availability) {
   const country = /^[A-Z]{2}$/.test(String(availability.country || "")) ? availability.country : "US";
   const providers = Array.isArray(availability.providers) ? availability.providers : [];
   const groups = RenderStreamingProviderGroups(providers);
-  const empty = groups ? "" : `<p class="streaming-empty">No watching options are currently listed.</p>`;
+  const empty = groups ? "" : RenderStreamingEmpty();
   return `${RenderStreamingHeading(country, availability)}${groups}${empty}${RenderStreamingFooter(availability.watchUrl)}`;
+}
+
+function RenderStreamingEmpty() {
+  return `<p class="streaming-empty">${MissingStreamingAvailability}</p>`;
 }
 
 function RenderStreamingProviderGroups(providers) {
@@ -178,8 +211,8 @@ function RenderStreamingProviderGroups(providers) {
     RenderStreamingProviderGroup("With ads", "ads", providers),
     RenderStreamingProviderGroup("Rent", "rent", providers),
     RenderStreamingProviderGroup("Buy", "buy", providers)
-  ].filter(Boolean).join("");
-  return groups;
+  ];
+  return groups.filter(Boolean).join("");
 }
 
 function RenderStreamingHeading(country, availability) {
@@ -205,7 +238,7 @@ function RenderStreamingProviderGroup(label, type, providers) {
 }
 
 function RenderStreamingProvider(provider) {
-  const rawName = String(provider.name || "").replace(/\s+/g, " ").trim();
+  const rawName = String(provider.name || "").replace(/\s+/g, SpaceSeparator).trim();
   const name = EscapeHtml(rawName);
   const logoUrl = BuildProviderLogoUrl(provider.logoPath);
   const logo = logoUrl ? `<img src="${EscapeHtml(logoUrl)}" alt="" loading="lazy">` : `<span class="streaming-provider-fallback" aria-hidden="true">${EscapeHtml(rawName.slice(0, 1))}</span>`;
@@ -214,7 +247,11 @@ function RenderStreamingProvider(provider) {
 
 function BuildProviderLogoUrl(value) {
   const path = String(value || "").trim();
-  return /^\/[a-z0-9._/-]+$/i.test(path) && !path.includes("..") ? `https://image.tmdb.org/t/p/w92${path}` : "";
+  const hasSupportedCharacters = /^\/[a-z0-9._/-]+$/i.test(path);
+  const hasParentTraversal = path.includes("..");
+  if (!hasSupportedCharacters || hasParentTraversal)
+    return "";
+  return `https://image.tmdb.org/t/p/w92${path}`;
 }
 
 function RenderSeriesDetailsContent(show, metadata) {
@@ -234,20 +271,17 @@ function RenderSeriesDetailsContent(show, metadata) {
 
 function RenderActors(metadata) {
   const actors = ReadActors(metadata);
-  const hidden = actors.length ? "" : " hidden";
-  return `<p class="movie-cast"${hidden}><strong>Starring</strong><span>${EscapeHtml(actors.join(" · "))}</span></p>`;
+  const hidden = actors.length ? "" : HiddenAttribute;
+  return `<p class="movie-cast"${hidden}><strong>Starring</strong><span>${EscapeHtml(actors.join(MetadataSeparator))}</span></p>`;
 }
 
 function ReadActors(metadata) {
-  return (Array.isArray(metadata?.actors) ? metadata.actors : [])
-    .map((actor) => String(actor || "").replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-    .slice(0, 3);
+  return (Array.isArray(metadata?.actors) ? metadata.actors : []).map((actor) => String(actor || "").replace(/\s+/g, SpaceSeparator).trim()).filter(Boolean).slice(0, 3);
 }
 
 function RenderTrailerLink(metadata, className) {
   const url = ReadTrailerUrl(metadata);
-  const hidden = url ? "" : " hidden";
+  const hidden = url ? "" : HiddenAttribute;
   const href = url ? ` href="${EscapeHtml(url)}"` : "";
   return `<a class="${className} btn btn-outline-info" data-trailer-link${href} target="_blank" rel="noopener noreferrer"${hidden}><span aria-hidden="true">&#9654;</span> Watch trailer</a>`;
 }
@@ -272,14 +306,14 @@ function RenderPoster(movie, metadata) {
   const year = EscapeHtml(movie.year || "");
   if (!metadata.posterUrl)
     return `<div class="poster" data-year="${year}"></div>`;
-  const image = `<img class="poster-image" src="${EscapeHtml(metadata.posterUrl)}" alt="">`;
+  const image = `<img class="${PosterImageClass}" src="${EscapeHtml(metadata.posterUrl)}" alt="">`;
   return `<div class="poster has-image" data-year="${year}">${image}</div>`;
 }
 
 function RenderMeta(movie) {
   const rating = RenderRatingPill(movie);
-  const votes = movie.numVotes ? `<span class="badge rounded-pill text-bg-dark border">${FormatCount(movie.numVotes)} votes</span>` : "";
-  const runtime = movie.mediaType !== "tv" && movie.runtimeMinutes ? `<span class="badge rounded-pill text-bg-dark border">${movie.runtimeMinutes} min</span>` : "";
+  const votes = movie.numVotes ? `<span class="${MetaBadgeClass}">${FormatCount(movie.numVotes)} votes</span>` : "";
+  const runtime = movie.mediaType !== TvMediaType && movie.runtimeMinutes ? `<span class="${MetaBadgeClass}">${movie.runtimeMinutes} min</span>` : "";
   const genres = movie.genres.slice(0, 3).map((genre) => RenderGenrePill(genre)).join("");
   return `${rating}${votes}${runtime}${genres}`;
 }
@@ -287,21 +321,11 @@ function RenderMeta(movie) {
 function RenderRatingPill(movie) {
   if (!movie.imdbRating)
     return "";
-  return `<span class="badge rounded-pill text-bg-dark border">${EscapeHtml(movie.imdbRating.toFixed(1))} IMDb</span>`;
+  return `<span class="${MetaBadgeClass}">${EscapeHtml(movie.imdbRating.toFixed(1))} IMDb</span>`;
 }
 
 function FailureKind(record) {
   return IsCsvSyncFailure(record) ? "CSV sync" : "IMDb retry";
-}
-
-function ShouldRenderExplicitModel(aiState) {
-  const ids = aiState.models.map((model) => model.id);
-  return aiState.model && !ids.includes(aiState.model);
-}
-
-function RenderModelOption(model) {
-  const id = EscapeHtml(model.id);
-  return `<option value="${id}">${id}</option>`;
 }
 
 function RenderRecommendationGenres(item) {
@@ -310,9 +334,29 @@ function RenderRecommendationGenres(item) {
   return `<div class="meta d-flex flex-wrap">${pills}</div>`;
 }
 
-function RenderRecommendationTileFacts(item) {
-  const year = item.year ? `<span>${EscapeHtml(item.year)}</span>` : "";
-  return `<small>${year}<span>${FormatRelativeDate(item.addedAt)}</span></small>`;
+function RenderRecommendationTileFacts(item, sortField) {
+  const yearClass = sortField === RecommendationSortFields.year ? RecommendationSortValueClassAttribute : "";
+  const year = item.year ? `<span${yearClass}>${EscapeHtml(item.year)}</span>` : "";
+  return `<small>${year}${RenderRecommendationSortValue(item, sortField)}</small>`;
+}
+
+function RenderRecommendationSortValue(item, sortField) {
+  if (sortField === RecommendationSortFields.imdbRating)
+    return `<span class="${RecommendationSortValueClass}">${FormatRecommendationRating(item.imdbRating)}</span>`;
+  if (sortField !== RecommendationSortFields.addedAt)
+    return "";
+  return `<span class="${RecommendationSortValueClass}">${FormatRelativeDate(item.addedAt)}</span>`;
+}
+
+function RenderRecommendationTitleClass(sortField) {
+  return sortField === RecommendationSortFields.title ? RecommendationSortValueClassAttribute : "";
+}
+
+function FormatRecommendationRating(value) {
+  const rating = Number(value);
+  if (!Number.isFinite(rating) || rating <= 0)
+    return "Unrated";
+  return `${rating.toFixed(1)} IMDb`;
 }
 
 function RenderRecommendationPoster(item) {
@@ -328,8 +372,9 @@ function RenderRecommendationRating(item) {
 
 function RenderRecommendationActions(item) {
   const exclusion = `<button type="button" class="recommendation-exclusion btn btn-sm btn-outline-secondary" data-recommendation-exclusion>Don't recommend again</button>`;
+  const share = `<button type="button" class="btn btn-sm btn-primary" data-share-recommendation>Share with friends</button>`;
   const trailer = RenderTrailerLink({}, "recommendation-trailer-link");
-  return `<div class="recommendation-card-actions d-grid">${RenderRecommendationRating(item)}${trailer}${exclusion}</div>`;
+  return `<div class="recommendation-card-actions d-grid">${RenderRecommendationRating(item)}${trailer}${share}${exclusion}</div>`;
 }
 
 function RenderRatingButtons() {
@@ -352,6 +397,11 @@ function RenderRecommendationData(item) {
   return ` data-recommendation-item data-ttid="${ttId}" data-title="${title}" data-year="${year}"`;
 }
 
+function RenderRecommendationHeading(item) {
+  const title = EscapeHtml(item.title || UntitledLabel);
+  return `<h2 id="recommendation-details-title">${title}${RenderRecommendationYear(item)}</h2>`;
+}
+
 function RenderRecommendationWhy(item) {
   const why = item.why || {};
   const match = `<p>${EscapeHtml(why.tasteMatch || "")}</p>`;
@@ -365,7 +415,7 @@ function RenderRatingEvidence(why) {
 }
 
 function RenderGenrePill(genre) {
-  return `<span class="badge rounded-pill text-bg-dark border">${EscapeHtml(genre)}</span>`;
+  return `<span class="${MetaBadgeClass}">${EscapeHtml(genre)}</span>`;
 }
 
 function FormatRelativeDays(value) {

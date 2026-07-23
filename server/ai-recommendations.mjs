@@ -1,18 +1,35 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { ResolveOpenAiModel } from "./openai-models.mjs";
+import { RequestAiChat } from "./ai-client.mjs";
 import { NormalizeRecommendationQueue, SameRecommendation } from "./recommendation-queue.mjs";
 import { HasActiveTitleFilters, IsTitleAllowed, NormalizeTitleFilters, NormalizeTitleOrigin } from "../shared/title-filters.js";
 
-const OpenAiResponsesUrl = "https://api.openai.com/v1/responses";
 const MaximumRecommendationCount = 99;
 const RecommendationAttempts = 3;
+const MovieMediaType = "movie";
+const TvMediaType = "tv";
+const CombinedTasteValue = "both";
+const FriendsTasteValue = "friends";
+const FriendAudience = "friend";
+const CurrentTasteValue = "current";
+const MineTasteValue = "mine";
+const OtherTasteValue = "other";
+const MoviesLabel = "movies";
+const TvLabel = "TV";
+const TvSeriesLabel = "TV series";
+const SchemaArrayType = "array";
+const SchemaObjectType = "object";
+const SpaceSeparator = " ";
+const SchemaStringType = "string";
+const TitleFieldName = "title";
+const YearFieldName = "year";
+const GenresFieldName = "genres";
 
 export function GetAiStatus() {
   return {
     configured: false,
     model: "",
-    modelLag: 2,
+    baseUrl: "",
     endpoint: "/api/ai/recommendations"
   };
 }
@@ -21,8 +38,8 @@ export async function GenerateAiRecommendations(rootPath, options = {}) {
   const count = ReadRecommendationCount(options.count);
   if (!count)
     return Fail(422, "INVALID_RECOMMENDATION_COUNT", "Choose between 1 and 99 recommendations.");
-  if (!ReadOpenAiApiKey(options))
-    return Fail(422, "OPENAI_KEY_MISSING", "OpenAI API key is not configured.");
+  if (!String(options.baseUrl || "").trim() || !String(options.model || "").trim())
+    return Fail(422, "AI_CONNECTION_MISSING", "Connect an AI server and choose a model first.");
   const profile = BuildPreferenceProfile(options);
   if (!profile.payload.ok)
     return profile;
@@ -30,42 +47,69 @@ export async function GenerateAiRecommendations(rootPath, options = {}) {
 }
 
 async function GenerateUniqueRecommendations(rootPath, profile, options) {
-  const accepted = [];
-  let summary = "";
-  let model = "";
-  for (let attempt = 0; attempt < RecommendationAttempts && accepted.length < options.count; attempt++) {
-    const remaining = options.count - accepted.length;
-    const requestProfile = { ...profile, queue: [...profile.queue, ...accepted.map(ToProfileMovie)] };
-    const result = await RequestOpenAiRecommendations(requestProfile, { ...options, count: remaining });
+  const state = { accepted: [], summary: "", model: "" };
+  for (let attempt = 0; attempt < RecommendationAttempts && state.accepted.length < options.count; attempt++) {
+    const result = await ReadRecommendationAttempt(rootPath, profile, options, state.accepted);
     if (!result.payload.ok)
       return result;
-    summary ||= result.payload.summary || "";
-    model = result.payload.model || model;
-    const enriched = EnrichRecommendationPayload(rootPath, result.payload, requestProfile);
-    for (const item of enriched.recommendations) {
-      if (accepted.length >= options.count)
-        break;
-      if (accepted.some((existing) => SameRecommendation(existing, item)))
-        continue;
-      accepted.push(item);
-    }
+    ApplyRecommendationResult(state, result, options.count);
   }
-  return Ok({ summary: summary || "Recommendations ready.", recommendations: accepted, model });
+  return Ok({ summary: state.summary || "Recommendations ready.", recommendations: state.accepted, model: state.model });
+}
+
+async function ReadRecommendationAttempt(rootPath, profile, options, accepted) {
+  const remaining = options.count - accepted.length;
+  const requestProfile = { ...profile, queue: [...profile.queue, ...accepted.map(ToProfileMovie)] };
+  const result = await RequestCompatibleRecommendations(requestProfile, { ...options, count: remaining });
+  if (!result.payload.ok)
+    return result;
+  return Ok({ ...result.payload, recommendations: EnrichRecommendationPayload(rootPath, result.payload, requestProfile).recommendations });
+}
+
+function ApplyRecommendationResult(state, result, limit) {
+  state.summary ||= result.payload.summary || "";
+  state.model = result.payload.model || state.model;
+  for (const item of result.payload.recommendations) {
+    if (state.accepted.length >= limit)
+      break;
+    if (!state.accepted.some((existing) => SameRecommendation(existing, item)))
+      state.accepted.push(item);
+  }
 }
 
 function BuildPreferenceProfile(options) {
   const profile = NormalizeProfile(options.profile);
-  const mediaType = options.mediaType === "tv" ? "tv" : "movie";
-  const ratings = (Array.isArray(profile.ratings) ? profile.ratings : [])
-    .map((rating) => NormalizeRating(rating, mediaType))
-    .filter(Boolean);
+  const mediaType = options.mediaType === TvMediaType ? TvMediaType : MovieMediaType;
+  const ownRatings = NormalizeRatings(profile.ratings, mediaType);
+  const friendRatings = NormalizeRatings(options.friendRatings, mediaType);
+  const ratings = SelectAudienceRatings(ownRatings, friendRatings, options.tasteAudience);
   if (ratings.length < 5)
     return Fail(422, "NOT_ENOUGH_RATINGS", "Rate at least five titles in the selected taste source before asking for recommendations.");
-  const ratedTargets = Array.isArray(options.targetRatings)
-    ? options.targetRatings.map((rating) => NormalizeRating(rating, mediaType)).filter(Boolean)
-    : Array.isArray(profile.ratedTargets) ? profile.ratedTargets : ratings;
+  const ratedTargets = ReadRatedTargets(options, profile, ratings, mediaType);
   const exclusions = Array.isArray(options.targetExclusions) ? options.targetExclusions : profile.exclusions;
-  return Ok({ profile: BuildProfile(ratings, ratedTargets, exclusions, options.queue, mediaType, options.filters, profile.tasteBasis) });
+  const built = BuildProfile(ratings, ratedTargets, exclusions, options.queue, mediaType, options.filters, profile.tasteBasis);
+  return Ok({ profile: { ...built, tasteAudience: NormalizeTasteAudience(options.tasteAudience) } });
+}
+
+function ReadRatedTargets(options, profile, ratings, mediaType) {
+  if (Array.isArray(options.targetRatings))
+    return options.targetRatings.map((rating) => NormalizeRating(rating, mediaType)).filter(Boolean);
+  if (Array.isArray(profile.ratedTargets))
+    return profile.ratedTargets;
+  return ratings;
+}
+
+function NormalizeRatings(value, mediaType) {
+  return (Array.isArray(value) ? value : []).map((rating) => NormalizeRating(rating, mediaType)).filter(Boolean);
+}
+
+function SelectAudienceRatings(ownRatings, friendRatings, audienceValue) {
+  const audience = NormalizeTasteAudience(audienceValue);
+  if (audience === FriendsTasteValue)
+    return friendRatings;
+  if (audience === CombinedTasteValue)
+    return [...ownRatings, ...friendRatings];
+  return ownRatings;
 }
 
 function BuildProfile(ratings, ratedTargets, exclusions, queue, mediaType, filters, tasteBasis) {
@@ -78,7 +122,7 @@ function BuildProfile(ratings, ratedTargets, exclusions, queue, mediaType, filte
     queue: NormalizeRecommendationQueue(queue).map(ToProfileMovie),
     filters: BuildProfileFilters(filters),
     ratingScale: "1-10",
-    fieldsSent: ["title", "year", "genres", "rating", "sourceMediaType", "ratedTargetTitle", "ratedTargetYear", "queuedTitle", "queuedYear", "excludedTitle", "excludedYear", "filters", "tasteBasis"]
+    fieldsSent: [TitleFieldName, YearFieldName, GenresFieldName, "rating", "sourceMediaType", "sourceAudience", "ratedTargetTitle", "ratedTargetYear", "queuedTitle", "queuedYear", "excludedTitle", "excludedYear", "filters", "tasteBasis", "tasteAudience"]
   };
 }
 
@@ -91,40 +135,19 @@ function OptimizeRatings(ratings) {
   return ratings.sort((left, right) => right.rating - left.rating);
 }
 
-async function RequestOpenAiRecommendations(profile, options) {
-  const model = await ResolveOpenAiModel(options);
-  const response = await fetch(OpenAiResponsesUrl, BuildOpenAiRequest(profile, options, model));
-  const payload = await response.json().catch(() => null);
-  if (!response.ok)
-    return Fail(response.status, "OPENAI_REQUEST_FAILED", ReadOpenAiError(payload, response.status));
-  return Ok({ ...ParseRecommendationPayload(payload), model });
+async function RequestCompatibleRecommendations(profile, options) {
+  const request = options.requestAiChat || RequestAiChat;
+  const result = await request(options, BuildAiMessages(profile, options), ReadOutputTokenLimit(options.count));
+  if (!result.payload.ok)
+    return result;
+  try {
+    return Ok({ ...ParseRecommendationPayload(result.payload.content), model: result.payload.model || options.model });
+  } catch {
+    return Fail(502, "AI_RESPONSE_INVALID", "The AI server did not return the requested recommendation JSON.");
+  }
 }
 
-function BuildOpenAiRequest(profile, options, model) {
-  return {
-    method: "POST",
-    headers: BuildOpenAiHeaders(options),
-    body: JSON.stringify(BuildOpenAiBody(profile, options, model))
-  };
-}
-
-function BuildOpenAiHeaders(options) {
-  return {
-    "authorization": `Bearer ${ReadOpenAiApiKey(options)}`,
-    "content-type": "application/json"
-  };
-}
-
-function BuildOpenAiBody(profile, options, model) {
-  return {
-    model,
-    input: BuildOpenAiInput(profile, options),
-    text: { format: BuildRecommendationSchema(options.count) },
-    max_output_tokens: ReadOutputTokenLimit(options.count)
-  };
-}
-
-function BuildOpenAiInput(profile, options) {
+function BuildAiMessages(profile, options) {
   return [
     { role: "system", content: BuildSystemPrompt(profile, options) },
     { role: "user", content: JSON.stringify(profile) }
@@ -133,16 +156,17 @@ function BuildOpenAiInput(profile, options) {
 
 function BuildSystemPrompt(profile, options) {
   const count = ReadRecommendationCount(options.count) || 9;
-  const isTv = options.mediaType === "tv";
-  const scope = `Recommend ${count} ${isTv ? "TV series" : "movies"} the user has not rated.`;
+  const isTv = options.mediaType === TvMediaType;
+  const scope = `Recommend ${count} ${isTv ? TvSeriesLabel : MoviesLabel} the user has not rated.`;
   const criteria = ReadRecommendationCriteria(isTv);
   const source = ReadTasteSource(profile, isTv);
-  const evidence = `${source} Use profile.ratings only as taste evidence and use each sourceMediaType to interpret it. Regardless of the evidence source, return only ${isTv ? "TV series" : "movies"}.`;
+  const evidence = `${source} Use profile.ratings only as taste evidence and use each sourceMediaType to interpret it. Regardless of the evidence source, return only ${isTv ? TvSeriesLabel : MoviesLabel}.`;
   const exclusions = "Never recommend anything already present in profile.ratedTargets, profile.queue, or profile.exclusions. ratedTargets are titles already rated in the requested section, the queue is that section's saved watchlist, and exclusions are that section's permanent do-not-recommend choices.";
   const filters = "Honor every profile.filters field exactly. A result must match its year, any selected genre, documentary mode, minimum IMDb rating, maximum runtime, included country or language lists, exclusions, Bollywood choice, and unknown-origin policy. Never use an unknown value to bypass a selected filter.";
   const why = "Explain the taste pattern and cite rating evidence from the user's data.";
   const format = "Use 2-4 evidence lines naming rated titles, ratings, genres, or eras.";
-  return [scope, criteria, evidence, exclusions, filters, why, format, "Return only JSON matching the schema."].join(" ");
+  const schema = `Return only JSON matching this schema: ${JSON.stringify(RecommendationSchema(count))}`;
+  return [scope, criteria, evidence, exclusions, filters, why, format, schema].join(SpaceSeparator);
 }
 
 function ReadRecommendationCriteria(isTv) {
@@ -152,25 +176,20 @@ function ReadRecommendationCriteria(isTv) {
 }
 
 function ReadTasteSource(profile, isTv) {
-  if (profile.tasteBasis === "other")
-    return `The taste evidence comes from the user's ${isTv ? "movie" : "TV"} ratings.`;
-  if (profile.tasteBasis === "both")
+  if (profile.tasteAudience === FriendsTasteValue)
+    return "The taste evidence comes from ratings shared by the user's selected friends.";
+  if (profile.tasteAudience === CombinedTasteValue)
+    return "The taste evidence combines the user's ratings with ratings shared by selected friends.";
+  if (profile.tasteBasis === OtherTasteValue)
+    return `The taste evidence comes from the user's ${isTv ? MovieMediaType : TvLabel} ratings.`;
+  if (profile.tasteBasis === CombinedTasteValue)
     return "The taste evidence combines the user's movie and TV ratings.";
-  return `The taste evidence comes from the user's ${isTv ? "TV" : "movie"} ratings.`;
-}
-
-function BuildRecommendationSchema(count) {
-  return {
-    type: "json_schema",
-    name: "title_recommendations",
-    strict: true,
-    schema: RecommendationSchema(count)
-  };
+  return `The taste evidence comes from the user's ${isTv ? TvLabel : MovieMediaType} ratings.`;
 }
 
 function RecommendationSchema(count) {
   return {
-    type: "object",
+    type: SchemaObjectType,
     additionalProperties: false,
     required: ["summary", "recommendations"],
     properties: RecommendationProperties(count)
@@ -179,34 +198,34 @@ function RecommendationSchema(count) {
 
 function RecommendationProperties(count) {
   return {
-    summary: { type: "string" },
-    recommendations: { type: "array", minItems: count, maxItems: count, items: RecommendationItemSchema() }
+    summary: { type: SchemaStringType },
+    recommendations: { type: SchemaArrayType, minItems: count, maxItems: count, items: RecommendationItemSchema() }
   };
 }
 
 function RecommendationItemSchema() {
   return {
-    type: "object",
+    type: SchemaObjectType,
     additionalProperties: false,
-    required: ["title", "year", "genres", "originCountries", "originalLanguage", "why"],
+    required: [TitleFieldName, YearFieldName, GenresFieldName, "originCountries", "originalLanguage", "why"],
     properties: RecommendationItemProperties()
   };
 }
 
 function RecommendationItemProperties() {
   return {
-    title: { type: "string" },
+    title: { type: SchemaStringType },
     year: { type: "integer" },
-    genres: { type: "array", items: { type: "string" } },
-    originCountries: { type: "array", items: { type: "string", pattern: "^[A-Z]{2}$" } },
-    originalLanguage: { type: "string", pattern: "^[a-z]{2,3}$" },
+    genres: { type: SchemaArrayType, items: { type: SchemaStringType } },
+    originCountries: { type: SchemaArrayType, items: { type: SchemaStringType, pattern: "^[A-Z]{2}$" } },
+    originalLanguage: { type: SchemaStringType, pattern: "^[a-z]{2,3}$" },
     why: RecommendationWhySchema()
   };
 }
 
 function RecommendationWhySchema() {
   return {
-    type: "object",
+    type: SchemaObjectType,
     additionalProperties: false,
     required: ["tasteMatch", "ratingEvidence"],
     properties: RecommendationWhyProperties()
@@ -215,14 +234,13 @@ function RecommendationWhySchema() {
 
 function RecommendationWhyProperties() {
   return {
-    tasteMatch: { type: "string" },
-    ratingEvidence: { type: "array", items: { type: "string" } }
+    tasteMatch: { type: SchemaStringType },
+    ratingEvidence: { type: SchemaArrayType, items: { type: SchemaStringType } }
   };
 }
 
-function ParseRecommendationPayload(payload) {
-  const text = ExtractResponseText(payload);
-  return JSON.parse(text);
+function ParseRecommendationPayload(value) {
+  return JSON.parse(ExtractJsonText(value));
 }
 
 function EnrichRecommendationPayload(rootPath, payload, profile) {
@@ -247,8 +265,8 @@ function FilterRecommendations(recommendations, titles, blocked, filters) {
   return unique;
 }
 
-function ReadTitleList(rootPath, mediaType = "movie") {
-  const filePath = path.join(rootPath, "data", mediaType === "tv" ? "shows.json" : "movies.json");
+function ReadTitleList(rootPath, mediaType = MovieMediaType) {
+  const filePath = path.join(rootPath, "data", mediaType === TvMediaType ? "shows.json" : "movies.json");
   if (!existsSync(filePath))
     return [];
   const payload = JSON.parse(readFileSync(filePath, "utf8"));
@@ -298,7 +316,7 @@ function IsRecommendationMovie(movie, title, year) {
 }
 
 function NormalizeMatchTitle(value) {
-  return CleanText(value).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+  return CleanText(value).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, SpaceSeparator).trim();
 }
 
 function NormalizeExclusions(value) {
@@ -314,24 +332,18 @@ function NormalizeExclusion(item) {
   return { title, year: Number(item?.year) || null };
 }
 
-function ExtractResponseText(payload) {
-  if (payload?.output_text)
-    return payload.output_text;
-  const output = Array.isArray(payload?.output) ? payload.output : [];
-  const content = output.flatMap((item) => item.content || []);
-  const text = content.map((item) => item.text || "");
-  return text.join("");
-}
-
-function ReadOpenAiError(payload, status) {
-  return payload?.error?.message || `OpenAI returned HTTP ${status}.`;
+function ExtractJsonText(value) {
+  const text = String(value || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  return start >= 0 && end >= start ? text.slice(start, end + 1) : text;
 }
 
 function NormalizeProfile(profile) {
-  return profile && typeof profile === "object" ? profile : {};
+  return profile && typeof profile === SchemaObjectType ? profile : {};
 }
 
-function NormalizeRating(item, fallbackMediaType = "movie") {
+function NormalizeRating(item, fallbackMediaType = MovieMediaType) {
   const rating = Number(item?.rating);
   if (!Number.isInteger(rating) || rating < 1 || rating > 10)
     return null;
@@ -339,12 +351,18 @@ function NormalizeRating(item, fallbackMediaType = "movie") {
   if (!title)
     return null;
   const sourceMediaType = item?.sourceMediaType || item?.mediaType;
+  const sourceAudience = item?.sourceAudience === FriendAudience ? FriendAudience : "self";
+  return BuildNormalizedRating(item, title, rating, sourceMediaType, sourceAudience, fallbackMediaType);
+}
+
+function BuildNormalizedRating(item, title, rating, sourceMediaType, sourceAudience, fallbackMediaType) {
   return {
     title,
     year: Number(item.year) || null,
     genres: ReadGenres(item.genres),
     rating,
-    sourceMediaType: sourceMediaType === "tv" || sourceMediaType === "movie" ? sourceMediaType : fallbackMediaType
+    sourceMediaType: sourceMediaType === TvMediaType || sourceMediaType === MovieMediaType ? sourceMediaType : fallbackMediaType,
+    sourceAudience
   };
 }
 
@@ -355,7 +373,11 @@ function NormalizeProfileTitles(value) {
 }
 
 function NormalizeTasteBasis(value) {
-  return ["current", "other", "both"].includes(value) ? value : "current";
+  return [CurrentTasteValue, OtherTasteValue, CombinedTasteValue].includes(value) ? value : CurrentTasteValue;
+}
+
+function NormalizeTasteAudience(value) {
+  return [MineTasteValue, FriendsTasteValue, CombinedTasteValue].includes(value) ? value : MineTasteValue;
 }
 
 function ToProfileMovie(value) {
@@ -381,16 +403,8 @@ function ReadGenres(value) {
   return CleanText(value).split(",").map(CleanText).filter(Boolean);
 }
 
-function ReadOpenAiApiKey(options) {
-  return NormalizeBearerValue(options?.apiKey);
-}
-
-function NormalizeBearerValue(value) {
-  return String(value || "").trim().replace(/^authorization:\s*/i, "").replace(/^bearer\s+/i, "");
-}
-
 function CleanText(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
+  return String(value || "").replace(/\s+/g, SpaceSeparator).trim();
 }
 
 function Ok(payload) {

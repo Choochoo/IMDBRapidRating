@@ -99,7 +99,7 @@ async function VerifyMetadataBatchUpsert() {
   const fallback = { ...MetadataEntry, source: "imdb-title-page", sourcePayload: {}, metadataCheckedAt: "" };
   await CreateTitleMetadataStore(recording.pool).upsertMetadataBatch([MetadataEntry, fallback]);
   const records = JSON.parse(recording.calls[0].parameters[0]);
-  assert.equal(records[0].synopsis, "A movie.");
+  assert.equal(records[0].synopsis, Synopsis);
   assert.equal(records[0].source_payload.id, 101);
   assert.equal(records[1].metadata_checked_at, null);
   assert.match(recording.calls[0].sql, /metadata_source <> 'tmdb' OR EXCLUDED\.metadata_source = 'tmdb'/);

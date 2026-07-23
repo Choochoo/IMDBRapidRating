@@ -7,9 +7,13 @@
   "scripts": {
     "start": "node scripts/server.mjs",
     "build": "vite build",
+    "docs:setup": "node scripts/generate-setup-docs.mjs",
+    "setup:screenshots": "node scripts/print-setup-screenshot-checklist.mjs",
     "typecheck": "tsc --noEmit",
     "db:migrate": "node scripts/migrate.mjs",
     "db:sync-permissions": "node scripts/sync-database-permissions.mjs",
+    "secrets:migrate": "node scripts/migrate-user-secrets.mjs",
+    "vault:verify": "node scripts/verify-azure-vault.mjs",
     "user:create": "node scripts/create-user.mjs",
     "key:generate": "node scripts/generate-key.mjs",
     "build:data": "node scripts/build-movie-pool.mjs --minVotes=2500 --recentMinVotes=100 --recentYears=1",
@@ -21,6 +25,9 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@azure/identity": "^4.13.1",
+    "@azure/keyvault-keys": "^4.10.2",
+    "@azure/keyvault-secrets": "^4.11.2",
     "argon2": "^0.44.0",
     "bootstrap": "^5.3.8",
     "connect-pg-simple": "^10.0.0",

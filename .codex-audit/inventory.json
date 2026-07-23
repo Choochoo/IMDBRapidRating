@@ -4,32 +4,34 @@
   "content_merkle": {
     "algorithm": "sha256-merkle-directory-v1",
     "directory_roots": {
-      "": "4b5ec9fbcf953fd9341679fce8a9b1a8ff3a73b91cd991bacf13281663e8cc57",
-      ".codex": "5cc8fa51d6bf5b44449514330918def0bb6549d7eab12a3abc84d692cf68a9fc",
-      ".github": "98c194373f538cd705c142ff21a61c99ba40f215cb99effe3b64a34204ee64a7",
-      ".github/workflows": "5bcef567980c5d96e3abdf429bb2de950bec546ed37aca52c588152806fe7115",
-      "db": "b828fa4e42feac92d6a520f8d3f794c5ecc86d28dbc51e460498aab987b77162",
-      "db/migrations": "4d5c8c34c23ecca8bfbf5e33ced9906c3d89f6b0f4fd43a56c6333a560767536",
-      "deploy": "8323f781bd41f121a71188f351f952de4bef10dfb362e601181985a759c3f941",
-      "docs": "41df064bff76a7002bba5a1cd2b93ec0d53ecef8a83f6f2b089a2f872a2f0eac",
+      "": "1761c6b221d05683a72396584a6c0cbcbc2130e9a9922adaf5901f42414bcc36",
+      ".codex": "525c69847e7c73ff3cc9a4d48fc3786e901420fe6a4a34ea94042e9f496a91f3",
+      ".github": "0b80055b5f7408f8a565c2319887814f4c9f377e8bf572d93bbf5250e07951bd",
+      ".github/workflows": "e91b45c830d0780aefb34102045fe6f63985dfd688180bcd21031596ae0f8b4a",
+      "db": "1e206a6cc9a5843ef75c9e539ea555f43a784b578170c747bff702b985a59de3",
+      "db/migrations": "319fbb97a0320ad50cbf731b12f7395d1adcd8e168c69b3cc17d45de03a2d92b",
+      "deploy": "30721080267c2ff2eec437d21f5d6ed8f235643dba2eb1af8d240681cca00dd2",
+      "deploy/azure": "0f80290701e67e7a92266870dc1badef0999517e2a009c8dcd4595eabb073599",
+      "docs": "1b8ef4e54af66ec4e6b1980db35b07119a775b68617338a711bd29255978b64f",
       "docs/engineering": "7ed6019b7b903e8b9128f21c8b4fa18dadafd0bce73e75e61a4ad7ee549356a4",
-      "scripts": "41fc1b47e4f4d19db24c8f3f9f5264f84b2e467665e9f434962b38e224407e5e",
-      "server": "29da4242b5e940fe0e2f5a00fab3f6be24c53e48c2ca3b5b643e3b871ca23d24",
-      "server/db": "084d1d2099f284cb7ba0369e60b7490b1e87827e9a3285677e04460eb442f5f7",
-      "server/security": "8c8fd97c65fc345c9d48679d38b52974cefcbd339427e26e5e85cc7eae3f53a7",
-      "shared": "2e87cfd88e2fef6caf83cc9e11e1b18e2dc6dbe87fd65e9553d4a2134d67036b",
-      "src": "ca3c93d5bfb31fd9d6cc5e0bc2b43e30fa94cb2561bf7057c48b2ad7c9c3a880",
-      "src/app": "860e130f9aadc218804005a1803d032a73d97c88a9cba33e0fa17be387aac8f6",
-      "src/app/features": "15831f29c9de0c32b123ae6e18979e0220ab5d688dd1541f47db83e2d4a3482e",
+      "docs/setup": "863fc8f6e955a6e2986653531085ce5b63bfc5dfb7593f88fd594afa5b40f203",
+      "scripts": "974e90a3a23af484568827af2185532704077a7963afad64ff80d017318d0f91",
+      "server": "8b3868c1d9f6d072143d803065ea00a3a2a8266623973db266cb4c2fd73fb193",
+      "server/db": "0674a465088fa97abd78f5a45981dfaba1d6aae73f55b9ebb15018c7835c46ed",
+      "server/security": "f3b348f4ce9235983eff9db28050223c4e2669ccd6898b50629be08f8b1159b7",
+      "shared": "3aef9ba1dc388c3015a45ae55a7cabf1db7bfeff20acfaa27cba71c632b56f1b",
+      "src": "d16c2039da2ac097a157aeadce71a00af0addca5e540b69f6acbf8f6fb3d3082",
+      "src/app": "a253dcd3677f2d9a925dff0553bfd7aaefa61e5be6148f63dae7ed325c5aec36",
+      "src/app/features": "a26e3f5a696c51e68dc356ae8d0f46503fdca36fb96b84fa338bc4b3ff773a51",
       "src/assets": "26c9e60b2fb79b9a2dd506d87033f4e1ff63db0a6993bbcab291761b353c9bc7",
-      "src/styles": "12945929d98efa9a27b07c2da9af61600ff37c9d018dceb868ace7bf470526c8",
-      "test": "de9ae03b72a7843ed736afb2898e241d76f82f7b889c9875d8579ff29ba50a2c"
+      "src/styles": "b8aa0f22f869090d89ad3fabed48b73ec02b88253cceaa081fa410eea26e60cf",
+      "test": "9b5f72d17b39ff9f9f5c25a775524ae82c19b5ebecb4c7bac8357949ffc54e74"
     },
-    "leaf_count": 139,
-    "root": "4b5ec9fbcf953fd9341679fce8a9b1a8ff3a73b91cd991bacf13281663e8cc57",
+    "leaf_count": 209,
+    "root": "1761c6b221d05683a72396584a6c0cbcbc2130e9a9922adaf5901f42414bcc36",
     "version": 1
   },
-  "dirty_file_count": 56,
+  "dirty_file_count": 176,
   "exclude_globs": [
     ".codex-audit/**",
     ".codex/project-intelligence/**",
@@ -55,23 +57,55 @@
     "yarn.lock"
   ],
   "exclude_roots": [],
-  "excluded_file_count": 1,
+  "excluded_file_count": 7,
   "exclusion_reasons": {
-    "configured exclude pattern": 1
+    "binary file": 5,
+    "configured exclude pattern": 1,
+    "not a regular file": 1
   },
   "exclusions": [
     {
       "path": "package-lock.json",
       "pattern": "package-lock.json",
       "reason": "configured exclude pattern"
+    },
+    {
+      "path": "server/openai-models.mjs",
+      "pattern": "",
+      "reason": "not a regular file"
+    },
+    {
+      "path": "src/assets/rapid-rater-logo.png",
+      "pattern": "",
+      "reason": "binary file"
+    },
+    {
+      "path": "src/assets/rapid-rater-mark.png",
+      "pattern": "",
+      "reason": "binary file"
+    },
+    {
+      "path": "src/assets/setup/import-letterboxd/01-open-letterboxd-data.webp",
+      "pattern": "",
+      "reason": "binary file"
+    },
+    {
+      "path": "src/assets/setup/import-letterboxd/02-download-letterboxd-export.webp",
+      "pattern": "",
+      "reason": "binary file"
+    },
+    {
+      "path": "src/assets/setup/rapid-rater-to-letterboxd/03-open-letterboxd-import.webp",
+      "pattern": "",
+      "reason": "binary file"
     }
   ],
   "files": [
     {
       "file_kind": "plugin-state",
-      "hash": "git-sha1:407a2ae05545b0e98f3f2f8ad36120b94cd33181",
+      "hash": "git-sha1:5f3e819a7c6ba51839ba8ba2bc3d8786e537a073",
       "path": ".codex/repository-audit.json",
-      "size": 883
+      "size": 870
     },
     {
       "file_kind": "other",
@@ -81,9 +115,9 @@
     },
     {
       "file_kind": "configuration",
-      "hash": "git-sha1:28a8a7e04598fad20a9a27644e285b5ae4dcd3ee",
+      "hash": "git-sha1:c6ae5f7d8abc4a2cda41d8ad8554b6f7ef520809",
       "path": ".github/workflows/deploy-octopus.yml",
-      "size": 7377
+      "size": 7849
     },
     {
       "file_kind": "other",
@@ -99,9 +133,9 @@
     },
     {
       "file_kind": "markdown-documentation",
-      "hash": "git-sha1:282226923461cfefd936dc8a12dc55291845cce1",
+      "hash": "git-sha1:7e2141a92837b6ef16f721da86e90fa7a0c7dfbf",
       "path": "README.md",
-      "size": 24082
+      "size": 25190
     },
     {
       "file_kind": "other",
@@ -165,15 +199,69 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:1714b8622f068bc1a126e3fc0dbc09fecded6ced",
+      "hash": "git-sha1:f454bab0737f76f479006117423d968abda9c64a",
+      "path": "db/migrations/0010_remove_tmdb_user_secrets.sql",
+      "size": 291
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:5ab90265b18d1d4176a30d69465ae542243552b4",
+      "path": "db/migrations/0010_social_profiles.sql",
+      "size": 2985
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:08e7aaf9ed1843d31d069cd513ef5d039562dd71",
+      "path": "db/migrations/0011_ai_provider_settings.sql",
+      "size": 848
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:b9d26465b2f96f479341779fec20dc6079e67f9c",
+      "path": "db/migrations/0012_keyboard_shortcuts.sql",
+      "size": 344
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:5e0672bc03c555c37098aacb167011d3d7eee950",
+      "path": "db/migrations/0013_help_preferences.sql",
+      "size": 192
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e0c2eb43f8de3deb1ea1730c240c03f386560792",
+      "path": "db/migrations/0014_azure_envelope_encryption.sql",
+      "size": 398
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:ea42b30cffaf2019366799d61825f956f9f8ccbd",
       "path": "deploy/PostDeploy.ps1",
-      "size": 9036
+      "size": 13610
     },
     {
       "file_kind": "other",
       "hash": "git-sha1:c027a59d6779b4b3449b119b30adf9c066ccf17f",
       "path": "deploy/PreDeploy.ps1",
       "size": 4718
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:a149fd22b2c4d85e76702c491a0343836208f9c6",
+      "path": "deploy/azure/Deploy-RapidRaterVault.ps1",
+      "size": 1837
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:29c8810110c6868639792c29638bd25cfc019cb3",
+      "path": "deploy/azure/Set-RapidRaterVaultSecrets.ps1",
+      "size": 1230
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e2289ffd733b44d804397882e8d8deb68f9532c3",
+      "path": "deploy/azure/key-vault.bicep",
+      "size": 4838
     },
     {
       "file_kind": "audit-standards",
@@ -194,6 +282,60 @@
       "size": 2460
     },
     {
+      "file_kind": "markdown-documentation",
+      "hash": "git-sha1:f29d03f10ad9d6ed7e1b9864022368b57cc39d95",
+      "path": "docs/setup/README.md",
+      "size": 1759
+    },
+    {
+      "file_kind": "markdown-documentation",
+      "hash": "git-sha1:2e080fcda62c1bb0af6ff1a223ad26013d14c121",
+      "path": "docs/setup/azure-key-vault-migration.md",
+      "size": 8508
+    },
+    {
+      "file_kind": "markdown-documentation",
+      "hash": "git-sha1:9b67f8aeb8b3a324a1084bc3b8755a13b006a04a",
+      "path": "docs/setup/connect-imdb.md",
+      "size": 2312
+    },
+    {
+      "file_kind": "markdown-documentation",
+      "hash": "git-sha1:106033e5791a6b2aac6842af836ba4ebc338acb2",
+      "path": "docs/setup/connect-openai.md",
+      "size": 1942
+    },
+    {
+      "file_kind": "markdown-documentation",
+      "hash": "git-sha1:1015a88f5c63708f90a5b30ef4ff30ad40a6b7e4",
+      "path": "docs/setup/import-imdb-ratings.md",
+      "size": 1929
+    },
+    {
+      "file_kind": "markdown-documentation",
+      "hash": "git-sha1:bc6d7fc0f2347d1e5fa359fda37a3ab9299a9f4e",
+      "path": "docs/setup/import-letterboxd.md",
+      "size": 2020
+    },
+    {
+      "file_kind": "markdown-documentation",
+      "hash": "git-sha1:cbd0108339d79b6f82eacf013a2341242afdb5b5",
+      "path": "docs/setup/letterboxd-to-imdb.md",
+      "size": 2043
+    },
+    {
+      "file_kind": "markdown-documentation",
+      "hash": "git-sha1:396e76ff07054a810d7f5a2946f5b8a1b22ad99d",
+      "path": "docs/setup/rapid-rater-to-letterboxd.md",
+      "size": 2408
+    },
+    {
+      "file_kind": "configuration",
+      "hash": "git-sha1:f5e57c2096b345aadcc6cbe5ad72444062b8c226",
+      "path": "docs/setup/screenshots.json",
+      "size": 17970
+    },
+    {
       "file_kind": "other",
       "hash": "git-sha1:63666ce0d9f192b929eb769a3c148e7491187de2",
       "path": "favicon.svg",
@@ -201,21 +343,21 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:b01adef6d0036cfbe2ebdfe79f71ea27390e8489",
+      "hash": "git-sha1:6b1741410ac8f8becc6725d623fba0005392da1e",
       "path": "index.html",
-      "size": 37055
+      "size": 60580
     },
     {
       "file_kind": "configuration",
-      "hash": "git-sha1:3a183af22ec9b149a1d268279e7a605dc6f0dcc3",
+      "hash": "git-sha1:e5be4aba991c84b723aa9de1975e74f5eebd7313",
       "path": "package.json",
-      "size": 1293
+      "size": 1795
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:ede0707281bd3d857279b41650bbb77175c9eadf",
+      "hash": "git-sha1:be3fd317a6f104731e9397b8cc9475d335218f69",
       "path": "scripts/build-movie-pool.mjs",
-      "size": 9183
+      "size": 9591
     },
     {
       "file_kind": "other",
@@ -225,15 +367,15 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:274d75de82086e69299c3b018debae5f9a09d7f7",
+      "hash": "git-sha1:70d5fb7cc573647db3c8685ca2178085a681f087",
       "path": "scripts/create-user.mjs",
-      "size": 2300
+      "size": 2610
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:9233993b3af49263290976ccf25e35f0886d17c2",
+      "hash": "git-sha1:92890c8e54e5a83e8ae03f9e3df8209140e5d494",
       "path": "scripts/enrich-title-origins.mjs",
-      "size": 16093
+      "size": 16367
     },
     {
       "file_kind": "other",
@@ -243,21 +385,51 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:e06a169328463341ac69a62836093fa4a51883af",
+      "hash": "git-sha1:6be5f2015c1edb752bd69150eb937263b74173e6",
+      "path": "scripts/generate-setup-docs.mjs",
+      "size": 1118
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:d155278e208c529875fa010e7c551870b3c83568",
+      "path": "scripts/migrate-user-secrets.mjs",
+      "size": 1561
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:906e4d2343df146692934405dd2293684674ba74",
       "path": "scripts/migrate.mjs",
-      "size": 469
+      "size": 505
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:54e4ecfbf1a907a54d6819adc0fc889622599fdf",
+      "hash": "git-sha1:8f9fd0cf32682cb961f85860ef96aae4ebfe567b",
+      "path": "scripts/print-setup-screenshot-checklist.mjs",
+      "size": 288
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:94cddf41d6788470d4989b5bac57f01ba2137c5f",
       "path": "scripts/server.mjs",
-      "size": 1151
+      "size": 1187
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:c99f8bbdd5c6592a17fca618883ab164183e8c83",
+      "hash": "git-sha1:8fe7bd56a794399cb6a296485a5a01e4f2043001",
+      "path": "scripts/setup-guide-docs.mjs",
+      "size": 4946
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:f92e8e8c4cf4e22a0bd90ab49d42055a37a0dd9e",
       "path": "scripts/setup-octopus-project.ps1",
-      "size": 6767
+      "size": 7706
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:799618afc02c08c1cb8095d29539a6e29d1cb5b3",
+      "path": "scripts/sync-database-permissions.mjs",
+      "size": 3035
     },
     {
       "file_kind": "other",
@@ -267,27 +439,39 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:0754a5b9a2eed4fa1137328fff88afc003faf4f0",
+      "hash": "git-sha1:c7f21a79117571ba9c8377cc3a938a8ca0557794",
+      "path": "scripts/verify-azure-vault.mjs",
+      "size": 1357
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:580c252a6c3343c068f2a9b9d47d4f7c957ff75a",
       "path": "server/account-store.mjs",
-      "size": 9404
+      "size": 12491
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:e3e5b2f070b3a3f59cee4ea3561c86d12902871e",
+      "hash": "git-sha1:91ce0a845ea475d9ec74f2d0effeffe9acdc06a7",
+      "path": "server/ai-client.mjs",
+      "size": 11523
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:767c2dc9f0bc6cd42431a1fa6db49422120c3d70",
       "path": "server/ai-recommendations.mjs",
-      "size": 13867
+      "size": 16749
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:80e1a2229749d452cbfdd08dd2a7abdf0a906991",
+      "hash": "git-sha1:7f1da1febbb31bcdd5d40a58e8778d7a87b1c1da",
       "path": "server/app.mjs",
-      "size": 6713
+      "size": 7153
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:e57d25e95be1b0cce8e544ed5047619b40d80d6c",
+      "hash": "git-sha1:841f8a65c82cc9ba3ba52b7c95c8db34f47bd0ad",
       "path": "server/auth.mjs",
-      "size": 3029
+      "size": 3527
     },
     {
       "file_kind": "other",
@@ -297,21 +481,21 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:6e3e5ee9b0f3240b7868442105f862a34029448a",
+      "hash": "git-sha1:dd77144959f18cfe6f5d2a864447c2d5e1c1359b",
       "path": "server/db/config.mjs",
-      "size": 1772
+      "size": 2068
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:f1089fae80d281e1047bf19770fd0433de99c4a2",
+      "hash": "git-sha1:3098b7c223916f7b24eec12722a3fb746ccf90a8",
       "path": "server/db/migrate.mjs",
-      "size": 1619
+      "size": 2106
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:0bc8b70002f74eeb9b8dff78da4d274c4935088f",
+      "hash": "git-sha1:535e3dde6b7a9c893f34c37640cd0c9096095d82",
       "path": "server/db/schema.mjs",
-      "size": 7470
+      "size": 11405
     },
     {
       "file_kind": "other",
@@ -321,21 +505,21 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:8061059997062db83be8b83c7e98cd889a9eda7d",
+      "hash": "git-sha1:e6de454f818a9c2b69f046f68831238603465dd5",
       "path": "server/env.mjs",
-      "size": 1356
+      "size": 1853
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:6eb0b24c22b933d8fbcb90ab493b4e5605346a1c",
+      "hash": "git-sha1:2e89982030f3c5c7036a6338a5b70f41426783ef",
       "path": "server/http.mjs",
-      "size": 1432
+      "size": 1485
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:0512f325c048f10cd0410356384c2b6484fcf691",
+      "hash": "git-sha1:1f19e07c8fd2e3722ca8d92daca7059fdcb72df2",
       "path": "server/imdb-rating-job-store.mjs",
-      "size": 20786
+      "size": 21006
     },
     {
       "file_kind": "other",
@@ -345,75 +529,135 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:734956c0fbf74f3659ae72df590f79ded33a95e8",
+      "hash": "git-sha1:40fad9a3e193e4f7ea32ea517762773fa6ccfcf9",
       "path": "server/imdb-ratings.mjs",
-      "size": 6500
+      "size": 6575
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:b72d067fead9d6fc52001913d41d469c336ad6ca",
+      "hash": "git-sha1:1a3856b45ce722dd4c43d064a0b599940b4a3899",
       "path": "server/movie-pool.mjs",
-      "size": 2382
+      "size": 3135
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:8af80723a00cc0307491af1d2d2f5bda93a2e0d6",
-      "path": "server/openai-models.mjs",
-      "size": 3178
-    },
-    {
-      "file_kind": "other",
-      "hash": "git-sha1:8bfa1a98588ee9e9860e71c17c0adec7ad7267a0",
+      "hash": "git-sha1:90a53dcd65ddd4a864de84afe9e5175847e9864f",
       "path": "server/rater-events.mjs",
-      "size": 1390
+      "size": 2139
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:eaf4dbafd599545e41ec74f7dea14ec61ce8ea94",
+      "hash": "git-sha1:c6264b606718455e928477970fcaca6512f2b909",
       "path": "server/rater-queue-store.mjs",
-      "size": 14515
+      "size": 18287
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:f6eebf9259228f4a54664ed4cab5369ba40e85b5",
+      "hash": "git-sha1:60677468e04a98289b62dfaa16c1b49cdc5d691a",
       "path": "server/rater-queue.mjs",
-      "size": 1799
+      "size": 1839
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:68932a6afb3dcd4b7009079377395b0ef06dc2f2",
+      "hash": "git-sha1:a0971bf97c603f529c0c55a7a496fe93ae8581db",
       "path": "server/ratings-csv.mjs",
-      "size": 7148
+      "size": 7271
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:ce0ce24911b472194e5a9ec14c92936041769216",
+      "hash": "git-sha1:21235a6295df82e612f9cef085792cb831505fe6",
       "path": "server/recommendation-queue.mjs",
-      "size": 2680
+      "size": 2935
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:5336eed6a371b23d96df9da8fee1e8b9c4fc54b8",
+      "hash": "git-sha1:06072e92316409f3ecd1b01e84d90e561f3b4077",
+      "path": "server/route-schemas.mjs",
+      "size": 5961
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:03f4f8da31c8fee452046fef183e529e10e1181a",
       "path": "server/routes.mjs",
-      "size": 28188
+      "size": 36707
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:220e820c9e3677c01c9ae28cab7926bc4a709686",
+      "hash": "git-sha1:2993ed559019c1d5136d172f0f362724dd13dada",
+      "path": "server/security/azure-credential.mjs",
+      "size": 557
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:60c553a471d55fce66dee1823cc172cd90eaf8c4",
+      "path": "server/security/azure-key-wrapper.mjs",
+      "size": 1285
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:9c7198d8a6251eca63afdf71166a7d3a76f0c745",
+      "path": "server/security/azure-runtime-secrets.mjs",
+      "size": 2271
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:a10a66404a0a27b0c271ae366ac359deb9ef34de",
+      "path": "server/security/envelope-secrets.mjs",
+      "size": 1809
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:ff26a2d2a468cb74b85a5f1a63107cd1e885482d",
+      "path": "server/security/secret-migration.mjs",
+      "size": 2648
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e7406602f21d4be06bac4116af747e3fd3f1c742",
+      "path": "server/security/secret-protection-config.mjs",
+      "size": 1731
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:7349b5e72c13ac17c61f7543027dc25e9666c745",
+      "path": "server/security/secret-protector.mjs",
+      "size": 2624
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:7e413f11a907abee4eb26061a6dff81abaaf13f6",
       "path": "server/security/secrets.mjs",
-      "size": 2070
+      "size": 2220
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:8a159487fd01a2287f7fd97084e8d155b69114d8",
+      "hash": "git-sha1:09dd64654c111e66a7dcf4696fcb7a3512361285",
+      "path": "server/social-routes.mjs",
+      "size": 11176
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:2543ea3e7f296abaa3e4b4aaaaa4f50a8af9080d",
+      "path": "server/social-schemas.mjs",
+      "size": 886
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:db5852b2952ebd9af1161dd14c1c1a593430d836",
+      "path": "server/social-store.mjs",
+      "size": 18943
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:cff737af0b107b7675a32829dba571360b50d16a",
       "path": "server/static-files.mjs",
-      "size": 1540
+      "size": 1629
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:1022b533df23a83d15b2a8db60de863a884a4cc7",
+      "hash": "git-sha1:a17d605b8a7ff515956a6c1527a2850d68c26783",
       "path": "server/streaming-availability.mjs",
-      "size": 6548
+      "size": 6756
     },
     {
       "file_kind": "other",
@@ -423,9 +667,9 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:1af611dc98f5de28b35856fa4484b22e7d25bcdc",
+      "hash": "git-sha1:b703cf481aa16deaaf77f4dbd0e203b85a83973e",
       "path": "server/title-metadata.mjs",
-      "size": 25132
+      "size": 25601
     },
     {
       "file_kind": "other",
@@ -435,33 +679,51 @@
     },
     {
       "file_kind": "other",
+      "hash": "git-sha1:3f61d2439aa640008ca99d8c1fae79fc33bd5df8",
+      "path": "server/user-data-key-store.mjs",
+      "size": 1579
+    },
+    {
+      "file_kind": "other",
       "hash": "git-sha1:38924823e57bf1f0dba00f4bc0f1594195c9396f",
       "path": "server/user-data.mjs",
       "size": 1786
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:39004b3fd23006af02f7f276e9b952b73cff4cd1",
+      "hash": "git-sha1:7f06ee338095a0128d1b98990deb86430e18a44a",
       "path": "settings.env.example",
-      "size": 1138
+      "size": 1934
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:db77b77f13b151215b59ad812c15c80750375b97",
+      "hash": "git-sha1:917b5ee9a45cb6f6995f3617a3b24a6f55cb05f9",
       "path": "shared/csv.js",
-      "size": 1476
+      "size": 1606
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:79239ec00c2435620aa160846a3197d2419adb12",
+      "hash": "git-sha1:749f9249b358cc1a5d00e3b9ebe49a123f76aac0",
+      "path": "shared/help-preferences.js",
+      "size": 3515
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e639e889c2aa992f45a86197049e594c1ad829ef",
+      "path": "shared/keyboard-shortcuts.js",
+      "size": 4129
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:deeb585553dc37c17acda7cf6c7593118076a2b7",
       "path": "shared/media.js",
-      "size": 1926
+      "size": 2028
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:35cbecfb5265da406636349b9f67e0e02ed21894",
+      "hash": "git-sha1:cf2374ef03e7a09b302c39e2bcecd17a4375123e",
       "path": "shared/recommendation-basis.js",
-      "size": 576
+      "size": 732
     },
     {
       "file_kind": "other",
@@ -471,51 +733,51 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:6a90a920279e95835b4a81d8443949027bb15bee",
+      "hash": "git-sha1:40e77bf13217d767ad7f9825fe07c04bad4c0024",
       "path": "shared/title-filters.js",
-      "size": 4814
+      "size": 8827
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:65862f8373232fdae4b27065c81e9070295a15fa",
+      "hash": "git-sha1:2864bbe9ffe86e4eb12c6e7fcca2b11f7798b012",
       "path": "src/app.js",
-      "size": 105
+      "size": 174
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:3d087f3a4a60237ee9e30cb10b4b58de6ddc2119",
+      "hash": "git-sha1:4450f11f0d3b12a5edb40afe8faf16514663d6a9",
       "path": "src/app/account-state-merge.js",
-      "size": 4394
+      "size": 4585
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:4786437140d7980cd830f997b0c9e4a9e7c98d68",
+      "hash": "git-sha1:ca4e0328a54c8fa62b92c325ac784204636e36aa",
       "path": "src/app/app-constants.js",
-      "size": 1187
+      "size": 1329
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:76171f813a42f4bb32b192fd3d2c67afa000fbfd",
+      "hash": "git-sha1:73f1abd2d877aed66a3afcd69b8e39ea190a44c8",
       "path": "src/app/browser-settings.js",
-      "size": 3176
+      "size": 4036
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:948312a17c7eb28e8ea984fcfa8c51ded99f7896",
+      "hash": "git-sha1:163eeea2e3522a7a143811681a966fdbba0c5337",
       "path": "src/app/collection-sync.js",
-      "size": 11438
+      "size": 15369
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:6748b5f1b52002e1542c729f3ec07e20442658a2",
+      "hash": "git-sha1:c3e1fe38aea617742516ec211ade351aa5709396",
       "path": "src/app/config.js",
-      "size": 1204
+      "size": 954
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:a1c84de6412ae8346fea2aad1cbebeca3a5bc79b",
+      "hash": "git-sha1:b85001b18e13b04a64a9a2913e6edd2bd563939f",
       "path": "src/app/elements.js",
-      "size": 10005
+      "size": 19263
     },
     {
       "file_kind": "other",
@@ -525,27 +787,33 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:df1de7044819cc06dd1238fcdf7458a0b054781e",
+      "hash": "git-sha1:a0372a420c0e44357dc0c8c2c2ecb3af89b15d73",
       "path": "src/app/features/account-sync.js",
-      "size": 6885
+      "size": 7680
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:f693d1b319426fde2e9a3856a854a43fcae274c0",
+      "hash": "git-sha1:ee3418a2f1eb0757b9a58e815151326c4414a3b3",
+      "path": "src/app/features/ai-settings.js",
+      "size": 6830
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:14cfcac0beeb28b2f9d9c8af08e4233dc9d6b694",
       "path": "src/app/features/application-lifecycle.js",
-      "size": 7230
+      "size": 7535
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:0736ea1ad43838dccaea9adfde9eeee79f2a1c65",
+      "hash": "git-sha1:3384726bd62128ba50ada74bd786249861b92de7",
       "path": "src/app/features/catalog-view.js",
-      "size": 7772
+      "size": 8598
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:920f05a00ac17bd4b6b7c8b2558295a66e55c641",
+      "hash": "git-sha1:d0b60801fa91c861b2ba5bbf627d8c3951771697",
       "path": "src/app/features/collection-sync.js",
-      "size": 8744
+      "size": 8822
     },
     {
       "file_kind": "other",
@@ -555,81 +823,141 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:c637cad274ee31840e55e08fb328e063550740c6",
+      "hash": "git-sha1:941818e69313393d131528e1f4c15a5e2fbc051c",
       "path": "src/app/features/event-bindings.js",
-      "size": 14731
+      "size": 18026
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:1bf92230ec3f642288f233e51df9e7a0bf8307de",
+      "hash": "git-sha1:ab574eef7527d45624e9824ff4aa705104c0bf5a",
+      "path": "src/app/features/friends.js",
+      "size": 14902
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:758b3fb3f1a952a7bfb3971ffb1bee218d66e70d",
+      "path": "src/app/features/help-reminders.js",
+      "size": 9509
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:13778d44a92896bef1fd9417d26ed58f04b80d6a",
       "path": "src/app/features/quick-rate.js",
-      "size": 10136
+      "size": 10463
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:ad20f6ef1a3268aed5c574ada0f9a9340dd51560",
+      "hash": "git-sha1:0f66de4f85ce523be29af4b35abf3f614325cc02",
       "path": "src/app/features/rating-workflow.js",
-      "size": 6266
+      "size": 6229
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:ffe261016dbfc0e3b241acc533d04c8767e59fc0",
+      "hash": "git-sha1:9b515974aefa46674d51cdbce3273a424bdfc1f8",
       "path": "src/app/features/recommendations.js",
-      "size": 17793
+      "size": 19366
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:3d00bb1c8fa5bf76c559548ffe250c2092b54f70",
+      "hash": "git-sha1:ae1bf3ef19b9169360eea7a91684e6c99d166612",
+      "path": "src/app/features/settings.js",
+      "size": 8334
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:41aed7b576fb34f31c263d37254cf812f89e1020",
+      "path": "src/app/features/setup-guide.js",
+      "size": 14782
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:8fec4816974a618ad5fc699aa05520dc612d1cfa",
+      "path": "src/app/features/social-context.js",
+      "size": 5949
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:39f28278a0d6f8570c310f598707b74283d89671",
       "path": "src/app/features/status-ui.js",
-      "size": 15524
+      "size": 14190
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:e0571c761035f577fb87edf59476bddf4a84f11f",
+      "hash": "git-sha1:dd3c87fe45ea1783780a1afc8f3e8c0e3eb1a9b5",
+      "path": "src/app/help-reminder-policy.js",
+      "size": 5846
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:42c6d1cf6c471a694ea07d2bb9594e0874d53f8e",
+      "path": "src/app/icons.js",
+      "size": 368
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:62fdb28a0b3c8b4316120ed00d4e5a6f7dd8b0d3",
       "path": "src/app/letterboxd-zip.js",
-      "size": 1473
+      "size": 1523
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:04ef79b28c5ab66f1b30d371f613a10202b7ebb5",
+      "hash": "git-sha1:d8c99643584cc141ec532542806f01efe5be386e",
       "path": "src/app/movies.js",
-      "size": 1813
+      "size": 2078
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:02418662e8d41db821d055efac045f34847d4537",
+      "hash": "git-sha1:a7a92298fd30c1229815cb7393f5861b119a546d",
       "path": "src/app/rapid-rater-app.js",
-      "size": 31918
+      "size": 31696
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:e9afeb25881c7714e0c6fbd00772abb139f310bf",
+      "hash": "git-sha1:d960f2083e97850ab1d5083a86ddb0d709d04fec",
       "path": "src/app/rating-records.js",
-      "size": 7731
+      "size": 8267
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:034a9969c4ccd8b858519a791b1a80e8a438ec30",
+      "hash": "git-sha1:381a72b9fed194f6807f8db2335ddb19accd4e27",
       "path": "src/app/recommendation-ratings.js",
-      "size": 4508
+      "size": 5633
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:a3ab1312141ec13d2c9a2608a2cd35199d5e8392",
+      "hash": "git-sha1:12b2458f909daaa9aa88be0da9af89b9963d4658",
       "path": "src/app/rendering.js",
-      "size": 15951
+      "size": 20477
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:de2b98b524b14165362c6702d5fa0ff3eaf10f34",
+      "hash": "git-sha1:ab8170e5b5b58b424571e3d4f68f74c941b64895",
       "path": "src/app/settings-workflows.js",
-      "size": 3294
+      "size": 1861
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:a173e4f6fe1e224cea0cfa924512927687d180d1",
+      "hash": "git-sha1:c1915a1e032bdd4b01600b24972b4028c4b3e611",
+      "path": "src/app/setup-guide-definitions.js",
+      "size": 19926
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:2f01396300956e41b831b5550bc42e427d0ad456",
+      "path": "src/app/setup-guide-state.js",
+      "size": 1258
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:22b15e9652ac317ed6e3c572ad86725923a45907",
+      "path": "src/app/social-rendering.js",
+      "size": 6946
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:d9269ce52ff408cdc7b23caa2b2e690a38e5e094",
       "path": "src/app/state.js",
-      "size": 2408
+      "size": 2447
     },
     {
       "file_kind": "other",
@@ -639,27 +967,27 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:a58c76c50973d741acc4b81dcc5576cca63b9e23",
+      "hash": "git-sha1:5d148d560edca6c68de9877105b8c305e05c2e16",
       "path": "src/app/title-filter-workflows.js",
-      "size": 8564
+      "size": 15230
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:f7723477bfc2620b985245eb864e60750283be23",
+      "hash": "git-sha1:6b70da78abc7ce9aa851957896fa4100348d7914",
       "path": "src/app/undo-rating.js",
-      "size": 1549
+      "size": 1591
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:0ff2c22ac1a16bdf04963a2225366586ee821283",
+      "hash": "git-sha1:a79d2f8dc2391b119f61ffacc8191e8d39a038ee",
       "path": "src/app/util.js",
-      "size": 851
+      "size": 945
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:21a9ae3c81271e9b56bb7362f4cb19330563c76c",
+      "hash": "git-sha1:68721c4f7d4079a39eefb4f0a1bbd0931494eef1",
       "path": "src/app/view-routes.js",
-      "size": 1371
+      "size": 2585
     },
     {
       "file_kind": "other",
@@ -669,33 +997,51 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:8b2ef2ecd498146f3c4aeedfcac3f7f2413bd969",
+      "hash": "git-sha1:14aab12b155953ea7dc964b2390e7f5737481f13",
       "path": "src/styles.css",
-      "size": 742
+      "size": 913
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:e527f00d7a49b696a3d04d947274197da4d13b91",
+      "hash": "git-sha1:b714a048c2bdead081bddb8d94901f23565fa770",
       "path": "src/styles/dialogs.css",
-      "size": 4541
+      "size": 8176
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:9c9d41fe8d2fe27c9092827a330fec06a165079d",
+      "hash": "git-sha1:b593d633b1d39ef5fb171d2bc39f31ca7149dbb6",
       "path": "src/styles/foundation.css",
-      "size": 13796
+      "size": 13429
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:d51b7180927757d84f6a1a39f533d9d0b2c5c286",
+      "hash": "git-sha1:de6c1a29324232255db5c1c89ca1f38486a85bfb",
+      "path": "src/styles/friends.css",
+      "size": 5877
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:335321be00997cd01cae19ace1e958f1318a957a",
       "path": "src/styles/rater.css",
-      "size": 10333
+      "size": 11002
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:5299a90045c87e8f74fde015cd9e0caab3393848",
+      "hash": "git-sha1:13888b9c8952151ffe02b53b964c143127f09524",
       "path": "src/styles/responsive.css",
-      "size": 9622
+      "size": 12301
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:2e9d2ae69a01d1fd3eac4ad3566560393b941222",
+      "path": "src/styles/settings.css",
+      "size": 6420
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:6b16a7eed87957d548e08d88514b670804c414db",
+      "path": "src/styles/setup-guide.css",
+      "size": 6909
     },
     {
       "file_kind": "other",
@@ -705,51 +1051,75 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:2807222f9e9e6739ac6a8ddefecceed6076a1d0c",
+      "hash": "git-sha1:b3ee6981505325dbe22d5690078f8ff414b75d70",
       "path": "src/styles/workspace.css",
-      "size": 14037
+      "size": 19187
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:e4fa12225dae9205920821abbafe90820a5574ca",
+      "hash": "git-sha1:b92e8d382038e0f3936ac7934e72cfda3504008d",
       "path": "test/account-state-merge.test.mjs",
-      "size": 7526
+      "size": 9729
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:a56bf0465dc1711a60277ac93434f1a37c713408",
+      "hash": "git-sha1:681558d786d69ca4167108e4090dfb6919c16962",
       "path": "test/account-store.test.mjs",
-      "size": 5264
+      "size": 7331
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:1dcbfa114bafb070cc36f16378c26d85d1b6b47e",
+      "hash": "git-sha1:5d693379272b9cf570f4b1886cc3e0d125733777",
+      "path": "test/ai-client.test.mjs",
+      "size": 3980
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:bf78c36cedee108a423a0aa18d0d68995ffdfa73",
+      "path": "test/ai-settings-routes.test.mjs",
+      "size": 5522
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:0e69809b3f2320ba6a0fee4f6caa640754e7dde1",
       "path": "test/auth-routes.test.mjs",
-      "size": 20522
+      "size": 21290
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:cff2eb54f73fb57df1c102e9dcd1cec285ad46ff",
+      "hash": "git-sha1:f246c135a898376433d7b9825c6f5000d3907de8",
       "path": "test/auth-ui.test.mjs",
-      "size": 3601
+      "size": 6077
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:052255ba190725b1387db134dbc8085be55afe81",
+      "hash": "git-sha1:98e24fe878a40349fc3c94b8db9aba70f6f4b3b4",
+      "path": "test/azure-runtime-secrets.test.mjs",
+      "size": 2488
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:4e8d96ab5bc7274695508ce4348f670302c3f492",
       "path": "test/catalog-view.test.mjs",
-      "size": 5214
+      "size": 5593
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:ab0686ee4e079c1c12e476683e9e06d4175826c0",
+      "hash": "git-sha1:3d2ae2704a9b82b4ba445d14c448a4e26d05637d",
       "path": "test/collection-sync.test.mjs",
-      "size": 5218
+      "size": 6672
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:8ab8dde7417358245e274258338c0f5b4cebf1a3",
+      "hash": "git-sha1:1c01ac3b74a35532f46a442f9b0329338b68a1b6",
       "path": "test/connection-status.test.mjs",
-      "size": 2067
+      "size": 3675
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:56c95dffa0a224d104619efc04e99b75619cc811",
+      "path": "test/database-permissions.test.mjs",
+      "size": 1980
     },
     {
       "file_kind": "other",
@@ -765,129 +1135,213 @@
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:3214f066fb061d1c48d1b26038bcae75261e9934",
+      "hash": "git-sha1:fcc89fe83d95a6f42398ee29395f2345d7dbd3d5",
+      "path": "test/help-preferences.test.mjs",
+      "size": 6018
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:4651955bcb5211fa5e78623313b4ed0a5ff2a4ac",
+      "path": "test/help-reminder-policy.test.mjs",
+      "size": 4151
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:f9a4943817e0ca7bb4db6de325873f56f3865b25",
+      "path": "test/help-reminders-feature.test.mjs",
+      "size": 2716
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:ff40f9e90e820b24446890134a842a7009ca135e",
       "path": "test/imdb-queue-routes.test.mjs",
-      "size": 2089
+      "size": 2542
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:924f6bae88a761f765e26c7ca89deae424c4e955",
+      "hash": "git-sha1:b2e28b532263898f4db6df87eea1cd3fcf2cebc0",
       "path": "test/imdb-rating-job-store.test.mjs",
-      "size": 13054
+      "size": 14177
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:a9ff2e76c11a06956ef123efcd79b9f25f10df55",
+      "hash": "git-sha1:f4c4a22a5d1eef1a021fecb7a82116a5ac3bb5f5",
       "path": "test/imdb-rating-worker.test.mjs",
-      "size": 3226
+      "size": 3260
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:8e2ac3c7fa850aa0fb537f131ed368dc82f667d2",
+      "hash": "git-sha1:f01e61ef71bfc2dd45844b472f81738b21294652",
+      "path": "test/keyboard-shortcut-routes.test.mjs",
+      "size": 2815
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:94706e6b33ceff7a11efcb97e77502eb9e21f1d5",
+      "path": "test/keyboard-shortcuts.test.mjs",
+      "size": 3935
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:92fbe5527216e76f175e4aa0617cf30a36f29264",
       "path": "test/markup-contract.test.mjs",
-      "size": 2398
+      "size": 7714
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:ba637ba190495ef3a933e46e75b77d6c99ca2dd2",
+      "hash": "git-sha1:8d229cda5c8dce3025a076c3cd40e91151fdecf8",
       "path": "test/quick-rate.test.mjs",
-      "size": 2364
+      "size": 2767
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:04f8278cb578919698a007bb06e6cd8a83bc8a27",
+      "hash": "git-sha1:f243b536929b0c87766d471d1ffb5264ee69eab1",
       "path": "test/rater-events.test.mjs",
-      "size": 1105
+      "size": 1306
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:e12f11fc739c2f7b2576fd7c44aea80f4d13ec3d",
+      "hash": "git-sha1:34fa681d6d7ac977c9e0deef6c633dc6aa27d76f",
       "path": "test/rater-queue.test.mjs",
-      "size": 8429
+      "size": 10854
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:e39b4a9f01d53b0f4b73354ba8adfdf33ee202d4",
+      "hash": "git-sha1:87948125eb3c3ec76fcde1fdb18257bf4f82ad75",
       "path": "test/rating-records.test.mjs",
-      "size": 1412
+      "size": 1952
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:8504fe159757997f80a9fcc5c5427bdc7d23ecba",
+      "hash": "git-sha1:28bc6cc874faa55f12a0014c178437ebf9546c8a",
       "path": "test/recommendation-queue.test.mjs",
-      "size": 19251
+      "size": 28152
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:a0386a07259f3f4780899e3ee26f4dcc1ac65b1d",
+      "hash": "git-sha1:1f2fc527770b0dba0b24a68f4a4e1e0cd72b7590",
       "path": "test/recommendation-rendering.test.mjs",
-      "size": 6261
+      "size": 10507
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:710b8b7588abc2a3f6d3cd1a9e330d1b55bc1568",
+      "hash": "git-sha1:94ec5e63b1175d45069e29df7061b5095e0c35c3",
+      "path": "test/secret-protector.test.mjs",
+      "size": 3999
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:900e6bef96961c04b74446b85f748c0630f75cd7",
       "path": "test/security.test.mjs",
-      "size": 4675
+      "size": 5430
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:279cd2b061efb8576d9f7bfead771c2fbac54785",
+      "hash": "git-sha1:c0274d65976aba057b3216deb5de2bc937ed949e",
       "path": "test/settings-workflows.test.mjs",
-      "size": 1484
+      "size": 1305
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:2b5b06597d0622882b35da5de55eea97a8f4c473",
+      "hash": "git-sha1:bbfc03a29a880bc2daa790d2c93c6e7ea4837fda",
+      "path": "test/setup-guide-docs.test.mjs",
+      "size": 2708
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:14304ebbaa733f0ffb2fc3ab36ce0e3545c3c8b9",
+      "path": "test/setup-guide-feature.test.mjs",
+      "size": 7346
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:a278e76f86c5814a54a1f8a38a5f3eaf36755cc4",
+      "path": "test/setup-guide.test.mjs",
+      "size": 4352
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:680f090eeb07752af18e2b690164c68be1eba4c3",
+      "path": "test/social-ai.test.mjs",
+      "size": 2294
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:ec41cc397439f9f8ce11d65dd7b81c875a386d27",
+      "path": "test/social-routes.test.mjs",
+      "size": 7361
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:60f664095c6c58596099520d547adbe33b68ba17",
+      "path": "test/social-store.test.mjs",
+      "size": 4275
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:e14db9f5e791a7c11f86b02a026468a2e41e8f7c",
+      "path": "test/social-ui.test.mjs",
+      "size": 2041
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:8de7bf3a543149da5c98a511f665f331a67a696e",
       "path": "test/static-routes.test.mjs",
-      "size": 2888
+      "size": 2488
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:ce124b957bcee86d2f852264c9ac5d5c71fa43e9",
+      "hash": "git-sha1:adfffd8c4ef8ec3e0954ee74fc2beb10e88b1b53",
       "path": "test/streaming-availability.test.mjs",
-      "size": 6198
+      "size": 6240
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:32ca509d49496fbdfe1bd90def5961c4d82c558b",
+      "hash": "git-sha1:9c994cc7a0a2954527881aa8b33d98256e8427fb",
       "path": "test/streaming-country.test.mjs",
-      "size": 737
+      "size": 886
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:fa586d6915e6df58d3fab936a1cb0e0202848d9a",
+      "hash": "git-sha1:d8e355239ba06f13673e8cdce951e2a7480333a8",
+      "path": "test/title-filter-ui.test.mjs",
+      "size": 3083
+    },
+    {
+      "file_kind": "other",
+      "hash": "git-sha1:5b7e3e4f5c168f8e6174905acc88d0fef66e3414",
       "path": "test/title-filters.test.mjs",
-      "size": 8578
+      "size": 9581
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:67b517424e806f712acad4063a115aa1b6eb49ab",
+      "hash": "git-sha1:8e608d3cd53609fc0cb26928362a9fcb4c398333",
       "path": "test/title-metadata-route.test.mjs",
-      "size": 2635
+      "size": 2801
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:780ad46ae8265deb94e5cd99b01c82a7bf57b601",
+      "hash": "git-sha1:9794b42d34d82c4ee6483f2196a3055726de49b0",
       "path": "test/title-metadata-store.test.mjs",
-      "size": 5351
+      "size": 5349
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:0b83cc76bae61e43cbf055317a797ec941466a7f",
+      "hash": "git-sha1:9c70dab97ff61c6a0624119fc205d7f86b2d1303",
       "path": "test/title-metadata.test.mjs",
-      "size": 11124
+      "size": 11489
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:28187cf58f265076dacacdb8f54638f48ec1eab4",
+      "hash": "git-sha1:97fd22912908bc359cd7f5572d798027b6ac0d8b",
       "path": "test/title-pool-policy.test.mjs",
-      "size": 967
+      "size": 1099
     },
     {
       "file_kind": "other",
-      "hash": "git-sha1:000c9b93c8935b02224146f4f669bec63837b8ff",
+      "hash": "git-sha1:90c1ce3a05a1474003ca3474f7a4c6c95bddc74d",
       "path": "test/view-routes.test.mjs",
-      "size": 1491
+      "size": 2905
     },
     {
       "file_kind": "configuration",
@@ -902,12 +1356,12 @@
       "size": 491
     }
   ],
-  "generated_at": "2026-07-22T23:46:12Z",
+  "generated_at": "2026-07-23T22:55:00Z",
   "hash_scheme": "git-object-v1",
   "include_roots": [],
   "include_untracked": true,
   "repo_identity": "24c64586703550c4d5596a4b65555ab675f3feb5ecbbbd7e035c7195a624cd2f",
-  "repository_signature": "a20e15b7bf0dc344dcfe45e28768d261e4cfdf70a76f1fc9e18a97c491b29361",
-  "total_scope_files": 139,
-  "total_tracked_files": 148
+  "repository_signature": "87d25ff33aed627c2034ec8cad1327d952434c345b7463c1e5deefa9a671d2d7",
+  "total_scope_files": 209,
+  "total_tracked_files": 177
 }

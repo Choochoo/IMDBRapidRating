@@ -15,6 +15,16 @@
       <span>IMDb Rapid Rater is designed for vertical use on phones.</span>
     </aside>
 
+    <section class="startup-loading" id="startup-loading" role="status" aria-live="polite" aria-labelledby="startup-loading-title">
+      <div class="startup-loading-content">
+        <div class="startup-loading-indicator" aria-hidden="true">
+          <img src="/src/assets/rapid-rater-mark.png" alt="" width="56" height="56">
+        </div>
+        <strong id="startup-loading-title">Opening Rapid Rater</strong>
+        <span>Getting your ratings ready…</span>
+      </div>
+    </section>
+
     <header class="app-header">
       <div class="header-main">
         <div class="header-identity">
@@ -41,6 +51,7 @@
           <a class="view-tab nav-link active" id="tab-rater" href="/movies/rate">Rate Movies</a>
           <a class="view-tab nav-link" id="tab-ai" href="/movies/wishlist">Movie Watchlist</a>
           <a class="view-tab nav-link" id="tab-sync" href="/movies/sync">Sync Movies</a>
+          <a class="view-tab nav-link friend-tab" id="tab-friends" href="/movies/friends">Friends<span class="friend-request-count" id="friend-request-count" hidden>0</span></a>
         </nav>
 
         <div class="header-actions" aria-label="Account and data controls">
@@ -114,14 +125,14 @@
                 <span><strong>IMDb</strong><small id="imdb-status-label">Checking…</small></span>
                 <span class="status-action">Manage</span>
               </button>
-              <button type="button" class="connection-status status-checking btn" id="configure-tmdb" data-tooltip="TMDB supplies posters, summaries, cast, and title details.">
+              <button type="button" class="connection-status status-ready btn" id="configure-region" data-tooltip="Choose the country used for streaming availability.">
                 <span class="connection-dot" aria-hidden="true"></span>
-                <span><strong>TMDB</strong><small id="tmdb-status-label">Checking…</small></span>
-                <span class="status-action">Manage</span>
+                <span><strong>Viewing region</strong><small id="region-status-label">US services</small></span>
+                <span class="status-action">Change</span>
               </button>
-              <button type="button" class="connection-status status-checking btn" id="configure-openai" data-tooltip="OpenAI generates recommendations from your ratings.">
+              <button type="button" class="connection-status status-checking btn" id="configure-ai-service" data-tooltip="Connect the AI service that generates recommendations from your ratings.">
                 <span class="connection-dot" aria-hidden="true"></span>
-                <span><strong>OpenAI</strong><small id="openai-status-label">Checking…</small></span>
+                <span><strong>AI recommendations</strong><small id="ai-status-label">Checking…</small></span>
                 <span class="status-action">Manage</span>
               </button>
               <span class="menu-divider" aria-hidden="true"></span>
@@ -135,6 +146,16 @@
               </div>
             </div>
           </details>
+
+          <button type="button" class="header-action btn btn-sm btn-outline-secondary" id="open-help" title="Open illustrated setup guides">
+            <i class="button-icon" data-lucide="circle-help" aria-hidden="true"></i>
+            <span class="header-action-label">Help</span>
+          </button>
+
+          <button type="button" class="header-action btn btn-sm btn-outline-secondary" id="open-settings" title="Open account settings">
+            <i class="button-icon" data-lucide="settings" aria-hidden="true"></i>
+            <span class="header-action-label">Settings</span>
+          </button>
 
           <span id="account-badge" hidden>Signed in</span>
           <button type="button" class="logout-action btn btn-sm btn-link" id="sign-out" hidden title="Log out of Rapid Rater">
@@ -201,48 +222,62 @@
             <h1 id="recommendation-title">Movie Watchlist</h1>
             <p id="recommendation-description">A saved movie library shaped by your ratings, filters, and exclusions.</p>
           </div>
-          <details class="recommendation-generator" id="recommendation-generator">
-            <summary class="btn btn-primary">Generate picks</summary>
-            <div class="recommendation-generator-panel card">
-              <div class="recommendation-generator-heading">
-                <strong>Add titles to your watchlist</strong>
-                <span>Choose the taste source and batch size, then generate a new set of saved picks.</span>
-              </div>
-              <div class="recommendation-actions">
-                <button type="button" class="btn btn-outline-secondary" id="configure-ai">Set OpenAI Key</button>
-                <label class="recommendation-count-control" for="recommendation-count">
-                  <span>Number of picks</span>
-                  <input class="form-control form-control-sm" id="recommendation-count" type="number" min="1" max="99" step="1" value="9" inputmode="numeric">
-                </label>
-                <button type="button" class="btn btn-primary" id="generate-recommendations">Generate picks</button>
-              </div>
-              <section class="recommendation-controls" aria-label="Recommendation source">
-                <label class="recommendation-source-control" for="recommendation-basis">
-                  <span id="recommendation-basis-label">Create from</span>
-                  <select class="form-select form-select-sm" id="recommendation-basis" aria-describedby="recommendation-basis-detail">
-                    <option value="current">Movies</option>
-                    <option value="other">TV Shows</option>
-                    <option value="both">Both</option>
-                  </select>
-                </label>
-                <p class="recommendation-basis-detail" id="recommendation-basis-detail">Your movie ratings shape the taste profile. Picks stay movies.</p>
-              </section>
-              <div class="model-panel">
-                <div class="model-copy">
-                  <strong id="ai-model-status">Model: checking</strong>
-                  <span id="ai-model-detail">Auto-selects two versions behind the newest eligible GPT model.</span>
-                </div>
-                <div class="model-controls d-grid">
-                  <label class="visually-hidden" for="ai-model-select">Model</label>
-                  <select class="form-select" id="ai-model-select">
-                    <option value="">Auto</option>
-                  </select>
-                  <button type="button" class="btn btn-outline-secondary" id="refresh-ai-models">Refresh</button>
-                </div>
-              </div>
-            </div>
-          </details>
         </header>
+        <details class="recommendation-generator" id="recommendation-generator">
+          <summary>
+            <span><strong>Generate picks</strong><small>Choose exactly what gets added to this watchlist</small></span>
+          </summary>
+          <div class="recommendation-generator-panel">
+            <section class="recommendation-pick-filters" aria-labelledby="recommendation-pick-filters-title">
+              <div class="recommendation-pick-filter-copy">
+                <strong id="recommendation-pick-filters-title">Pick filters</strong>
+                <span id="recommendation-pick-filter-summary">Any release year</span>
+              </div>
+              <div class="recommendation-pick-filter-controls">
+                <label for="recommendation-min-year">From
+                  <input class="form-control form-control-sm" id="recommendation-min-year" type="number" min="1870" max="2200" inputmode="numeric" placeholder="Any">
+                </label>
+                <label for="recommendation-max-year">Through
+                  <input class="form-control form-control-sm" id="recommendation-max-year" type="number" min="1870" max="2200" inputmode="numeric" placeholder="Any">
+                </label>
+                <button type="button" class="recommendation-filter-button btn btn-sm btn-outline-secondary" id="recommendation-filter-edit">
+                  <i class="button-icon" data-lucide="list-filter" aria-hidden="true"></i>
+                  <span>More filters</span>
+                  <span class="recommendation-filter-count" id="recommendation-generator-filter-count" hidden>0</span>
+                </button>
+              </div>
+            </section>
+            <section class="recommendation-controls" aria-label="Recommendation source">
+              <label class="recommendation-source-control" for="recommendation-basis">
+                <span id="recommendation-basis-label">Create from</span>
+                <select class="form-select form-select-sm" id="recommendation-basis" aria-describedby="recommendation-basis-detail">
+                  <option value="current">Movies</option>
+                  <option value="other">TV Shows</option>
+                  <option value="both">Both</option>
+                </select>
+              </label>
+              <p class="recommendation-basis-detail" id="recommendation-basis-detail">Your movie ratings shape the taste profile. Picks stay movies.</p>
+              <label class="recommendation-source-control" for="recommendation-audience">
+                <span>Taste from</span>
+                <select class="form-select form-select-sm" id="recommendation-audience">
+                  <option value="mine">My ratings</option>
+                  <option value="friends">Selected friends</option>
+                  <option value="both">My ratings + friends</option>
+                </select>
+              </label>
+              <div class="recommendation-friend-options" id="recommendation-friend-options" aria-label="Friends used for recommendations" hidden></div>
+            </section>
+            <div class="recommendation-actions">
+              <button type="button" class="btn btn-outline-secondary" id="configure-ai">Connect AI</button>
+              <label class="recommendation-count-control" for="recommendation-count">
+                <span>Number of picks</span>
+                <input class="form-control form-control-sm" id="recommendation-count" type="number" min="1" max="99" step="1" value="9" inputmode="numeric">
+              </label>
+              <button type="button" class="btn btn-primary" id="generate-recommendations">Generate picks</button>
+            </div>
+            <p class="recommendation-generator-error invalid-feedback d-block" id="recommendation-generator-error" role="alert" hidden></p>
+          </div>
+        </details>
         <div class="recommendation-loading alert alert-primary" id="recommendation-loading" role="status" aria-live="polite" hidden>
           <span class="recommendation-spinner spinner-border text-primary" aria-hidden="true"></span>
           <div><strong>Building your watchlist</strong><span id="recommendation-loading-copy">Reading the signals in your ratings...</span></div>
@@ -250,8 +285,7 @@
         <div class="recommendation-list-toolbar">
           <div class="recommendation-list-copy">
             <div class="recommendation-list-heading"><strong id="watchlist-title">Saved movie watchlist</strong><span id="watchlist-count">0 saved</span></div>
-            <div class="recommendation-status" id="recommendation-status" role="status">Import your IMDb CSV, then generate recommendations.</div>
-            <p class="recommendation-filter-preview" id="recommendation-filter-preview" role="status">No extra filters are active.</p>
+            <div class="visually-hidden" id="recommendation-status" role="status" aria-live="polite"></div>
           </div>
           <div class="recommendation-library-controls">
             <button type="button" class="recommendation-filter-button btn btn-sm btn-outline-secondary" id="recommendation-filter-more" title="Open advanced watchlist filters" aria-label="Open advanced watchlist filters">
@@ -259,6 +293,20 @@
               <span>All titles</span>
               <span class="recommendation-filter-count" id="recommendation-filter-count" hidden>0</span>
             </button>
+            <details class="social-filter-menu" id="social-filter-menu">
+              <summary class="btn btn-sm btn-outline-secondary">Friends</summary>
+              <div class="social-filter-panel">
+                <label for="social-filter-mode">Show
+                  <select class="form-select form-select-sm" id="social-filter-mode">
+                    <option value="all">All saved titles</option>
+                    <option value="shared">Shared with or by friends</option>
+                    <option value="rated">Rated by friends</option>
+                    <option value="liked">Rated 7+ by friends</option>
+                  </select>
+                </label>
+                <div class="social-filter-friends" id="social-filter-friends"></div>
+              </div>
+            </details>
             <label class="recommendation-sort-control" for="recommendation-sort">
               <span class="visually-hidden">Sort watchlist</span>
               <select class="form-select form-select-sm" id="recommendation-sort">
@@ -275,10 +323,210 @@
       </div>
     </section>
 
+    <section class="friends-view" id="friends-view" hidden>
+      <div class="friends-shell">
+        <header class="friends-header">
+          <span class="recommendation-kicker">Your circle</span>
+          <h1>Friends</h1>
+          <p>Find people you know, share recommendations, and choose whose ratings appear on posters.</p>
+        </header>
+        <div class="friends-dashboard">
+          <section class="profile-card card" aria-labelledby="profile-title">
+            <div class="profile-card-heading">
+              <span class="profile-avatar avatar avatar-large" id="profile-avatar-preview" role="img" aria-label="Your profile photo">R</span>
+              <div><h2 id="profile-title">Your profile</h2><p>Your handle is how other members find you.</p></div>
+            </div>
+            <div class="profile-avatar-actions">
+              <label class="btn btn-sm btn-outline-secondary" for="profile-avatar-file">Update photo</label>
+              <input id="profile-avatar-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+              <button type="button" class="btn btn-sm btn-link" id="profile-avatar-remove">Remove photo</button>
+            </div>
+            <form class="profile-form" id="profile-form">
+              <label for="profile-display-name">Display name
+                <input class="form-control" id="profile-display-name" maxlength="80" required>
+              </label>
+              <label for="profile-handle">Handle
+                <span class="input-group"><span class="input-group-text">@</span><input class="form-control" id="profile-handle" maxlength="32" pattern="[a-z0-9][a-z0-9._-]{2,31}" required></span>
+              </label>
+              <label class="form-check"><input class="form-check-input" id="profile-searchable" type="checkbox"><span class="form-check-label">Let signed-in users find me</span></label>
+              <label class="form-check"><input class="form-check-input" id="profile-share-ratings" type="checkbox"><span class="form-check-label">Share my ratings with accepted friends</span></label>
+              <label class="form-check"><input class="form-check-input" id="profile-show-ratings" type="checkbox"><span class="form-check-label">Show friend ratings on posters</span></label>
+              <p class="invalid-feedback d-block" id="profile-error" role="alert"></p>
+              <button type="submit" class="btn btn-primary" id="profile-save">Save profile</button>
+            </form>
+          </section>
+          <section class="friend-search-card card" aria-labelledby="friend-search-title">
+            <h2 id="friend-search-title">Find a friend</h2>
+            <p>Search a handle or display name, or enter their complete email address.</p>
+            <form class="friend-search-form" id="friend-search-form">
+              <label class="visually-hidden" for="friend-search-input">Search users</label>
+              <div class="input-group"><input class="form-control" id="friend-search-input" type="search" minlength="2" maxlength="80" placeholder="Name, @handle, or exact email" required><button class="btn btn-primary" id="friend-search-submit" type="submit">Search</button></div>
+            </form>
+            <p class="invalid-feedback d-block" id="friend-search-error" role="alert"></p>
+            <div class="people-list" id="friend-search-results"></div>
+          </section>
+        </div>
+        <section class="friend-request-section" id="incoming-friends-section" hidden>
+          <div class="friends-section-heading"><h2>Friend requests</h2><span id="incoming-friends-count">0</span></div>
+          <div class="people-grid" id="incoming-friends"></div>
+        </section>
+        <section class="friend-request-section" id="outgoing-friends-section" hidden>
+          <div class="friends-section-heading"><h2>Requests sent</h2><span id="outgoing-friends-count">0</span></div>
+          <div class="people-grid" id="outgoing-friends"></div>
+        </section>
+        <section class="friend-list-section">
+          <div class="friends-section-heading"><h2>Your friends</h2><span id="accepted-friends-count">0</span></div>
+          <div class="people-grid" id="accepted-friends"></div>
+        </section>
+      </div>
+    </section>
+
     <section class="recommendation-details-dialog" id="recommendation-details" role="dialog" aria-modal="true" aria-labelledby="recommendation-details-title" hidden>
       <div class="recommendation-details-panel card">
         <button type="button" class="recommendation-details-close btn btn-sm btn-outline-secondary" id="recommendation-details-close" aria-label="Close watchlist details">Close</button>
         <div id="recommendation-details-content"></div>
+      </div>
+    </section>
+
+    <section class="recommendation-details-dialog" id="share-dialog" role="dialog" aria-modal="true" aria-labelledby="share-dialog-title" hidden>
+      <form class="share-dialog-panel card" id="share-form">
+        <div class="share-dialog-heading"><div><span class="recommendation-kicker">Send a recommendation</span><h2 id="share-dialog-title">Share this title</h2></div><button type="button" class="btn btn-sm btn-outline-secondary" id="share-cancel">Close</button></div>
+        <p>Select friends who should receive this title in their watchlist.</p>
+        <div class="share-friend-options" id="share-friend-options"></div>
+        <p class="invalid-feedback d-block" id="share-error" role="alert"></p>
+        <button type="submit" class="btn btn-primary" id="share-submit">Share recommendation</button>
+      </form>
+    </section>
+
+    <section class="settings-view" id="settings-view" aria-labelledby="settings-title" hidden>
+      <div class="settings-shell">
+        <button type="button" class="settings-back btn btn-sm btn-outline-secondary" id="settings-back">
+          <span aria-hidden="true">←</span> Back to Rapid Rater
+        </button>
+        <header class="settings-header">
+          <span class="recommendation-kicker">Your account</span>
+          <h1 id="settings-title">Settings</h1>
+          <p>Personalize how Rapid Rater works and manage the services connected to your account.</p>
+        </header>
+
+        <div class="settings-layout">
+          <nav class="settings-navigation" aria-label="Settings sections">
+            <a class="settings-navigation-item active" id="settings-shortcuts-nav" href="/settings" aria-current="page">
+              <i data-lucide="keyboard" aria-hidden="true"></i>
+              <span><strong>Keyboard</strong><small>Rating shortcuts</small></span>
+            </a>
+            <a class="settings-navigation-item" id="settings-connections-nav" href="/settings/ai">
+              <i data-lucide="plug" aria-hidden="true"></i>
+              <span><strong>Connections</strong><small>IMDb, region, and AI</small></span>
+            </a>
+          </nav>
+
+          <div class="settings-content">
+            <section class="shortcut-settings-panel card" id="shortcut-settings-panel" aria-labelledby="shortcut-settings-title">
+              <div class="settings-section-heading">
+                <div>
+                  <span class="recommendation-kicker">Rate your way</span>
+                  <h2 id="shortcut-settings-title">Keyboard shortcuts</h2>
+                  <p>Select a key, then press its replacement. If that key is already assigned, the two actions swap.</p>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="shortcut-reset">Restore defaults</button>
+              </div>
+              <div class="shortcut-settings-list" id="shortcut-settings-list"></div>
+              <p class="shortcut-settings-status" id="shortcut-settings-status" role="status" aria-live="polite"></p>
+              <div class="shortcut-settings-actions">
+                <button type="button" class="btn btn-primary" id="shortcut-save" disabled>Save shortcuts</button>
+              </div>
+            </section>
+
+            <section class="connection-settings-panel" id="connection-settings-panel" aria-labelledby="connection-settings-title" hidden>
+              <div class="settings-section-heading">
+                <div>
+                  <span class="recommendation-kicker">Account services</span>
+                  <h2 id="connection-settings-title">Connections</h2>
+                  <p>Manage live ratings, streaming availability, and recommendations.</p>
+                </div>
+              </div>
+              <div class="settings-connection-grid">
+                <button type="button" class="settings-connection-card card" id="settings-configure-imdb">
+                  <i data-lucide="star" aria-hidden="true"></i>
+                  <span><strong>IMDb</strong><small id="settings-imdb-status">Checking connection…</small></span>
+                  <b>Manage</b>
+                </button>
+                <button type="button" class="settings-connection-card card" id="settings-configure-region">
+                  <i data-lucide="map-pin" aria-hidden="true"></i>
+                  <span><strong>Viewing region</strong><small id="settings-region-status">US services</small></span>
+                  <b>Change</b>
+                </button>
+              </div>
+
+        <div class="ai-settings-card card">
+          <div class="settings-section-heading">
+            <div>
+              <span class="recommendation-kicker">AI recommendations</span>
+              <h2>Connect a compatible service</h2>
+              <p>Paste the address your AI service gives you. Rapid Rater will find its models, then you choose one.</p>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="ai-show-steps">Show illustrated steps</button>
+          </div>
+          <div class="ai-settings-step">
+            <span class="ai-settings-step-number" aria-hidden="true">1</span>
+            <div>
+              <label for="ai-base-url">AI server URL</label>
+              <p class="form-text">Use an OpenAI-compatible base URL, usually ending in <code>/v1</code>.</p>
+            </div>
+          </div>
+          <input class="form-control" id="ai-base-url" type="url" autocomplete="url" spellcheck="false" placeholder="https://your-ai-server.example/v1">
+
+          <label for="ai-api-key">API key <span class="text-secondary">(optional)</span></label>
+          <input class="form-control" id="ai-api-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="Paste a key only if needed">
+          <p class="form-text">A saved key is never shown here. Leave this blank to keep it, or for a keyless server.</p>
+
+          <button type="button" class="btn btn-outline-primary" id="ai-find-models">Find models</button>
+
+          <div class="ai-model-picker" id="ai-model-panel" hidden>
+            <div class="ai-settings-step">
+              <span class="ai-settings-step-number" aria-hidden="true">2</span>
+              <div>
+                <label for="ai-model-select">Choose a model</label>
+                <p class="form-text" id="ai-model-count">Models found on this server</p>
+              </div>
+            </div>
+            <input class="form-control" id="ai-model-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search models">
+            <select class="form-select" id="ai-model-select" size="7" aria-describedby="ai-model-count"></select>
+          </div>
+
+          <p class="ai-settings-status" id="ai-settings-status" role="status" aria-live="polite"></p>
+          <p class="invalid-feedback d-block" id="ai-settings-error" role="alert"></p>
+
+          <div class="ai-settings-actions">
+            <button type="button" class="btn btn-outline-danger" id="ai-delete">Remove connection</button>
+            <button type="button" class="btn btn-primary" id="ai-save" disabled>Test and save</button>
+          </div>
+        </div>
+
+        <aside class="ai-settings-note">
+          <strong>Your key stays private.</strong>
+          <span>Rapid Rater encrypts it in your account and sends AI requests from the server. A local URL such as <code>localhost</code> refers to the machine running Rapid Rater.</span>
+        </aside>
+
+        <section class="help-settings-card card" id="help-settings" aria-labelledby="help-settings-title">
+          <div>
+            <span class="recommendation-kicker">A little guidance</span>
+            <h2 id="help-settings-title">Help &amp; tutorials</h2>
+            <p>Open a short visual guide any time. Occasional tips stop after two appearances and never interrupt an active task.</p>
+          </div>
+          <label class="help-reminders-toggle" for="help-reminders-enabled">
+            <input class="form-check-input" id="help-reminders-enabled" type="checkbox" checked>
+            <span><strong>Show helpful reminders</strong><small>You can turn these off again at any time.</small></span>
+          </label>
+          <div class="help-settings-actions">
+            <button type="button" class="btn btn-outline-primary" id="open-setup-guide">Open tutorial library</button>
+            <p id="help-reminders-status" role="status" aria-live="polite"></p>
+          </div>
+        </section>
+            </section>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -306,6 +554,7 @@
               <div class="sync-row-actions">
                 <a class="sync-text-link btn btn-outline-secondary" href="https://www.imdb.com/list/ratings/" target="_blank" rel="noopener noreferrer">Open IMDb ratings ↗</a>
                 <button type="button" class="btn btn-primary" id="sync-import-imdb">Import IMDb CSV</button>
+                <button type="button" class="btn btn-outline-secondary" id="sync-imdb-guide">Show steps</button>
               </div>
             </div>
           </details>
@@ -323,11 +572,15 @@
               <div class="sync-row-actions">
                 <a class="sync-text-link btn btn-outline-secondary" href="https://letterboxd.com/user/exportdata/" target="_blank" rel="noopener noreferrer">Download Letterboxd export ↗</a>
                 <button type="button" class="btn btn-primary" id="sync-import-letterboxd">Import Letterboxd ZIP</button>
+                <button type="button" class="btn btn-outline-secondary" id="sync-letterboxd-guide">Show steps</button>
               </div>
               <p class="sync-source" id="sync-source">No Letterboxd export imported yet.</p>
               <div class="sync-send-step">
                 <p><strong id="sync-to-imdb-count">0</strong> imported Letterboxd ratings are missing from IMDb.</p>
-                <button type="button" class="btn btn-outline-secondary" id="sync-to-imdb" disabled>Send missing ratings to IMDb</button>
+                <div class="sync-row-actions">
+                  <button type="button" class="btn btn-outline-secondary" id="sync-to-imdb" disabled>Send missing ratings to IMDb</button>
+                  <button type="button" class="btn btn-outline-secondary" id="sync-to-imdb-guide">Show steps</button>
+                </div>
               </div>
             </div>
           </details>
@@ -345,6 +598,7 @@
               <div class="sync-row-actions">
                 <button type="button" class="btn btn-primary" id="sync-to-letterboxd" disabled>Download Letterboxd CSV</button>
                 <a class="sync-text-link btn btn-outline-secondary" href="https://letterboxd.com/import/" target="_blank" rel="noopener noreferrer">Open Letterboxd import ↗</a>
+                <button type="button" class="btn btn-outline-secondary" id="sync-to-letterboxd-guide">Show steps</button>
               </div>
             </div>
           </details>
@@ -377,24 +631,26 @@
     <footer class="footer" id="rating-footer" hidden>
       <div class="shortcut-panel">
         <div class="shortcut-copy">
-          <strong>Keyboard shortcuts</strong>
-          <span>1-9 rate IMDb, 0 = 10/10. ` = not seen, Backspace = go back.</span>
+          <strong>Rate this movie</strong>
+          <span>Choose a score or use your assigned keys. Backspace = go back.</span>
         </div>
-        <div class="keybar d-flex align-items-center" aria-label="keyboard ratings">
-          <span class="key" data-shortcut="rate-0">0</span>
-          <span class="key" data-shortcut="rate-1">1</span>
-          <span class="key" data-shortcut="rate-2">2</span>
-          <span class="key" data-shortcut="rate-3">3</span>
-          <span class="key" data-shortcut="rate-4">4</span>
-          <span class="key" data-shortcut="rate-5">5</span>
-          <span class="key" data-shortcut="rate-6">6</span>
-          <span class="key" data-shortcut="rate-7">7</span>
-          <span class="key" data-shortcut="rate-8">8</span>
-          <span class="key" data-shortcut="rate-9">9</span>
-          <span class="divider"></span>
-          <span class="key" data-shortcut="skip">`</span>
-          <span class="divider"></span>
-          <span class="key wide" data-shortcut="undo">Backspace</span>
+        <div class="desktop-rating-controls" id="desktop-rating-controls">
+          <div class="desktop-rating-buttons" id="desktop-rating-buttons" role="group" aria-label="Rate the active title">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-desktop-rating="1" data-shortcut-action="rate-1"><span>1</span><kbd data-shortcut-label>1</kbd></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-desktop-rating="2" data-shortcut-action="rate-2"><span>2</span><kbd data-shortcut-label>2</kbd></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-desktop-rating="3" data-shortcut-action="rate-3"><span>3</span><kbd data-shortcut-label>3</kbd></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-desktop-rating="4" data-shortcut-action="rate-4"><span>4</span><kbd data-shortcut-label>4</kbd></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-desktop-rating="5" data-shortcut-action="rate-5"><span>5</span><kbd data-shortcut-label>5</kbd></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-desktop-rating="6" data-shortcut-action="rate-6"><span>6</span><kbd data-shortcut-label>6</kbd></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-desktop-rating="7" data-shortcut-action="rate-7"><span>7</span><kbd data-shortcut-label>7</kbd></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-desktop-rating="8" data-shortcut-action="rate-8"><span>8</span><kbd data-shortcut-label>8</kbd></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-desktop-rating="9" data-shortcut-action="rate-9"><span>9</span><kbd data-shortcut-label>9</kbd></button>
+            <button type="button" class="btn btn-sm btn-primary" data-desktop-rating="10" data-shortcut-action="rate-10"><span>10</span><kbd data-shortcut-label>0</kbd></button>
+          </div>
+          <div class="desktop-secondary-actions">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="desktop-not-seen" data-desktop-action="not-seen" data-shortcut-action="skip"><span>Not seen</span><kbd data-shortcut-label>N</kbd></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="desktop-undo" data-desktop-action="undo" data-shortcut-action="undo"><span>Go back</span><kbd>⌫</kbd></button>
+          </div>
         </div>
       </div>
       <section class="data-credits" aria-labelledby="data-credits-title">
@@ -438,7 +694,7 @@
       </div>
     </div>
 
-    <section class="auth-landing" id="auth-landing" aria-labelledby="auth-title">
+    <section class="auth-landing" id="auth-landing" aria-labelledby="auth-title" hidden>
       <div class="auth-shell">
         <div class="auth-intro">
           <div class="auth-brand"><img class="auth-brand-logo" src="/src/assets/rapid-rater-logo.png" alt="IMDb Rapid Rater"></div>
@@ -580,13 +836,10 @@
       <div class="cookie-card card">
         <div class="cookie-header d-flex align-items-center justify-content-between gap-3 mb-2">
           <h1 id="imdb-title">Connect IMDb</h1>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="imdb-close">Close</button>
         </div>
-        <p>IMDb must be connected before rating. Rapid Rater encrypts this connection in your account and uses it only while its controlled background queue submits or reverses your ratings.</p>
-        <ol>
-          <li><a href="https://www.imdb.com/registration/signin/" target="_blank" rel="noopener noreferrer">Sign in on IMDb</a> in this browser.</li>
-          <li>On IMDb, open DevTools, select Network, and refresh the page.</li>
-          <li>Select the main <code>www.imdb.com</code> request and copy the complete <code>Cookie</code> request-header value.</li>
-        </ol>
+        <p>Paste the complete IMDb <code>Cookie</code> request header. Rapid Rater encrypts it and never shows it again.</p>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="imdb-show-steps">Show illustrated steps</button>
         <label for="imdb-cookie-input">IMDb connection value</label>
         <textarea class="form-control" id="imdb-cookie-input" autocomplete="off" spellcheck="false" placeholder="Paste the complete Cookie request-header value"></textarea>
         <p class="cookie-error invalid-feedback d-block" id="imdb-error" role="alert"></p>
@@ -597,56 +850,80 @@
       </div>
     </section>
 
-    <section class="cookie-dialog" id="tmdb-dialog" role="dialog" aria-modal="true" aria-labelledby="tmdb-title" hidden>
+    <section class="cookie-dialog" id="region-dialog" role="dialog" aria-modal="true" aria-labelledby="region-title" hidden>
       <div class="cookie-card card">
         <div class="cookie-header d-flex align-items-center justify-content-between gap-3 mb-2">
-          <h1 id="tmdb-title">TMDB settings</h1>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="tmdb-close">Close</button>
+          <h1 id="region-title">Viewing region</h1>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="region-close">Close</button>
         </div>
-        <p>TMDB provides posters, synopsis text, cast, trailers, title details, and country-specific streaming availability. Rapid Rater saves these settings in your account so they work on your other computers.</p>
-        <ol>
-          <li>Create or sign into a TMDB account.</li>
-          <li>Open <a href="https://developer.themoviedb.org/reference/getting-started" target="_blank" rel="noreferrer">TMDB API Getting Started</a>.</li>
-          <li>Use the Credentials section to get an API key or read access token.</li>
-          <li>Copy the credential value.</li>
-          <li>Paste it here, choose the country whose streaming services you use, and save.</li>
-        </ol>
-        <label for="tmdb-key-input">TMDB API key</label>
-        <input class="setup-input form-control" id="tmdb-key-input" autocomplete="off" spellcheck="false" placeholder="Paste a new key, or leave blank to keep the saved key">
-        <label class="mt-3" for="tmdb-country-input">Streaming country</label>
-        <input class="setup-input form-control" id="tmdb-country-input" autocomplete="off" spellcheck="false" inputmode="text" maxlength="2" pattern="[A-Za-z]{2}" placeholder="US">
+        <p>Choose the country whose streaming services you use. Rapid Rater saves this preference in your account and uses it when showing where a title is available.</p>
+        <label for="region-country-input">Two-letter country code</label>
+        <input class="setup-input form-control" id="region-country-input" autocomplete="off" spellcheck="false" inputmode="text" maxlength="2" pattern="[A-Za-z]{2}" placeholder="US">
         <p class="form-text">Use the two-letter country code for the services available where you watch, such as US, CA, GB, or AU.</p>
-        <p class="cookie-error invalid-feedback d-block" id="tmdb-error" role="alert"></p>
+        <p class="cookie-error invalid-feedback d-block" id="region-error" role="alert"></p>
         <div class="cookie-actions d-flex justify-content-end gap-2 mt-3 flex-wrap">
-          <button type="button" class="btn btn-outline-danger" id="tmdb-delete">Remove key</button>
-          <button type="button" class="btn btn-primary" id="tmdb-save">Save TMDB settings</button>
-          <button type="button" class="btn btn-outline-secondary" id="tmdb-later">Skip for now</button>
+          <button type="button" class="btn btn-primary" id="region-save">Save viewing region</button>
         </div>
       </div>
     </section>
 
-    <section class="cookie-dialog" id="ai-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-title" hidden>
-      <div class="cookie-card card">
-        <div class="cookie-header d-flex align-items-center justify-content-between gap-3 mb-2">
-          <h1 id="ai-title">Add OpenAI API Key</h1>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="ai-close">Close</button>
-        </div>
-        <p>AI recommendations need an OpenAI API key. Rapid Rater encrypts the key in your account and never returns it to browser JavaScript.</p>
-        <ol>
-          <li>Create or sign into an OpenAI account.</li>
-          <li>Open the OpenAI API dashboard and create an API key.</li>
-          <li>Paste the key here and save.</li>
-        </ol>
-        <label for="ai-key-input">OpenAI API key</label>
-        <input class="setup-input form-control" id="ai-key-input" autocomplete="off" spellcheck="false" placeholder="Paste OpenAI API key">
-        <p class="cookie-error invalid-feedback d-block" id="ai-error" role="alert"></p>
-        <div class="cookie-actions d-flex justify-content-end gap-2 mt-3 flex-wrap">
-          <button type="button" class="btn btn-outline-danger" id="ai-delete">Remove key</button>
-          <button type="button" class="btn btn-primary" id="ai-save">Save API Key</button>
-          <button type="button" class="btn btn-outline-secondary" id="ai-later">Skip for now</button>
-        </div>
+    <section class="setup-guide-dialog" id="setup-guide" role="dialog" aria-modal="true" aria-labelledby="setup-guide-title" hidden>
+      <div class="setup-guide-panel card" id="setup-guide-panel" tabindex="-1">
+        <header class="setup-guide-header">
+          <div class="setup-guide-heading">
+            <span class="recommendation-kicker">Quick visual walkthroughs</span>
+            <h1 id="setup-guide-title">Setup guides</h1>
+            <p id="setup-guide-summary"></p>
+          </div>
+          <div class="setup-guide-header-actions">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="setup-guide-home" hidden>All tutorials</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="setup-guide-close">Close</button>
+          </div>
+        </header>
+
+        <section class="setup-guide-hub" id="setup-guide-hub">
+          <div class="setup-guide-hub-list" id="setup-guide-hub-list"></div>
+        </section>
+
+        <article class="setup-guide-step" id="setup-guide-step" hidden>
+          <div class="setup-guide-step-main">
+            <div class="setup-guide-copy">
+              <p class="setup-guide-progress" id="setup-guide-progress"></p>
+              <h2 id="setup-guide-step-title" tabindex="-1"></h2>
+              <p id="setup-guide-step-body"></p>
+              <a class="setup-guide-action btn btn-outline-primary" id="setup-guide-action" hidden></a>
+            </div>
+            <figure class="setup-guide-media">
+              <img class="setup-guide-image" id="setup-guide-image" alt="">
+              <div class="setup-guide-image-fallback" id="setup-guide-image-fallback" hidden>
+                Screenshot coming soon. The written step still works.
+              </div>
+            </figure>
+          </div>
+          <footer class="setup-guide-footer">
+            <span>Short, visual, and safe to revisit.</span>
+            <nav class="setup-guide-footer-actions" aria-label="Tutorial steps">
+              <button type="button" class="btn btn-outline-secondary" id="setup-guide-back">Back</button>
+              <button type="button" class="btn btn-primary" id="setup-guide-next">Next</button>
+            </nav>
+          </footer>
+        </article>
       </div>
     </section>
+
+    <aside class="help-reminder card" id="help-reminder" role="region" aria-live="polite" aria-labelledby="help-reminder-title" hidden>
+      <div>
+        <span class="help-reminder-eyebrow">Helpful tip</span>
+        <h2 id="help-reminder-title">Need help?</h2>
+        <p id="help-reminder-body"></p>
+      </div>
+      <div class="help-reminder-actions">
+        <button type="button" class="btn btn-primary" id="help-reminder-open">Yes, show me</button>
+        <button type="button" class="btn btn-outline-secondary" id="help-reminder-later">Not now</button>
+      </div>
+      <button type="button" class="help-reminder-hide btn btn-sm btn-link" id="help-reminder-hide">Hide helpful tips</button>
+      <button type="button" class="help-reminder-settings" id="help-reminder-settings">Reminder settings</button>
+    </aside>
 
     <script type="module" src="/src/app.js"></script>
   </body>

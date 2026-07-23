@@ -6,6 +6,7 @@ import { EscapeHtml } from "../util.js";
 import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../../shared/media.js";
 import { NormalizeRecommendationBasis } from "../../../shared/recommendation-basis.js";
 import { NormalizeTitleFilters } from "../../../shared/title-filters.js";
+import { ApplyAccountSettings } from "../browser-settings.js";
 
 const StateConflictRetryCount = 4;
 const AccountRefreshIntervalMs = 15_000;
@@ -125,7 +126,9 @@ export class AccountSyncFeature {
     const accountChanged = await this.RefreshAccountStateFromServer().catch(() => false);
     const recommendationChanged = await this.RefreshRecommendationQueue().catch(() => false);
     const queueChanged = await this.RefreshRaterQueue().catch(() => false);
-    return accountChanged || recommendationChanged || queueChanged;
+    const friendsChanged = await this.RefreshFriendships().catch(() => false);
+    const socialChanged = await this.RefreshCurrentSocialContext().catch(() => false);
+    return accountChanged || recommendationChanged || queueChanged || friendsChanged || socialChanged;
   }
 
   async RefreshAccountStateFromServer() {
@@ -133,10 +136,26 @@ export class AccountSyncFeature {
       return false;
     const account = await this.FetchJson(AccountStateUrl);
     this.ApplyImdbQueueStatus(account.imdbQueue);
+    const settingsChanged = this.ApplyRemoteAccountSettings(account.settings);
     const revision = Number(account.revision) || 0;
     if (revision <= this.AccountRevision)
-      return false;
+      return settingsChanged;
     this.ApplyRemoteAccountState(account, revision);
+    return true;
+  }
+
+  ApplyRemoteAccountSettings(remote) {
+    if (!remote)
+      return false;
+    const previous = JSON.stringify(this.Settings);
+    ApplyAccountSettings(this.Settings, remote);
+    if (previous === JSON.stringify(this.Settings))
+      return false;
+    this.ApplyShortcutUi();
+    this.SyncHelpPreferenceUi();
+    this.UpdateSettingsButtons();
+    if (!this.ShortcutSettingsDirty)
+      this.SyncShortcutSettingsForm();
     return true;
   }
 

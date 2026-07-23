@@ -1,3 +1,6 @@
+const CsvDelimiter = ",";
+const CsvQuote = "\"";
+
 export function ParseCsv(text) {
   const state = BuildCsvState();
   for (let index = 0; index < text.length; index++)
@@ -17,7 +20,7 @@ function BuildCsvState() {
 }
 
 export function ToCsvRow(values) {
-  return values.map(ToCsvValue).join(",");
+  return values.map(ToCsvValue).join(CsvDelimiter);
 }
 
 function ReadCsvCharacter(state, char, next, skipNext) {
@@ -29,21 +32,21 @@ function ReadCsvCharacter(state, char, next, skipNext) {
 }
 
 function ReadQuotedCsvCharacter(state, char, next, skipNext) {
-  if (char === "\"" && next === "\"") {
-    state.value += "\"";
+  if (char === CsvQuote && next === CsvQuote) {
+    state.value += CsvQuote;
     skipNext();
     return;
   }
-  if (char === "\"")
+  if (char === CsvQuote)
     state.quoted = false;
   else
     state.value += char;
 }
 
 function ReadOpenCsvCharacter(state, char) {
-  if (char === "\"")
+  if (char === CsvQuote)
     state.quoted = true;
-  else if (char === ",")
+  else if (char === CsvDelimiter)
     PushCsvValue(state);
   else if (char === "\n")
     PushCsvRow(state);
@@ -64,5 +67,5 @@ function PushCsvRow(state) {
 
 function ToCsvValue(value) {
   const text = String(value ?? "");
-  return /[",\n\r]/.test(text) ? `"${text.replaceAll("\"", "\"\"")}"` : text;
+  return /[",\n\r]/.test(text) ? `${CsvQuote}${text.replaceAll(CsvQuote, `${CsvQuote}${CsvQuote}`)}${CsvQuote}` : text;
 }

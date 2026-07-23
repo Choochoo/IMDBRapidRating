@@ -1,6 +1,7 @@
-export const MediaTypes = Object.freeze(["movie", "tv"]);
+const MovieMediaType = "movie";
+export const MediaTypes = Object.freeze([MovieMediaType, "tv"]);
 
-const MediaStateKeys = Object.freeze([
+const MediaStateKeyValues = [
   "ratings",
   "recommendationExclusions",
   "letterboxd",
@@ -9,9 +10,10 @@ const MediaStateKeys = Object.freeze([
   "recommendationBasis",
   "signature",
   "queueIds"
-]);
+];
+const MediaStateKeys = Object.freeze(MediaStateKeyValues);
 
-export function NormalizeMediaType(value, fallback = "movie") {
+export function NormalizeMediaType(value, fallback = MovieMediaType) {
   const mediaType = String(value || "").trim().toLowerCase();
   return MediaTypes.includes(mediaType) ? mediaType : fallback;
 }
@@ -31,7 +33,7 @@ export function NormalizeAccountPayload(value) {
   };
 }
 
-export function ReadMediaPayload(value, mediaType = "movie") {
+export function ReadMediaPayload(value, mediaType = MovieMediaType) {
   const normalized = NormalizeAccountPayload(value);
   return ReadObject(normalized.media[NormalizeMediaType(mediaType)]);
 }

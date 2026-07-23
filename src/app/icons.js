@@ -1,6 +1,6 @@
-import { ArrowUpDown, CirclePlus, ListFilter, LogOut, Plug, Smartphone, createIcons } from "lucide";
+import { ArrowUpDown, CircleHelp, CirclePlus, Keyboard, ListFilter, LogOut, MapPin, Plug, Settings, Smartphone, Star, createIcons } from "lucide";
 
-const AppIcons = Object.freeze({ ArrowUpDown, CirclePlus, ListFilter, LogOut, Plug, Smartphone });
+const AppIcons = Object.freeze({ ArrowUpDown, CircleHelp, CirclePlus, Keyboard, ListFilter, LogOut, MapPin, Plug, Settings, Smartphone, Star });
 
 export function InitializeIcons() {
   createIcons({ icons: AppIcons });

@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CreateDatabase } from "../server/db/client.mjs";
 import { ReadDatabaseSchema } from "../server/db/config.mjs";
-import { LoadLocalEnv } from "../server/env.mjs";
+import { InitializeRuntimeEnvironment } from "../server/env.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RuntimeRoleVariable = "POSTGRES_RUNTIME_ROLE";
@@ -50,7 +50,7 @@ function QuoteIdentifier(value) {
 
 async function Main() {
   process.env.IMDB_RAPID_RATER_HOME ||= path.join(RootPath, ".runtime");
-  LoadLocalEnv(RootPath);
+  await InitializeRuntimeEnvironment(RootPath);
   const { pool } = CreateDatabase();
   try {
     const runtimeRole = await SynchronizeDatabasePermissions(pool);

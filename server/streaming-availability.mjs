@@ -3,13 +3,17 @@ import { DefaultStreamingCountry, ReadStreamingCountry } from "../shared/streami
 
 const MovieMediaType = "movie";
 const TvMediaType = "tv";
+const FreeProviderType = "free";
+const AdsProviderType = "ads";
+const RentProviderType = "rent";
+const BuyProviderType = "buy";
 export const StreamingAvailabilityTtlMilliseconds = 12 * 60 * 60 * 1000;
 const ProviderTypeEntries = [
   ["subscription", "flatrate"],
-  ["free", "free"],
-  ["ads", "ads"],
-  ["rent", "rent"],
-  ["buy", "buy"]
+  [FreeProviderType, FreeProviderType],
+  [AdsProviderType, AdsProviderType],
+  [RentProviderType, RentProviderType],
+  [BuyProviderType, BuyProviderType]
 ];
 const ProviderTypes = Object.freeze(ProviderTypeEntries);
 const SupportedProviderTypes = new Set(ProviderTypes.map(([type]) => type));

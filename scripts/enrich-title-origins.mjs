@@ -8,7 +8,7 @@ import { CreateTitleMetadataStore } from "../server/title-metadata-store.mjs";
 import { BuildTmdbMetadata, NormalizeTmdbDetails } from "../server/title-metadata.mjs";
 import { AddTmdbApiKey, BuildTmdbHeaders, TmdbApiUrl } from "../server/tmdb-request.mjs";
 import { NormalizeTmdbOrigin } from "../shared/title-filters.js";
-import { LoadLocalEnv } from "../server/env.mjs";
+import { InitializeRuntimeEnvironment } from "../server/env.mjs";
 
 const RootPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DataDir = path.join(RootPath, "data");
@@ -41,7 +41,7 @@ if (IsMainModule())
 
 async function Main() {
   process.env.IMDB_RAPID_RATER_HOME ||= path.join(RootPath, ".runtime");
-  LoadLocalEnv(RootPath);
+  await InitializeRuntimeEnvironment(RootPath);
   const apiKey = ReadApiKey();
   if (!apiKey)
     throw new Error("TMDB_BUILD_API_KEY is required to enrich title origins.");
@@ -113,12 +113,14 @@ function BuildTitleReferences(catalogs) {
 }
 
 function BuildLocalCacheImports(titleReferences, localCache, databaseCache) {
-  return titleReferences.flatMap((item) => {
-    if (IsReusableCacheEntry(databaseCache[item.ttId], item.mediaType))
-      return [];
-    const entry = localCache[item.ttId];
-    return IsReusableCacheEntry(entry, item.mediaType) ? [{ ttId: item.ttId, ...entry }] : [];
-  });
+  return titleReferences.flatMap((item) => BuildLocalCacheImport(item, localCache, databaseCache));
+}
+
+function BuildLocalCacheImport(item, localCache, databaseCache) {
+  if (IsReusableCacheEntry(databaseCache[item.ttId], item.mediaType))
+    return [];
+  const entry = localCache[item.ttId];
+  return IsReusableCacheEntry(entry, item.mediaType) ? [{ ttId: item.ttId, ...entry }] : [];
 }
 
 export function BuildPendingTitles(catalogs, cache) {
@@ -180,11 +182,13 @@ async function FlushCheckpoint(cache, originStore, state) {
   const entries = state.pendingEntries.splice(0);
   if (!entries.length)
     return;
-  state.checkpoint = state.checkpoint.then(async () => {
-    await PersistCheckpointEntries(originStore, entries);
-    await WriteCache(cache);
-  });
+  state.checkpoint = state.checkpoint.then(() => PersistCheckpoint(cache, originStore, entries));
   await state.checkpoint;
+}
+
+async function PersistCheckpoint(cache, originStore, entries) {
+  await PersistCheckpointEntries(originStore, entries);
+  await WriteCache(cache);
 }
 
 async function PersistCheckpointEntries(store, entries) {
@@ -406,7 +410,7 @@ async function WriteCache(cache) {
 }
 
 function ReadApiKey() {
-  return String(process.env.TMDB_BUILD_API_KEY || "").trim().replace(/^authorization:\s*/i, "").replace(/^bearer\s+/i, "");
+  return String(process.env.TMDB_BUILD_API_KEY || process.env.TMDB_API_KEY || "").trim().replace(/^authorization:\s*/i, "").replace(/^bearer\s+/i, "");
 }
 
 function ReadConcurrency() {

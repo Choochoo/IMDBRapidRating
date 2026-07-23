@@ -6,6 +6,8 @@ Visitors can create their own account from the landing page. Public registration
 
 This project uses an unsupported IMDb website endpoint for write-back. IMDb does not provide a public user-rating write API or CSV import. The write path can break, can be rate limited, and may violate IMDb terms. Use it only for your own account and titles you actually want to rate.
 
+New here? Start with the [illustrated setup guides](docs/setup/README.md) for IMDb, OpenAI-compatible services, Letterboxd imports, and two-way rating transfers.
+
 ## What It Does
 
 - Switches the entire product between Movies and TV Shows, with separate URLs, queues, stats, histories, and watchlists.
@@ -13,7 +15,7 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 - Loads real feature-film, TV-series, and TV-miniseries IDs from IMDb's non-commercial datasets. Episodes are intentionally excluded.
 - Filters each rating queue by release/premiere year, production country, original language, and an optional Bollywood approximation without marking hidden titles as seen.
 - Presents series-native facts in TV mode, including run years, status, seasons, episodes, and episode runtime when TMDB metadata is available.
-- Enriches visible cards with poster, synopsis, cast, trailer, title details, and country-specific streaming availability from TMDB when configured.
+- Enriches visible cards with poster, synopsis, cast, trailer, title details, and country-specific streaming availability from a shared, server-managed TMDB cache.
 - Caches normalized metadata, complete fetched TMDB detail payloads, and streaming-provider results in PostgreSQL so repeat views are served locally.
 - Imports your IMDb ratings CSV so already-rated titles are removed from the queue.
 - Saves that ratings CSV in your account and auto-loads it on future visits.
@@ -21,7 +23,8 @@ This project uses an unsupported IMDb website endpoint for write-back. IMDb does
 - Saves separate movie and TV “Don’t recommend again” lists and excludes those titles from future picks in the matching section.
 - Synchronizes ratings, queue progress, imports, and preferences through PostgreSQL.
 - Reconciles IMDb ratings with a Letterboxd export and builds a non-destructive union sync plan.
-- Encrypts IMDb connection data and API keys with AES-256-GCM before storing them.
+- Connects any service that exposes OpenAI-compatible `/models` and `/chat/completions` endpoints; models are discovered live instead of maintained in the app.
+- Encrypts IMDb connection data and AI API keys with AES-256-GCM before storing them.
 - Queues ratings `1` through `10` for controlled background write-back when live mode is configured.
 - Tracks queued, sent, and failed live IMDb writes in account state without rewriting the imported ratings CSV.
 - Maps the `0` key to an IMDb `10/10` rating.
@@ -50,19 +53,23 @@ One-time setup:
 
 The GitHub repository must provide the same `OCTOPUS_SERVER_URL` and `OCTOPUS_API_KEY` Actions secrets used by the other Octopus-deployed repositories. Add `POSTGRES_CONNECTION_STRING` and `TMDB_BUILD_API_KEY` Actions repository secrets so the build can cache title metadata in PostgreSQL and enrich the generated catalogs with production-country and original-language metadata. The self-hosted runner must have internal network access to PostgreSQL. Deployment fails before packaging when enrichment cannot use the database or produces no usable origin metadata.
 
-Configure these Octopus project variables before the first account-backed deployment. Mark the first three as sensitive:
+Configure these Octopus project variables before the first account-backed deployment. Mark the first four as sensitive:
 
 - `RapidRater.PostgresConnectionString`
 - `RapidRater.SessionSecret`
 - `RapidRater.DataEncryptionKey`
+- `RapidRater.TmdbApiKey`
 - `RapidRater.AppOrigin`
 - `RapidRater.AllowedOrigins` (optional comma-separated origins)
+- `RapidRater.AiAllowedPrivateOrigins` (optional comma-separated exact origins)
 
 Use a dedicated PostgreSQL database/user with access only to the `imdb_rapid_rater` schema. The deployment writes the runtime values to an ACL-restricted file, installs production dependencies, and applies migrations before starting the scheduled task.
 
 For build-time origin enrichment, configure the `POSTGRES_CONNECTION_STRING` Actions repository secret with a dedicated PostgreSQL account that can access the `imdb_rapid_rater` schema. The deployment workflow automatically grants the established runtime table owner access to objects created by this build account and establishes matching default privileges for future migrations. Set the non-sensitive `POSTGRES_RUNTIME_ROLE` Actions repository variable only for a fresh database or when the runtime role does not own the existing `users` table.
 
 `RapidRater.AppOrigin` is the primary browser origin. Same-origin requests are accepted from the host serving the current request, while additional trusted browser origins can be supplied through `RapidRater.AllowedOrigins`; the deployment writes them to the `APP_ALLOWED_ORIGINS` runtime setting. The repository contains no deployment-specific hostnames or addresses.
+
+AI setup accepts public HTTPS base URLs by default. To connect a private-network or plain-HTTP service, such as `http://localhost:11434`, an administrator must add its exact origin to `RapidRater.AiAllowedPrivateOrigins` (or `AI_ALLOWED_PRIVATE_ORIGINS` outside Octopus). `localhost` means the machine running the Rapid Rater server, not the viewer's browser.
 
 An existing IIS reverse-proxy site can be integrated by configuring these optional Octopus project variables:
 
@@ -129,7 +136,7 @@ Quick Rate saves the pending rating to the account first, removes the title from
 
 ## Connection Indicator
 
-The circular header indicator counts the three saved service connections: IMDb, TMDB, and OpenAI. Green means all three are connected, yellow means one or two are connected, red means none are connected, and gray means the checks are still running. Hover or focus it to read what is missing, or select it to open the connection menu. Each service row opens its existing setup dialog; live-rating sync and title-catalog health remain listed separately as system status.
+The circular header indicator counts the two user-managed service connections: IMDb and AI recommendations. Green means both are connected, yellow means one is connected, red means neither is connected, and gray means the checks are still running. Hover or focus it to read what is missing, or select it to open the connection menu. The same menu includes the account's viewing-region preference; live-rating sync and title-catalog health remain listed separately as system status.
 
 ## Import Existing IMDb Ratings
 
@@ -169,7 +176,7 @@ Sync mode never deletes from either service and never invents a rating for a wat
 
 ## Back Up Or Restore A Save
 
-Use **Back Up Progress** to download `imdb-rapid-rater-save.json`. This backup contains ratings, imported exclusions, not-seen records, AI do-not-recommend choices, recent action history, and queue order. It intentionally excludes the IMDb connection and API keys.
+Use **Back Up Progress** to download `imdb-rapid-rater-save.json`. This backup contains ratings, imported exclusions, not-seen records, AI do-not-recommend choices, recent action history, and queue order. It intentionally excludes saved credentials.
 
 Choose **Restore Progress** and select that file to restore it into the signed-in account. Older `imdb-rapid-rater-export.json` files are also accepted.
 
@@ -218,13 +225,13 @@ IMDB_WORKER_CONCURRENCY=4
 
 ## Enable TMDB Metadata And Streaming Availability
 
-IMDb page metadata is inconsistent for this use case. For reliable posters, synopsis text, cast, trailers, series details, and streaming availability, open **TMDB settings** in the app header, paste a TMDB API key, and select the two-letter country code for the streaming services you use. The key is encrypted and the country is saved in your account. Get a v3 API key or read access token from [TMDB API Getting Started](https://developer.themoviedb.org/reference/getting-started).
+IMDb page metadata is inconsistent for this use case. Configure a v3 API key or read access token from [TMDB API Getting Started](https://developer.themoviedb.org/reference/getting-started) as the sensitive Octopus variable `RapidRater.TmdbApiKey`. Deployment writes it to the runtime `TMDB_API_KEY` setting. The browser never receives this credential, and users do not need their own TMDB accounts or keys.
 
 The deployment build preloads stable TMDB title metadata for the generated movie and TV catalogs. It saves the normalized fields used by the app plus the complete details response in PostgreSQL. At runtime, only visible titles that are missing or stale are requested. Movie metadata is refreshed after 30 days; an active TV series is refreshed after 7 days so season and episode counts can change. Ended-series metadata uses the 30-day interval.
 
-After the TMDB title ID is known, Rapid Rater loads the watch-provider results for that user's saved streaming country. Existing and new accounts default to `US` until changed in **TMDB settings**. Streaming results are stored by country for 12 hours. Fresh results are served directly from PostgreSQL; stale results are shown immediately and refreshed in the background. Provider logos and categories appear below the synopsis on the active poster card. TMDB provides a regional viewing-options page, not direct Netflix/Hulu deep links.
+After the TMDB title ID is known, Rapid Rater loads watch-provider results for the user's saved viewing region. Existing and new accounts default to `US` until changed under **Viewing region** in the connection menu. Streaming results are stored by country for 12 hours. Fresh results are served directly from PostgreSQL; stale results are shown immediately and refreshed in the background. Provider logos and categories appear below the synopsis on the active poster card. TMDB provides a regional viewing-options page, not direct Netflix/Hulu deep links.
 
-If you add the key after already opening the app, visible metadata is refreshed automatically. The next time another user sees the same title, the shared PostgreSQL cache is reused instead of repeating the TMDB requests.
+The shared PostgreSQL cache is reused when another user sees the same title instead of repeating the TMDB requests.
 
 ## Retry Failed IMDb Writes
 
@@ -232,7 +239,7 @@ The header shows **Retry IMDb failures** when queued rating or delete writes fai
 
 ## AI Recommendations
 
-Open **Movie Watchlist** or **TV Watchlist** to generate picks from the active section's saved ratings. TV requests explicitly ask for whole series or miniseries, never individual episodes. This feature sends only these fields to OpenAI:
+Open **Movie Watchlist** or **TV Watchlist** to generate picks from the active section's saved ratings. TV requests explicitly ask for whole series or miniseries, never individual episodes. This feature sends only these profile fields to the AI service you connect:
 
 - Movie or series title
 - Release year
@@ -241,15 +248,13 @@ Open **Movie Watchlist** or **TV Watchlist** to generate picks from the active s
 - Titles and years you marked **Don't recommend again**
 - The active year range and origin exclusions
 
-No IMDb cookie, TMDB key, `tt` IDs, submit history, or raw CSV file is sent.
+No IMDb cookie, `tt` IDs, submit history, or raw CSV file is sent. An optional AI API key is used only as the Bearer credential for the service you chose.
 
-Click **Set OpenAI Key** in the tab and paste an API key. Rapid Rater encrypts it in your account. The browser builds a minimized preference profile and sends it to the authenticated server endpoint. Returned recommendations include title, year, genres, and a structured explanation of why each pick fits.
+Click **Connect AI**, paste an OpenAI-compatible base URL, and optionally paste its API key. Select **Find models**, choose one of the models returned by that server, then select **Test and save**. Rapid Rater encrypts the key in your account and never returns it to browser JavaScript. Returned recommendations include title, year, genres, and a structured explanation of why each pick fits.
 
 Recommendations are matched against the active section's catalog (`data/movies.json` or `data/shows.json`) by title and year. When a match is found, the card includes rating buttons; rating one writes through the same IMDb proxy and account sync path. **Don't recommend again** saves that title and year only in the active section.
 
-By default, Rapid Rater calls OpenAI's Models API, filters available GPT text models, sorts them newest first, and selects two places behind the newest eligible model.
-
-Use the model dropdown in the AI Recommendations tab to choose a specific model. Choosing **Auto** returns to lag-based selection. The choice follows your account.
+Rapid Rater does not maintain or guess model names. It loads the current list from `GET {baseUrl}/models`, requires a choice from that response, and verifies the choice with `POST {baseUrl}/chat/completions`. The tested URL and model follow your account.
 
 ## Generate Movie And TV Data
 

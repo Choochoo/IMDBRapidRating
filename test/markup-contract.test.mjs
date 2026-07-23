@@ -11,6 +11,11 @@ test("rating controls start hidden without competing display utilities", VerifyH
 test("quick rating and connection controls expose their accessible contracts", VerifyHeaderControlContracts);
 test("data credits retain required attribution and the rating footer is desktop-only", VerifyDataCredits);
 test("watchlist filters and sync directions use compact expandable contracts", VerifyCompactWorkflowContracts);
+test("desktop rating actions are visible and keyboard shortcuts are explained", VerifyDesktopRatingContracts);
+test("settings provide dynamic keyboard and connection sections", VerifySettingsContract);
+test("viewing region replaces per-user TMDB credentials", VerifyViewingRegionContract);
+test("AI setup is a dedicated provider-neutral model-discovery page", VerifyAiSetupContract);
+test("startup loading prevents the sign-in screen from flashing during session restoration", VerifyStartupLoadingContract);
 
 async function VerifyElementLookups() {
   const [source, html] = await Promise.all([readFile("src/app/elements.js", TextEncoding), readFile(HtmlPath, TextEncoding)]);
@@ -60,11 +65,64 @@ function VerifyWatchlistContracts(html) {
   assert.match(html, /id="recommendation-basis-label">Create from/);
   assert.match(html, /id="recommendation-filter-more"[^>]*title="Open advanced watchlist filters"/);
   assert.match(html, /<details class="recommendation-generator"[^>]*id="recommendation-generator">/);
+  assert.match(html, /id="recommendation-min-year"[^>]*type="number"/);
+  assert.match(html, /id="recommendation-max-year"[^>]*type="number"/);
+  VerifyGeneratorPlacement(html);
+  assert.doesNotMatch(html, /Ready with gpt-5\.6-sol|active filter shape the rating queue and watchlist/);
   assert.match(html, /id="recommendation-sort"[\s\S]*?<option value="addedAt">By Date Added/);
   assert.match(html, /id="recommendation-details"[^>]*role="dialog"[^>]*aria-modal="true"/);
   assert.doesNotMatch(html, /toggle-recommendation-posters|data-recommendation-row-toggle/);
   assert.match(html, /class="orientation-guard"[^>]*aria-labelledby="orientation-guard-title"/);
   assert.equal((html.match(/<details class="filter-disclosure">/g) || []).length, 3);
+}
+
+function VerifyGeneratorPlacement(html) {
+  const generatorId = 'id="recommendation-generator"';
+  assert.ok(html.indexOf(generatorId) > html.indexOf('id="recommendation-title"'));
+  assert.ok(html.indexOf(generatorId) < html.indexOf('id="watchlist-title"'));
+}
+
+async function VerifyDesktopRatingContracts() {
+  const html = await readFile(HtmlPath, TextEncoding);
+  assert.equal((html.match(/data-desktop-rating="\d+"/g) || []).length, 10);
+  assert.match(html, /use your assigned keys\. Backspace = go back/);
+  assert.match(html, /id="desktop-not-seen"[^>]*data-shortcut-action="skip"/);
+  assert.match(html, /id="desktop-undo"[^>]*data-shortcut-action="undo"/);
+  assert.equal((html.match(/data-shortcut-label/g) || []).length, 11);
+}
+
+async function VerifySettingsContract() {
+  const html = await readFile(HtmlPath, TextEncoding);
+  assert.match(html, /id="open-settings"[^>]*title="Open account settings"/);
+  assert.match(html, /id="settings-view"[^>]*aria-labelledby="settings-title"/);
+  assert.match(html, /id="shortcut-settings-list"/);
+  assert.match(html, /id="shortcut-settings-status"[^>]*aria-live="polite"/);
+  assert.match(html, /id="connection-settings-panel"[^>]*hidden/);
+}
+
+async function VerifyViewingRegionContract() {
+  const html = await readFile(HtmlPath, TextEncoding);
+  assert.match(html, /id="configure-region"/);
+  assert.match(html, /id="region-country-input"/);
+  assert.doesNotMatch(html, /id="tmdb-key-input"|id="configure-tmdb"/);
+}
+
+async function VerifyAiSetupContract() {
+  const html = await readFile(HtmlPath, TextEncoding);
+  assert.match(html, /id="settings-view"[^>]*aria-labelledby="settings-title"/);
+  assert.match(html, /id="ai-base-url"[^>]*type="url"/);
+  assert.match(html, /id="ai-api-key"[^>]*type="password"/);
+  assert.match(html, /id="ai-find-models"[^>]*>Find models/);
+  assert.match(html, /id="ai-model-select"[^>]*size="7"/);
+  assert.match(html, /id="ai-save"[^>]*disabled>Test and save/);
+  assert.doesNotMatch(html, /id="ai-dialog"|Add OpenAI API Key|Set OpenAI Key|value="gpt-/);
+}
+
+async function VerifyStartupLoadingContract() {
+  const html = await readFile(HtmlPath, TextEncoding);
+  assert.match(html, /id="startup-loading"[^>]*role="status"[^>]*aria-live="polite"/);
+  assert.match(html, /id="auth-landing"[^>]*aria-labelledby="auth-title"[^>]*hidden/);
+  assert.ok(html.indexOf('id="startup-loading"') < html.indexOf('id="auth-landing"'));
 }
 
 function VerifySyncContracts(html, responsiveCss) {

@@ -16,7 +16,15 @@ export function MergeAccountPayload(remoteValue, localValue) {
 }
 
 function MergeMediaPayload(remote, local) {
-  const merged = {
+  const merged = BuildMergedMediaPayload(remote, local);
+  ApplyNewestLetterboxdSnapshot(merged, remote.letterboxd, local.letterboxd);
+  delete merged.queueIds;
+  delete merged.signature;
+  return merged;
+}
+
+function BuildMergedMediaPayload(remote, local) {
+  return {
     ...remote,
     ...local,
     ratings: MergeRecordMaps(remote.ratings, local.ratings),
@@ -25,18 +33,15 @@ function MergeMediaPayload(remote, local) {
     filters: NewestFilters(remote.filters, local.filters),
     recommendationBasis: NewestRecommendationBasis(remote.recommendationBasis, local.recommendationBasis)
   };
-  if (remote.letterboxd || local.letterboxd)
-    merged.letterboxd = NewestLetterboxdSnapshot(remote.letterboxd, local.letterboxd);
-  delete merged.queueIds;
-  delete merged.signature;
-  return merged;
+}
+
+function ApplyNewestLetterboxdSnapshot(merged, remote, local) {
+  if (remote || local)
+    merged.letterboxd = NewestLetterboxdSnapshot(remote, local);
 }
 
 function NewestRecommendationBasis(remoteValue, localValue) {
-  return NewestTimestampedValue(
-    NormalizeRecommendationBasis(remoteValue),
-    NormalizeRecommendationBasis(localValue)
-  );
+  return NewestTimestampedValue(NormalizeRecommendationBasis(remoteValue), NormalizeRecommendationBasis(localValue));
 }
 
 function NewestFilters(remoteValue, localValue) {

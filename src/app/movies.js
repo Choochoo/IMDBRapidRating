@@ -1,5 +1,6 @@
 import { CleanText, FormatCount, NormalizeGenres, ToNumber } from "./util.js";
 import { NormalizeTitleOrigin } from "../../shared/title-filters.js";
+import { MovieMediaType, TvMediaType } from "./app-constants.js";
 
 export function NormalizeMovieList(raw) {
   const list = Array.isArray(raw) ? raw : raw.movies || raw.shows || raw.titles;
@@ -18,7 +19,7 @@ export function MakeSignature(movies) {
 export function DescribeSource(raw, label) {
   const count = NormalizeMovieList(raw).length;
   if (raw?.generatedAt)
-    return raw?.mediaType === "tv" ? "TV show pool ready" : "Movie pool ready";
+    return raw?.mediaType === TvMediaType ? "TV show pool ready" : "Movie pool ready";
   return `${FormatCount(count)} ${label}`;
 }
 
@@ -35,17 +36,28 @@ function NormalizeMovie(item, seen) {
 }
 
 function BuildMovieItem(item, ttId, title) {
-  const origin = NormalizeTitleOrigin(item);
+  return {
+    ...BuildMovieIdentity(item, ttId, title),
+    ...NormalizeTitleOrigin(item),
+    ...BuildMovieRating(item)
+  };
+}
+
+function BuildMovieIdentity(item, ttId, title) {
   return {
     ttId,
     title,
     year: ToNumber(item.year || item.startYear || item.Year),
     endYear: ToNumber(item.endYear),
-    mediaType: item.mediaType === "tv" ? "tv" : "movie",
+    mediaType: item.mediaType === TvMediaType ? TvMediaType : MovieMediaType,
     titleType: CleanText(item.titleType || ""),
     runtimeMinutes: ToNumber(item.runtimeMinutes || item.runtime),
-    genres: NormalizeGenres(item.genres),
-    ...origin,
+    genres: NormalizeGenres(item.genres)
+  };
+}
+
+function BuildMovieRating(item) {
+  return {
     imdbRating: ToNumber(item.imdbRating || item.averageRating),
     numVotes: ToNumber(item.numVotes || item.votes)
   };

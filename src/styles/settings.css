@@ -1,0 +1,351 @@
+.settings-view {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 28px 20px 56px;
+  background:
+    radial-gradient(circle at 18% 0, rgba(var(--accent-rgb), 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 360px);
+}
+
+.settings-shell {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 1120px);
+  margin: 0 auto;
+}
+
+.settings-back {
+  justify-self: start;
+}
+
+.settings-header {
+  padding: 8px 2px 0;
+}
+
+.settings-header h1 {
+  margin: 5px 0 8px;
+  font-size: clamp(28px, 5vw, 42px);
+  letter-spacing: -0.04em;
+}
+
+.settings-header p,
+.settings-section-heading p,
+.ai-settings-note span {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.settings-navigation {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.settings-navigation-item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  padding: 13px 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.settings-navigation-item:hover {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+.settings-navigation-item.active {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.settings-navigation-item svg {
+  width: 20px;
+  height: 20px;
+}
+
+.settings-navigation-item span,
+.settings-navigation-item strong,
+.settings-navigation-item small {
+  display: block;
+}
+
+.settings-navigation-item small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.settings-content,
+.connection-settings-panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.connection-settings-panel[hidden],
+.shortcut-settings-panel[hidden] {
+  display: none;
+}
+
+.shortcut-settings-panel,
+.ai-settings-card {
+  display: grid;
+  gap: 14px;
+  padding: clamp(18px, 4vw, 28px);
+  border-color: rgba(var(--accent-rgb), 0.28);
+  background: color-mix(in srgb, var(--surface) 94%, var(--accent) 6%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+}
+
+.settings-section-heading {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.settings-section-heading h2 {
+  margin: 4px 0 7px;
+  color: var(--text);
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -0.025em;
+}
+
+.shortcut-settings-list {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.shortcut-settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 118px;
+  gap: 16px;
+  align-items: center;
+  min-height: 66px;
+  padding: 10px 12px 10px 16px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.shortcut-settings-row + .shortcut-settings-row {
+  border-top: 1px solid var(--line);
+}
+
+.shortcut-settings-row > span,
+.shortcut-settings-row strong,
+.shortcut-settings-row small {
+  display: block;
+}
+
+.shortcut-settings-row small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.shortcut-key-capture {
+  min-height: 40px;
+  font-weight: 850;
+}
+
+.shortcut-key-capture.recording {
+  border-color: rgba(var(--accent-rgb), 0.85);
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent-text);
+}
+
+.shortcut-settings-status,
+.ai-settings-status,
+.ai-settings-error {
+  min-height: 1.4em;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.shortcut-settings-status,
+.ai-settings-status {
+  color: var(--muted);
+}
+
+.shortcut-settings-actions,
+.ai-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.shortcut-settings-actions .btn-primary,
+.ai-settings-actions .btn-primary {
+  min-width: 150px;
+}
+
+.settings-connection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-connection-card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  color: var(--text);
+  text-align: left;
+}
+
+.settings-connection-card:hover {
+  border-color: var(--accent-border);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.settings-connection-card svg {
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
+}
+
+.settings-connection-card span,
+.settings-connection-card strong,
+.settings-connection-card small {
+  display: block;
+}
+
+.settings-connection-card small {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.settings-connection-card b {
+  color: var(--accent-text);
+  font-size: 12px;
+}
+
+.ai-settings-card label {
+  color: var(--text);
+  font-weight: 750;
+}
+
+.ai-settings-card .form-text {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+
+.ai-settings-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.ai-settings-step-number {
+  display: grid;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  color: #061018;
+  background: var(--accent);
+  font-weight: 900;
+}
+
+.ai-model-picker {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.ai-model-picker[hidden] {
+  display: none;
+}
+
+.ai-model-picker select {
+  min-height: 190px;
+}
+
+.ai-settings-note {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+body.settings-active .media-selector,
+body.settings-active .view-tabs,
+body.settings-active .header-dashboard,
+body.settings-active .brand small,
+body.settings-active .header-actions > :not(#sign-out):not(#account-badge) {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-navigation {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .settings-navigation-item {
+    padding: 11px 12px;
+  }
+
+  .settings-connection-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .settings-view {
+    padding: 18px 12px 40px;
+  }
+
+  .shortcut-settings-panel,
+  .ai-settings-card {
+    padding: 18px;
+  }
+
+  .settings-section-heading {
+    display: grid;
+  }
+
+  .shortcut-settings-row {
+    grid-template-columns: minmax(0, 1fr) 96px;
+  }
+
+  .shortcut-settings-actions,
+  .ai-settings-actions {
+    flex-direction: column-reverse;
+  }
+
+  .shortcut-settings-actions .btn,
+  .ai-settings-actions .btn {
+    width: 100%;
+  }
+}

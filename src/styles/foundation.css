@@ -37,11 +37,13 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-body.sync-active .header-dashboard {
+body.sync-active .header-dashboard,
+body.friends-active .header-dashboard {
   display: none;
 }
 
-body.sync-active .app-header {
+body.sync-active .app-header,
+body.friends-active .app-header {
   padding-bottom: 12px;
 }
 

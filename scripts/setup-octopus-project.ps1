@@ -10,10 +10,19 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$ProjectName = "IMDBRapidRating"
-$PackageName = "IMDBRapidRating"
+$ApplicationName = "IMDBRapidRating"
+$ProjectName = $ApplicationName
+$PackageName = $ApplicationName
 $DeployPath = "C:\inetpub\wwwroot\IMDBRapidRating"
 $TargetRole = "web"
+$BuiltInFeedId = "feeds-builtin"
+$FalsePropertyValue = "False"
+$GetMethod = "GET"
+$SuccessCondition = "Success"
+$TargetRolesProperty = "Octopus.Action.TargetRoles"
+$StopActionName = "Stop IMDb Rapid Rating"
+$DeployActionName = "Deploy IMDb Rapid Rating"
+$StartActionName = "Start and verify IMDb Rapid Rating"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $preDeployScript = Get-Content -Raw -LiteralPath (Join-Path $repoRoot "deploy\PreDeploy.ps1")
 $postDeployScript = Get-Content -Raw -LiteralPath (Join-Path $repoRoot "deploy\PostDeploy.ps1")
@@ -23,13 +32,8 @@ $headers = @{
     "Content-Type" = "application/json"
 }
 
-function Invoke-OctopusApi {
-    param(
-        [string]$Uri,
-        [string]$Method = "GET",
-        $Body = $null
-    )
-
+function New-OctopusApiParameters {
+    param([string]$Uri, [string]$Method = $GetMethod, $Body = $null)
     $parameters = @{
         Uri = "$OctopusUrl$Uri"
         Method = $Method
@@ -38,46 +42,74 @@ function Invoke-OctopusApi {
     if ($null -ne $Body) {
         $parameters.Body = $Body | ConvertTo-Json -Depth 30
     }
+    return $parameters
+}
+
+function Read-OctopusApiError {
+    param($ErrorRecord)
+    if (-not $ErrorRecord.Exception.Response) {
+        return $ErrorRecord.Exception.Message
+    }
+    $reader = New-Object System.IO.StreamReader($ErrorRecord.Exception.Response.GetResponseStream())
+    $responseBody = $reader.ReadToEnd()
+    if ($responseBody) {
+        return $responseBody
+    }
+    return $ErrorRecord.Exception.Message
+}
+
+function Invoke-OctopusApi {
+    param([string]$Uri, [string]$Method = $GetMethod, $Body = $null)
+    $parameters = New-OctopusApiParameters -Uri $Uri -Method $Method -Body $Body
     try {
         Invoke-RestMethod @parameters
     } catch {
-        $details = $_.Exception.Message
-        if ($_.Exception.Response) {
-            $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-            $responseBody = $reader.ReadToEnd()
-            if ($responseBody) {
-                $details = $responseBody
-            }
-        }
+        $details = Read-OctopusApiError $_
         throw "Octopus API $Method $Uri failed: $details"
     }
 }
 
-function New-ScriptAction {
-    param([string]$Name, [string]$ScriptBody)
-    @{
+function New-ActionCore {
+    param([string]$Name, [string]$ActionType)
+    return @{
         Name = $Name
-        ActionType = "Octopus.Script"
+        ActionType = $ActionType
         IsDisabled = $false
         CanBeUsedForProjectVersioning = $false
         IsRequired = $false
         WorkerPoolId = $null
         Container = @{ Image = $null; FeedId = $null; GitUrl = $null; Dockerfile = $null }
         WorkerPoolVariable = $null
+    }
+}
+
+function New-ActionCollections {
+    return @{
         Environments = @()
         ExcludedEnvironments = @()
         Channels = @()
         TenantTags = @()
         Packages = @()
         GitDependencies = @()
-        Condition = "Success"
-        Properties = @{
-            "Octopus.Action.Script.ScriptSource" = "Inline"
-            "Octopus.Action.Script.Syntax" = "PowerShell"
-            "Octopus.Action.Script.ScriptBody" = $ScriptBody
-            "Octopus.Action.TargetRoles" = $TargetRole
-        }
     }
+}
+
+function New-ScriptActionProperties {
+    param([string]$ScriptBody)
+    return @{
+        "Octopus.Action.Script.ScriptSource" = "Inline"
+        "Octopus.Action.Script.Syntax" = "PowerShell"
+        "Octopus.Action.Script.ScriptBody" = $ScriptBody
+        $TargetRolesProperty = $TargetRole
+    }
+}
+
+function New-ScriptAction {
+    param([string]$Name, [string]$ScriptBody)
+    $action = (New-ActionCore -Name $Name -ActionType "Octopus.Script") + (New-ActionCollections)
+    $action.Condition = $SuccessCondition
+    $action.Properties = New-ScriptActionProperties $ScriptBody
+    return $action
 }
 
 function New-ProcessStep {
@@ -85,8 +117,8 @@ function New-ProcessStep {
     @{
         Name = $Name
         PackageRequirement = "LetOctopusDecide"
-        Properties = @{ "Octopus.Action.TargetRoles" = $TargetRole }
-        Condition = "Success"
+        Properties = @{ $TargetRolesProperty = $TargetRole }
+        Condition = $SuccessCondition
         StartTrigger = "StartAfterPrevious"
         Actions = @($Action)
     }
@@ -123,11 +155,12 @@ if (-not $lifecycle) {
 $projects = Invoke-OctopusApi "/api/$spaceId/projects?partialName=$([uri]::EscapeDataString($ProjectName))&take=100"
 $project = $projects.Items | Where-Object { $_.Name -eq $ProjectName } | Select-Object -First 1
 if (-not $project) {
-    $project = Invoke-OctopusApi "/api/$spaceId/projects" -Method POST -Body @{
+    $projectBody = @{
         Name = $ProjectName
         ProjectGroupId = $projectGroup.Id
         LifecycleId = $lifecycle.Id
     }
+    $project = Invoke-OctopusApi "/api/$spaceId/projects" -Method POST -Body $projectBody
     Write-Host "Created Octopus project $ProjectName ($($project.Id))." -ForegroundColor Green
 } else {
     Write-Host "Updating existing Octopus project $ProjectName ($($project.Id))." -ForegroundColor Yellow
@@ -147,34 +180,34 @@ $packageAction = @{
     Channels = @()
     TenantTags = @()
     GitDependencies = @()
-    Condition = "Success"
+    Condition = $SuccessCondition
     Packages = @(
         @{
             Name = ""
             PackageId = $PackageName
-            FeedId = "feeds-builtin"
+            FeedId = $BuiltInFeedId
             AcquisitionLocation = "Server"
             Properties = @{ SelectionMode = "immediate" }
         }
     )
     Properties = @{
-        "Octopus.Action.Package.DownloadOnTentacle" = "False"
-        "Octopus.Action.Package.FeedId" = "feeds-builtin"
+        "Octopus.Action.Package.DownloadOnTentacle" = $FalsePropertyValue
+        "Octopus.Action.Package.FeedId" = $BuiltInFeedId
         "Octopus.Action.Package.CustomInstallationDirectory" = $DeployPath
-        "Octopus.Action.Package.CustomInstallationDirectoryShouldBePurgedBeforeDeployment" = "False"
+        "Octopus.Action.Package.CustomInstallationDirectoryShouldBePurgedBeforeDeployment" = $FalsePropertyValue
         "Octopus.Action.Package.PackageId" = $PackageName
-        "Octopus.Action.TargetRoles" = $TargetRole
-        "Octopus.Action.Package.AutomaticallyRunConfigurationTransformationFiles" = "False"
-        "Octopus.Action.Package.AutomaticallyUpdateAppSettingsAndConnectionStrings" = "False"
+        $TargetRolesProperty = $TargetRole
+        "Octopus.Action.Package.AutomaticallyRunConfigurationTransformationFiles" = $FalsePropertyValue
+        "Octopus.Action.Package.AutomaticallyUpdateAppSettingsAndConnectionStrings" = $FalsePropertyValue
         "Octopus.Action.EnabledFeatures" = "Octopus.Features.CustomDirectory"
     }
 }
 
 $process = Invoke-OctopusApi "/api/$spaceId/projects/$($project.Id)/deploymentprocesses"
 $process.Steps = @(
-    (New-ProcessStep -Name "Stop IMDb Rapid Rating" -Action (New-ScriptAction -Name "Stop IMDb Rapid Rating" -ScriptBody $preDeployScript)),
-    (New-ProcessStep -Name "Deploy IMDb Rapid Rating" -Action $packageAction),
-    (New-ProcessStep -Name "Start and verify IMDb Rapid Rating" -Action (New-ScriptAction -Name "Start and verify IMDb Rapid Rating" -ScriptBody $postDeployScript))
+    (New-ProcessStep -Name $StopActionName -Action (New-ScriptAction -Name $StopActionName -ScriptBody $preDeployScript)),
+    (New-ProcessStep -Name $DeployActionName -Action $packageAction),
+    (New-ProcessStep -Name $StartActionName -Action (New-ScriptAction -Name $StartActionName -ScriptBody $postDeployScript))
 )
 
 Invoke-OctopusApi "/api/$spaceId/deploymentprocesses/$($process.Id)" -Method PUT -Body $process | Out-Null

@@ -1,4 +1,4 @@
-import { ValidateApiKey, ValidateImdbCookie } from "./browser-settings.js";
+import { ValidateImdbCookie } from "./browser-settings.js";
 import { EscapeHtml, FormatCount } from "./util.js";
 import { NormalizeStreamingCountry } from "../../shared/streaming-country.js";
 
@@ -16,44 +16,17 @@ export async function SaveImdbConnectionFromDialog(app) {
   await ApplySavedImdbConnection(app, saved);
 }
 
-export async function SaveTmdbSettingsFromDialog(app) {
-  const result = ReadTmdbSettings(app);
+export async function SaveStreamingRegionFromDialog(app) {
+  const result = ReadStreamingRegion(app);
   if (!result.ok)
-    return app.ShowTmdbError(result.error);
-  app.SetTmdbSaving(true);
+    return app.ShowRegionError(result.error);
+  app.SetRegionSaving(true);
   try {
-    await SaveTmdbAccountSettings(app, result);
+    await app.SaveAccountPreferences({ streamingCountry: result.country });
   } finally {
-    app.SetTmdbSaving(false);
+    app.SetRegionSaving(false);
   }
-  await ApplySavedTmdbSettings(app, result.country);
-}
-
-export async function SaveAiKeyFromDialog(app) {
-  const result = ValidateApiKey(app.Elements.aiInput.value, "OpenAI");
-  if (!result.ok)
-    return app.ShowAiError(result.error);
-  app.SetAiSaving(true);
-  try {
-    await app.SaveAccountSecret("openai", result.value);
-  } finally {
-    app.SetAiSaving(false);
-  }
-  await ApplySavedAiKey(app);
-}
-
-export async function SaveSelectedAiModel(app) {
-  const model = app.Elements.aiModelSelect.value.trim();
-  app.SetAiModelSaving(true);
-  try {
-    await app.SaveAccountPreferences({ openAiModel: model });
-  } finally {
-    app.SetAiModelSaving(false);
-  }
-  app.State.ai.model = model;
-  app.Settings.openAiModel = model;
-  await app.RefreshAiModels().catch(() => null);
-  app.ShowToast(`OpenAI model set to <strong>${EscapeHtml(model || "auto")}</strong>`);
+  ApplySavedStreamingRegion(app, result.country);
 }
 
 async function ApplySavedImdbConnection(app, result) {
@@ -66,32 +39,17 @@ async function ApplySavedImdbConnection(app, result) {
   app.ShowToast("IMDb connected. <strong>Live ready</strong>");
 }
 
-async function ApplySavedTmdbSettings(app, country) {
-  await app.RefreshLiveStatus();
-  app.HideTmdbDialog();
+function ApplySavedStreamingRegion(app, country) {
+  app.HideRegionDialog();
+  app.UpdateSettingsButtons();
   app.RefreshVisibleMetadata();
-  app.ShowToast(`TMDB settings saved. Streaming country: <strong>${EscapeHtml(country)}</strong>`);
+  app.ShowToast(`Viewing region saved: <strong>${EscapeHtml(country)}</strong>`);
 }
 
-async function SaveTmdbAccountSettings(app, settings) {
-  if (settings.apiKey)
-    await app.SaveAccountSecret("tmdb", settings.apiKey);
-  await app.SaveAccountPreferences({ streamingCountry: settings.country });
-}
-
-function ReadTmdbSettings(app) {
-  const country = NormalizeStreamingCountry(app.Elements.tmdbCountry.value);
+function ReadStreamingRegion(app) {
+  const country = NormalizeStreamingCountry(app.Elements.regionCountry.value);
   if (!country)
     return { ok: false, error: "Enter a two-letter streaming country code, such as US, CA, GB, or AU." };
-  const rawKey = String(app.Elements.tmdbInput.value || "").trim();
-  if (!rawKey)
-    return { ok: true, country, apiKey: "" };
-  const key = ValidateApiKey(rawKey, "TMDB");
-  return key.ok ? { ok: true, country, apiKey: key.value } : key;
+  return { ok: true, country };
 }
 
-async function ApplySavedAiKey(app) {
-  await app.RefreshAiStatus();
-  app.HideAiDialog();
-  app.ShowToast("OpenAI key saved. <strong>Recommendations ready</strong>");
-}

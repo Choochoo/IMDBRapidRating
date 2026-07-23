@@ -1,5 +1,12 @@
 export function BuildElements() {
   return {
+    ...BuildPrimaryElements(),
+    ...BuildSecondaryElements()
+  };
+}
+
+function BuildPrimaryElements() {
+  return {
     strip: Element("movie-strip"),
     ...BuildViewElements(),
     ...BuildCounterElements(),
@@ -7,10 +14,29 @@ export function BuildElements() {
     ...BuildEmptyElements(),
     ...BuildFileElements(),
     ...BuildCookieElements(),
-    ...BuildAiElements(),
+    ...BuildAiElements()
+  };
+}
+
+function BuildSecondaryElements() {
+  return {
     ...BuildSyncElements(),
     ...BuildAccountElements(),
+    ...BuildFriendElements(),
+    ...BuildSettingsElements(),
+    ...BuildSetupGuideElements(),
+    ...BuildHelpReminderElements(),
+    ...BuildDesktopRatingElements(),
     ...BuildMobileElements()
+  };
+}
+
+function BuildDesktopRatingElements() {
+  return {
+    desktopRatingControls: Element("desktop-rating-controls"),
+    desktopRatingButtons: Element("desktop-rating-buttons"),
+    desktopNotSeen: Element("desktop-not-seen"),
+    desktopUndo: Element("desktop-undo")
   };
 }
 
@@ -89,7 +115,9 @@ function BuildNavigationElements() {
     viewTabs: Element("view-tabs"),
     tabRater: Element("tab-rater"),
     tabAi: Element("tab-ai"),
-    tabSync: Element("tab-sync")
+    tabSync: Element("tab-sync"),
+    tabFriends: Element("tab-friends"),
+    friendRequestCount: Element("friend-request-count")
   };
 }
 
@@ -97,7 +125,9 @@ function BuildViewSectionElements() {
   return {
     raterView: Element("rater-view"),
     recommendationView: Element("recommendation-view"),
+    settingsView: Element("settings-view"),
     syncView: Element("sync-view"),
+    friendsView: Element("friends-view"),
     ratingFooter: Element("rating-footer"),
     recommendationTitle: Element("recommendation-title"),
     recommendationDescription: Element("recommendation-description")
@@ -135,8 +165,22 @@ function BuildStatusElements() {
 
 function BuildConnectionStatusElements() {
   return {
+    ...BuildFilterControlElements(),
+    ...BuildQuickRateElements(),
+    ...BuildConnectionOverviewElements(),
+    ...BuildServiceStatusElements()
+  };
+}
+
+function BuildFilterControlElements() {
+  return {
     configureFilters: Element("configure-filters"),
-    filterActiveCount: Element("filter-active-count"),
+    filterActiveCount: Element("filter-active-count")
+  };
+}
+
+function BuildQuickRateElements() {
+  return {
     quickRateMenu: Element("quick-rate-menu"),
     quickRateForm: Element("quick-rate-form"),
     quickRateSearch: Element("quick-rate-search"),
@@ -144,19 +188,29 @@ function BuildConnectionStatusElements() {
     quickRateSelection: Element("quick-rate-selection"),
     quickRateRating: Element("quick-rate-rating"),
     quickRateError: Element("quick-rate-error"),
-    quickRateSubmit: Element("quick-rate-submit"),
+    quickRateSubmit: Element("quick-rate-submit")
+  };
+}
+
+function BuildConnectionOverviewElements() {
+  return {
     dataMenu: Element("data-menu"),
     connectionMenu: Element("connection-menu"),
     connectionSummary: Element("connection-summary"),
     connectionSummaryLabel: Element("connection-summary-label"),
-    connectionMenuHeading: Element("connection-menu-heading"),
+    connectionMenuHeading: Element("connection-menu-heading")
+  };
+}
+
+function BuildServiceStatusElements() {
+  return {
     sourceBadge: Element("source-badge"),
     sourceStatusRow: Element("source-status-row"),
     liveBadge: Element("live-badge"),
     liveStatusRow: Element("live-status-row"),
     imdbStatusLabel: Element("imdb-status-label"),
-    tmdbStatusLabel: Element("tmdb-status-label"),
-    openAiStatusLabel: Element("openai-status-label")
+    regionStatusLabel: Element("region-status-label"),
+    aiStatusLabel: Element("ai-status-label")
   };
 }
 
@@ -199,6 +253,10 @@ function BuildSyncActionElements() {
     syncImportLetterboxd: Element("sync-import-letterboxd"),
     syncToImdb: Element("sync-to-imdb"),
     syncToLetterboxd: Element("sync-to-letterboxd"),
+    syncImdbGuide: Element("sync-imdb-guide"),
+    syncLetterboxdGuide: Element("sync-letterboxd-guide"),
+    syncToImdbGuide: Element("sync-to-imdb-guide"),
+    syncToLetterboxdGuide: Element("sync-to-letterboxd-guide"),
     syncStatus: Element("sync-status"),
     syncSource: Element("sync-source")
   };
@@ -228,7 +286,7 @@ function BuildCookieElements() {
   return {
     ...BuildFilterElements(),
     ...BuildImdbSetupElements(),
-    ...BuildTmdbSetupElements()
+    ...BuildRegionSetupElements()
   };
 }
 
@@ -251,12 +309,26 @@ function BuildFilterDialogElements() {
 
 function BuildFilterInputElements() {
   return {
+    ...BuildFilterRangeElements(),
+    ...BuildFilterOriginElements(),
+    filterPreview: Element("filter-preview"),
+    filterError: Element("filter-error")
+  };
+}
+
+function BuildFilterRangeElements() {
+  return {
     filterMinYear: Element("filter-min-year"),
     filterMaxYear: Element("filter-max-year"),
-    filterGenreOptions: Element("filter-genre-options"),
     filterDocumentaryMode: Element("filter-documentary-mode"),
     filterMinRating: Element("filter-min-rating"),
-    filterMaxRuntime: Element("filter-max-runtime"),
+    filterMaxRuntime: Element("filter-max-runtime")
+  };
+}
+
+function BuildFilterOriginElements() {
+  return {
+    filterGenreOptions: Element("filter-genre-options"),
     filterCountryOptions: Element("filter-country-options"),
     filterLanguageOptions: Element("filter-language-options"),
     filterGenreSummary: Element("filter-genre-summary"),
@@ -264,9 +336,7 @@ function BuildFilterInputElements() {
     filterLanguageSummary: Element("filter-language-summary"),
     filterBollywood: Element("filter-bollywood"),
     filterIncludeUnknown: Element("filter-include-unknown"),
-    filterOriginNote: Element("filter-origin-note"),
-    filterPreview: Element("filter-preview"),
-    filterError: Element("filter-error")
+    filterOriginNote: Element("filter-origin-note")
   };
 }
 
@@ -283,53 +353,159 @@ function BuildImdbSetupElements() {
     imdbDialog: Element("imdb-dialog"),
     imdbInput: Element("imdb-cookie-input"),
     imdbError: Element("imdb-error"),
+    imdbClose: Element("imdb-close"),
+    imdbShowSteps: Element("imdb-show-steps"),
     imdbSave: Element("imdb-save"),
     imdbDelete: Element("imdb-delete")
   };
 }
 
-function BuildTmdbSetupElements() {
+function BuildRegionSetupElements() {
   return {
-    configureTmdb: Element("configure-tmdb"),
-    tmdbDialog: Element("tmdb-dialog"),
-    tmdbInput: Element("tmdb-key-input"),
-    tmdbCountry: Element("tmdb-country-input"),
-    tmdbError: Element("tmdb-error"),
-    tmdbSave: Element("tmdb-save"),
-    tmdbClose: Element("tmdb-close"),
-    tmdbLater: Element("tmdb-later"),
-    tmdbDelete: Element("tmdb-delete")
+    configureRegion: Element("configure-region"),
+    regionDialog: Element("region-dialog"),
+    regionCountry: Element("region-country-input"),
+    regionError: Element("region-error"),
+    regionSave: Element("region-save"),
+    regionClose: Element("region-close")
   };
 }
 
 function BuildAiElements() {
   return {
-    ...BuildAiDialogElements(),
-    ...BuildAiModelElements(),
+    ...BuildAiSettingsElements(),
     ...BuildRecommendationElements()
   };
 }
 
-function BuildAiDialogElements() {
+function BuildAiSettingsElements() {
+  return {
+    ...BuildAiConnectionElements(),
+    ...BuildAiModelElements(),
+    ...BuildAiSettingsActionElements()
+  };
+}
+
+function BuildAiConnectionElements() {
   return {
     configureAi: Element("configure-ai"),
-    configureOpenAi: Element("configure-openai"),
-    aiDialog: Element("ai-dialog"),
-    aiInput: Element("ai-key-input"),
-    aiError: Element("ai-error"),
-    aiSave: Element("ai-save"),
-    aiClose: Element("ai-close"),
-    aiLater: Element("ai-later"),
-    aiDelete: Element("ai-delete")
+    configureAiService: Element("configure-ai-service"),
+    aiShowSteps: Element("ai-show-steps"),
+    aiBaseUrl: Element("ai-base-url"),
+    aiApiKey: Element("ai-api-key")
   };
 }
 
 function BuildAiModelElements() {
   return {
-    refreshAiModels: Element("refresh-ai-models"),
+    aiFindModels: Element("ai-find-models"),
+    aiModelPanel: Element("ai-model-panel"),
+    aiModelSearch: Element("ai-model-search"),
     aiModelSelect: Element("ai-model-select"),
-    aiModelStatus: Element("ai-model-status"),
-    aiModelDetail: Element("ai-model-detail")
+    aiModelCount: Element("ai-model-count")
+  };
+}
+
+function BuildAiSettingsActionElements() {
+  return {
+    aiSettingsStatus: Element("ai-settings-status"),
+    aiSettingsError: Element("ai-settings-error"),
+    aiSave: Element("ai-save"),
+    aiDelete: Element("ai-delete")
+  };
+}
+
+function BuildSettingsElements() {
+  return {
+    ...BuildSettingsNavigationElements(),
+    ...BuildShortcutSettingsElements(),
+    ...BuildConnectionSettingsElements()
+  };
+}
+
+function BuildSettingsNavigationElements() {
+  return {
+    openSettings: Element("open-settings"),
+    settingsBack: Element("settings-back"),
+    settingsShortcutsNav: Element("settings-shortcuts-nav"),
+    settingsConnectionsNav: Element("settings-connections-nav"),
+    shortcutSettingsPanel: Element("shortcut-settings-panel"),
+    connectionSettingsPanel: Element("connection-settings-panel")
+  };
+}
+
+function BuildShortcutSettingsElements() {
+  return {
+    shortcutSettingsList: Element("shortcut-settings-list"),
+    shortcutSettingsStatus: Element("shortcut-settings-status"),
+    shortcutReset: Element("shortcut-reset"),
+    shortcutSave: Element("shortcut-save")
+  };
+}
+
+function BuildConnectionSettingsElements() {
+  return {
+    settingsConfigureImdb: Element("settings-configure-imdb"),
+    settingsConfigureRegion: Element("settings-configure-region"),
+    settingsImdbStatus: Element("settings-imdb-status"),
+    settingsRegionStatus: Element("settings-region-status"),
+    openHelp: Element("open-help"),
+    openSetupGuide: Element("open-setup-guide"),
+    helpSettings: Element("help-settings"),
+    helpRemindersEnabled: Element("help-reminders-enabled"),
+    helpRemindersStatus: Element("help-reminders-status")
+  };
+}
+
+function BuildSetupGuideElements() {
+  return {
+    ...BuildSetupGuideShellElements(),
+    ...BuildSetupGuideCopyElements(),
+    ...BuildSetupGuideStepElements()
+  };
+}
+
+function BuildSetupGuideShellElements() {
+  return {
+    setupGuideDialog: Element("setup-guide"),
+    setupGuidePanel: Element("setup-guide-panel"),
+    setupGuideClose: Element("setup-guide-close"),
+    setupGuideHome: Element("setup-guide-home"),
+    setupGuideHub: Element("setup-guide-hub"),
+    setupGuideHubList: Element("setup-guide-hub-list"),
+    setupGuideStep: Element("setup-guide-step")
+  };
+}
+
+function BuildSetupGuideCopyElements() {
+  return {
+    setupGuideProgress: Element("setup-guide-progress"),
+    setupGuideTitle: Element("setup-guide-title"),
+    setupGuideSummary: Element("setup-guide-summary"),
+    setupGuideStepTitle: Element("setup-guide-step-title"),
+    setupGuideStepBody: Element("setup-guide-step-body")
+  };
+}
+
+function BuildSetupGuideStepElements() {
+  return {
+    setupGuideImage: Element("setup-guide-image"),
+    setupGuideImageFallback: Element("setup-guide-image-fallback"),
+    setupGuideAction: Element("setup-guide-action"),
+    setupGuideBack: Element("setup-guide-back"),
+    setupGuideNext: Element("setup-guide-next")
+  };
+}
+
+function BuildHelpReminderElements() {
+  return {
+    helpReminder: Element("help-reminder"),
+    helpReminderTitle: Element("help-reminder-title"),
+    helpReminderBody: Element("help-reminder-body"),
+    helpReminderOpen: Element("help-reminder-open"),
+    helpReminderLater: Element("help-reminder-later"),
+    helpReminderHide: Element("help-reminder-hide"),
+    helpReminderSettings: Element("help-reminder-settings")
   };
 }
 
@@ -347,12 +523,38 @@ function BuildRecommendationElements() {
 
 function BuildRecommendationGenerationElements() {
   return {
+    ...BuildRecommendationRequestElements(),
+    ...BuildRecommendationAudienceElements(),
+    ...BuildRecommendationYearElements()
+  };
+}
+
+function BuildRecommendationRequestElements() {
+  return {
     generateRecommendations: Element("generate-recommendations"),
     recommendationGenerator: Element("recommendation-generator"),
     recommendationCount: Element("recommendation-count"),
     recommendationBasis: Element("recommendation-basis"),
     recommendationBasisLabel: Element("recommendation-basis-label"),
     recommendationBasisDetail: Element("recommendation-basis-detail")
+  };
+}
+
+function BuildRecommendationAudienceElements() {
+  return {
+    recommendationAudience: Element("recommendation-audience"),
+    recommendationFriendOptions: Element("recommendation-friend-options")
+  };
+}
+
+function BuildRecommendationYearElements() {
+  return {
+    recommendationMinYear: Element("recommendation-min-year"),
+    recommendationMaxYear: Element("recommendation-max-year"),
+    recommendationPickFilterSummary: Element("recommendation-pick-filter-summary"),
+    recommendationFilterEdit: Element("recommendation-filter-edit"),
+    recommendationGeneratorFilterCount: Element("recommendation-generator-filter-count"),
+    recommendationGeneratorError: Element("recommendation-generator-error")
   };
 }
 
@@ -376,7 +578,69 @@ function BuildRecommendationFilterElements() {
   return {
     recommendationFilterMore: Element("recommendation-filter-more"),
     recommendationFilterCount: Element("recommendation-filter-count"),
-    recommendationFilterPreview: Element("recommendation-filter-preview")
+    socialFilterMenu: Element("social-filter-menu"),
+    socialFilterMode: Element("social-filter-mode"),
+    socialFilterFriends: Element("social-filter-friends")
+  };
+}
+
+function BuildFriendElements() {
+  return {
+    ...BuildProfileElements(),
+    ...BuildFriendSearchElements(),
+    ...BuildFriendListElements(),
+    ...BuildShareElements()
+  };
+}
+
+function BuildProfileElements() {
+  return {
+    profileForm: Element("profile-form"),
+    profileDisplayName: Element("profile-display-name"),
+    profileHandle: Element("profile-handle"),
+    profileSearchable: Element("profile-searchable"),
+    profileShareRatings: Element("profile-share-ratings"),
+    profileShowRatings: Element("profile-show-ratings"),
+    profileAvatarPreview: Element("profile-avatar-preview"),
+    profileAvatarFile: Element("profile-avatar-file"),
+    profileAvatarRemove: Element("profile-avatar-remove"),
+    profileError: Element("profile-error"),
+    profileSave: Element("profile-save")
+  };
+}
+
+function BuildFriendSearchElements() {
+  return {
+    friendSearchForm: Element("friend-search-form"),
+    friendSearchInput: Element("friend-search-input"),
+    friendSearchSubmit: Element("friend-search-submit"),
+    friendSearchError: Element("friend-search-error"),
+    friendSearchResults: Element("friend-search-results")
+  };
+}
+
+function BuildFriendListElements() {
+  return {
+    incomingFriendsSection: Element("incoming-friends-section"),
+    outgoingFriendsSection: Element("outgoing-friends-section"),
+    incomingFriends: Element("incoming-friends"),
+    outgoingFriends: Element("outgoing-friends"),
+    acceptedFriends: Element("accepted-friends"),
+    incomingFriendsCount: Element("incoming-friends-count"),
+    outgoingFriendsCount: Element("outgoing-friends-count"),
+    acceptedFriendsCount: Element("accepted-friends-count")
+  };
+}
+
+function BuildShareElements() {
+  return {
+    shareDialog: Element("share-dialog"),
+    shareForm: Element("share-form"),
+    shareDialogTitle: Element("share-dialog-title"),
+    shareFriendOptions: Element("share-friend-options"),
+    shareError: Element("share-error"),
+    shareSubmit: Element("share-submit"),
+    shareCancel: Element("share-cancel")
   };
 }
 

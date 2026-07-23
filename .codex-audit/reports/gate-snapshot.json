@@ -1,10 +1,10 @@
 {
-  "gate_state_signature": "208d06db74f292c4e86b92902be02430c16513174e823a5e2e828684d8c0faf3",
-  "generated_at": "2026-07-22T23:47:28Z",
-  "integrity_generation": 58505,
+  "gate_state_signature": "6c35650f5ec0eb7fa7e213ce4396a3827a8a999726e861d8fd2bceb936d315a6",
+  "generated_at": "2026-07-23T22:58:55Z",
+  "integrity_generation": 187679,
   "passed": true,
-  "proof_root": "12bbc0c8b089b7ed43d1646a8af7e1fff98b3bf7ebb939d49599cafd454c2a56",
-  "repository_signature": "a20e15b7bf0dc344dcfe45e28768d261e4cfdf70a76f1fc9e18a97c491b29361",
+  "proof_root": "73e4228a14e42b8c5e1ae4b66f30027a37ce98bc58aed54ff16fbbf4795bab60",
+  "repository_signature": "87d25ff33aed627c2034ec8cad1327d952434c345b7463c1e5deefa9a671d2d7",
   "summary": {
     "checks": {
       "all_applicable_pairs_represented": true,
@@ -50,26 +50,26 @@
       "hard_blockers": [],
       "hash_stale": 0,
       "independent_work_remaining": false,
-      "inventory_files": 139,
+      "inventory_files": 209,
       "ledger_seal_valid": true,
       "not_applicable": 0,
       "only_same_user_decision_remaining": false,
-      "pass": 2552,
-      "passed": 2552,
+      "pass": 4773,
+      "passed": 4773,
       "pending": 0,
-      "remediation_strategy": "semantic_refactor_first",
-      "repo_hash_signature": "01b7d3c8e1eafba97bf32cf3f0846695b7ee11d29caf5d430c14c7a28c2b7fde",
-      "skipped": 1869,
+      "remediation_strategy": "rule_order",
+      "repo_hash_signature": "2ebd5653bd5e721f34401c9b2f18488d788cda0f462dc310ad514d335ce8226a",
+      "skipped": 1874,
       "stale": 0,
       "state": "active",
       "strategy_phase": {
-        "name": "final-complete-rule-audit-and-validation",
-        "number": 7,
-        "strategy": "semantic_refactor_first"
+        "name": "rule-audit",
+        "number": 0,
+        "strategy": "rule_order"
       },
-      "terminal": 4421,
-      "total_checks": 4421,
-      "total_tracked_files": 148,
+      "terminal": 6647,
+      "total_checks": 6647,
+      "total_tracked_files": 177,
       "unable_to_verify": 0,
       "unresolved_high_medium_findings": 0,
       "unreviewed": 0,
@@ -108,14 +108,14 @@
       "missing_sources": [],
       "normalized_manifest_path": "C:\\Users\\Jared\\.codex\\repository-audit\\state\\24c64586703550c4d5596a4b65555ab675f3feb5ecbbbd7e035c7195a624cd2f\\normalized-manifest.json"
     },
-    "strategy": "semantic_refactor_first",
+    "strategy": "rule_order",
     "strategy_phase": {
-      "name": "final-complete-rule-audit-and-validation",
-      "number": 7,
-      "strategy": "semantic_refactor_first"
+      "name": "rule-audit",
+      "number": 0,
+      "strategy": "rule_order"
     },
     "validation_results": []
   },
   "version": 1,
-  "worktree_fast_signature": "b04127568f64d3693d72cd3ae5997550432893ae613c7798e64b44aa5639d3ec"
+  "worktree_fast_signature": "91fffe5734a5a6ac77729f8e7be0f479e7489aa9bd38f65816ae2dcd6ca14599"
 }

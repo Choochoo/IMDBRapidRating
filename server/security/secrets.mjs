@@ -2,17 +2,19 @@ import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "
 
 const Algorithm = "aes-256-gcm";
 const KeyVersion = 1;
+const TextEncoding = "utf8";
+const Base64Encoding = "base64";
 
 export function EncryptSecret(value, userId, secretType) {
   const key = ReadEncryptionKey();
   const iv = randomBytes(12);
   const cipher = createCipheriv(Algorithm, key, iv);
   cipher.setAAD(BuildAad(userId, secretType));
-  const ciphertext = Buffer.concat([cipher.update(String(value), "utf8"), cipher.final()]);
+  const ciphertext = Buffer.concat([cipher.update(String(value), TextEncoding), cipher.final()]);
   return {
-    ciphertext: ciphertext.toString("base64"),
-    iv: iv.toString("base64"),
-    authTag: cipher.getAuthTag().toString("base64"),
+    ciphertext: ciphertext.toString(Base64Encoding),
+    iv: iv.toString(Base64Encoding),
+    authTag: cipher.getAuthTag().toString(Base64Encoding),
     keyVersion: KeyVersion
   };
 }
@@ -22,13 +24,12 @@ export function DecryptSecret(record, userId, secretType) {
     return "";
   if (Number(record.keyVersion) !== KeyVersion)
     throw new Error("Unsupported encrypted-secret key version.");
-  const decipher = createDecipheriv(Algorithm, ReadEncryptionKey(), Buffer.from(record.iv, "base64"));
+  const decipher = createDecipheriv(Algorithm, ReadEncryptionKey(), Buffer.from(record.iv, Base64Encoding));
   decipher.setAAD(BuildAad(userId, secretType));
-  decipher.setAuthTag(Buffer.from(record.authTag, "base64"));
-  return Buffer.concat([
-    decipher.update(Buffer.from(record.ciphertext, "base64")),
-    decipher.final()
-  ]).toString("utf8");
+  decipher.setAuthTag(Buffer.from(record.authTag, Base64Encoding));
+  const ciphertext = Buffer.from(record.ciphertext, Base64Encoding);
+  const chunks = [decipher.update(ciphertext), decipher.final()];
+  return Buffer.concat(chunks).toString(TextEncoding);
 }
 
 export function HasEncryptionKey() {
@@ -48,12 +49,12 @@ export function SafeTokenEquals(left, right) {
 
 function ReadEncryptionKey() {
   const value = String(process.env.DATA_ENCRYPTION_KEY || "").trim();
-  const buffer = /^[a-f0-9]{64}$/i.test(value) ? Buffer.from(value, "hex") : Buffer.from(value, "base64");
+  const buffer = /^[a-f0-9]{64}$/i.test(value) ? Buffer.from(value, "hex") : Buffer.from(value, Base64Encoding);
   if (buffer.length !== 32)
     throw new Error("DATA_ENCRYPTION_KEY must be a base64 or hexadecimal 32-byte key.");
   return buffer;
 }
 
 function BuildAad(userId, secretType) {
-  return Buffer.from(`imdb-rapid-rater:${userId}:${secretType}:v${KeyVersion}`, "utf8");
+  return Buffer.from(`imdb-rapid-rater:${userId}:${secretType}:v${KeyVersion}`, TextEncoding);
 }

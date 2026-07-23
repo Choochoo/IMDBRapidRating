@@ -1,51 +1,72 @@
 import { Config } from "./config.js";
 import { ReadStreamingCountry } from "../../shared/streaming-country.js";
+import { NormalizeKeyboardShortcuts } from "../../shared/keyboard-shortcuts.js";
+import { NormalizeHelpPreferences } from "../../shared/help-preferences.js";
+
+const RatingsCsvStorageSuffix = ":ratings-csv";
+const EmptyJsonObject = "{}";
+const DoubleQuote = "\"";
+const SingleQuote = "'";
 
 export function ReadBrowserSettings() {
   try {
-    return NormalizeLegacySettings(JSON.parse(localStorage.getItem(Config.settingsKey) || "{}"));
+    return NormalizeLegacySettings(JSON.parse(localStorage.getItem(Config.settingsKey) || EmptyJsonObject));
   } catch {
     return NormalizeLegacySettings({});
   }
 }
 
 export function ApplyAccountSettings(settings, remote) {
-  Object.assign(settings, {
+  const accountSettings = {
     imdbConfigured: Boolean(remote?.imdbConfigured),
-    tmdbConfigured: Boolean(remote?.tmdbConfigured),
-    openAiConfigured: Boolean(remote?.openAiConfigured),
-    openAiModel: String(remote?.openAiModel || ""),
-    openAiModelLag: Number(remote?.openAiModelLag) || 2,
-    streamingCountry: ReadStreamingCountry(remote?.streamingCountry)
-  });
+    aiConfigured: Boolean(remote?.aiConfigured),
+    aiBaseUrl: String(remote?.aiBaseUrl || ""),
+    aiModel: String(remote?.aiModel || ""),
+    streamingCountry: ReadStreamingCountry(remote?.streamingCountry),
+    keyboardShortcuts: NormalizeKeyboardShortcuts(remote?.keyboardShortcuts),
+    helpPreferences: NormalizeHelpPreferences(remote?.helpPreferences)
+  };
+  Object.assign(settings, accountSettings);
+  RemoveLegacySettings(settings);
+  return settings;
+}
+
+function RemoveLegacySettings(settings) {
   delete settings.imdbCookie;
   delete settings.tmdbApiKey;
   delete settings.openAiApiKey;
-  return settings;
+}
+
+export function BuildAccountPreferences(settings, changes = {}) {
+  return {
+    streamingCountry: ReadStreamingCountry(changes.streamingCountry ?? settings.streamingCountry),
+    keyboardShortcuts: NormalizeKeyboardShortcuts(changes.keyboardShortcuts ?? settings.keyboardShortcuts),
+    helpPreferences: NormalizeHelpPreferences(changes.helpPreferences ?? settings.helpPreferences)
+  };
 }
 
 export function ClearLegacyBrowserData() {
   localStorage.removeItem(Config.settingsKey);
   localStorage.removeItem(Config.storageKey);
-  localStorage.removeItem(Config.storageKey + ":ratings-csv");
+  localStorage.removeItem(Config.storageKey + RatingsCsvStorageSuffix);
 }
 
 export function HasLegacyBrowserData(settings = ReadBrowserSettings()) {
   const state = localStorage.getItem(Config.storageKey);
-  const csv = localStorage.getItem(Config.storageKey + ":ratings-csv");
+  const csv = localStorage.getItem(Config.storageKey + RatingsCsvStorageSuffix);
   return Boolean(state || csv || settings.imdbCookie || settings.tmdbApiKey || settings.openAiApiKey);
 }
 
 export function ReadLegacyState() {
   try {
-    return JSON.parse(localStorage.getItem(Config.storageKey) || "{}") || {};
+    return JSON.parse(localStorage.getItem(Config.storageKey) || EmptyJsonObject) || {};
   } catch {
     return {};
   }
 }
 
 export function ReadLegacyRatingsCsv() {
-  return localStorage.getItem(Config.storageKey + ":ratings-csv") || "";
+  return localStorage.getItem(Config.storageKey + RatingsCsvStorageSuffix) || "";
 }
 
 export function ValidateImdbCookie(value) {
@@ -55,11 +76,6 @@ export function ValidateImdbCookie(value) {
   return { ok: true, value: normalized };
 }
 
-export function ValidateApiKey(value, label) {
-  const normalized = NormalizeBearerValue(value);
-  return normalized ? { ok: true, value: normalized } : { ok: false, error: `Paste your ${label} API key.` };
-}
-
 function NormalizeLegacySettings(settings) {
   return {
     imdbCookie: NormalizeCookie(settings?.imdbCookie || ""),
@@ -67,7 +83,9 @@ function NormalizeLegacySettings(settings) {
     openAiApiKey: NormalizeBearerValue(settings?.openAiApiKey || ""),
     openAiModel: String(settings?.openAiModel || "").trim(),
     openAiModelLag: Number(settings?.openAiModelLag) || 2,
-    streamingCountry: ReadStreamingCountry(settings?.streamingCountry)
+    streamingCountry: ReadStreamingCountry(settings?.streamingCountry),
+    keyboardShortcuts: NormalizeKeyboardShortcuts(settings?.keyboardShortcuts),
+    helpPreferences: NormalizeHelpPreferences(settings?.helpPreferences)
   };
 }
 
@@ -80,6 +98,6 @@ function NormalizeBearerValue(value) {
 }
 
 function StripQuotes(value) {
-  const quoted = (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+  const quoted = (value.startsWith(DoubleQuote) && value.endsWith(DoubleQuote)) || (value.startsWith(SingleQuote) && value.endsWith(SingleQuote));
   return quoted ? value.slice(1, -1) : value;
 }
