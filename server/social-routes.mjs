@@ -2,7 +2,7 @@ import express from "express";
 import { rateLimit } from "express-rate-limit";
 import { RequireCsrf } from "./auth.mjs";
 import { NormalizeRecommendationItem } from "./recommendation-queue.mjs";
-import { FriendRequestSchema, ProfileSchema, SearchSchema, ShareSchema, SocialContextSchema, UserIdSchema } from "./social-schemas.mjs";
+import { FriendRequestSchema, ProfileSchema, SearchSchema, ShareSchema, SocialContextSchema, UserIdSchema, UsernameSchema } from "./social-schemas.mjs";
 
 const MaximumAvatarBytes = 1024 * 1024;
 const DraftStandardHeaders = "draft-8";
@@ -13,6 +13,7 @@ const WebpMediaType = "image/webp";
 const AsciiEncoding = "ascii";
 const ProfileRoute = "/api/profile";
 const ProfileAvatarRoute = "/api/profile/avatar";
+const ProfileUsernameRoute = "/api/profile/username";
 const AvatarMediaTypes = Object.freeze([JpegMediaType, PngMediaType, WebpMediaType]);
 const SearchLimiter = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: DraftStandardHeaders, legacyHeaders: false });
 const SocialMutationLimiter = rateLimit({ windowMs: 60 * 60_000, limit: 120, standardHeaders: DraftStandardHeaders, legacyHeaders: false });
@@ -26,6 +27,7 @@ export function RegisterSocialRoutes(app, dependencies) {
 function RegisterProfileRoutes(app, dependencies) {
   app.get(ProfileRoute, async (request, response) => await HandleGetProfile(request, response, dependencies));
   app.put(ProfileRoute, SocialMutationLimiter, RequireCsrf, async (request, response) => await HandleUpdateProfile(request, response, dependencies));
+  app.put(ProfileUsernameRoute, SocialMutationLimiter, RequireCsrf, async (request, response) => await HandleClaimUsername(request, response, dependencies));
   app.put(ProfileAvatarRoute, SocialMutationLimiter, RequireCsrf, express.raw({ type: AvatarMediaTypes, limit: MaximumAvatarBytes }), async (request, response) => await HandlePutAvatar(request, response, dependencies));
   app.delete(ProfileAvatarRoute, SocialMutationLimiter, RequireCsrf, async (request, response) => await HandleDeleteAvatar(request, response, dependencies));
   app.get("/api/avatars/:userId", async (request, response) => await HandleGetAvatar(request, response, dependencies));
@@ -53,13 +55,23 @@ async function HandleGetProfile(request, response, dependencies) {
 async function HandleUpdateProfile(request, response, dependencies) {
   const parsed = ProfileSchema.safeParse(request.body);
   if (!parsed.success)
-    return InvalidSocialRequest(response, "Enter a valid profile name and handle.");
+    return InvalidSocialRequest(response, "Enter valid profile settings.");
+  const profile = await dependencies.store.UpdateProfile(request.session.userId, parsed.data);
+  response.json({ ok: true, profile });
+}
+
+async function HandleClaimUsername(request, response, dependencies) {
+  const parsed = UsernameSchema.safeParse(request.body);
+  if (!parsed.success)
+    return InvalidSocialRequest(response, parsed.error.issues[0]?.message || "Enter a valid username.");
   try {
-    const profile = await dependencies.store.UpdateProfile(request.session.userId, parsed.data);
+    const profile = await dependencies.store.ClaimHandle(request.session.userId, parsed.data.handle);
+    if (!profile)
+      return response.status(409).json({ ok: false, code: "USERNAME_LOCKED", error: "Your username has already been chosen and cannot be changed." });
     response.json({ ok: true, profile });
   } catch (error) {
     if (error?.code === "23505")
-      return response.status(409).json({ ok: false, code: "HANDLE_UNAVAILABLE", error: "That handle is already in use." });
+      return response.status(409).json({ ok: false, code: "USERNAME_UNAVAILABLE", error: "That username is already in use." });
     throw error;
   }
 }

@@ -27,6 +27,7 @@ const HeatTitleId = "tt0113277";
 const MovieMediaType = "movie";
 const NewEmail = "New_User@Example.com";
 const NewNormalizedEmail = "new_user@example.com";
+const NewUsername = "new-viewer";
 const PendingStatus = "pending";
 const PoolVersion = "pool-v1";
 const QuickRatingPath = "/api/rater/quick-rating";
@@ -53,6 +54,7 @@ const TestMoviePool = {
 test("email login establishes an authenticated session and CSRF protects account writes", VerifyEmailLogin);
 test("logout destroys the authenticated session", VerifyLogout);
 test("public registration validates input, creates account data, and signs the user in", VerifyRegistration);
+test("registration reports an unavailable username separately from email", VerifyRegistrationUsernameConflict);
 
 async function VerifyEmailLogin() {
   const user = await BuildTestUser("8133d1c3-2620-42fa-85e6-6b6ec6204301");
@@ -90,7 +92,7 @@ async function VerifyRegistration() {
   const session = await OpenTestSession(BuildRegistrationStore(users));
   assert.equal(session.anonymous.body.registrationEnabled, true);
   await session.agent.post(AuthRegisterPath).set(CsrfHeader, session.csrfToken).send({ email: "not-an-email", password: RegistrationPassword }).expect(422);
-  const created = await session.agent.post(AuthRegisterPath).set(CsrfHeader, session.csrfToken).send({ email: NewEmail, password: RegistrationPassword }).expect(201);
+  const created = await session.agent.post(AuthRegisterPath).set(CsrfHeader, session.csrfToken).send({ handle: NewUsername, email: NewEmail, password: RegistrationPassword }).expect(201);
   AssertRegisteredUser(created, users);
   const current = await session.agent.get(AuthSessionPath).expect(200);
   assert.equal(current.body.authenticated, true);
@@ -100,8 +102,8 @@ async function VerifyRegistration() {
 function BuildRegistrationStore(users) {
   return {
     findUserByEmail: async (email) => users.get(email) || null,
-    createUser: async ({ email, passwordHash }) => {
-      const user = { id: "504cf9d4-7f91-4621-9c53-dcc27e13620c", email, passwordHash };
+    createUser: async ({ email, passwordHash, handle }) => {
+      const user = { id: "504cf9d4-7f91-4621-9c53-dcc27e13620c", email, passwordHash, handle };
       users.set(email, user);
       return user;
     },
@@ -113,7 +115,16 @@ function AssertRegisteredUser(created, users) {
   assert.equal(created.body.user.email, NewNormalizedEmail);
   assert.equal("username" in created.body.user, false);
   assert.equal("displayName" in created.body.user, false);
+  assert.equal(users.get(NewNormalizedEmail).handle, NewUsername);
   assert.notEqual(users.get(NewNormalizedEmail).passwordHash, RegistrationPassword);
+}
+
+async function VerifyRegistrationUsernameConflict() {
+  const error = Object.assign(new Error("duplicate username"), { code: "23505", constraint: "user_profiles_handle_unique" });
+  const store = { findUserByEmail: async () => null, createUser: async () => Promise.reject(error) };
+  const session = await OpenTestSession(store);
+  const response = await session.agent.post(AuthRegisterPath).set(CsrfHeader, session.csrfToken).send({ handle: NewUsername, email: NewEmail, password: RegistrationPassword }).expect(409);
+  assert.equal(response.body.code, "USERNAME_UNAVAILABLE");
 }
 
 test("registration rejects missing CSRF and unavailable email addresses", VerifyRegistrationRejection);
@@ -125,8 +136,8 @@ async function VerifyRegistrationRejection() {
     createUser: async () => { throw new Error("createUser should not run"); }
   };
   const session = await OpenTestSession(store);
-  await session.agent.post(AuthRegisterPath).send({ email: TakenEmail, password: RegistrationPassword }).expect(403);
-  const duplicate = await session.agent.post(AuthRegisterPath).set(CsrfHeader, session.csrfToken).send({ email: TakenEmail, password: RegistrationPassword }).expect(409);
+  await session.agent.post(AuthRegisterPath).send({ handle: NewUsername, email: TakenEmail, password: RegistrationPassword }).expect(403);
+  const duplicate = await session.agent.post(AuthRegisterPath).set(CsrfHeader, session.csrfToken).send({ handle: NewUsername, email: TakenEmail, password: RegistrationPassword }).expect(409);
   assert.equal(duplicate.body.code, "EMAIL_UNAVAILABLE");
 }
 

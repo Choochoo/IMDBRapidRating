@@ -15,6 +15,7 @@ const MovieMediaType = "movie";
 const AddedStatus = "added";
 const PngContentType = "image/png";
 const ProfilePath = "/api/profile";
+const ProfileUsernamePath = "/api/profile/username";
 const FriendRequestsPath = "/api/friends/requests";
 const SocialSharePath = "/api/social/share";
 const ProfileAvatarPath = "/api/profile/avatar";
@@ -27,6 +28,8 @@ const ViewerHandle = "viewer";
 const ViewerName = "Viewer Name";
 
 test("profiles are authenticated, CSRF protected, and searchable without returning email", VerifyProfiles);
+test("a username can be chosen once and never changed", VerifyUsernameClaim);
+test("an unavailable username does not consume the choice", VerifyUnavailableUsername);
 test("friend requests can be sent, accepted, and removed by authenticated users", VerifyFriendRequests);
 test("sharing uses the canonical catalog title and notifies an added recipient", VerifySharing);
 test("avatar uploads validate image signatures and update the avatar version", VerifyAvatarUpload);
@@ -38,7 +41,8 @@ async function VerifyProfiles() {
   assert.equal((await agent.get(ProfilePath).expect(200)).body.profile.handle, ViewerHandle);
   await agent.put(ProfilePath).send(ProfileRequest()).expect(403);
   const saved = await agent.put(ProfilePath).set(CsrfHeader, CsrfToken).send(ProfileRequest()).expect(200);
-  assert.equal(state.updated.handle, "viewer-name");
+  assert.equal("handle" in state.updated, false);
+  assert.equal(saved.body.profile.handle, ViewerHandle);
   assert.equal(saved.body.profile.displayName, ViewerName);
   const search = await agent.get("/api/friends/search?q=friend@example.com").expect(200);
   assert.equal(search.body.results[0].profile.handle, FriendHandle);
@@ -54,6 +58,35 @@ function BuildProfileStore(profile, state) {
     },
     SearchUsers: async () => [{ profile: Profile(FriendId, FriendHandle), relationshipId: "", relationshipStatus: "none", outgoing: false }]
   };
+}
+
+async function VerifyUsernameClaim() {
+  const state = { profile: { ...Profile(UserId, ViewerHandle), handleChosen: false } };
+  const agent = request.agent(BuildSocialTestApp(BuildUsernameStore(state)));
+  await agent.put(ProfileUsernamePath).send({ handle: "chosen-name" }).expect(403);
+  const saved = await agent.put(ProfileUsernamePath).set(CsrfHeader, CsrfToken).send({ handle: "Chosen-Name" }).expect(200);
+  assert.equal(saved.body.profile.handle, "chosen-name");
+  assert.equal(saved.body.profile.handleChosen, true);
+  const locked = await agent.put(ProfileUsernamePath).set(CsrfHeader, CsrfToken).send({ handle: "another-name" }).expect(409);
+  assert.equal(locked.body.code, "USERNAME_LOCKED");
+}
+
+function BuildUsernameStore(state) {
+  return {
+    ClaimHandle: async (_userId, handle) => {
+      if (state.profile.handleChosen)
+        return null;
+      state.profile = { ...state.profile, handle, handleChosen: true };
+      return state.profile;
+    }
+  };
+}
+
+async function VerifyUnavailableUsername() {
+  const store = { ClaimHandle: async () => Promise.reject({ code: "23505" }) };
+  const agent = request.agent(BuildSocialTestApp(store));
+  const response = await agent.put(ProfileUsernamePath).set(CsrfHeader, CsrfToken).send({ handle: "taken-name" }).expect(409);
+  assert.equal(response.body.code, "USERNAME_UNAVAILABLE");
 }
 
 async function VerifyFriendRequests() {
@@ -148,6 +181,7 @@ function Profile(userId, handle) {
   return {
     userId,
     handle,
+    handleChosen: true,
     displayName: handle === ViewerHandle ? "Viewer" : "Friend",
     avatarVersion: 0,
     avatarUrl: "",
@@ -159,7 +193,6 @@ function Profile(userId, handle) {
 
 function ProfileRequest() {
   return {
-    handle: "Viewer-Name",
     displayName: ViewerName,
     searchable: true,
     shareRatingsWithFriends: true,

@@ -45,6 +45,7 @@ function BuildAccountElements() {
     ...BuildAuthVisibilityElements(),
     ...BuildLoginElements(),
     ...BuildSignupElements(),
+    ...BuildUsernameElements(),
     ...BuildMigrationElements()
   };
 }
@@ -74,11 +75,22 @@ function BuildLoginElements() {
 function BuildSignupElements() {
   return {
     signupForm: Element("signup-form"),
+    signupUsername: Element("signup-username"),
     signupEmail: Element("signup-email"),
     signupPassword: Element("signup-password"),
     signupConfirmation: Element("signup-confirmation"),
     signupError: Element("signup-error"),
     signupSubmit: Element("signup-submit")
+  };
+}
+
+function BuildUsernameElements() {
+  return {
+    usernameDialog: Element("username-dialog"),
+    usernameForm: Element("username-form"),
+    usernameInput: Element("username-input"),
+    usernameError: Element("username-error"),
+    usernameSubmit: Element("username-submit")
   };
 }
 

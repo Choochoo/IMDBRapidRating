@@ -15,6 +15,14 @@
   padding: 20px;
 }
 
+.username-card {
+  width: min(480px, 100%);
+}
+
+.username-card .alert {
+  margin: 16px 0 0;
+}
+
 .filter-card {
   width: min(880px, 100%);
   max-height: min(860px, calc(100dvh - 36px));

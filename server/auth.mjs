@@ -3,6 +3,7 @@ import argon2 from "argon2";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { SafeTokenEquals } from "./security/secrets.mjs";
+import { HandleSchema } from "./social-schemas.mjs";
 
 const StandardRateLimitHeaders = "draft-8";
 const LoginSchemaDefinition = {
@@ -12,6 +13,7 @@ const LoginSchemaDefinition = {
 const LoginSchema = z.object(LoginSchemaDefinition);
 
 const RegistrationSchemaDefinition = {
+  handle: HandleSchema,
   email: z.string().trim().toLowerCase().email("Enter a valid email address.").max(254, "Email address is too long."),
   password: z.string().min(8, "Password must contain at least 8 characters.").max(128, "Password cannot exceed 128 characters.")
 };

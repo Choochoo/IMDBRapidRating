@@ -27,6 +27,7 @@ function CreateProfileMethods(pool) {
   return {
     GetProfile: async (userId) => await GetProfile(pool, userId),
     UpdateProfile: async (userId, profile) => await UpdateProfile(pool, userId, profile),
+    ClaimHandle: async (userId, handle) => await ClaimHandle(pool, userId, handle),
     PutAvatar: async (userId, contentType, imageData) => await PutAvatar(pool, userId, contentType, imageData),
     DeleteAvatar: async (userId) => await DeleteAvatar(pool, userId),
     GetAvatar: async (viewerId, userId) => await GetAvatar(pool, viewerId, userId)
@@ -53,12 +54,17 @@ function CreateRecommendationMethods(pool) {
 }
 
 async function GetProfile(pool, userId) {
-  const result = await pool.query(`SELECT user_id, handle, display_name, searchable, share_ratings_with_friends, show_friend_ratings, avatar_version FROM ${Qualified(UserProfilesTable)} WHERE user_id=$1`, [userId]);
+  const result = await pool.query(`SELECT user_id, handle, handle_chosen, display_name, searchable, share_ratings_with_friends, show_friend_ratings, avatar_version FROM ${Qualified(UserProfilesTable)} WHERE user_id=$1`, [userId]);
   return result.rows[0] ? BuildOwnProfile(result.rows[0]) : null;
 }
 
 async function UpdateProfile(pool, userId, profile) {
-  const result = await pool.query(`UPDATE ${Qualified(UserProfilesTable)} SET handle=$2, display_name=$3, searchable=$4, share_ratings_with_friends=$5, show_friend_ratings=$6, updated_at=now() WHERE user_id=$1 RETURNING user_id, handle, display_name, searchable, share_ratings_with_friends, show_friend_ratings, avatar_version`, [userId, profile.handle, profile.displayName, profile.searchable, profile.shareRatingsWithFriends, profile.showFriendRatings]);
+  const result = await pool.query(`UPDATE ${Qualified(UserProfilesTable)} SET display_name=$2, searchable=$3, share_ratings_with_friends=$4, show_friend_ratings=$5, updated_at=now() WHERE user_id=$1 RETURNING user_id, handle, handle_chosen, display_name, searchable, share_ratings_with_friends, show_friend_ratings, avatar_version`, [userId, profile.displayName, profile.searchable, profile.shareRatingsWithFriends, profile.showFriendRatings]);
+  return result.rows[0] ? BuildOwnProfile(result.rows[0]) : null;
+}
+
+async function ClaimHandle(pool, userId, handle) {
+  const result = await pool.query(`UPDATE ${Qualified(UserProfilesTable)} SET handle=$2, handle_chosen=true, updated_at=now() WHERE user_id=$1 AND handle_chosen=false RETURNING user_id, handle, handle_chosen, display_name, searchable, share_ratings_with_friends, show_friend_ratings, avatar_version`, [userId, handle]);
   return result.rows[0] ? BuildOwnProfile(result.rows[0]) : null;
 }
 
@@ -103,7 +109,7 @@ async function SearchUsers(pool, userId, query) {
 }
 
 function BuildSearchSql() {
-  return `SELECT p.user_id, p.handle, p.display_name, p.avatar_version, f.id AS relationship_id, f.status, f.requester_user_id=$1 AS outgoing FROM ${Qualified(UserProfilesTable)} p JOIN ${Qualified(UsersTable)} u ON u.id=p.user_id LEFT JOIN ${Qualified(FriendshipsTable)} f ON (f.requester_user_id=$1 AND f.recipient_user_id=p.user_id) OR (f.recipient_user_id=$1 AND f.requester_user_id=p.user_id) WHERE p.user_id<>$1 AND p.searchable=true AND (lower(p.handle) LIKE $2 ESCAPE '\\' OR lower(p.display_name) LIKE $2 ESCAPE '\\' OR ($3<>'' AND lower(u.email)=$3)) AND COALESCE(f.status, '')<>'${BlockedStatus}' ORDER BY CASE WHEN lower(p.handle)=trim(both '%' from $2) THEN 0 ELSE 1 END, lower(p.display_name), lower(p.handle) LIMIT 20`;
+  return `SELECT p.user_id, p.handle, p.display_name, p.avatar_version, f.id AS relationship_id, f.status, f.requester_user_id=$1 AS outgoing FROM ${Qualified(UserProfilesTable)} p JOIN ${Qualified(UsersTable)} u ON u.id=p.user_id LEFT JOIN ${Qualified(FriendshipsTable)} f ON (f.requester_user_id=$1 AND f.recipient_user_id=p.user_id) OR (f.recipient_user_id=$1 AND f.requester_user_id=p.user_id) WHERE p.user_id<>$1 AND p.handle_chosen=true AND p.searchable=true AND (lower(p.handle) LIKE $2 ESCAPE '\\' OR lower(p.display_name) LIKE $2 ESCAPE '\\' OR ($3<>'' AND lower(u.email)=$3)) AND COALESCE(f.status, '')<>'${BlockedStatus}' ORDER BY CASE WHEN lower(p.handle)=trim(both '%' from $2) THEN 0 ELSE 1 END, lower(p.display_name), lower(p.handle) LIMIT 20`;
 }
 
 function BuildSearchResult(row) {
@@ -305,6 +311,7 @@ async function InsertSharedRecommendation(client, recipientId, item, mediaType) 
 function BuildOwnProfile(row) {
   return {
     ...BuildPublicProfile(row),
+    handleChosen: Boolean(row.handle_chosen),
     searchable: Boolean(row.searchable),
     shareRatingsWithFriends: Boolean(row.share_ratings_with_friends),
     showFriendRatings: Boolean(row.show_friend_ratings)

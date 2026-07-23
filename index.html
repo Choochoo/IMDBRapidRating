@@ -334,7 +334,7 @@
           <section class="profile-card card" aria-labelledby="profile-title">
             <div class="profile-card-heading">
               <span class="profile-avatar avatar avatar-large" id="profile-avatar-preview" role="img" aria-label="Your profile photo">R</span>
-              <div><h2 id="profile-title">Your profile</h2><p>Your handle is how other members find you.</p></div>
+              <div><h2 id="profile-title">Your profile</h2><p>Your username is how other members find you.</p></div>
             </div>
             <div class="profile-avatar-actions">
               <label class="btn btn-sm btn-outline-secondary" for="profile-avatar-file">Update photo</label>
@@ -345,8 +345,9 @@
               <label for="profile-display-name">Display name
                 <input class="form-control" id="profile-display-name" maxlength="80" required>
               </label>
-              <label for="profile-handle">Handle
-                <span class="input-group"><span class="input-group-text">@</span><input class="form-control" id="profile-handle" maxlength="32" pattern="[a-z0-9][a-z0-9._-]{2,31}" required></span>
+              <label for="profile-handle">Username
+                <span class="input-group"><span class="input-group-text">@</span><input class="form-control" id="profile-handle" aria-describedby="profile-handle-help" disabled></span>
+                <small id="profile-handle-help">Your username is permanent after you choose it.</small>
               </label>
               <label class="form-check"><input class="form-check-input" id="profile-searchable" type="checkbox"><span class="form-check-label">Let signed-in users find me</span></label>
               <label class="form-check"><input class="form-check-input" id="profile-share-ratings" type="checkbox"><span class="form-check-label">Share my ratings with accepted friends</span></label>
@@ -721,7 +722,10 @@
           <div id="signup-panel" hidden>
             <form id="signup-form">
               <h2>Create your account</h2>
-              <p>Anyone can sign up. Your private connections are encrypted on the server.</p>
+              <p>Choose your permanent username, then create your private account.</p>
+              <label for="signup-username">Username</label>
+              <div class="input-group"><span class="input-group-text">@</span><input class="setup-input form-control" id="signup-username" type="text" autocomplete="username" minlength="3" maxlength="32" pattern="[a-z0-9][a-z0-9._-]{2,31}" aria-describedby="signup-username-help" required></div>
+              <small id="signup-username-help">This cannot be changed later. Use letters, numbers, periods, underscores, or hyphens.</small>
               <label for="signup-email">Email</label>
               <input class="setup-input form-control" id="signup-email" type="email" autocomplete="email" maxlength="254" required>
               <label for="signup-password">Password</label>
@@ -735,6 +739,18 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <section class="cookie-dialog" id="username-dialog" role="dialog" aria-modal="true" aria-labelledby="username-title" hidden>
+      <form class="cookie-card username-card card" id="username-form">
+        <div class="cookie-header"><h1 id="username-title">Choose your username</h1></div>
+        <p>Your account predates usernames. Choose how friends will find you in Rapid Rater.</p>
+        <label for="username-input">Username</label>
+        <div class="input-group"><span class="input-group-text">@</span><input class="setup-input form-control" id="username-input" type="text" autocomplete="username" minlength="3" maxlength="32" pattern="[a-z0-9][a-z0-9._-]{2,31}" aria-describedby="username-warning" required></div>
+        <p class="alert alert-warning" id="username-warning"><strong>Choose carefully:</strong> your username cannot be changed after it is saved.</p>
+        <p class="cookie-error invalid-feedback d-block" id="username-error" role="alert"></p>
+        <button type="submit" class="btn btn-primary" id="username-submit">Save permanent username</button>
+      </form>
     </section>
 
     <section class="cookie-dialog" id="migration-dialog" role="dialog" aria-modal="true" aria-labelledby="migration-title" hidden>

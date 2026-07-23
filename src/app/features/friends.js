@@ -14,10 +14,12 @@ const FriendsLabel = "friends";
 const IncomingFriendsMode = "incoming";
 const OutgoingFriendsMode = "outgoing";
 const ProfileApiUrl = "/api/profile";
+const ProfileUsernameApiUrl = "/api/profile/username";
 const RecommendationFriendName = "recommendation-friend";
 const RequestFriendAction = "request";
 const ShareFriendName = "share-friend";
 const SocialFilterFriendName = "social-filter-friend";
+const UsernamePendingLabel = "Choose username";
 
 export class FriendsFeature {
   InitializeSocialState() {
@@ -57,6 +59,7 @@ export class FriendsFeature {
 
   BindFriendEvents() {
     this.Elements.profileForm.addEventListener(SubmitEvent, (event) => this.HandleProfileSave(event));
+    this.Elements.usernameForm.addEventListener(SubmitEvent, (event) => this.HandleUsernameSave(event));
     this.Elements.profileAvatarFile.addEventListener(ChangeEvent, (event) => this.HandleAvatarFile(event));
     this.Elements.profileAvatarRemove.addEventListener(ClickEvent, () => this.RemoveAvatar().catch((error) => this.ShowProfileError(error.message)));
     this.Elements.friendSearchForm.addEventListener(SubmitEvent, (event) => this.HandleFriendSearch(event));
@@ -76,15 +79,31 @@ export class FriendsFeature {
     const profile = this.Social.profile;
     if (!profile)
       return;
+    this.RenderProfileFields(profile);
+    this.RenderProfileIdentity(profile);
+    this.RenderUsernameDialog(profile);
+  }
+
+  RenderProfileFields(profile) {
     this.Elements.profileDisplayName.value = profile.displayName;
-    this.Elements.profileHandle.value = profile.handle;
+    this.Elements.profileHandle.value = profile.handleChosen ? profile.handle : UsernamePendingLabel;
     this.Elements.profileSearchable.checked = profile.searchable;
     this.Elements.profileShareRatings.checked = profile.shareRatingsWithFriends;
     this.Elements.profileShowRatings.checked = profile.showFriendRatings;
     this.Elements.profileAvatarRemove.hidden = !profile.avatarUrl;
-    this.Elements.accountBadge.textContent = `@${profile.handle}`;
+  }
+
+  RenderProfileIdentity(profile) {
+    this.Elements.accountBadge.textContent = profile.handleChosen ? `@${profile.handle}` : UsernamePendingLabel;
     this.Elements.accountBadge.hidden = false;
     ApplyAvatar(this.Elements.profileAvatarPreview, profile);
+  }
+
+  RenderUsernameDialog(profile) {
+    const required = !profile.handleChosen;
+    this.Elements.usernameDialog.hidden = !required;
+    if (required)
+      window.setTimeout(() => this.Elements.usernameInput.focus(), 0);
   }
 
   RenderFriendLists() {
@@ -131,6 +150,33 @@ export class FriendsFeature {
     this.SaveProfile().catch((error) => this.ShowProfileError(error.message));
   }
 
+  HandleUsernameSave(event) {
+    event.preventDefault();
+    this.ClaimUsername().catch((error) => this.ShowUsernameError(error.message));
+  }
+
+  async ClaimUsername() {
+    this.SetUsernameSaving(true);
+    this.ShowUsernameError("");
+    try {
+      const payload = await this.RequestJson(ProfileUsernameApiUrl, PutMethod, { handle: this.Elements.usernameInput.value });
+      this.Social.profile = payload.profile;
+      this.RenderProfile();
+      this.ShowToast("Your permanent username was saved.");
+    } finally {
+      this.SetUsernameSaving(false);
+    }
+  }
+
+  SetUsernameSaving(value) {
+    this.Elements.usernameSubmit.disabled = value;
+    this.Elements.usernameSubmit.textContent = value ? "Saving..." : "Save permanent username";
+  }
+
+  ShowUsernameError(message) {
+    this.Elements.usernameError.textContent = message || "";
+  }
+
   async SaveProfile() {
     this.SetProfileSaving(true);
     this.ShowProfileError("");
@@ -147,7 +193,6 @@ export class FriendsFeature {
 
   BuildProfileRequest() {
     return {
-      handle: this.Elements.profileHandle.value,
       displayName: this.Elements.profileDisplayName.value,
       searchable: this.Elements.profileSearchable.checked,
       shareRatingsWithFriends: this.Elements.profileShareRatings.checked,

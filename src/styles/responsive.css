@@ -1,3 +1,34 @@
+@media (max-width: 2180px) {
+  #configure-filters,
+  .quick-rate-menu > summary,
+  .data-menu > summary,
+  #open-help,
+  #open-settings,
+  .logout-action {
+    position: relative;
+    width: 38px;
+    min-width: 38px;
+    padding: 0;
+  }
+
+  .header-action-label,
+  .data-menu summary .menu-chevron,
+  .logout-action span {
+    display: none;
+  }
+
+  .header-action-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border: 2px solid #101418;
+    font-size: 8px;
+  }
+}
+
 @media (max-width: 1460px) {
   .header-main {
     grid-template-columns: minmax(330px, 1fr) auto minmax(390px, 1fr);

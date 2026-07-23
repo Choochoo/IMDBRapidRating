@@ -27,6 +27,7 @@ const AccountStatePath = "/api/account/state";
 const AccountSecretPath = "/api/account/secrets/:type";
 const AiRecommendationQueuePath = "/api/ai/recommendations/queue";
 const AiSettingsPath = "/api/ai/settings";
+const HandleUniqueConstraint = "user_profiles_handle_unique";
 const FunctionType = "function";
 const RatePath = "/api/rate";
 const RaterQueuePath = "/api/rater/queue";
@@ -141,10 +142,12 @@ async function HandleRegistration(request, response, dependencies) {
 
 async function CreateRegisteredUser(request, response, store, registration) {
   try {
-    const user = await store.createUser({ email: registration.email, passwordHash: await HashPassword(registration.password) });
+    const user = await store.createUser({ email: registration.email, passwordHash: await HashPassword(registration.password), handle: registration.handle });
     await RegenerateSession(request, user);
     response.status(201).json({ ok: true, csrfToken: request.session.csrfToken, user: PublicUser(user) });
   } catch (error) {
+    if (error?.constraint === HandleUniqueConstraint)
+      return UsernameUnavailable(response);
     if (error?.code === "23505")
       return EmailUnavailable(response);
     throw error;
@@ -767,4 +770,8 @@ function IsRegistrationEnabled() {
 
 function EmailUnavailable(response) {
   return response.status(409).json({ ok: false, code: "EMAIL_UNAVAILABLE", error: "An account already exists for that email address." });
+}
+
+function UsernameUnavailable(response) {
+  return response.status(409).json({ ok: false, code: "USERNAME_UNAVAILABLE", error: "That username is already in use." });
 }

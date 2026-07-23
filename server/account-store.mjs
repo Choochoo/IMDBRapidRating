@@ -32,7 +32,7 @@ function CreateUserMethods(db) {
   return {
     findUserByEmail: async (email) => await FindUserByEmail(db, email),
     findUserById: async (id) => await FindUserById(db, id),
-    createUser: async ({ email, passwordHash }) => await CreateUser(db, email, passwordHash),
+    createUser: async ({ email, passwordHash, handle }) => await CreateUser(db, email, passwordHash, handle),
     countUsers: async () => await CountUsers(db),
     getBundle: async (userId) => await GetUserBundle(db, userId)
   };
@@ -48,9 +48,9 @@ async function FindUserById(db, id) {
   return rows[0] || null;
 }
 
-async function CreateUser(db, email, passwordHash) {
+async function CreateUser(db, email, passwordHash, handle) {
   const user = BuildUser(email, passwordHash);
-  await db.transaction(async (tx) => await InsertUser(tx, user));
+  await db.transaction(async (tx) => await InsertUser(tx, user, handle));
   return user;
 }
 
@@ -65,9 +65,9 @@ function BuildUser(email, passwordHash) {
   };
 }
 
-async function InsertUser(tx, user) {
+async function InsertUser(tx, user, handle) {
   await tx.insert(Users).values(user);
-  await tx.insert(UserProfiles).values(BuildInitialProfile(user));
+  await tx.insert(UserProfiles).values(BuildInitialProfile(user, handle));
   await tx.insert(UserPreferences).values({ userId: user.id, updatedAt: user.createdAt });
   await tx.insert(UserStates).values({ userId: user.id, payload: {}, ratingsCsv: "", revision: 0, updatedAt: user.createdAt });
 }
@@ -266,10 +266,11 @@ function NormalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function BuildInitialProfile(user) {
+function BuildInitialProfile(user, handle) {
   return {
     userId: user.id,
-    handle: `rater-${user.id.replaceAll("-", "").slice(0, 26)}`,
+    handle,
+    handleChosen: true,
     displayName: "Rapid Rater User",
     createdAt: user.createdAt,
     updatedAt: user.updatedAt

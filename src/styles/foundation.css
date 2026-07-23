@@ -195,6 +195,13 @@ body.tv-mode #tab-sync {
   min-width: 0;
 }
 
+#account-badge {
+  max-width: clamp(96px, 12vw, 180px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .header-action,
 .logout-action,
 .header-menu > summary {

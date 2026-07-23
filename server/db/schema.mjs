@@ -39,6 +39,7 @@ export const Users = AppSchema.table("users", UsersColumns, BuildUsersIndexes);
 const UserProfilesColumns = {
   userId: uuid(UserIdColumn).primaryKey().references(() => Users.id, { onDelete: CascadeDeleteAction }),
   handle: varchar("handle", { length: 32 }).notNull(),
+  handleChosen: boolean("handle_chosen").notNull().default(false),
   displayName: varchar("display_name", { length: 80 }).notNull().default("Rapid Rater User"),
   searchable: boolean("searchable").notNull().default(true),
   shareRatingsWithFriends: boolean("share_ratings_with_friends").notNull().default(true),

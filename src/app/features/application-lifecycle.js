@@ -176,9 +176,10 @@ export class ApplicationLifecycleFeature {
   }
 
   async CompleteSignup(password) {
-    const request = { email: this.Elements.signupEmail.value, password };
+    const request = { handle: this.Elements.signupUsername.value, email: this.Elements.signupEmail.value, password };
     const payload = await this.RequestJson("/api/auth/register", PostMethod, request);
     this.ApplyAuthenticatedPayload(payload);
+    this.Elements.signupUsername.value = "";
     this.Elements.signupPassword.value = "";
     this.Elements.signupConfirmation.value = "";
     await this.Initialize();
@@ -209,7 +210,7 @@ export class ApplicationLifecycleFeature {
     this.Elements.showSignup.classList.toggle(ActiveClass, signup);
     this.Elements.loginError.textContent = "";
     this.Elements.signupError.textContent = "";
-    window.setTimeout(() => (signup ? this.Elements.signupEmail : this.Elements.loginEmail).focus(), 0);
+    window.setTimeout(() => (signup ? this.Elements.signupUsername : this.Elements.loginEmail).focus(), 0);
   }
 
   SetSignedInUser(user) {
