@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { RenderCard, RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons, UpdateActors, UpdateStreamingAvailability, UpdateTrailerLink } from "../src/app/rendering.js";
+import { FormatRelativeDate, RenderCard, RenderRecommendationCard, RenderRecommendationDetails, RenderRecommendationEmpty, RenderRecommendationSkeletons, UpdateActors, UpdateStreamingAvailability, UpdateTrailerLink } from "../src/app/rendering.js";
 
 const HeatData = { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"] };
 const Heat = Object.freeze(HeatData);
@@ -16,7 +16,9 @@ const StreamingAvailabilityData = {
 const StreamingAvailability = Object.freeze(StreamingAvailabilityData);
 
 test("recommendation loading renders eight cinematic placeholders", VerifyRecommendationSkeletons);
-test("recommendation cards include visual ranking and escape generated text", VerifyRecommendationCard);
+test("recommendation tiles stay compact and escape generated text", VerifyRecommendationCard);
+test("recommendation details retain explanations and actions", VerifyRecommendationDetails);
+test("recommendation tiles format relative date-added labels", VerifyRecommendationRelativeDate);
 test("empty recommendation queue explains how to add picks", VerifyRecommendationEmpty);
 test("only the active rating card offers the watchlist action", VerifyActiveWatchlistAction);
 test("the active card shows categorized streaming logos and attribution below its synopsis", VerifyStreamingCard);
@@ -30,15 +32,33 @@ test("watchlist cards receive their trailer link when metadata arrives", VerifyW
 function VerifyRecommendationSkeletons() {
   const html = RenderRecommendationSkeletons(8);
   assert.equal((html.match(/recommendation-skeleton/g) || []).length, 8);
-  assert.match(html, /skeleton-pills/);
+  assert.equal((html.match(/recommendation-poster/g) || []).length, 8);
+  assert.doesNotMatch(html, /skeleton-pills/);
   assert.match(html, /aria-hidden="true"/);
 }
 
 function VerifyRecommendationCard() {
   const html = RenderRecommendationCard({ title: "<script>", year: 2024, genres: ["Drama"], ttId: "tt123", why: { tasteMatch: "A fit" } }, 2);
-  assert.match(html, /Pick 03/);
+  assert.match(html, /data-recommendation-details/);
+  assert.match(html, /recommendation-tile-copy/);
   assert.match(html, /&lt;script&gt;/);
   assert.doesNotMatch(html, /<script>/);
+  assert.doesNotMatch(html, /Why this fits|data-recommendation-rating/);
+}
+
+function VerifyRecommendationDetails() {
+  const html = RenderRecommendationDetails({ ...Heat, addedAt: "2026-07-20T12:00:00.000Z", why: { tasteMatch: "A crime classic.", ratingEvidence: ["You rated Thief highly."] } });
+  assert.match(html, /id="recommendation-details-title"/);
+  assert.match(html, /Why this fits/);
+  assert.match(html, /You rated Thief highly/);
+  assert.equal((html.match(/data-recommendation-rating=/g) || []).length, 10);
+  assert.match(html, /data-recommendation-exclusion/);
+}
+
+function VerifyRecommendationRelativeDate() {
+  const now = Date.parse("2026-07-23T12:00:00.000Z");
+  assert.equal(FormatRelativeDate("2026-07-23T11:42:00.000Z", now), "18 minutes ago");
+  assert.equal(FormatRelativeDate("not-a-date", now), "Recently added");
 }
 
 function VerifyRecommendationEmpty() {

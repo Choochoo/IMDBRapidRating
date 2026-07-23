@@ -143,7 +143,7 @@ export class RapidRaterApp {
     this.Elements.ratedLabel.textContent = isTv ? "Shows rated" : "Movies rated";
     this.Elements.skipLabel.textContent = isTv ? NotWatchedLabel : NotSeenLabel;
     this.Elements.poolLabel.textContent = isTv ? "Show pool" : "Movie pool";
-    this.Elements.recommendationTitle.textContent = isTv ? "TV Show Recommendations" : "Movie Recommendations";
+    this.Elements.recommendationTitle.textContent = isTv ? "TV Watchlist" : "Movie Watchlist";
     this.Elements.recommendationDescription.textContent = this.ReadRecommendationDescription(isTv);
     this.Elements.watchlistTitle.textContent = isTv ? "Saved TV watchlist" : "Saved movie watchlist";
     this.Elements.emptyTitle.textContent = isTv ? "TV show pool exhausted" : "Movie pool exhausted";
@@ -152,8 +152,8 @@ export class RapidRaterApp {
 
   ReadRecommendationDescription(isTv) {
     if (isTv)
-      return "Fresh series picks shaped by the ratings you choose and your TV exclusions. Every batch is added to your saved TV watchlist.";
-    return "Fresh movie picks shaped by the ratings you choose and your movie exclusions. Every batch is added to your saved movie watchlist.";
+      return "A saved TV library shaped by your ratings, filters, and exclusions.";
+    return "A saved movie library shaped by your ratings, filters, and exclusions.";
   }
 
   UpdateMediaShortcut(isTv) {
@@ -185,7 +185,8 @@ export class RapidRaterApp {
       this.Elements.imdbDialog,
       this.Elements.tmdbDialog,
       this.Elements.aiDialog,
-      this.Elements.filtersDialog
+      this.Elements.filtersDialog,
+      this.Elements.recommendationDetails
     ];
   }
 
@@ -262,7 +263,6 @@ export class RapidRaterApp {
     const fresh = BuildMediaState();
     const savedState = this.BuildSavedMediaState(saved, fresh, mediaType);
     Object.assign(this.State, BuildMediaState(), savedState, this.BuildResetMediaState());
-    this.CollapsedRecommendationRows = this.ReadCollapsedRecommendationRows();
   }
 
   BuildSavedMediaState(saved, fresh, mediaType) {

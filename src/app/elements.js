@@ -107,6 +107,7 @@ function BuildViewSectionElements() {
 function BuildViewCopyElements() {
   return {
     watchlistTitle: Element("watchlist-title"),
+    watchlistCount: Element("watchlist-count"),
     emptyTitle: Element("empty-title"),
     ratedLabel: Element("rated-label"),
     skipLabel: Element("skip-label"),
@@ -335,16 +336,39 @@ function BuildAiModelElements() {
 function BuildRecommendationElements() {
   return {
     ...BuildRecommendationFilterElements(),
+    ...BuildRecommendationGenerationElements(),
+    ...BuildRecommendationLibraryElements(),
+    ...BuildRecommendationDetailsElements(),
+    recommendationStatus: Element("recommendation-status"),
+    recommendationLoading: Element("recommendation-loading"),
+    recommendationLoadingCopy: Element("recommendation-loading-copy")
+  };
+}
+
+function BuildRecommendationGenerationElements() {
+  return {
     generateRecommendations: Element("generate-recommendations"),
-    toggleRecommendationPosters: Element("toggle-recommendation-posters"),
+    recommendationGenerator: Element("recommendation-generator"),
     recommendationCount: Element("recommendation-count"),
     recommendationBasis: Element("recommendation-basis"),
     recommendationBasisLabel: Element("recommendation-basis-label"),
-    recommendationBasisDetail: Element("recommendation-basis-detail"),
-    recommendationStatus: Element("recommendation-status"),
-    recommendationLoading: Element("recommendation-loading"),
-    recommendationLoadingCopy: Element("recommendation-loading-copy"),
-    recommendationGrid: Element("recommendation-grid")
+    recommendationBasisDetail: Element("recommendation-basis-detail")
+  };
+}
+
+function BuildRecommendationLibraryElements() {
+  return {
+    recommendationGrid: Element("recommendation-grid"),
+    recommendationSort: Element("recommendation-sort"),
+    recommendationSortDirection: Element("recommendation-sort-direction")
+  };
+}
+
+function BuildRecommendationDetailsElements() {
+  return {
+    recommendationDetails: Element("recommendation-details"),
+    recommendationDetailsClose: Element("recommendation-details-close"),
+    recommendationDetailsContent: Element("recommendation-details-content")
   };
 }
 

@@ -4,12 +4,13 @@ import { EscapeHtml } from "./util.js";
 
 export function BindRecommendationRatings(app) {
   app.Elements.recommendationGrid.addEventListener("click", (event) => HandleRatingClick(app, event));
+  app.Elements.recommendationDetailsContent.addEventListener("click", (event) => HandleRatingClick(app, event));
 }
 
 function HandleRatingClick(app, event) {
-  const rowButton = ReadRowButton(event.target);
-  if (rowButton)
-    return app.ToggleRecommendationRow(rowButton);
+  const detailsButton = ReadDetailsButton(event.target);
+  if (detailsButton)
+    return app.ShowRecommendationDetails(detailsButton);
   const exclusionButton = ReadExclusionButton(event.target);
   if (exclusionButton)
     return ExcludeRecommendation(app, exclusionButton);
@@ -19,10 +20,10 @@ function HandleRatingClick(app, event) {
   RateRecommendation(app, button).catch((error) => app.ShowRecommendationError(error.message));
 }
 
-function ReadRowButton(target) {
+function ReadDetailsButton(target) {
   if (!target?.closest)
     return null;
-  return target.closest("[data-recommendation-row-toggle]");
+  return target.closest("[data-recommendation-details]");
 }
 
 function ReadExclusionButton(target) {
@@ -40,7 +41,7 @@ function ReadRatingButton(target) {
 async function RateRecommendation(app, button) {
   if (!app.State.live.configured)
     return app.RequireImdbSignIn();
-  const card = button.closest(".recommendation-card");
+  const card = ReadRecommendationContainer(button);
   if (!card)
     return;
   await SaveRecommendationRating(app, card, button);
@@ -66,7 +67,7 @@ function BuildRecommendationRateRecord(app, card, button) {
 }
 
 function ExcludeRecommendation(app, button) {
-  const card = button.closest(".recommendation-card");
+  const card = ReadRecommendationContainer(button);
   if (!card)
     return;
   const exclusion = app.AddRecommendationExclusion({
@@ -131,4 +132,8 @@ function SetCardSaving(card, value) {
   const exclusion = card.querySelector("[data-recommendation-exclusion]");
   if (exclusion)
     exclusion.disabled = value;
+}
+
+function ReadRecommendationContainer(element) {
+  return element.closest("[data-recommendation-item]");
 }

@@ -5,7 +5,6 @@ export const AriaPressedAttribute = "aria-pressed";
 export const BackspaceKey = "Backspace";
 export const ChangeEvent = "change";
 export const ClickEvent = "click";
-export const CollapsedPreference = "collapsed";
 export const DeleteKey = "Delete";
 export const ImdbSecretType = "imdb";
 export const KeydownEvent = "keydown";

@@ -1,5 +1,4 @@
-import { Config } from "../config.js";
-import { AiView, AriaPressedAttribute, ChangeEvent, ClickEvent, CollapsedPreference, ImdbSecretType, KeydownEvent, MovieMediaType, RaterView, SubmitEvent, SyncView, TmdbSecretType, TvMediaType } from "../app-constants.js";
+import { AiView, ChangeEvent, ClickEvent, ImdbSecretType, KeydownEvent, MovieMediaType, RaterView, SubmitEvent, SyncView, TmdbSecretType, TvMediaType } from "../app-constants.js";
 import { BindRecommendationRatings } from "../recommendation-ratings.js";
 import { SaveAiKeyFromDialog, SaveImdbConnectionFromDialog, SaveSelectedAiModel, SaveTmdbSettingsFromDialog } from "../settings-workflows.js";
 import { ApplyTitleFilters, HideTitleFilterDialog, ResetTitleFilterDialog, ShowTitleFilterDialog, UpdateTitleFilterPreview } from "../title-filter-workflows.js";
@@ -162,18 +161,44 @@ export class EventBindingsFeature {
   }
 
   BindAiEvents() {
+    this.BindAiConfigurationEvents();
+    this.BindRecommendationGenerationEvents();
+    this.BindRecommendationDetailsEvents();
+    BindRecommendationRatings(this);
+  }
+
+  BindAiConfigurationEvents() {
     this.Elements.configureAi.addEventListener(ClickEvent, () => this.ShowAiDialog());
     this.BindHeaderAction("configure-openai", () => this.ShowAiDialog());
     this.Elements.aiClose.addEventListener(ClickEvent, () => this.HideAiDialog());
     this.Elements.aiLater.addEventListener(ClickEvent, () => this.HideAiDialog());
     this.Elements.aiSave.addEventListener(ClickEvent, () => this.HandleAiSaveClick());
     this.Elements.aiDelete.addEventListener(ClickEvent, () => this.DeleteAccountSecret("openai"));
+  }
+
+  BindRecommendationGenerationEvents() {
     this.Elements.generateRecommendations.addEventListener(ClickEvent, () => this.HandleRecommendationClick());
     this.Elements.recommendationBasis.addEventListener(ChangeEvent, () => this.HandleRecommendationBasisChange());
-    this.Elements.toggleRecommendationPosters.addEventListener(ClickEvent, () => this.ToggleRecommendationPosters());
+    this.Elements.recommendationSort.addEventListener(ChangeEvent, () => this.HandleRecommendationSortChange());
+    this.Elements.recommendationSortDirection.addEventListener(ClickEvent, () => this.ToggleRecommendationSortDirection());
     this.Elements.refreshAiModels.addEventListener(ClickEvent, () => this.HandleModelRefreshClick());
     this.Elements.aiModelSelect.addEventListener(ChangeEvent, () => this.HandleModelSelectChange());
-    BindRecommendationRatings(this);
+  }
+
+  BindRecommendationDetailsEvents() {
+    this.Elements.recommendationDetailsClose.addEventListener(ClickEvent, () => this.HideRecommendationDetails());
+    this.Elements.recommendationDetails.addEventListener(ClickEvent, (event) => this.HandleRecommendationDetailsBackdrop(event));
+    document.addEventListener(KeydownEvent, (event) => this.HandleRecommendationDetailsKey(event));
+  }
+
+  HandleRecommendationDetailsBackdrop(event) {
+    if (event.target === this.Elements.recommendationDetails)
+      this.HideRecommendationDetails();
+  }
+
+  HandleRecommendationDetailsKey(event) {
+    if (event.key === "Escape" && !this.Elements.recommendationDetails.hidden)
+      this.HideRecommendationDetails();
   }
 
   HandleAiSaveClick() {
@@ -181,6 +206,7 @@ export class EventBindingsFeature {
   }
 
   HandleRecommendationClick() {
+    this.Elements.recommendationGenerator.open = false;
     this.GenerateRecommendations().catch((error) => this.ShowRecommendationError(error.message));
   }
 
@@ -230,29 +256,6 @@ export class EventBindingsFeature {
 
   ShowWishlistError(error) {
     this.ShowToast(`<strong>Watchlist was not updated:</strong> ${EscapeHtml(error.message)}`);
-  }
-
-  ToggleRecommendationPosters() {
-    this.RecommendationPostersCollapsed = !this.RecommendationPostersCollapsed;
-    try {
-      localStorage.setItem(Config.recommendationPosterPreferenceKey, this.RecommendationPostersCollapsed ? CollapsedPreference : "expanded");
-    } catch {}
-    this.UpdateRecommendationPosterVisibility();
-  }
-
-  ReadRecommendationPosterPreference() {
-    try {
-      return localStorage.getItem(Config.recommendationPosterPreferenceKey) === CollapsedPreference;
-    } catch {
-      return false;
-    }
-  }
-
-  UpdateRecommendationPosterVisibility() {
-    const collapsed = Boolean(this.RecommendationPostersCollapsed);
-    this.Elements.recommendationGrid.classList.toggle("posters-collapsed", collapsed);
-    this.Elements.toggleRecommendationPosters.setAttribute(AriaPressedAttribute, String(collapsed));
-    this.Elements.toggleRecommendationPosters.textContent = collapsed ? "Show posters" : "Hide posters";
   }
 
   BindSyncEvents() {

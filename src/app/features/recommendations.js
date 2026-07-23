@@ -1,6 +1,6 @@
 import { Config } from "../config.js";
 import { BuildAiPreferenceProfile } from "../rating-records.js";
-import { RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationFilteredEmpty, RenderRecommendationSkeletons } from "../rendering.js";
+import { RenderRecommendationCard, RenderRecommendationDetails, RenderRecommendationEmpty, RenderRecommendationFilteredEmpty, RenderRecommendationSkeletons } from "../rendering.js";
 import { EscapeHtml, FormatCount } from "../util.js";
 import { ReadMediaPayload } from "../../../shared/media.js";
 import { NormalizeRecommendationBasis } from "../../../shared/recommendation-basis.js";
@@ -14,9 +14,6 @@ const NormalizedTitleSpace = " ";
 const OtherRecommendationBasis = "other";
 const PluralPickLabel = "picks";
 const RecommendationLoadingMessages = Object.freeze(["Reading the signals in your ratings...", "Finding patterns across genres and eras...", "Comparing stories, directors, and hidden gems...", "Narrowing the list to your strongest matches...", "Giving the final picks a last look..."]);
-const RecommendationRowGridClass = "recommendation-row-grid";
-const RecommendationRowPrefix = "row-";
-const RecommendationRowPattern = /^row-\d+$/;
 const SingularPickLabel = "pick";
 const TvMediaType = "tv";
 
@@ -216,7 +213,7 @@ export class RecommendationFeature {
   RenderRecommendationLoadingSkeletons(count) {
     if (this.State.recommendationQueue.length)
       return;
-    this.Elements.recommendationGrid.innerHTML = `<div class="${RecommendationRowGridClass}">${RenderRecommendationSkeletons(Math.min(count, 12))}</div>`;
+    this.Elements.recommendationGrid.innerHTML = RenderRecommendationSkeletons(Math.min(count, 12));
   }
 
   SetRecommendationLoadingStatus(count) {
@@ -251,116 +248,120 @@ export class RecommendationFeature {
   }
 
   RenderRecommendationQueue() {
+    this.ResetRecommendationDetails();
     const items = this.ReadVisibleRecommendations();
-    this.PruneCollapsedRecommendationRows(items.length);
     this.Elements.recommendationGrid.classList.remove(AiLoadingClass);
     this.Elements.recommendationGrid.setAttribute(AriaBusyAttribute, "false");
     this.Elements.recommendationGrid.innerHTML = this.BuildRecommendationQueueHtml(items);
+    this.UpdateRecommendationLibraryCount(items.length);
     for (const item of items)
       this.EnrichTitleMetadata(item.ttId);
   }
 
   ReadVisibleRecommendations() {
-    return this.State.recommendationQueue.filter((item) => IsTitleAllowed(item, this.State.filters));
+    const visible = this.State.recommendationQueue.filter((item) => IsTitleAllowed(item, this.State.filters));
+    return this.SortRecommendations(visible);
   }
 
   BuildRecommendationQueueHtml(items) {
     if (items.length)
-      return this.BuildRecommendationRows(items);
+      return this.BuildRecommendationCards(items);
     if (this.State.recommendationQueue.length)
       return RenderRecommendationFilteredEmpty();
     return RenderRecommendationEmpty();
   }
 
-  BuildRecommendationRows(items) {
-    const rows = [];
-    for (let start = 0; start < items.length; start += 3) {
-      const movies = items.slice(start, start + 3);
-      rows.push(this.BuildRecommendationRow(movies, start));
-    }
-    return rows.join("");
+  BuildRecommendationCards(items) {
+    return items.map((item, index) => RenderRecommendationCard(item, index)).join("");
   }
 
-  BuildRecommendationRow(movies, start) {
-    const rowKey = `${RecommendationRowPrefix}${Math.floor(start / 3)}`;
-    const collapsed = this.CollapsedRecommendationRows.has(rowKey);
-    const range = this.BuildRecommendationRange(start, movies.length);
-    const action = collapsed ? "Expand row" : "Collapse row";
-    const titles = this.BuildRecommendationTitles(movies);
-    const cards = this.BuildRecommendationCards(movies, start);
-    const hidden = collapsed ? " hidden" : "";
-    return `<section class="recommendation-row d-grid"><button type="button" class="recommendation-row-toggle btn d-grid" data-recommendation-row-toggle data-row-key="${EscapeHtml(rowKey)}" aria-expanded="${String(!collapsed)}"><span class="recommendation-row-range">${range}</span><span class="recommendation-row-titles">${titles}</span><span class="recommendation-row-action">${action}</span></button><div class="${RecommendationRowGridClass}"${hidden}>${cards}</div></section>`;
+  SortRecommendations(items) {
+    return [...items].sort((left, right) => this.CompareRecommendations(left, right));
   }
 
-  BuildRecommendationRange(start, length) {
-    if (length === 1)
-      return `Pick ${start + 1}`;
-    return `Picks ${start + 1}–${start + length}`;
+  CompareRecommendations(left, right) {
+    const comparison = this.CompareRecommendationField(left, right);
+    if (!comparison)
+      return this.CompareRecommendationTitles(left, right);
+    return this.RecommendationSortDescending ? -comparison : comparison;
   }
 
-  BuildRecommendationTitles(movies) {
-    return movies
-      .map((item) => this.BuildRecommendationTitle(item))
-      .join(" <span aria-hidden=\"true\">•</span> ");
+  CompareRecommendationField(left, right) {
+    const field = this.Elements.recommendationSort.value;
+    if (field === "title")
+      return this.CompareRecommendationTitles(left, right);
+    const leftValue = this.ReadRecommendationSortNumber(left, field);
+    const rightValue = this.ReadRecommendationSortNumber(right, field);
+    return leftValue - rightValue;
   }
 
-  BuildRecommendationTitle(item) {
-    const year = item.year ? ` (${EscapeHtml(item.year)})` : "";
-    return `${EscapeHtml(item.title)}${year}`;
+  ReadRecommendationSortNumber(item, field) {
+    if (field === "year")
+      return Number(item?.year) || 0;
+    if (field === "imdbRating")
+      return Number(item?.imdbRating) || 0;
+    const timestamp = Date.parse(String(item?.addedAt || ""));
+    return Number.isFinite(timestamp) ? timestamp : 0;
   }
 
-  BuildRecommendationCards(movies, start) {
-    return movies
-      .map((item, index) => RenderRecommendationCard(item, start + index))
-      .join("");
+  CompareRecommendationTitles(left, right) {
+    return String(left?.title || "").localeCompare(String(right?.title || ""), undefined, { numeric: true, sensitivity: "base" });
   }
 
-  ToggleRecommendationRow(button) {
-    const rowKey = String(button?.dataset?.rowKey || "");
-    if (!rowKey)
-      return;
-    if (this.CollapsedRecommendationRows.has(rowKey))
-      this.CollapsedRecommendationRows.delete(rowKey);
-    else
-      this.CollapsedRecommendationRows.add(rowKey);
-    this.SaveCollapsedRecommendationRows();
+  HandleRecommendationSortChange() {
+    this.RecommendationSortDescending = this.Elements.recommendationSort.value !== "title";
+    this.UpdateRecommendationSortDirection();
     this.RenderRecommendationQueue();
   }
 
-  ReadCollapsedRecommendationRows() {
-    try {
-      const value = JSON.parse(localStorage.getItem(this.CollapsedRecommendationRowsStorageKey()) || "[]");
-      return this.NormalizeCollapsedRecommendationRows(value);
-    } catch {
-      return new Set();
-    }
+  ToggleRecommendationSortDirection() {
+    this.RecommendationSortDescending = !this.RecommendationSortDescending;
+    this.UpdateRecommendationSortDirection();
+    this.RenderRecommendationQueue();
   }
 
-  NormalizeCollapsedRecommendationRows(value) {
-    if (!Array.isArray(value))
-      return new Set();
-    return new Set(value.map(String).filter((item) => RecommendationRowPattern.test(item)));
+  UpdateRecommendationSortDirection() {
+    const label = this.RecommendationSortDescending ? "Sort descending" : "Sort ascending";
+    this.Elements.recommendationSortDirection.textContent = this.RecommendationSortDescending ? "↓" : "↑";
+    this.Elements.recommendationSortDirection.setAttribute("aria-label", label);
+    this.Elements.recommendationSortDirection.title = label;
   }
 
-  SaveCollapsedRecommendationRows() {
-    try {
-      localStorage.setItem(this.CollapsedRecommendationRowsStorageKey(), JSON.stringify([...this.CollapsedRecommendationRows]));
-    } catch {
+  UpdateRecommendationLibraryCount(visibleCount) {
+    const savedCount = this.State.recommendationQueue.length;
+    const label = visibleCount === savedCount ? `${FormatCount(savedCount)} saved` : `${FormatCount(visibleCount)} of ${FormatCount(savedCount)}`;
+    this.Elements.watchlistCount.textContent = label;
+  }
+
+  ShowRecommendationDetails(button) {
+    const item = this.FindRecommendationFromElement(button);
+    if (!item)
       return;
-    }
+    this.RecommendationDetailTrigger = button;
+    this.Elements.recommendationDetailsContent.innerHTML = RenderRecommendationDetails(item);
+    this.Elements.recommendationDetails.hidden = false;
+    this.EnrichTitleMetadata(item.ttId);
+    this.Elements.recommendationDetailsClose.focus();
   }
 
-  CollapsedRecommendationRowsStorageKey() {
-    return `${Config.recommendationRowsPreferenceKey}:${this.User?.id || "anonymous"}:${this.State.mediaType}`;
+  FindRecommendationFromElement(element) {
+    const container = element?.closest?.("[data-recommendation-item]");
+    if (!container)
+      return null;
+    const value = { ttId: container.dataset.ttid, title: container.dataset.title, year: container.dataset.year };
+    return this.State.recommendationQueue.find((item) => this.IsSameRecommendation(item, value)) || null;
   }
 
-  PruneCollapsedRecommendationRows(itemCount) {
-    const rowCount = Math.ceil(Number(itemCount || 0) / 3);
-    const active = new Set([...this.CollapsedRecommendationRows].filter((key) => Number(key.slice(RecommendationRowPrefix.length)) < rowCount));
-    if (active.size === this.CollapsedRecommendationRows.size)
-      return;
-    this.CollapsedRecommendationRows = active;
-    this.SaveCollapsedRecommendationRows();
+  HideRecommendationDetails() {
+    const trigger = this.RecommendationDetailTrigger;
+    this.ResetRecommendationDetails();
+    trigger?.focus?.();
+  }
+
+  ResetRecommendationDetails() {
+    this.Elements.recommendationDetails.hidden = true;
+    this.Elements.recommendationDetailsContent.innerHTML = "";
+    this.RecommendationDetailTrigger = null;
   }
 
   async RefreshRecommendationQueue(options = {}) {

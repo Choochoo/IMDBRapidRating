@@ -195,63 +195,90 @@
 
     <section class="recommendation-view" id="recommendation-view" hidden>
       <div class="recommendation-shell">
-        <header class="recommendation-header card">
+        <header class="recommendation-header">
           <div class="recommendation-heading-copy">
-            <span class="recommendation-kicker">Curated for your taste</span>
-            <h1 id="recommendation-title">Movie Recommendations</h1>
-            <p id="recommendation-description">Fresh movie picks shaped by your ratings and exclusions. Every batch is added to your saved movie watchlist.</p>
+            <span class="recommendation-kicker">Your library</span>
+            <h1 id="recommendation-title">Movie Watchlist</h1>
+            <p id="recommendation-description">A saved movie library shaped by your ratings, filters, and exclusions.</p>
           </div>
-          <div class="recommendation-actions">
-            <button type="button" class="btn btn-outline-secondary" id="configure-ai">Set OpenAI Key</button>
-            <label class="recommendation-count-control" for="recommendation-count">
-              <span>Number of picks</span>
-              <input class="form-control form-control-sm" id="recommendation-count" type="number" min="1" max="99" step="1" value="9" inputmode="numeric">
-            </label>
-            <button type="button" class="btn btn-primary" id="generate-recommendations">Generate picks</button>
-          </div>
+          <details class="recommendation-generator" id="recommendation-generator">
+            <summary class="btn btn-primary">Generate picks</summary>
+            <div class="recommendation-generator-panel card">
+              <div class="recommendation-generator-heading">
+                <strong>Add titles to your watchlist</strong>
+                <span>Choose the taste source and batch size, then generate a new set of saved picks.</span>
+              </div>
+              <div class="recommendation-actions">
+                <button type="button" class="btn btn-outline-secondary" id="configure-ai">Set OpenAI Key</button>
+                <label class="recommendation-count-control" for="recommendation-count">
+                  <span>Number of picks</span>
+                  <input class="form-control form-control-sm" id="recommendation-count" type="number" min="1" max="99" step="1" value="9" inputmode="numeric">
+                </label>
+                <button type="button" class="btn btn-primary" id="generate-recommendations">Generate picks</button>
+              </div>
+              <section class="recommendation-controls" aria-label="Recommendation source">
+                <label class="recommendation-source-control" for="recommendation-basis">
+                  <span id="recommendation-basis-label">Create from</span>
+                  <select class="form-select form-select-sm" id="recommendation-basis" aria-describedby="recommendation-basis-detail">
+                    <option value="current">Movies</option>
+                    <option value="other">TV Shows</option>
+                    <option value="both">Both</option>
+                  </select>
+                </label>
+                <p class="recommendation-basis-detail" id="recommendation-basis-detail">Your movie ratings shape the taste profile. Picks stay movies.</p>
+              </section>
+              <div class="model-panel">
+                <div class="model-copy">
+                  <strong id="ai-model-status">Model: checking</strong>
+                  <span id="ai-model-detail">Auto-selects two versions behind the newest eligible GPT model.</span>
+                </div>
+                <div class="model-controls d-grid">
+                  <label class="visually-hidden" for="ai-model-select">Model</label>
+                  <select class="form-select" id="ai-model-select">
+                    <option value="">Auto</option>
+                  </select>
+                  <button type="button" class="btn btn-outline-secondary" id="refresh-ai-models">Refresh</button>
+                </div>
+              </div>
+            </div>
+          </details>
         </header>
-        <section class="recommendation-controls card" aria-label="Watchlist source and filters">
-          <label class="recommendation-source-control" for="recommendation-basis">
-            <span id="recommendation-basis-label">Create from</span>
-            <select class="form-select form-select-sm" id="recommendation-basis" aria-describedby="recommendation-basis-detail">
-              <option value="current">Movies</option>
-              <option value="other">TV Shows</option>
-              <option value="both">Both</option>
-            </select>
-          </label>
-          <button type="button" class="recommendation-filter-button btn btn-sm btn-outline-secondary" id="recommendation-filter-more" title="Open advanced watchlist filters" aria-label="Open advanced watchlist filters">
-            <i class="button-icon" data-lucide="list-filter" aria-hidden="true"></i>
-            <span>Filters</span>
-            <span class="recommendation-filter-count" id="recommendation-filter-count" hidden>0</span>
-          </button>
-          <p class="recommendation-basis-detail" id="recommendation-basis-detail">Your movie ratings shape the taste profile. Picks stay movies.</p>
-          <p class="recommendation-filter-preview" id="recommendation-filter-preview" role="status">No extra filters are active.</p>
-        </section>
-        <div class="model-panel card">
-          <div class="model-copy">
-            <strong id="ai-model-status">Model: checking</strong>
-            <span id="ai-model-detail">Auto-selects two versions behind the newest eligible GPT model.</span>
-          </div>
-          <div class="model-controls d-grid">
-            <label class="visually-hidden" for="ai-model-select">Model</label>
-            <select class="form-select" id="ai-model-select">
-              <option value="">Auto</option>
-            </select>
-            <button type="button" class="btn btn-outline-secondary" id="refresh-ai-models">Refresh</button>
-          </div>
-        </div>
         <div class="recommendation-loading alert alert-primary" id="recommendation-loading" role="status" aria-live="polite" hidden>
           <span class="recommendation-spinner spinner-border text-primary" aria-hidden="true"></span>
           <div><strong>Building your watchlist</strong><span id="recommendation-loading-copy">Reading the signals in your ratings...</span></div>
         </div>
-        <div class="recommendation-list-toolbar card">
+        <div class="recommendation-list-toolbar">
           <div class="recommendation-list-copy">
-            <strong id="watchlist-title">Saved movie watchlist</strong>
+            <div class="recommendation-list-heading"><strong id="watchlist-title">Saved movie watchlist</strong><span id="watchlist-count">0 saved</span></div>
             <div class="recommendation-status" id="recommendation-status" role="status">Import your IMDb CSV, then generate recommendations.</div>
+            <p class="recommendation-filter-preview" id="recommendation-filter-preview" role="status">No extra filters are active.</p>
           </div>
-          <button type="button" class="recommendation-poster-toggle btn btn-outline-secondary" id="toggle-recommendation-posters" aria-pressed="false">Hide posters</button>
+          <div class="recommendation-library-controls">
+            <button type="button" class="recommendation-filter-button btn btn-sm btn-outline-secondary" id="recommendation-filter-more" title="Open advanced watchlist filters" aria-label="Open advanced watchlist filters">
+              <i class="button-icon" data-lucide="list-filter" aria-hidden="true"></i>
+              <span>All titles</span>
+              <span class="recommendation-filter-count" id="recommendation-filter-count" hidden>0</span>
+            </button>
+            <label class="recommendation-sort-control" for="recommendation-sort">
+              <span class="visually-hidden">Sort watchlist</span>
+              <select class="form-select form-select-sm" id="recommendation-sort">
+                <option value="addedAt">By Date Added</option>
+                <option value="title">By Title</option>
+                <option value="year">By Year</option>
+                <option value="imdbRating">By IMDb Rating</option>
+              </select>
+            </label>
+            <button type="button" class="recommendation-sort-direction btn btn-sm btn-outline-secondary" id="recommendation-sort-direction" aria-label="Sort descending" title="Sort descending">↓</button>
+          </div>
         </div>
         <div class="recommendation-grid d-grid" id="recommendation-grid"></div>
+      </div>
+    </section>
+
+    <section class="recommendation-details-dialog" id="recommendation-details" role="dialog" aria-modal="true" aria-labelledby="recommendation-details-title" hidden>
+      <div class="recommendation-details-panel card">
+        <button type="button" class="recommendation-details-close btn btn-sm btn-outline-secondary" id="recommendation-details-close" aria-label="Close watchlist details">Close</button>
+        <div id="recommendation-details-content"></div>
       </div>
     </section>
 

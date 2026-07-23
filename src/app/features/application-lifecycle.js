@@ -12,8 +12,8 @@ export class ApplicationLifecycleFeature {
     this.Elements = BuildElements();
     this.Settings = ReadBrowserSettings();
     this.LegacySettings = { ...this.Settings };
-    this.RecommendationPostersCollapsed = this.ReadRecommendationPosterPreference();
-    this.CollapsedRecommendationRows = new Set();
+    this.RecommendationSortDescending = true;
+    this.RecommendationDetailTrigger = null;
     this.State = BuildState();
     this.Catalogs = {};
   }
@@ -53,7 +53,7 @@ export class ApplicationLifecycleFeature {
 
   Start() {
     this.BindEvents();
-    this.UpdateRecommendationPosterVisibility();
+    this.UpdateRecommendationSortDirection();
     this.PendingRoute = RouteFromPathname(window.location.pathname);
     this.State.mediaType = this.PendingRoute.mediaType;
     this.UpdateMediaUx();
@@ -196,7 +196,6 @@ export class ApplicationLifecycleFeature {
 
   SetSignedInUser(user) {
     this.User = user;
-    this.CollapsedRecommendationRows = this.ReadCollapsedRecommendationRows();
     this.Elements.accountBadge.textContent = "Signed in";
     this.Elements.signOut.hidden = false;
     this.Elements.authLanding.hidden = true;

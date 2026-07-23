@@ -90,37 +90,51 @@ export function RenderModelOptions(aiState) {
 
 export function RenderRecommendationCard(item, index = 0) {
   const title = EscapeHtml(item.title || "Untitled");
-  const year = RenderRecommendationYear(item);
-  const heading = `<h2>${title}${year}</h2>`;
-  const genres = RenderRecommendationGenres(item);
-  const eyebrow = `<div class="recommendation-card-kicker"><span>Pick ${String(index + 1).padStart(2, "0")}</span><span>Matched to you</span></div>`;
-  const body = `${eyebrow}${heading}${genres}${RenderRecommendationWhy(item)}${RenderRecommendationActions(item)}`;
-  const content = `<div class="recommendation-card-body d-flex flex-column">${body}</div>`;
   const tone = ToneFromId(item.ttId || item.title || String(index));
-  return `<article class="recommendation-card card" style="--card-index:${index};--tone:${tone}"${RenderRecommendationData(item)}>${RenderRecommendationPoster(item)}${content}</article>`;
+  const label = `Open details for ${title}`;
+  const content = `<span class="recommendation-tile-copy"><strong>${title}</strong>${RenderRecommendationTileFacts(item)}</span>`;
+  return `<article class="recommendation-card" style="--card-index:${index};--tone:${tone}"${RenderRecommendationData(item)}><button type="button" class="recommendation-tile-button" data-recommendation-details aria-label="${label}">${RenderRecommendationPoster(item)}${content}</button></article>`;
+}
+
+export function RenderRecommendationDetails(item) {
+  const title = EscapeHtml(item.title || "Untitled");
+  const heading = `<h2 id="recommendation-details-title">${title}${RenderRecommendationYear(item)}</h2>`;
+  const kicker = `<div class="recommendation-card-kicker"><span>Saved to watchlist</span><span>${FormatRelativeDate(item.addedAt)}</span></div>`;
+  const body = `${kicker}${heading}${RenderRecommendationGenres(item)}${RenderRecommendationWhy(item)}${RenderRecommendationActions(item)}`;
+  return `<article class="recommendation-details-card"${RenderRecommendationData(item)}>${RenderRecommendationPoster(item)}<div class="recommendation-card-body d-flex flex-column">${body}</div></article>`;
 }
 
 export function RenderRecommendationSkeletons(count = 9) {
   return Array.from({ length: count }, (_, index) => `
-    <article class="recommendation-card recommendation-skeleton card" aria-hidden="true" style="--card-index:${index}">
+    <article class="recommendation-card recommendation-skeleton" aria-hidden="true" style="--card-index:${index}">
       <div class="recommendation-poster skeleton-block"></div>
-      <div class="recommendation-card-body d-flex flex-column">
-        <div class="skeleton-line skeleton-kicker"></div>
+      <div class="recommendation-tile-copy">
         <div class="skeleton-line skeleton-title"></div>
-        <div class="skeleton-pills"><span></span><span></span><span></span></div>
-        <div class="skeleton-line skeleton-label"></div>
-        <div class="skeleton-line"></div>
         <div class="skeleton-line skeleton-short"></div>
       </div>
     </article>`).join("");
 }
 
 export function RenderRecommendationEmpty() {
-  return `<div class="recommendation-empty"><span aria-hidden="true">&#9734;</span><h2>Your recommendation watchlist is empty</h2><p>Choose how many picks you want, then generate a new batch.</p></div>`;
+  return `<div class="recommendation-empty"><span aria-hidden="true">&#9734;</span><h2>Your watchlist is empty</h2><p>Open Generate picks to build your first batch.</p></div>`;
 }
 
 export function RenderRecommendationFilteredEmpty() {
-  return `<div class="recommendation-empty"><span aria-hidden="true">&#9671;</span><h2>No saved picks fit this filter</h2><p>Generate a new batch inside this lane, or clear a filter to bring saved picks back.</p></div>`;
+  return `<div class="recommendation-empty"><span aria-hidden="true">&#9671;</span><h2>No saved titles fit these filters</h2><p>Change the active filters to bring saved titles back.</p></div>`;
+}
+
+export function FormatRelativeDate(value, now = Date.now()) {
+  const timestamp = Date.parse(String(value || ""));
+  if (!Number.isFinite(timestamp))
+    return "Recently added";
+  const seconds = Math.max(0, Math.floor((now - timestamp) / 1000));
+  if (seconds < 60)
+    return "Just added";
+  if (seconds < 3600)
+    return FormatRelativeUnit(seconds / 60, "minute");
+  if (seconds < 86400)
+    return FormatRelativeUnit(seconds / 3600, "hour");
+  return FormatRelativeDays(seconds / 86400);
 }
 
 export function ToneFromId(ttId) {
@@ -296,6 +310,11 @@ function RenderRecommendationGenres(item) {
   return `<div class="meta d-flex flex-wrap">${pills}</div>`;
 }
 
+function RenderRecommendationTileFacts(item) {
+  const year = item.year ? `<span>${EscapeHtml(item.year)}</span>` : "";
+  return `<small>${year}<span>${FormatRelativeDate(item.addedAt)}</span></small>`;
+}
+
 function RenderRecommendationPoster(item) {
   const year = EscapeHtml(item.year || "");
   return `<div class="recommendation-poster" data-year="${year}" aria-hidden="true"></div>`;
@@ -330,7 +349,7 @@ function RenderRecommendationData(item) {
   const title = EscapeHtml(item.title || "");
   const year = EscapeHtml(item.year || "");
   const ttId = EscapeHtml(item.ttId || "");
-  return ` data-ttid="${ttId}" data-title="${title}" data-year="${year}"`;
+  return ` data-recommendation-item data-ttid="${ttId}" data-title="${title}" data-year="${year}"`;
 }
 
 function RenderRecommendationWhy(item) {
@@ -347,4 +366,18 @@ function RenderRatingEvidence(why) {
 
 function RenderGenrePill(genre) {
   return `<span class="badge rounded-pill text-bg-dark border">${EscapeHtml(genre)}</span>`;
+}
+
+function FormatRelativeDays(value) {
+  if (value < 30)
+    return FormatRelativeUnit(value, "day");
+  if (value < 365)
+    return FormatRelativeUnit(value / 30, "month");
+  return FormatRelativeUnit(value / 365, "year");
+}
+
+function FormatRelativeUnit(value, unit) {
+  const count = Math.max(1, Math.floor(value));
+  const label = count === 1 ? unit : `${unit}s`;
+  return `${count} ${label} ago`;
 }

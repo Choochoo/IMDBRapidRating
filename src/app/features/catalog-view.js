@@ -185,10 +185,12 @@ export class CatalogViewFeature {
   }
 
   ApplyRecommendationMetadata(selector, metadata) {
-    for (const recommendation of this.Elements.recommendationGrid.querySelectorAll(selector)) {
-      UpdateRecommendationPoster(recommendation, metadata);
-      UpdateTrailerLink(recommendation, metadata);
-    }
+    const containers = [this.Elements.recommendationGrid, this.Elements.recommendationDetailsContent];
+    for (const container of containers)
+      for (const recommendation of container.querySelectorAll(selector)) {
+        UpdateRecommendationPoster(recommendation, metadata);
+        UpdateTrailerLink(recommendation, metadata);
+      }
   }
 }
 

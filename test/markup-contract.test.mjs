@@ -52,10 +52,22 @@ async function VerifyHeaderControlContracts() {
 
 async function VerifyCompactWorkflowContracts() {
   const [html, responsiveCss] = await Promise.all([readFile(HtmlPath, TextEncoding), readFile(ResponsiveCssPath, TextEncoding)]);
+  VerifyWatchlistContracts(html);
+  VerifySyncContracts(html, responsiveCss);
+}
+
+function VerifyWatchlistContracts(html) {
   assert.match(html, /id="recommendation-basis-label">Create from/);
   assert.match(html, /id="recommendation-filter-more"[^>]*title="Open advanced watchlist filters"/);
+  assert.match(html, /<details class="recommendation-generator"[^>]*id="recommendation-generator">/);
+  assert.match(html, /id="recommendation-sort"[\s\S]*?<option value="addedAt">By Date Added/);
+  assert.match(html, /id="recommendation-details"[^>]*role="dialog"[^>]*aria-modal="true"/);
+  assert.doesNotMatch(html, /toggle-recommendation-posters|data-recommendation-row-toggle/);
   assert.match(html, /class="orientation-guard"[^>]*aria-labelledby="orientation-guard-title"/);
   assert.equal((html.match(/<details class="filter-disclosure">/g) || []).length, 3);
+}
+
+function VerifySyncContracts(html, responsiveCss) {
   assert.equal((html.match(/<details class="sync-path-row card">/g) || []).length, 3);
   assert.match(html, /IMDb<\/span><b aria-hidden="true">→<\/b><span>IMDb Rapid Rater/);
   assert.match(html, /Letterboxd<\/span><b aria-hidden="true">→<\/b><span>IMDb Rapid Rater/);

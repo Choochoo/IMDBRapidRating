@@ -102,6 +102,8 @@ test("browser watchlist exposes only recommendations inside the active filters",
       { title: "The Rescue", year: 2021, genres: ["Documentary"], originalLanguage: "th" }
     ]
   };
+  app.Elements = { recommendationSort: { value: "addedAt" } };
+  app.RecommendationSortDescending = true;
   assert.deepEqual(app.ReadVisibleRecommendations().map((item) => item.title), ["Free Solo"]);
 });
 
@@ -186,39 +188,13 @@ test("active rating movie moves into the saved watchlist", async () => {
   assert.equal(classes.has("saving"), false);
 });
 
-test("recommendation posters collapse globally and remember the browser preference", () => {
-  const classes = new Set();
-  const saved = new Map();
-  const originalStorage = globalThis.localStorage;
-  globalThis.localStorage = {
-    getItem: (key) => saved.get(key) || null,
-    setItem: (key, value) => saved.set(key, value)
-  };
-  try {
-    const app = Object.create(RapidRaterApp.prototype);
-    app.RecommendationPostersCollapsed = false;
-    app.Elements = {
-      recommendationGrid: { classList: { toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name) } },
-      toggleRecommendationPosters: {
-        textContent: "",
-        setAttribute(name, value) { this[name] = value; }
-      }
-    };
+test("recommendation watchlist renders one continuous poster grid", VerifyRecommendationGrid);
+test("recommendation watchlist sorts client-side with stable title ties", VerifyRecommendationSorting);
+test("recommendation sort controls choose sensible directions and rerender", VerifyRecommendationSortControls);
+test("recommendation details open from a tile and restore focus when closed", VerifyRecommendationDetailsInteraction);
 
-    app.ToggleRecommendationPosters();
-
-    assert.equal(classes.has("posters-collapsed"), true);
-    assert.equal(app.Elements.toggleRecommendationPosters.textContent, "Show posters");
-    assert.equal(app.Elements.toggleRecommendationPosters["aria-pressed"], "true");
-    assert.equal(app.ReadRecommendationPosterPreference(), true);
-  } finally {
-    globalThis.localStorage = originalStorage;
-  }
-});
-
-test("recommendation watchlist renders and toggles collapsible three-movie rows", () => {
+function VerifyRecommendationGrid() {
   const app = Object.create(RapidRaterApp.prototype);
-  app.CollapsedRecommendationRows = new Set(["row-0"]);
   const items = [
     QueueItem("heat|1995", "tt0113277", "Heat", 1995),
     QueueItem("thief|1981", "tt0083190", "Thief", 1981),
@@ -226,50 +202,93 @@ test("recommendation watchlist renders and toggles collapsible three-movie rows"
     QueueItem("manhunter|1986", "tt0091474", "Manhunter", 1986)
   ];
 
-  const html = app.BuildRecommendationRows(items);
+  const html = app.BuildRecommendationCards(items);
 
-  assert.equal((html.match(/data-recommendation-row-toggle/g) || []).length, 2);
-  assert.match(html, /Picks 1–3/);
-  assert.match(html, /Pick 4/);
-  assert.match(html, /recommendation-row-titles">Heat \(1995\).*Thief \(1981\).*Collateral \(2004\)/);
-  assert.match(html, /data-row-key="row-0" aria-expanded="false"/);
-  assert.match(html, /recommendation-row-grid" hidden/);
+  assert.equal((html.match(/data-recommendation-details/g) || []).length, 4);
+  assert.equal((html.match(/recommendation-poster/g) || []).length, 4);
+  assert.doesNotMatch(html, /recommendation-row|data-row-key/);
+  assert.ok(html.indexOf("Heat") < html.indexOf("Manhunter"));
+}
 
+function VerifyRecommendationSorting() {
+  const app = Object.create(RapidRaterApp.prototype);
+  app.Elements = { recommendationSort: { value: "addedAt" } };
+  app.RecommendationSortDescending = true;
+  const items = [
+    { ...QueueItem("heat|1995", "tt0113277", "Heat", 1995), addedAt: "2026-07-20T12:00:00.000Z" },
+    { ...QueueItem("thief|1981", "tt0083190", "Thief", 1981), addedAt: "2026-07-22T12:00:00.000Z" },
+    { ...QueueItem("alien|1979", "tt0078748", "Alien", 1979), addedAt: "2026-07-22T12:00:00.000Z" }
+  ];
+
+  assert.deepEqual(app.SortRecommendations(items).map((item) => item.title), ["Alien", "Thief", "Heat"]);
+  app.Elements.recommendationSort.value = "title";
+  app.RecommendationSortDescending = false;
+  assert.deepEqual(app.SortRecommendations(items).map((item) => item.title), ["Alien", "Heat", "Thief"]);
+}
+
+function VerifyRecommendationSortControls() {
+  const app = Object.create(RapidRaterApp.prototype);
+  const attributes = new Map();
+  app.Elements = BuildRecommendationSortElements(attributes);
   let rendered = 0;
   app.RenderRecommendationQueue = () => { rendered++; };
-  app.ToggleRecommendationRow({ dataset: { rowKey: "row-0" } });
-  assert.equal(app.CollapsedRecommendationRows.has("row-0"), false);
-  assert.equal(rendered, 1);
+  app.HandleRecommendationSortChange();
+  assert.equal(app.RecommendationSortDescending, false);
+  assert.equal(app.Elements.recommendationSortDirection.textContent, "↑");
+  app.ToggleRecommendationSortDirection();
+  assert.equal(app.RecommendationSortDescending, true);
+  assert.equal(attributes.get("aria-label"), "Sort descending");
+  assert.equal(rendered, 2);
+}
 
-  const shifted = app.BuildRecommendationRows(items.slice(1));
-  assert.match(shifted, /recommendation-row-titles">Thief \(1981\).*Collateral \(2004\).*Manhunter \(1986\)/);
-  assert.match(shifted, /data-row-key="row-0" aria-expanded="true"/);
-});
+function VerifyRecommendationDetailsInteraction() {
+  const app = Object.create(RapidRaterApp.prototype);
+  const item = QueueItem("heat|1995", "tt0113277", "Heat", 1995);
+  let focused = 0;
+  const button = BuildRecommendationDetailsButton(item, () => { focused++; });
+  app.State = { recommendationQueue: [item] };
+  app.Elements = BuildRecommendationDetailsElements(() => { focused++; });
+  app.EnrichTitleMetadata = () => {};
+  app.ShowRecommendationDetails(button);
+  AssertRecommendationDetailsOpen(app);
+  app.HideRecommendationDetails();
+  AssertRecommendationDetailsClosed(app, focused);
+}
 
-test("collapsed recommendation rows persist per signed-in account", () => {
-  const saved = new Map();
-  const originalStorage = globalThis.localStorage;
-  globalThis.localStorage = {
-    getItem: (key) => saved.get(key) || null,
-    setItem: (key, value) => saved.set(key, value)
+function BuildRecommendationSortElements(attributes) {
+  return {
+    recommendationSort: { value: "title" },
+    recommendationSortDirection: {
+      textContent: "",
+      title: "",
+      setAttribute: (name, value) => attributes.set(name, value)
+    }
   };
-  try {
-    const app = Object.create(RapidRaterApp.prototype);
-    app.User = { id: "user-1" };
-    app.State = { mediaType: "movie" };
-    app.CollapsedRecommendationRows = new Set(["row-0", "row-1"]);
-    app.SaveCollapsedRecommendationRows();
+}
 
-    assert.deepEqual([...app.ReadCollapsedRecommendationRows()], ["row-0", "row-1"]);
-    app.User = { id: "user-2" };
-    assert.deepEqual([...app.ReadCollapsedRecommendationRows()], []);
-    app.User = { id: "user-1" };
-    app.State.mediaType = "tv";
-    assert.deepEqual([...app.ReadCollapsedRecommendationRows()], []);
-  } finally {
-    globalThis.localStorage = originalStorage;
-  }
-});
+function BuildRecommendationDetailsButton(item, focus) {
+  const container = { dataset: { ttid: item.ttId, title: item.title, year: String(item.year) } };
+  return { closest: () => container, focus };
+}
+
+function BuildRecommendationDetailsElements(focus) {
+  return {
+    recommendationDetails: { hidden: true },
+    recommendationDetailsContent: { innerHTML: "" },
+    recommendationDetailsClose: { focus }
+  };
+}
+
+function AssertRecommendationDetailsOpen(app) {
+  assert.equal(app.Elements.recommendationDetails.hidden, false);
+  assert.match(app.Elements.recommendationDetailsContent.innerHTML, /Why this fits/);
+}
+
+function AssertRecommendationDetailsClosed(app, focused) {
+  assert.equal(app.Elements.recommendationDetails.hidden, true);
+  assert.equal(app.Elements.recommendationDetailsContent.innerHTML, "");
+  assert.equal(focused, 2);
+}
 
 test("AI Picks hides both rating bars and removes the mobile bottom-bar layout state", () => {
   const classes = new Set(["rater-active"]);
