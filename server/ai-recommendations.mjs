@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { ResolveOpenAiModel } from "./openai-models.mjs";
 import { NormalizeRecommendationQueue, SameRecommendation } from "./recommendation-queue.mjs";
-import { HasActiveTitleFilters, IsTitleAllowed, NormalizeTitleFilters } from "../shared/title-filters.js";
+import { HasActiveTitleFilters, IsTitleAllowed, NormalizeTitleFilters, NormalizeTitleOrigin } from "../shared/title-filters.js";
 
 const OpenAiResponsesUrl = "https://api.openai.com/v1/responses";
 const MaximumRecommendationCount = 99;
@@ -78,7 +78,7 @@ function BuildProfile(ratings, ratedTargets, exclusions, queue, mediaType, filte
     queue: NormalizeRecommendationQueue(queue).map(ToProfileMovie),
     filters: BuildProfileFilters(filters),
     ratingScale: "1-10",
-    fieldsSent: ["title", "year", "genres", "rating", "sourceMediaType", "ratedTargetTitle", "ratedTargetYear", "queuedTitle", "queuedYear", "excludedTitle", "excludedYear", "yearRange", "excludedProductionCountries", "excludedOriginalLanguages", "tasteBasis"]
+    fieldsSent: ["title", "year", "genres", "rating", "sourceMediaType", "ratedTargetTitle", "ratedTargetYear", "queuedTitle", "queuedYear", "excludedTitle", "excludedYear", "filters", "tasteBasis"]
   };
 }
 
@@ -135,20 +135,28 @@ function BuildSystemPrompt(profile, options) {
   const count = ReadRecommendationCount(options.count) || 9;
   const isTv = options.mediaType === "tv";
   const scope = `Recommend ${count} ${isTv ? "TV series" : "movies"} the user has not rated.`;
-  const criteria = isTv
-    ? "Recommend whole series, not individual episodes or seasons. Consider title, premiere year, genre, series commitment, and user rating together."
-    : "Consider title, year, genre, and user rating together.";
-  const source = profile.tasteBasis === "other"
-    ? `The taste evidence comes from the user's ${isTv ? "movie" : "TV"} ratings.`
-    : profile.tasteBasis === "both"
-      ? "The taste evidence combines the user's movie and TV ratings."
-      : `The taste evidence comes from the user's ${isTv ? "TV" : "movie"} ratings.`;
+  const criteria = ReadRecommendationCriteria(isTv);
+  const source = ReadTasteSource(profile, isTv);
   const evidence = `${source} Use profile.ratings only as taste evidence and use each sourceMediaType to interpret it. Regardless of the evidence source, return only ${isTv ? "TV series" : "movies"}.`;
   const exclusions = "Never recommend anything already present in profile.ratedTargets, profile.queue, or profile.exclusions. ratedTargets are titles already rated in the requested section, the queue is that section's saved watchlist, and exclusions are that section's permanent do-not-recommend choices.";
-  const filters = "Honor profile.filters exactly: stay within its year range, avoid excluded production countries and original languages, apply its Bollywood exclusion, and include unknown-origin titles only when allowed.";
+  const filters = "Honor every profile.filters field exactly. A result must match its year, any selected genre, documentary mode, minimum IMDb rating, maximum runtime, included country or language lists, exclusions, Bollywood choice, and unknown-origin policy. Never use an unknown value to bypass a selected filter.";
   const why = "Explain the taste pattern and cite rating evidence from the user's data.";
   const format = "Use 2-4 evidence lines naming rated titles, ratings, genres, or eras.";
   return [scope, criteria, evidence, exclusions, filters, why, format, "Return only JSON matching the schema."].join(" ");
+}
+
+function ReadRecommendationCriteria(isTv) {
+  if (isTv)
+    return "Recommend whole series, not individual episodes or seasons. Consider title, premiere year, genre, series commitment, and user rating together.";
+  return "Consider title, year, genre, and user rating together.";
+}
+
+function ReadTasteSource(profile, isTv) {
+  if (profile.tasteBasis === "other")
+    return `The taste evidence comes from the user's ${isTv ? "movie" : "TV"} ratings.`;
+  if (profile.tasteBasis === "both")
+    return "The taste evidence combines the user's movie and TV ratings.";
+  return `The taste evidence comes from the user's ${isTv ? "TV" : "movie"} ratings.`;
 }
 
 function BuildRecommendationSchema(count) {
@@ -180,7 +188,7 @@ function RecommendationItemSchema() {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["title", "year", "genres", "why"],
+    required: ["title", "year", "genres", "originCountries", "originalLanguage", "why"],
     properties: RecommendationItemProperties()
   };
 }
@@ -190,6 +198,8 @@ function RecommendationItemProperties() {
     title: { type: "string" },
     year: { type: "integer" },
     genres: { type: "array", items: { type: "string" } },
+    originCountries: { type: "array", items: { type: "string", pattern: "^[A-Z]{2}$" } },
+    originalLanguage: { type: "string", pattern: "^[a-z]{2,3}$" },
     why: RecommendationWhySchema()
   };
 }
@@ -219,17 +229,22 @@ function EnrichRecommendationPayload(rootPath, payload, profile) {
   const titles = ReadTitleList(rootPath, profile.mediaType);
   const recommendations = ReadRecommendations(payload);
   const blocked = [...profile.ratedTargets, ...profile.queue, ...profile.exclusions];
+  const unique = FilterRecommendations(recommendations, titles, blocked, profile.filters);
+  return { ...payload, recommendations: NormalizeRecommendationQueue(unique) };
+}
+
+function FilterRecommendations(recommendations, titles, blocked, filters) {
   const unique = [];
   for (const recommendation of recommendations) {
     const matchedTitle = FindRecommendationMovie(recommendation, titles);
-    if (HasActiveTitleFilters(profile.filters) && (!matchedTitle || !IsTitleAllowed(matchedTitle, profile.filters)))
-      continue;
     const item = EnrichRecommendation(recommendation, matchedTitle);
+    if (HasActiveTitleFilters(filters) && (!matchedTitle || !IsTitleAllowed(item, filters)))
+      continue;
     if (blocked.some((existing) => SameRecommendation(existing, item)) || unique.some((existing) => SameRecommendation(existing, item)))
       continue;
     unique.push(item);
   }
-  return { ...payload, recommendations: NormalizeRecommendationQueue(unique) };
+  return unique;
 }
 
 function ReadTitleList(rootPath, mediaType = "movie") {
@@ -247,13 +262,24 @@ function ReadRecommendations(payload) {
 
 function EnrichRecommendation(item, movie) {
   if (!movie)
-    return { ...item, ttId: "" };
+    return { ...item, ...NormalizeTitleOrigin(item), ttId: "" };
+  const origin = ReadRecommendationOrigin(item, movie);
   return {
     ...item,
+    ...movie,
+    ...origin,
     ttId: movie.ttId,
     title: movie.title || item.title,
-    year: movie.year || item.year
+    year: movie.year || item.year,
+    why: item.why
   };
+}
+
+function ReadRecommendationOrigin(item, movie) {
+  const catalogOrigin = NormalizeTitleOrigin(movie);
+  if (catalogOrigin.originCountries.length || catalogOrigin.originalLanguage)
+    return catalogOrigin;
+  return NormalizeTitleOrigin(item);
 }
 
 function FindRecommendationMovie(item, movies) {

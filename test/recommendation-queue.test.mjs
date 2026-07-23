@@ -92,6 +92,19 @@ test("browser queue removal matches by IMDb ID or normalized title and year", ()
   assert.deepEqual(app.State.recommendationQueue.map((item) => item.ttId), ["tt0083190"]);
 });
 
+test("browser watchlist exposes only recommendations inside the active filters", () => {
+  const app = Object.create(RapidRaterApp.prototype);
+  app.State = {
+    filters: { includedGenres: ["Documentary"], minYear: 2010, includedOriginalLanguages: ["en"] },
+    recommendationQueue: [
+      { title: "Free Solo", year: 2018, genres: ["Documentary"], originalLanguage: "en" },
+      { title: "Heat", year: 1995, genres: ["Crime"], originalLanguage: "en" },
+      { title: "The Rescue", year: 2021, genres: ["Documentary"], originalLanguage: "th" }
+    ]
+  };
+  assert.deepEqual(app.ReadVisibleRecommendations().map((item) => item.title), ["Free Solo"]);
+});
+
 test("rating queue rebuild excludes movies already saved to the watchlist", () => {
   const app = Object.create(RapidRaterApp.prototype);
   const movies = [
@@ -347,8 +360,8 @@ test("AI generation sends active filters and rejects catalog matches outside the
   await mkdir(path.join(rootPath, "data"));
   await writeFile(path.join(rootPath, "data", "movies.json"), JSON.stringify({
     movies: [
-      { ttId: "tt0113277", title: "Heat", year: 1995, originCountries: ["US"], originalLanguage: "en" },
-      { ttId: "tt6751668", title: "Parasite", year: 2019, originCountries: ["KR"], originalLanguage: "ko" }
+      { ttId: "tt0113277", title: "Heat", year: 1995, genres: ["Crime"], imdbRating: 8.3, runtimeMinutes: 170, originCountries: ["US"], originalLanguage: "en" },
+      { ttId: "tt6751668", title: "Parasite", year: 2019, genres: ["Crime", "Drama"], imdbRating: 8.5, runtimeMinutes: 132, originCountries: ["KR"], originalLanguage: "ko" }
     ]
   }));
   const calls = [];
@@ -367,7 +380,7 @@ test("AI generation sends active filters and rejects catalog matches outside the
       apiKey: "test-key",
       model: "gpt-test",
       count: 1,
-      filters: { minYear: 2000, excludedOriginCountries: ["US"], updatedAt: "2026-07-19T12:00:00.000Z" },
+      filters: { minYear: 2000, includedGenres: ["Drama"], documentaryMode: "exclude", minImdbRating: 8, maxRuntimeMinutes: 150, includedOriginalLanguages: ["ko"], excludedOriginCountries: ["US"], updatedAt: "2026-07-19T12:00:00.000Z" },
       profile: { ratings: [
         Rating("The Godfather", 1972, 10),
         Rating("Goodfellas", 1990, 9),
@@ -381,6 +394,11 @@ test("AI generation sends active filters and rejects catalog matches outside the
     assert.equal(calls.length, 2);
     const profile = JSON.parse(calls[0].input[1].content);
     assert.equal(profile.filters.minYear, 2000);
+    assert.deepEqual(profile.filters.includedGenres, ["Drama"]);
+    assert.equal(profile.filters.documentaryMode, "exclude");
+    assert.equal(profile.filters.minImdbRating, 8);
+    assert.equal(profile.filters.maxRuntimeMinutes, 150);
+    assert.deepEqual(profile.filters.includedOriginalLanguages, ["ko"]);
     assert.deepEqual(profile.filters.excludedOriginCountries, ["US"]);
     assert.equal(profile.filters.updatedAt, undefined);
   } finally {

@@ -119,6 +119,10 @@ export function RenderRecommendationEmpty() {
   return `<div class="recommendation-empty"><span aria-hidden="true">&#9734;</span><h2>Your recommendation watchlist is empty</h2><p>Choose how many picks you want, then generate a new batch.</p></div>`;
 }
 
+export function RenderRecommendationFilteredEmpty() {
+  return `<div class="recommendation-empty"><span aria-hidden="true">&#9671;</span><h2>No saved picks fit this filter</h2><p>Generate a new batch inside this lane, or clear a filter to bring saved picks back.</p></div>`;
+}
+
 export function ToneFromId(ttId) {
   const palettes = ["224, 173, 71", "96, 167, 137", "108, 145, 210", "203, 104, 99", "176, 138, 201", "209, 126, 75"];
   const hash = Array.from(ttId).reduce((total, char) => (total * 31 + char.charCodeAt(0)) % 360, 0);

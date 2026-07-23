@@ -1,9 +1,10 @@
 import { Config } from "../config.js";
 import { BuildAiPreferenceProfile } from "../rating-records.js";
-import { RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationSkeletons } from "../rendering.js";
+import { RenderRecommendationCard, RenderRecommendationEmpty, RenderRecommendationFilteredEmpty, RenderRecommendationSkeletons } from "../rendering.js";
 import { EscapeHtml, FormatCount } from "../util.js";
 import { ReadMediaPayload } from "../../../shared/media.js";
 import { NormalizeRecommendationBasis } from "../../../shared/recommendation-basis.js";
+import { IsTitleAllowed } from "../../../shared/title-filters.js";
 
 const CurrentRecommendationBasis = "current";
 const AiLoadingClass = "is-loading";
@@ -250,13 +251,25 @@ export class RecommendationFeature {
   }
 
   RenderRecommendationQueue() {
-    const items = this.State.recommendationQueue;
+    const items = this.ReadVisibleRecommendations();
     this.PruneCollapsedRecommendationRows(items.length);
     this.Elements.recommendationGrid.classList.remove(AiLoadingClass);
     this.Elements.recommendationGrid.setAttribute(AriaBusyAttribute, "false");
-    this.Elements.recommendationGrid.innerHTML = items.length ? this.BuildRecommendationRows(items) : RenderRecommendationEmpty();
+    this.Elements.recommendationGrid.innerHTML = this.BuildRecommendationQueueHtml(items);
     for (const item of items)
       this.EnrichTitleMetadata(item.ttId);
+  }
+
+  ReadVisibleRecommendations() {
+    return this.State.recommendationQueue.filter((item) => IsTitleAllowed(item, this.State.filters));
+  }
+
+  BuildRecommendationQueueHtml(items) {
+    if (items.length)
+      return this.BuildRecommendationRows(items);
+    if (this.State.recommendationQueue.length)
+      return RenderRecommendationFilteredEmpty();
+    return RenderRecommendationEmpty();
   }
 
   BuildRecommendationRows(items) {

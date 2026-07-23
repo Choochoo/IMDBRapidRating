@@ -2,7 +2,7 @@ import { Config } from "../config.js";
 import { AiView, AriaExpandedAttribute, AriaPressedAttribute, ChangeEvent, ClickEvent, CollapsedPreference, ImdbSecretType, KeydownEvent, MovieMediaType, RaterView, SubmitEvent, SyncView, TmdbSecretType, TvMediaType } from "../app-constants.js";
 import { BindRecommendationRatings } from "../recommendation-ratings.js";
 import { SaveAiKeyFromDialog, SaveImdbConnectionFromDialog, SaveSelectedAiModel, SaveTmdbSettingsFromDialog } from "../settings-workflows.js";
-import { ApplyTitleFilters, HideTitleFilterDialog, ResetTitleFilterDialog, ShowTitleFilterDialog, UpdateTitleFilterPreview } from "../title-filter-workflows.js";
+import { ApplyRecommendationFilters, ApplyTitleFilters, ClearRecommendationFilters, HideTitleFilterDialog, ResetTitleFilterDialog, ShowTitleFilterDialog, UpdateRecommendationFilterPreview, UpdateTitleFilterPreview } from "../title-filter-workflows.js";
 import { EscapeHtml } from "../util.js";
 import { NormalizeRecommendationBasis } from "../../../shared/recommendation-basis.js";
 import { IsLoginPath, LoginPath, PathForView, RouteFromPathname } from "../view-routes.js";
@@ -132,10 +132,27 @@ export class EventBindingsFeature {
     this.Elements.filtersApply.addEventListener(ClickEvent, () => this.HandleApplyFilters());
     this.Elements.filtersDialog.addEventListener("input", () => UpdateTitleFilterPreview(this));
     this.Elements.filtersDialog.addEventListener(ChangeEvent, () => UpdateTitleFilterPreview(this));
+    this.BindRecommendationFilterEvents();
+  }
+
+  BindRecommendationFilterEvents() {
+    this.Elements.recommendationFilterApply.addEventListener(ClickEvent, () => this.HandleRecommendationFilterApply());
+    this.Elements.recommendationFilterClear.addEventListener(ClickEvent, () => this.HandleRecommendationFilterClear());
+    this.Elements.recommendationFilterMore.addEventListener(ClickEvent, () => ShowTitleFilterDialog(this));
+    this.Elements.recommendationFilters.addEventListener("input", () => UpdateRecommendationFilterPreview(this));
+    this.Elements.recommendationFilters.addEventListener(ChangeEvent, () => UpdateRecommendationFilterPreview(this));
   }
 
   HandleApplyFilters() {
     ApplyTitleFilters(this).catch((error) => this.ShowFilterError(error));
+  }
+
+  HandleRecommendationFilterApply() {
+    ApplyRecommendationFilters(this).catch((error) => this.ShowFilterError(error));
+  }
+
+  HandleRecommendationFilterClear() {
+    ClearRecommendationFilters(this).catch((error) => this.ShowFilterError(error));
   }
 
   ShowFilterError(error) {

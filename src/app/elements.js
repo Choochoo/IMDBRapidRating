@@ -254,6 +254,10 @@ function BuildFilterInputElements() {
   return {
     filterMinYear: Element("filter-min-year"),
     filterMaxYear: Element("filter-max-year"),
+    filterGenreOptions: Element("filter-genre-options"),
+    filterDocumentaryMode: Element("filter-documentary-mode"),
+    filterMinRating: Element("filter-min-rating"),
+    filterMaxRuntime: Element("filter-max-runtime"),
     filterCountryOptions: Element("filter-country-options"),
     filterLanguageOptions: Element("filter-language-options"),
     filterBollywood: Element("filter-bollywood"),
@@ -329,6 +333,7 @@ function BuildAiModelElements() {
 
 function BuildRecommendationElements() {
   return {
+    ...BuildRecommendationFilterElements(),
     generateRecommendations: Element("generate-recommendations"),
     toggleRecommendationPosters: Element("toggle-recommendation-posters"),
     recommendationCount: Element("recommendation-count"),
@@ -339,6 +344,34 @@ function BuildRecommendationElements() {
     recommendationLoading: Element("recommendation-loading"),
     recommendationLoadingCopy: Element("recommendation-loading-copy"),
     recommendationGrid: Element("recommendation-grid")
+  };
+}
+
+function BuildRecommendationFilterElements() {
+  return {
+    ...BuildRecommendationFilterControlElements(),
+    ...BuildRecommendationFilterActionElements()
+  };
+}
+
+function BuildRecommendationFilterControlElements() {
+  return {
+    recommendationFilters: Element("recommendation-filter-explorer"),
+    recommendationFilterYear: Element("recommendation-filter-year"),
+    recommendationFilterDocumentary: Element("recommendation-filter-documentary"),
+    recommendationFilterRating: Element("recommendation-filter-rating"),
+    recommendationFilterRuntime: Element("recommendation-filter-runtime"),
+    recommendationFilterGenres: Element("recommendation-filter-genres"),
+    recommendationFilterLanguages: Element("recommendation-filter-languages"),
+    recommendationFilterPreview: Element("recommendation-filter-preview")
+  };
+}
+
+function BuildRecommendationFilterActionElements() {
+  return {
+    recommendationFilterClear: Element("recommendation-filter-clear"),
+    recommendationFilterMore: Element("recommendation-filter-more"),
+    recommendationFilterApply: Element("recommendation-filter-apply")
   };
 }
 

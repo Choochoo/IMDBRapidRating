@@ -28,6 +28,7 @@ const TurkishLanguage = "tr";
 
 test("title filters normalize ranges and deduplicate origin selections", VerifyTitleFilterNormalization);
 test("year, country, language, Bollywood, and unknown-origin filters compose", VerifyComposedTitleFilters);
+test("genre, documentary, rating, runtime, and inclusion filters stay strict", VerifyRecommendationFilters);
 test("TMDB origin normalization combines TV origin and production countries", VerifyTmdbOriginNormalization);
 test("filtered title pools get a distinct identity without mutating the catalog", VerifyFilteredTitlePool);
 test("origin enrichment refuses to publish catalogs without usable metadata", VerifyCatalogOriginCoverage);
@@ -78,6 +79,17 @@ function BuildComposedTitleFilters() {
     excludeBollywood: true,
     includeUnknownOrigin: false
   };
+}
+
+function VerifyRecommendationFilters() {
+  const filters = NormalizeTitleFilters({ includedGenres: ["Crime"], documentaryMode: "exclude", minImdbRating: 7, maxRuntimeMinutes: 130, includedOriginalLanguages: [KoreanLanguage] });
+  const match = { genres: ["Crime", "Drama"], imdbRating: 8.1, runtimeMinutes: 125, originalLanguage: KoreanLanguage };
+  assert.equal(IsTitleAllowed(match, filters), true);
+  assert.equal(IsTitleAllowed({ ...match, genres: ["Documentary", "Crime"] }, filters), false);
+  assert.equal(IsTitleAllowed({ ...match, imdbRating: 6.9 }, filters), false);
+  assert.equal(IsTitleAllowed({ ...match, runtimeMinutes: 131 }, filters), false);
+  assert.equal(IsTitleAllowed({ ...match, originalLanguage: "" }, filters), false);
+  assert.equal(CountActiveTitleFilters(filters), 5);
 }
 
 function VerifyTmdbOriginNormalization() {

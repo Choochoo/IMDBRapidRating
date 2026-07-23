@@ -4,6 +4,7 @@ import { CountRatings } from "../stats.js";
 import { FormatCount } from "../util.js";
 import { ReadMediaPayload } from "../../../shared/media.js";
 import { NormalizeRecommendationBasis } from "../../../shared/recommendation-basis.js";
+import { IsTitleAllowed } from "../../../shared/title-filters.js";
 
 const ReadyTone = "ready";
 const CheckingTone = "checking";
@@ -228,8 +229,18 @@ export class StatusUiFeature {
     if (!this.State.ai.configured)
       return this.SetRecommendationStatus("Add an OpenAI API key to generate recommendations.");
     const saved = this.State.recommendationQueue.length;
-    const queue = saved ? ` ${FormatCount(saved)} saved ${saved === 1 ? "pick" : "picks"} in your watchlist.` : "";
+    const visible = this.State.recommendationQueue.filter((item) => IsTitleAllowed(item, this.State.filters)).length;
+    const queue = this.BuildRecommendationQueueStatus(saved, visible);
     this.SetRecommendationStatus(`Ready with ${this.ReadAiModelLabel()}.${queue}`);
+  }
+
+  BuildRecommendationQueueStatus(saved, visible) {
+    if (!saved)
+      return "";
+    const label = saved === 1 ? "pick" : "picks";
+    if (visible === saved)
+      return ` ${FormatCount(saved)} saved ${label} in your watchlist.`;
+    return ` ${FormatCount(visible)} of ${FormatCount(saved)} saved ${label} match the active filters.`;
   }
 
   UpdateRecommendationBasisControl() {

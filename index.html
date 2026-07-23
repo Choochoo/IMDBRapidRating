@@ -205,6 +205,69 @@
             <button type="button" class="btn btn-primary" id="generate-recommendations">Generate picks</button>
           </div>
         </header>
+        <section class="recommendation-filter-explorer card" id="recommendation-filter-explorer" aria-labelledby="recommendation-filter-title">
+          <div class="recommendation-filter-heading">
+            <div>
+              <span class="recommendation-kicker">Explore your lane</span>
+              <h2 id="recommendation-filter-title">Only show picks that fit</h2>
+              <p>Shape the next batch, then browse only watchlist picks inside the same filter.</p>
+            </div>
+            <span class="recommendation-filter-strict">Strict match</span>
+          </div>
+          <div class="recommendation-filter-grid">
+            <label for="recommendation-filter-year">Release era
+              <select class="form-select form-select-sm" id="recommendation-filter-year">
+                <option value="any">Any year</option>
+                <option value="2020s">2020s</option>
+                <option value="2010s">2010s</option>
+                <option value="2000s">2000s</option>
+                <option value="1990s">1990s</option>
+                <option value="classics">Before 1990</option>
+                <option value="custom">Custom range</option>
+              </select>
+            </label>
+            <label for="recommendation-filter-documentary">Story type
+              <select class="form-select form-select-sm" id="recommendation-filter-documentary">
+                <option value="any">Movies + documentaries</option>
+                <option value="exclude">Narrative movies only</option>
+                <option value="only">Documentaries only</option>
+              </select>
+            </label>
+            <label for="recommendation-filter-rating">IMDb score
+              <select class="form-select form-select-sm" id="recommendation-filter-rating">
+                <option value="">Any score</option>
+                <option value="6">6.0 or higher</option>
+                <option value="7">7.0 or higher</option>
+                <option value="8">8.0 or higher</option>
+                <option value="9">9.0 or higher</option>
+              </select>
+            </label>
+            <label for="recommendation-filter-runtime">Runtime
+              <select class="form-select form-select-sm" id="recommendation-filter-runtime">
+                <option value="">Any length</option>
+                <option value="90">Up to 90 min</option>
+                <option value="120">Up to 2 hours</option>
+                <option value="150">Up to 2½ hours</option>
+              </select>
+            </label>
+          </div>
+          <fieldset class="recommendation-filter-section">
+            <legend>Genres <small>Match any selected</small></legend>
+            <div class="recommendation-filter-chips" id="recommendation-filter-genres"></div>
+          </fieldset>
+          <fieldset class="recommendation-filter-section">
+            <legend>Original language <small>Choose one or more</small></legend>
+            <div class="recommendation-filter-chips" id="recommendation-filter-languages"></div>
+          </fieldset>
+          <div class="recommendation-filter-footer">
+            <p id="recommendation-filter-preview" role="status">Every catalog title is currently eligible.</p>
+            <div class="recommendation-filter-actions">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="recommendation-filter-clear">Clear</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="recommendation-filter-more">More filters</button>
+              <button type="button" class="btn btn-sm btn-primary" id="recommendation-filter-apply">Apply to picks</button>
+            </div>
+          </div>
+        </section>
         <div class="recommendation-basis-panel alert alert-primary">
           <div class="recommendation-basis-copy">
             <strong id="recommendation-basis-label">Build movie picks from</strong>
@@ -441,7 +504,7 @@
           <h1 id="filters-title">Movie filters</h1>
           <button type="button" class="btn btn-sm btn-outline-secondary" id="filters-close">Close</button>
         </div>
-        <p id="filters-description">Choose which release years and production origins stay in your rating queue. Filtered titles are not marked as unseen and return if you remove a filter.</p>
+        <p id="filters-description">Choose exactly what can appear in recommendations and in the rating queue. Saved watchlist titles outside the filter stay saved and return when you clear it.</p>
 
         <fieldset class="filter-section">
           <legend>Release year</legend>
@@ -456,12 +519,45 @@
         </fieldset>
 
         <fieldset class="filter-section">
-          <legend>Production countries to hide</legend>
+          <legend>Genres to include <small>Titles can match any selected genre.</small></legend>
+          <div class="filter-options" id="filter-genre-options"></div>
+        </fieldset>
+
+        <div class="filter-detail-grid">
+          <label for="filter-documentary-mode">Story type
+            <select class="form-select" id="filter-documentary-mode">
+              <option value="any">Movies + documentaries</option>
+              <option value="exclude">Narrative titles only</option>
+              <option value="only">Documentaries only</option>
+            </select>
+          </label>
+          <label for="filter-min-rating">Minimum IMDb score
+            <select class="form-select" id="filter-min-rating">
+              <option value="">Any score</option>
+              <option value="6">6.0 or higher</option>
+              <option value="7">7.0 or higher</option>
+              <option value="8">8.0 or higher</option>
+              <option value="9">9.0 or higher</option>
+            </select>
+          </label>
+          <label for="filter-max-runtime">Maximum runtime
+            <select class="form-select" id="filter-max-runtime">
+              <option value="">Any length</option>
+              <option value="90">90 minutes</option>
+              <option value="120">2 hours</option>
+              <option value="150">2½ hours</option>
+              <option value="180">3 hours</option>
+            </select>
+          </label>
+        </div>
+
+        <fieldset class="filter-section">
+          <legend>Only these production countries</legend>
           <div class="filter-options" id="filter-country-options"></div>
         </fieldset>
 
         <fieldset class="filter-section">
-          <legend>Original languages to hide</legend>
+          <legend>Only these original languages</legend>
           <div class="filter-options" id="filter-language-options"></div>
         </fieldset>
 

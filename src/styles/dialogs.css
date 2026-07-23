@@ -34,6 +34,12 @@
   font-weight: 800;
 }
 
+.filter-section legend small {
+  margin-left: 6px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
 .filter-year-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -42,6 +48,23 @@
 
 .filter-year-grid label {
   margin: 0;
+}
+
+.filter-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.filter-detail-grid label,
+.cookie-card .filter-detail-grid label {
+  margin: 0;
+}
+
+.filter-detail-grid select {
+  min-height: 40px;
+  margin-top: 6px;
 }
 
 .filter-options {

@@ -105,6 +105,10 @@
   .recommendation-actions {
     justify-content: flex-start;
   }
+
+  .recommendation-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
@@ -115,6 +119,10 @@
 
   .filter-year-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .filter-detail-grid {
+    grid-template-columns: 1fr;
   }
 
   .filter-checkbox {
@@ -436,6 +444,27 @@
 
   .recommendation-count-control {
     grid-template-columns: 1fr 72px;
+  }
+
+  .recommendation-filter-explorer {
+    padding: 12px;
+  }
+
+  .recommendation-filter-heading,
+  .recommendation-filter-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .recommendation-filter-grid {
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .recommendation-filter-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
   }
 
   .recommendation-basis-panel {
