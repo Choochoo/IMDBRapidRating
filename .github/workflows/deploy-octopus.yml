@@ -87,6 +87,17 @@ jobs:
           }
         shell: powershell
 
+      - name: Synchronize runtime database permissions
+        env:
+          POSTGRES_CONNECTION_STRING: ${{ secrets.POSTGRES_CONNECTION_STRING }}
+          POSTGRES_RUNTIME_ROLE: ${{ vars.POSTGRES_RUNTIME_ROLE }}
+        run: |
+          npm run db:sync-permissions
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Runtime PostgreSQL permission synchronization failed.'
+          }
+        shell: powershell
+
       - name: Stage deployment package
         shell: powershell
         run: |

@@ -149,7 +149,22 @@
   line-height: 1.6;
 }
 
-.auth-brand { min-width: 0; }
+.auth-brand {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+}
+
+.auth-brand-logo {
+  display: block;
+  width: min(390px, 100%);
+  height: auto;
+}
 
 .auth-card {
   padding: 24px;

@@ -3,6 +3,9 @@ $ErrorActionPreference = "Stop"
 $InstallDir = "C:\inetpub\wwwroot\IMDBRapidRating"
 $TaskName = "IMDB Rapid Rating Server"
 $Port = 5012
+$RuntimeDir = Join-Path $InstallDir ".runtime"
+$LauncherPath = Join-Path $RuntimeDir "StartServer.ps1"
+$ServerLogPath = Join-Path $RuntimeDir "server.log"
 
 function Get-RapidRaterParameter {
     param([string]$Name)
@@ -17,7 +20,7 @@ Write-Host "Configuring IMDb Rapid Rating deployment..." -ForegroundColor Cyan
 
 New-Item -Path (Join-Path $InstallDir "data") -ItemType Directory -Force | Out-Null
 New-Item -Path (Join-Path $InstallDir "cache") -ItemType Directory -Force | Out-Null
-New-Item -Path (Join-Path $InstallDir ".runtime") -ItemType Directory -Force | Out-Null
+New-Item -Path $RuntimeDir -ItemType Directory -Force | Out-Null
 
 $nodeCandidates = @(
     "C:\Program Files\nodejs\node.exe",
@@ -32,6 +35,16 @@ $npmPath = Join-Path (Split-Path $nodePath -Parent) "npm.cmd"
 if (-not (Test-Path -LiteralPath $npmPath)) {
     $npmPath = (Get-Command npm.cmd -ErrorAction Stop).Source
 }
+
+$escapedInstallDir = $InstallDir.Replace("'", "''")
+$escapedNodePath = $nodePath.Replace("'", "''")
+$escapedServerLogPath = $ServerLogPath.Replace("'", "''")
+$launcherScript = @"
+Set-Location -LiteralPath '$escapedInstallDir'
+& '$escapedNodePath' 'scripts/server.mjs' *>> '$escapedServerLogPath'
+exit `$LASTEXITCODE
+"@
+$launcherScript | Set-Content -LiteralPath $LauncherPath -Encoding UTF8
 
 $runtimeSettingsPath = Join-Path $InstallDir ".runtime\settings.env"
 $requiredVariables = @{
@@ -89,9 +102,10 @@ try {
     Pop-Location
 }
 
+$powerShellPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 $action = New-ScheduledTaskAction `
-    -Execute $nodePath `
-    -Argument "scripts/server.mjs" `
+    -Execute $powerShellPath `
+    -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$LauncherPath`"" `
     -WorkingDirectory $InstallDir
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
@@ -125,6 +139,7 @@ Register-ScheduledTask `
     -Settings $settings `
     -Force | Out-Null
 
+Set-Content -LiteralPath $ServerLogPath -Value "" -Encoding UTF8
 Start-ScheduledTask -TaskName $TaskName
 
 $healthUrl = "http://127.0.0.1:$Port/health"
@@ -138,11 +153,21 @@ for ($attempt = 1; $attempt -le 20; $attempt++) {
             break
         }
     } catch {
-        Write-Host "Health check attempt $attempt is still waiting..."
+        $taskState = (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State
+        Write-Host "Health check attempt $attempt is still waiting (task state: $taskState)..."
+        if ($taskState -ne "Running") {
+            break
+        }
     }
 }
 
 if (-not $healthy) {
+    $taskInfo = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction SilentlyContinue
+    Write-Host "Scheduled task last result: $($taskInfo.LastTaskResult)"
+    if (Test-Path -LiteralPath $ServerLogPath) {
+        Write-Host "IMDb Rapid Rating server log:"
+        Get-Content -LiteralPath $ServerLogPath -Tail 100 | ForEach-Object { Write-Host $_ }
+    }
     throw "IMDb Rapid Rating failed its health check at $healthUrl"
 }
 

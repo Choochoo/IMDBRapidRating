@@ -8,6 +8,7 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "db:migrate": "node scripts/migrate.mjs",
+    "db:sync-permissions": "node scripts/sync-database-permissions.mjs",
     "user:create": "node scripts/create-user.mjs",
     "key:generate": "node scripts/generate-key.mjs",
     "build:data": "node scripts/build-movie-pool.mjs --minVotes=2500 --recentMinVotes=100 --recentYears=1",

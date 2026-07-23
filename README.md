@@ -60,7 +60,7 @@ Configure these Octopus project variables before the first account-backed deploy
 
 Use a dedicated PostgreSQL database/user with access only to the `imdb_rapid_rater` schema. The deployment writes the runtime values to an ACL-restricted file, installs production dependencies, and applies migrations before starting the scheduled task.
 
-For build-time origin enrichment, configure the `POSTGRES_CONNECTION_STRING` Actions repository secret with a dedicated PostgreSQL account that can access the `imdb_rapid_rater` schema.
+For build-time origin enrichment, configure the `POSTGRES_CONNECTION_STRING` Actions repository secret with a dedicated PostgreSQL account that can access the `imdb_rapid_rater` schema. The deployment workflow automatically grants the established runtime table owner access to objects created by this build account and establishes matching default privileges for future migrations. Set the non-sensitive `POSTGRES_RUNTIME_ROLE` Actions repository variable only for a fresh database or when the runtime role does not own the existing `users` table.
 
 `RapidRater.AppOrigin` is the primary browser origin. Same-origin requests are accepted from the host serving the current request, while additional trusted browser origins can be supplied through `RapidRater.AllowedOrigins`; the deployment writes them to the `APP_ALLOWED_ORIGINS` runtime setting. The repository contains no deployment-specific hostnames or addresses.
 
