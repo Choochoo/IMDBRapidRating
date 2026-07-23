@@ -1,8 +1,8 @@
 import { Config } from "../config.js";
-import { AiView, AriaExpandedAttribute, AriaPressedAttribute, ChangeEvent, ClickEvent, CollapsedPreference, ImdbSecretType, KeydownEvent, MovieMediaType, RaterView, SubmitEvent, SyncView, TmdbSecretType, TvMediaType } from "../app-constants.js";
+import { AiView, AriaPressedAttribute, ChangeEvent, ClickEvent, CollapsedPreference, ImdbSecretType, KeydownEvent, MovieMediaType, RaterView, SubmitEvent, SyncView, TmdbSecretType, TvMediaType } from "../app-constants.js";
 import { BindRecommendationRatings } from "../recommendation-ratings.js";
 import { SaveAiKeyFromDialog, SaveImdbConnectionFromDialog, SaveSelectedAiModel, SaveTmdbSettingsFromDialog } from "../settings-workflows.js";
-import { ApplyRecommendationFilters, ApplyTitleFilters, ClearRecommendationFilters, HideTitleFilterDialog, ResetTitleFilterDialog, ShowTitleFilterDialog, UpdateRecommendationFilterPreview, UpdateTitleFilterPreview } from "../title-filter-workflows.js";
+import { ApplyTitleFilters, HideTitleFilterDialog, ResetTitleFilterDialog, ShowTitleFilterDialog, UpdateTitleFilterPreview } from "../title-filter-workflows.js";
 import { EscapeHtml } from "../util.js";
 import { NormalizeRecommendationBasis } from "../../../shared/recommendation-basis.js";
 import { IsLoginPath, LoginPath, PathForView, RouteFromPathname } from "../view-routes.js";
@@ -136,23 +136,11 @@ export class EventBindingsFeature {
   }
 
   BindRecommendationFilterEvents() {
-    this.Elements.recommendationFilterApply.addEventListener(ClickEvent, () => this.HandleRecommendationFilterApply());
-    this.Elements.recommendationFilterClear.addEventListener(ClickEvent, () => this.HandleRecommendationFilterClear());
     this.Elements.recommendationFilterMore.addEventListener(ClickEvent, () => ShowTitleFilterDialog(this));
-    this.Elements.recommendationFilters.addEventListener("input", () => UpdateRecommendationFilterPreview(this));
-    this.Elements.recommendationFilters.addEventListener(ChangeEvent, () => UpdateRecommendationFilterPreview(this));
   }
 
   HandleApplyFilters() {
     ApplyTitleFilters(this).catch((error) => this.ShowFilterError(error));
-  }
-
-  HandleRecommendationFilterApply() {
-    ApplyRecommendationFilters(this).catch((error) => this.ShowFilterError(error));
-  }
-
-  HandleRecommendationFilterClear() {
-    ClearRecommendationFilters(this).catch((error) => this.ShowFilterError(error));
   }
 
   ShowFilterError(error) {
@@ -287,7 +275,6 @@ export class EventBindingsFeature {
   }
 
   BindMobileEvents() {
-    this.Elements.mobileHeaderToggle.addEventListener(ClickEvent, () => this.ToggleMobileHeader());
     this.Elements.mobileRatingBar.addEventListener(ClickEvent, (event) => this.HandleMobileRatingClick(event));
     this.Elements.touchNotSeen.addEventListener(ClickEvent, () => this.MarkActive(null, "notSeen"));
     this.Elements.touchUndo.addEventListener(ClickEvent, () => this.Undo());
@@ -331,16 +318,4 @@ export class EventBindingsFeature {
     this.Elements.connectionMenu.open = false;
   }
 
-  ToggleMobileHeader() {
-    const expanded = this.Elements.mobileHeaderToggle.getAttribute(AriaExpandedAttribute) !== "true";
-    this.Elements.mobileHeaderToggle.setAttribute(AriaExpandedAttribute, String(expanded));
-    this.SetMobileProgressLabel(expanded);
-    this.Elements.appHeader.classList.toggle("mobile-dashboard-open", expanded);
-  }
-
-  SetMobileProgressLabel(expanded) {
-    const label = this.Elements.mobileHeaderToggle.firstElementChild;
-    if (label)
-      label.textContent = expanded ? "Hide progress" : "Show progress";
-  }
 }

@@ -8,7 +8,6 @@ import { FormatCount } from "./util.js";
 
 const CommonCountries = Object.freeze(["US", "GB", "CA", "AU", "FR", "DE", "ES", "IT", "JP", "KR", "IN", "MX"]);
 const CommonLanguages = Object.freeze(["en", "es", "fr", "de", "it", "ja", "ko", "hi", "pt", "zh"]);
-const CustomYearPreset = "custom";
 
 export function ShowTitleFilterDialog(app) {
   PopulateTitleFilterDialog(app, app.State.filters);
@@ -28,15 +27,10 @@ export function ResetTitleFilterDialog(app) {
 export function UpdateTitleFilterPreview(app) {
   const filters = ReadTitleFilterForm(app);
   const counts = CountFilterMatches(app, filters);
+  UpdateFilterSectionSummaries(app, filters);
   app.Elements.filterPreview.textContent = BuildDialogPreview(app, counts);
   app.Elements.filterError.textContent = ReadYearError(filters, app);
   app.Elements.filtersApply.disabled = Boolean(app.Elements.filterError.textContent);
-}
-
-export function UpdateRecommendationFilterPreview(app) {
-  const filters = ReadRecommendationFilterForm(app);
-  const counts = CountFilterMatches(app, filters);
-  app.Elements.recommendationFilterPreview.textContent = BuildRecommendationPreview(app, counts);
 }
 
 export async function ApplyTitleFilters(app) {
@@ -47,22 +41,21 @@ export async function ApplyTitleFilters(app) {
   return await SaveTitleFilters(app, filters, true);
 }
 
-export async function ApplyRecommendationFilters(app) {
-  const filters = ReadRecommendationFilterForm(app);
-  return await SaveTitleFilters(app, filters, false);
-}
-
-export async function ClearRecommendationFilters(app) {
-  PopulateRecommendationFilterExplorer(app, {});
-  return await SaveTitleFilters(app, NormalizeTitleFilters(), false);
-}
-
 export function UpdateTitleFilterButton(app) {
   const count = CountActiveTitleFilters(app.State.filters);
-  app.Elements.configureFilters.textContent = count ? `Filters · ${count}` : "Filters";
-  app.Elements.configureFilters.classList.toggle("filter-active", count > 0);
+  SetFilterButtonState(app.Elements.configureFilters, app.Elements.filterActiveCount, count);
+  SetFilterButtonState(app.Elements.recommendationFilterMore, app.Elements.recommendationFilterCount, count);
   app.Elements.configureFilters.title = count ? `${count} active filter${count === 1 ? "" : "s"}` : "Filter ratings and recommendations";
-  PopulateRecommendationFilterExplorer(app, app.State.filters);
+  app.Elements.configureFilters.setAttribute("aria-label", app.Elements.configureFilters.title);
+  app.Elements.recommendationFilterMore.title = count ? `${count} active filter${count === 1 ? "" : "s"}. Open advanced filters.` : "Open advanced watchlist filters";
+  app.Elements.recommendationFilterMore.setAttribute("aria-label", app.Elements.recommendationFilterMore.title);
+  app.Elements.recommendationFilterPreview.textContent = count ? `${count} active filter${count === 1 ? "" : "s"} shape the rating queue and watchlist.` : "No extra filters are active.";
+}
+
+function SetFilterButtonState(button, badge, count) {
+  badge.textContent = String(count);
+  badge.hidden = count === 0;
+  button.classList.toggle("filter-active", count > 0);
 }
 
 function ShowTitleFilterValidation(app, error) {
@@ -101,9 +94,6 @@ function CompleteTitleFilterApply(app, hideDialog) {
 function SetFilterSaving(app, value) {
   app.Elements.filtersApply.disabled = value;
   app.Elements.filtersApply.textContent = value ? "Applying..." : "Apply filters";
-  app.Elements.recommendationFilterApply.disabled = value;
-  app.Elements.recommendationFilterApply.textContent = value ? "Applying..." : "Apply to picks";
-  app.Elements.recommendationFilterClear.disabled = value;
 }
 
 function PopulateTitleFilterDialog(app, value) {
@@ -161,25 +151,14 @@ function UpdateOriginNote(app, known) {
   app.Elements.filterBollywood.disabled = false;
 }
 
-function PopulateRecommendationFilterExplorer(app, value) {
-  const filters = NormalizeTitleFilters(value);
-  PopulateRecommendationSelects(app, filters);
-  RenderRecommendationOptions(app, filters);
-  UpdateRecommendationFilterPreview(app);
+function UpdateFilterSectionSummaries(app, filters) {
+  SetFilterSectionSummary(app.Elements.filterGenreSummary, filters.includedGenres.length);
+  SetFilterSectionSummary(app.Elements.filterCountrySummary, filters.includedOriginCountries.length);
+  SetFilterSectionSummary(app.Elements.filterLanguageSummary, filters.includedOriginalLanguages.length);
 }
 
-function PopulateRecommendationSelects(app, filters) {
-  app.Elements.recommendationFilterYear.value = ReadYearPreset(filters);
-  app.Elements.recommendationFilterDocumentary.value = filters.documentaryMode;
-  app.Elements.recommendationFilterRating.value = filters.minImdbRating || "";
-  app.Elements.recommendationFilterRuntime.value = filters.maxRuntimeMinutes || "";
-}
-
-function RenderRecommendationOptions(app, filters) {
-  const counts = ReadCatalogOptionCounts(app.State.movies);
-  SeedOptions(counts.languages, CommonLanguages);
-  RenderChipList(app.Elements.recommendationFilterGenres, counts.genres, filters.includedGenres, "genre");
-  RenderChipList(app.Elements.recommendationFilterLanguages, counts.languages, filters.includedOriginalLanguages, "language");
+function SetFilterSectionSummary(element, count) {
+  element.textContent = count ? `${count} selected` : "Any";
 }
 
 function RenderOptionList(container, counts, selected, type) {
@@ -187,13 +166,6 @@ function RenderOptionList(container, counts, selected, type) {
   const options = BuildOptions(counts, type);
   for (const option of options)
     container.append(BuildOption(option, selected.includes(option.code), type));
-}
-
-function RenderChipList(container, counts, selected, type) {
-  container.replaceChildren();
-  const options = BuildOptions(counts, type);
-  for (const option of options)
-    container.append(BuildChipOption(option, selected.includes(option.code), type));
 }
 
 function BuildOptions(counts, type) {
@@ -212,17 +184,6 @@ function BuildOption(option, checked, type) {
   const count = document.createElement("small");
   count.textContent = FormatCount(option.count);
   label.append(input, name, count);
-  return label;
-}
-
-function BuildChipOption(option, checked, type) {
-  const label = document.createElement("label");
-  label.className = "recommendation-filter-chip";
-  const input = BuildCheckbox(option.code, checked, `recommendationFilter${Capitalize(type)}`);
-  const text = document.createElement("span");
-  text.textContent = option.name;
-  label.title = option.count ? `${FormatCount(option.count)} catalog matches` : "Origin verified when recommendations are generated";
-  label.append(input, text);
   return label;
 }
 
@@ -250,42 +211,9 @@ function ReadTitleFilterForm(app) {
   });
 }
 
-function ReadRecommendationFilterForm(app) {
-  const current = NormalizeTitleFilters(app.State.filters);
-  return NormalizeTitleFilters({
-    ...current,
-    ...ReadYearPresetRange(app.Elements.recommendationFilterYear.value, current),
-    includedGenres: ReadCheckedCodes(app.Elements.recommendationFilterGenres, "recommendationFilterGenre"),
-    documentaryMode: app.Elements.recommendationFilterDocumentary.value,
-    minImdbRating: app.Elements.recommendationFilterRating.value,
-    maxRuntimeMinutes: app.Elements.recommendationFilterRuntime.value,
-    includedOriginalLanguages: ReadCheckedCodes(app.Elements.recommendationFilterLanguages, "recommendationFilterLanguage")
-  });
-}
-
 function ReadCheckedCodes(container, key) {
   const attribute = ToDataAttribute(key);
   return [...container.querySelectorAll(`input[data-${attribute}]:checked`)].map((input) => input.dataset[key]);
-}
-
-function ReadYearPreset(filters) {
-  if (!filters.minYear && !filters.maxYear)
-    return "any";
-  if (!filters.minYear && filters.maxYear === 1989)
-    return "classics";
-  const decade = Math.floor(filters.minYear / 10) * 10;
-  return filters.minYear === decade && filters.maxYear === decade + 9 ? `${decade}s` : CustomYearPreset;
-}
-
-function ReadYearPresetRange(value, current) {
-  if (value === CustomYearPreset)
-    return { minYear: current.minYear, maxYear: current.maxYear };
-  if (value === "classics")
-    return { minYear: null, maxYear: 1989 };
-  if (value === "any")
-    return { minYear: null, maxYear: null };
-  const minYear = Number(value.replace("s", ""));
-  return { minYear, maxYear: minYear + 9 };
 }
 
 function ReadCatalogOptionCounts(titles) {
@@ -321,22 +249,13 @@ function SeedOptions(counts, values) {
 
 function CountFilterMatches(app, filters) {
   const catalog = app.State.movies.filter((title) => IsTitleAllowed(title, filters)).length;
-  const recommendations = app.State.recommendationQueue.filter((title) => IsTitleAllowed(title, filters)).length;
-  return { catalog, catalogTotal: app.State.movies.length, recommendations, recommendationTotal: app.State.recommendationQueue.length };
+  return { catalog, catalogTotal: app.State.movies.length };
 }
 
 function BuildDialogPreview(app, counts) {
   const media = MediaLabel(app, counts.catalogTotal);
   const hidden = Math.max(0, counts.catalogTotal - counts.catalog);
   return `${FormatCount(counts.catalog)} of ${FormatCount(counts.catalogTotal)} ${media} match. ${FormatCount(hidden)} stay outside this filter.`;
-}
-
-function BuildRecommendationPreview(app, counts) {
-  const media = MediaLabel(app, counts.catalog);
-  const catalog = `${FormatCount(counts.catalog)} ${media} in the catalog`;
-  if (!counts.recommendationTotal)
-    return `${catalog} match this filter. New picks will come only from them.`;
-  return `${catalog} match · ${FormatCount(counts.recommendations)} of ${FormatCount(counts.recommendationTotal)} saved picks fit.`;
 }
 
 function ReadCatalogYearRange(titles) {

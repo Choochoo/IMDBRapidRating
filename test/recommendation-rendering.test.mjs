@@ -67,6 +67,8 @@ function VerifyStreamingCard() {
   assert.match(html, />Rent</);
   assert.match(html, /View all watching options/);
   assert.match(html, /JustWatch/);
+  assert.match(html, /class="streaming-provider" role="img" aria-label="Netflix" title="Netflix"/);
+  assert.match(html, /class="streaming-provider-name">Netflix/);
 }
 
 function VerifyStreamingUpdate() {

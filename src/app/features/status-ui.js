@@ -14,7 +14,9 @@ const ReadyLabel = "Ready";
 const CheckingLabel = "Checking…";
 const TvMediaType = "tv";
 const MovieMediaType = "movie";
+const MovieDisplayName = "Movies";
 const TvDisplayName = "TV";
+const TvOptionName = "TV Shows";
 const BothRecommendationBasis = "both";
 const OtherRecommendationBasis = "other";
 const ConnectedLabel = "Connected";
@@ -204,7 +206,6 @@ export class StatusUiFeature {
     this.Elements.connectionSummary.classList.remove("connection-ready", "connection-attention", "connection-issue", "connection-checking");
     this.Elements.connectionSummary.classList.add(`connection-${status.tone}`);
     this.Elements.connectionSummaryLabel.textContent = status.text;
-    this.Elements.connectionSummaryCount.textContent = status.tone === CheckingTone ? "–" : status.text.split(" ")[0];
     this.Elements.connectionMenuHeading.textContent = `${status.text}. Select a service to manage it.`;
     this.Elements.connectionSummary.title = status.tooltip;
     this.Elements.connectionSummary.setAttribute(AriaLabelAttribute, `Connections: ${status.text}. ${status.tooltip}`);
@@ -260,21 +261,22 @@ export class StatusUiFeature {
       otherMediaType: isTv ? MovieMediaType : TvMediaType,
       currentName: isTv ? TvDisplayName : MovieMediaType,
       otherName: isTv ? MovieMediaType : TvDisplayName,
+      currentOption: isTv ? TvOptionName : MovieDisplayName,
+      otherOption: isTv ? MovieDisplayName : TvOptionName,
       outputName: isTv ? "TV shows" : "movies",
-      pickName: isTv ? TvDisplayName : MovieMediaType
     };
   }
 
   UpdateRecommendationBasisLabels(context, basis) {
     const optionLabels = {
-      current: `My ${context.currentName} ratings`,
-      other: `My ${context.otherName} ratings`,
+      current: context.currentOption,
+      other: context.otherOption,
       [BothRecommendationBasis]: "Both"
     };
     for (const option of this.Elements.recommendationBasis.options)
       option.textContent = optionLabels[option.value] || option.textContent;
     this.Elements.recommendationBasis.value = basis;
-    this.Elements.recommendationBasisLabel.textContent = `Build ${context.pickName} picks from`;
+    this.Elements.recommendationBasisLabel.textContent = "Create from";
   }
 
   ReadRecommendationBasisCounts(context, basis) {

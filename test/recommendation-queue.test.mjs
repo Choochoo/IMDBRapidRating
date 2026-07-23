@@ -482,8 +482,6 @@ function QueueItem(queueKey, ttId, title, year) {
 function ViewElements() {
   const ClassList = () => ({ toggle() {}, remove() {} });
   return {
-    appHeader: { classList: ClassList() },
-    mobileHeaderToggle: { setAttribute() {} },
     raterView: { hidden: false },
     recommendationView: { hidden: true },
     syncView: { hidden: true },

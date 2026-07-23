@@ -83,9 +83,6 @@ export class RapidRaterApp {
     document.body.classList.toggle("rater-active", view === RaterView);
     document.body.classList.toggle("ai-active", view === AiView);
     document.body.classList.toggle("sync-active", view === SyncView);
-    this.Elements.mobileHeaderToggle.setAttribute("aria-expanded", "false");
-    this.SetMobileProgressLabel(false);
-    this.Elements.appHeader.classList.remove("mobile-dashboard-open");
   }
 
   UpdateViewVisibility(view) {

@@ -67,8 +67,6 @@ function BuildMigrationElements() {
 
 function BuildMobileElements() {
   return {
-    appHeader: document.querySelector(".app-header"),
-    mobileHeaderToggle: Element("mobile-header-toggle"),
     mobileRatingBar: Element("mobile-rating-bar"),
     touchNotSeen: Element("touch-not-seen"),
     touchUndo: Element("touch-undo")
@@ -137,6 +135,7 @@ function BuildStatusElements() {
 function BuildConnectionStatusElements() {
   return {
     configureFilters: Element("configure-filters"),
+    filterActiveCount: Element("filter-active-count"),
     quickRateMenu: Element("quick-rate-menu"),
     quickRateForm: Element("quick-rate-form"),
     quickRateSearch: Element("quick-rate-search"),
@@ -149,7 +148,6 @@ function BuildConnectionStatusElements() {
     connectionMenu: Element("connection-menu"),
     connectionSummary: Element("connection-summary"),
     connectionSummaryLabel: Element("connection-summary-label"),
-    connectionSummaryCount: Element("connection-summary-count"),
     connectionMenuHeading: Element("connection-menu-heading"),
     sourceBadge: Element("source-badge"),
     sourceStatusRow: Element("source-status-row"),
@@ -260,6 +258,9 @@ function BuildFilterInputElements() {
     filterMaxRuntime: Element("filter-max-runtime"),
     filterCountryOptions: Element("filter-country-options"),
     filterLanguageOptions: Element("filter-language-options"),
+    filterGenreSummary: Element("filter-genre-summary"),
+    filterCountrySummary: Element("filter-country-summary"),
+    filterLanguageSummary: Element("filter-language-summary"),
     filterBollywood: Element("filter-bollywood"),
     filterIncludeUnknown: Element("filter-include-unknown"),
     filterOriginNote: Element("filter-origin-note"),
@@ -349,29 +350,9 @@ function BuildRecommendationElements() {
 
 function BuildRecommendationFilterElements() {
   return {
-    ...BuildRecommendationFilterControlElements(),
-    ...BuildRecommendationFilterActionElements()
-  };
-}
-
-function BuildRecommendationFilterControlElements() {
-  return {
-    recommendationFilters: Element("recommendation-filter-explorer"),
-    recommendationFilterYear: Element("recommendation-filter-year"),
-    recommendationFilterDocumentary: Element("recommendation-filter-documentary"),
-    recommendationFilterRating: Element("recommendation-filter-rating"),
-    recommendationFilterRuntime: Element("recommendation-filter-runtime"),
-    recommendationFilterGenres: Element("recommendation-filter-genres"),
-    recommendationFilterLanguages: Element("recommendation-filter-languages"),
-    recommendationFilterPreview: Element("recommendation-filter-preview")
-  };
-}
-
-function BuildRecommendationFilterActionElements() {
-  return {
-    recommendationFilterClear: Element("recommendation-filter-clear"),
     recommendationFilterMore: Element("recommendation-filter-more"),
-    recommendationFilterApply: Element("recommendation-filter-apply")
+    recommendationFilterCount: Element("recommendation-filter-count"),
+    recommendationFilterPreview: Element("recommendation-filter-preview")
   };
 }
 

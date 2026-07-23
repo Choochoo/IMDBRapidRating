@@ -195,7 +195,7 @@ function RenderStreamingProvider(provider) {
   const name = EscapeHtml(rawName);
   const logoUrl = BuildProviderLogoUrl(provider.logoPath);
   const logo = logoUrl ? `<img src="${EscapeHtml(logoUrl)}" alt="" loading="lazy">` : `<span class="streaming-provider-fallback" aria-hidden="true">${EscapeHtml(rawName.slice(0, 1))}</span>`;
-  return `<span class="streaming-provider">${logo}<span>${name}</span></span>`;
+  return `<span class="streaming-provider" role="img" aria-label="${name}" title="${name}">${logo}<span class="streaming-provider-name">${name}</span></span>`;
 }
 
 function BuildProviderLogoUrl(value) {

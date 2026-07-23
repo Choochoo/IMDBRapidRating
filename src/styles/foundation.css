@@ -10,6 +10,10 @@
   backdrop-filter: blur(10px);
 }
 
+.orientation-guard {
+  display: none;
+}
+
 .header-main {
   display: grid;
   grid-template-columns: minmax(390px, 1fr) auto minmax(420px, 1fr);
@@ -33,35 +37,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.mobile-header-toggle {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 36px;
-  padding: 0 12px;
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.035);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.mobile-header-toggle-icon {
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(45deg) translate(-2px, 2px);
-  transition: transform var(--anim) ease;
-}
-
-.mobile-header-toggle[aria-expanded="true"] .mobile-header-toggle-icon {
-  transform: rotate(225deg) translate(-2px, 2px);
-}
-
-body.sync-active .header-dashboard,
-body.sync-active .mobile-header-toggle {
+body.sync-active .header-dashboard {
   display: none;
 }
 
@@ -247,6 +223,21 @@ body.tv-mode #tab-sync {
   border-color: var(--accent-border);
   background: var(--accent-soft);
   color: var(--accent-text);
+}
+
+.header-action-count,
+.recommendation-filter-count {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #15120c;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
 }
 
 .header-menu {
@@ -486,7 +477,7 @@ body.tv-mode #tab-sync {
   min-height: 40px;
 }
 
-.connection-summary {
+.connection-menu > .connection-summary {
   width: 38px;
   min-width: 38px;
   height: 38px;
@@ -495,10 +486,12 @@ body.tv-mode #tab-sync {
   border-radius: 50%;
 }
 
-.connection-count {
-  font-size: 11px;
-  font-weight: 850;
-  line-height: 1;
+.connection-icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
 }
 
 .connection-summary.connection-ready {

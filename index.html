@@ -9,6 +9,12 @@
     <link rel="stylesheet" href="/src/styles.css">
   </head>
   <body>
+    <aside class="orientation-guard" role="status" aria-labelledby="orientation-guard-title">
+      <i class="orientation-guard-icon" data-lucide="smartphone" aria-hidden="true"></i>
+      <strong id="orientation-guard-title">Rotate to portrait</strong>
+      <span>IMDb Rapid Rater is designed for vertical use on phones.</span>
+    </aside>
+
     <header class="app-header">
       <div class="header-main">
         <div class="header-identity">
@@ -38,12 +44,16 @@
         </nav>
 
         <div class="header-actions" aria-label="Account and data controls">
-          <button type="button" class="header-action btn btn-sm btn-outline-secondary" id="configure-filters" title="Filter the rating queue">Filters</button>
+          <button type="button" class="header-action btn btn-sm btn-outline-secondary" id="configure-filters" title="Filter ratings and recommendations" aria-label="Filter ratings and recommendations">
+            <i class="button-icon" data-lucide="list-filter" aria-hidden="true"></i>
+            <span class="header-action-label">Filters</span>
+            <span class="header-action-count" id="filter-active-count" hidden>0</span>
+          </button>
 
           <details class="header-menu quick-rate-menu" id="quick-rate-menu">
             <summary class="header-action quick-rate-summary btn btn-sm btn-outline-secondary" title="Rate something you already watched">
-              <span aria-hidden="true">+</span>
-              <span>Quick Rate</span>
+              <i class="button-icon" data-lucide="circle-plus" aria-hidden="true"></i>
+              <span class="header-action-label">Quick Rate</span>
             </summary>
             <div class="header-menu-panel quick-rate-menu-panel">
               <div class="menu-heading"><strong>Rate something you watched</strong><span>Search the full catalog, then choose your rating</span></div>
@@ -62,8 +72,8 @@
 
           <details class="header-menu data-menu" id="data-menu">
             <summary class="header-action btn btn-sm btn-outline-secondary" title="Import, restore, download, or back up your ratings">
-              <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-              <span>Import / Export</span>
+              <i class="button-icon" data-lucide="arrow-up-down" aria-hidden="true"></i>
+              <span class="header-action-label">Import / Export</span>
               <span class="menu-chevron" aria-hidden="true"></span>
             </summary>
             <div class="header-menu-panel data-menu-panel">
@@ -94,7 +104,7 @@
 
           <details class="header-menu connection-menu" id="connection-menu">
             <summary class="connection-summary connection-checking btn btn-sm btn-outline-secondary" id="connection-summary" title="Checking your connections">
-              <span class="connection-count" id="connection-summary-count" aria-hidden="true">–</span>
+              <i class="connection-icon" data-lucide="plug" aria-hidden="true"></i>
               <span class="visually-hidden" id="connection-summary-label">Checking connections</span>
             </summary>
             <div class="header-menu-panel connection-menu-panel">
@@ -128,7 +138,7 @@
 
           <span id="account-badge" hidden>Signed in</span>
           <button type="button" class="logout-action btn btn-sm btn-link" id="sign-out" hidden title="Log out of Rapid Rater">
-            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg>
+            <i class="button-icon" data-lucide="log-out" aria-hidden="true"></i>
             <span>Log out</span>
           </button>
         </div>
@@ -174,11 +184,6 @@
         </section>
       </div>
 
-      <button type="button" class="mobile-header-toggle btn btn-sm btn-outline-secondary" id="mobile-header-toggle" aria-expanded="false" aria-controls="header-dashboard">
-        <span>Show progress</span>
-        <span class="mobile-header-toggle-icon" aria-hidden="true"></span>
-      </button>
-
       <input id="json-file" type="file" accept=".json,application/json" hidden>
       <input id="csv-file" type="file" accept=".csv,text/csv" hidden>
       <input id="letterboxd-file" type="file" accept=".zip,.csv,application/zip,text/csv" hidden>
@@ -205,81 +210,23 @@
             <button type="button" class="btn btn-primary" id="generate-recommendations">Generate picks</button>
           </div>
         </header>
-        <section class="recommendation-filter-explorer card" id="recommendation-filter-explorer" aria-labelledby="recommendation-filter-title">
-          <div class="recommendation-filter-heading">
-            <div>
-              <span class="recommendation-kicker">Explore your lane</span>
-              <h2 id="recommendation-filter-title">Only show picks that fit</h2>
-              <p>Shape the next batch, then browse only watchlist picks inside the same filter.</p>
-            </div>
-            <span class="recommendation-filter-strict">Strict match</span>
-          </div>
-          <div class="recommendation-filter-grid">
-            <label for="recommendation-filter-year">Release era
-              <select class="form-select form-select-sm" id="recommendation-filter-year">
-                <option value="any">Any year</option>
-                <option value="2020s">2020s</option>
-                <option value="2010s">2010s</option>
-                <option value="2000s">2000s</option>
-                <option value="1990s">1990s</option>
-                <option value="classics">Before 1990</option>
-                <option value="custom">Custom range</option>
-              </select>
-            </label>
-            <label for="recommendation-filter-documentary">Story type
-              <select class="form-select form-select-sm" id="recommendation-filter-documentary">
-                <option value="any">Movies + documentaries</option>
-                <option value="exclude">Narrative movies only</option>
-                <option value="only">Documentaries only</option>
-              </select>
-            </label>
-            <label for="recommendation-filter-rating">IMDb score
-              <select class="form-select form-select-sm" id="recommendation-filter-rating">
-                <option value="">Any score</option>
-                <option value="6">6.0 or higher</option>
-                <option value="7">7.0 or higher</option>
-                <option value="8">8.0 or higher</option>
-                <option value="9">9.0 or higher</option>
-              </select>
-            </label>
-            <label for="recommendation-filter-runtime">Runtime
-              <select class="form-select form-select-sm" id="recommendation-filter-runtime">
-                <option value="">Any length</option>
-                <option value="90">Up to 90 min</option>
-                <option value="120">Up to 2 hours</option>
-                <option value="150">Up to 2½ hours</option>
-              </select>
-            </label>
-          </div>
-          <fieldset class="recommendation-filter-section">
-            <legend>Genres <small>Match any selected</small></legend>
-            <div class="recommendation-filter-chips" id="recommendation-filter-genres"></div>
-          </fieldset>
-          <fieldset class="recommendation-filter-section">
-            <legend>Original language <small>Choose one or more</small></legend>
-            <div class="recommendation-filter-chips" id="recommendation-filter-languages"></div>
-          </fieldset>
-          <div class="recommendation-filter-footer">
-            <p id="recommendation-filter-preview" role="status">Every catalog title is currently eligible.</p>
-            <div class="recommendation-filter-actions">
-              <button type="button" class="btn btn-sm btn-outline-secondary" id="recommendation-filter-clear">Clear</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary" id="recommendation-filter-more">More filters</button>
-              <button type="button" class="btn btn-sm btn-primary" id="recommendation-filter-apply">Apply to picks</button>
-            </div>
-          </div>
+        <section class="recommendation-controls card" aria-label="Watchlist source and filters">
+          <label class="recommendation-source-control" for="recommendation-basis">
+            <span id="recommendation-basis-label">Create from</span>
+            <select class="form-select form-select-sm" id="recommendation-basis" aria-describedby="recommendation-basis-detail">
+              <option value="current">Movies</option>
+              <option value="other">TV Shows</option>
+              <option value="both">Both</option>
+            </select>
+          </label>
+          <button type="button" class="recommendation-filter-button btn btn-sm btn-outline-secondary" id="recommendation-filter-more" title="Open advanced watchlist filters" aria-label="Open advanced watchlist filters">
+            <i class="button-icon" data-lucide="list-filter" aria-hidden="true"></i>
+            <span>Filters</span>
+            <span class="recommendation-filter-count" id="recommendation-filter-count" hidden>0</span>
+          </button>
+          <p class="recommendation-basis-detail" id="recommendation-basis-detail">Your movie ratings shape the taste profile. Picks stay movies.</p>
+          <p class="recommendation-filter-preview" id="recommendation-filter-preview" role="status">No extra filters are active.</p>
         </section>
-        <div class="recommendation-basis-panel alert alert-primary">
-          <div class="recommendation-basis-copy">
-            <strong id="recommendation-basis-label">Build movie picks from</strong>
-            <span id="recommendation-basis-detail">Your movie ratings shape the taste profile. Picks stay movies.</span>
-          </div>
-          <label class="visually-hidden" for="recommendation-basis">Ratings used for recommendations</label>
-          <select class="form-select" id="recommendation-basis" aria-describedby="recommendation-basis-detail">
-            <option value="current">My movie ratings</option>
-            <option value="other">My TV ratings</option>
-            <option value="both">Both</option>
-          </select>
-        </div>
         <div class="model-panel card">
           <div class="model-copy">
             <strong id="ai-model-status">Model: checking</strong>
@@ -311,48 +258,69 @@
     <section class="sync-view" id="sync-view" hidden>
       <div class="sync-shell">
         <header class="sync-header card">
-          <span class="recommendation-kicker">Choose a direction</span>
-          <h1>Where do you want your movies to go?</h1>
-          <p>Choose IMDb → Letterboxd to prepare a Letterboxd upload. Choose Letterboxd → This site → IMDb to bring ratings the other way.</p>
+          <span class="recommendation-kicker">Move ratings between services</span>
+          <h1>Sync Movies</h1>
+          <p>Expand only the direction you need. Each row includes the correct link, file, and next step.</p>
         </header>
 
         <div class="sync-status alert alert-info" id="sync-status" role="status">Import your Letterboxd export once so the site can see which movies are missing.</div>
 
-        <div class="sync-path-grid d-grid">
-          <section class="sync-path-card sync-path-imdb card d-grid">
-            <div class="sync-route" aria-label="IMDb to Letterboxd">
-              <span class="badge rounded-pill text-bg-dark border">IMDb</span><b aria-hidden="true">→</b><span class="badge rounded-pill text-bg-dark border">Letterboxd</span>
+        <div class="sync-path-list">
+          <details class="sync-path-row card">
+            <summary>
+              <span class="sync-route" aria-label="IMDb to IMDb Rapid Rater"><span>IMDb</span><b aria-hidden="true">→</b><span>IMDb Rapid Rater</span></span>
+              <span class="sync-row-status"><strong id="sync-imdb-count">0</strong> loaded</span>
+            </summary>
+            <div class="sync-row-body">
+              <ol>
+                <li>Open your IMDb ratings page and choose <strong>Export</strong>.</li>
+                <li>Return here and import the downloaded CSV.</li>
+              </ol>
+              <div class="sync-row-actions">
+                <a class="sync-text-link btn btn-outline-secondary" href="https://www.imdb.com/list/ratings/" target="_blank" rel="noopener noreferrer">Open IMDb ratings ↗</a>
+                <button type="button" class="btn btn-primary" id="sync-import-imdb">Import IMDb CSV</button>
+              </div>
             </div>
-            <h2>Put IMDb movies on Letterboxd</h2>
-            <p>The site found <strong id="sync-to-letterboxd-count">0</strong> IMDb ratings that are not in your last Letterboxd import.</p>
-            <button type="button" class="sync-primary-action btn btn-primary" id="sync-to-letterboxd" disabled>Download file to upload to Letterboxd</button>
-            <div class="sync-next-step card d-grid">
-              <strong>After it downloads</strong>
-              <p>Open Letterboxd, choose the downloaded CSV, review the matches, and confirm.</p>
-              <a class="sync-text-link" href="https://letterboxd.com/import/" target="_blank" rel="noopener noreferrer">Open Letterboxd import ↗</a>
-            </div>
-            <div class="sync-secondary-action d-grid">
-              <p><strong id="sync-imdb-count">0</strong> IMDb ratings loaded. Need the latest copy? <a class="sync-text-link" href="https://www.imdb.com/list/ratings/" target="_blank" rel="noopener noreferrer">Open IMDb ratings and choose Export ↗</a></p>
-              <button type="button" class="btn btn-outline-secondary" id="sync-import-imdb">Import downloaded IMDb CSV</button>
-            </div>
-          </section>
+          </details>
 
-          <section class="sync-path-card sync-path-letterboxd card d-grid">
-            <div class="sync-route" aria-label="Letterboxd to this site and IMDb">
-              <span class="badge rounded-pill text-bg-dark border">Letterboxd</span><b aria-hidden="true">→</b><span class="badge rounded-pill text-bg-dark border">This site</span><b aria-hidden="true">→</b><span class="badge rounded-pill text-bg-dark border">IMDb</span>
+          <details class="sync-path-row card">
+            <summary>
+              <span class="sync-route" aria-label="Letterboxd to IMDb Rapid Rater"><span>Letterboxd</span><b aria-hidden="true">→</b><span>IMDb Rapid Rater</span></span>
+              <span class="sync-row-status"><strong id="sync-letterboxd-count">0</strong> loaded</span>
+            </summary>
+            <div class="sync-row-body">
+              <ol>
+                <li>Download your Letterboxd data export as a ZIP file.</li>
+                <li>Import the ZIP here without unzipping it.</li>
+              </ol>
+              <div class="sync-row-actions">
+                <a class="sync-text-link btn btn-outline-secondary" href="https://letterboxd.com/user/exportdata/" target="_blank" rel="noopener noreferrer">Download Letterboxd export ↗</a>
+                <button type="button" class="btn btn-primary" id="sync-import-letterboxd">Import Letterboxd ZIP</button>
+              </div>
+              <p class="sync-source" id="sync-source">No Letterboxd export imported yet.</p>
+              <div class="sync-send-step">
+                <p><strong id="sync-to-imdb-count">0</strong> imported Letterboxd ratings are missing from IMDb.</p>
+                <button type="button" class="btn btn-outline-secondary" id="sync-to-imdb" disabled>Send missing ratings to IMDb</button>
+              </div>
             </div>
-            <h2>Bring Letterboxd movies into this site</h2>
-            <p>First download your Letterboxd data. Then import that ZIP here—do not unzip it.</p>
-            <div class="sync-letterboxd-actions d-grid">
-              <p>1. <a class="sync-text-link" href="https://letterboxd.com/user/exportdata/" target="_blank" rel="noopener noreferrer">Download your Letterboxd export ZIP ↗</a></p>
-              <button type="button" class="sync-primary-action btn btn-primary" id="sync-import-letterboxd">2. Import Letterboxd ZIP here</button>
+          </details>
+
+          <details class="sync-path-row card">
+            <summary>
+              <span class="sync-route" aria-label="IMDb Rapid Rater to Letterboxd"><span>IMDb Rapid Rater</span><b aria-hidden="true">→</b><span>Letterboxd</span></span>
+              <span class="sync-row-status"><strong id="sync-to-letterboxd-count">0</strong> ready</span>
+            </summary>
+            <div class="sync-row-body">
+              <ol>
+                <li>Download the CSV containing ratings Letterboxd does not have.</li>
+                <li>Open Letterboxd import, upload the CSV, review the matches, and confirm.</li>
+              </ol>
+              <div class="sync-row-actions">
+                <button type="button" class="btn btn-primary" id="sync-to-letterboxd" disabled>Download Letterboxd CSV</button>
+                <a class="sync-text-link btn btn-outline-secondary" href="https://letterboxd.com/import/" target="_blank" rel="noopener noreferrer">Open Letterboxd import ↗</a>
+              </div>
             </div>
-            <div class="sync-source" id="sync-source">No Letterboxd export imported yet.</div>
-            <div class="sync-send-step card d-grid">
-              <p><strong id="sync-letterboxd-count">0</strong> Letterboxd ratings loaded. <strong id="sync-to-imdb-count">0</strong> are missing from IMDb.</p>
-              <button type="button" class="btn btn-primary" id="sync-to-imdb" disabled>Send missing Letterboxd ratings to IMDb</button>
-            </div>
-          </section>
+          </details>
         </div>
 
         <details class="sync-review card">
@@ -518,11 +486,6 @@
           </div>
         </fieldset>
 
-        <fieldset class="filter-section">
-          <legend>Genres to include <small>Titles can match any selected genre.</small></legend>
-          <div class="filter-options" id="filter-genre-options"></div>
-        </fieldset>
-
         <div class="filter-detail-grid">
           <label for="filter-documentary-mode">Story type
             <select class="form-select" id="filter-documentary-mode">
@@ -551,15 +514,25 @@
           </label>
         </div>
 
-        <fieldset class="filter-section">
-          <legend>Only these production countries</legend>
-          <div class="filter-options" id="filter-country-options"></div>
-        </fieldset>
+        <div class="filter-disclosures">
+          <details class="filter-disclosure">
+            <summary><span>Genres</span><small id="filter-genre-summary">Any</small></summary>
+            <p>Titles can match any selected genre.</p>
+            <div class="filter-options" id="filter-genre-options"></div>
+          </details>
 
-        <fieldset class="filter-section">
-          <legend>Only these original languages</legend>
-          <div class="filter-options" id="filter-language-options"></div>
-        </fieldset>
+          <details class="filter-disclosure">
+            <summary><span>Production countries</span><small id="filter-country-summary">Any</small></summary>
+            <p>Only titles produced in at least one selected country will match.</p>
+            <div class="filter-options" id="filter-country-options"></div>
+          </details>
+
+          <details class="filter-disclosure">
+            <summary><span>Original languages</span><small id="filter-language-summary">Any</small></summary>
+            <p>Only titles with a selected original language will match.</p>
+            <div class="filter-options" id="filter-language-options"></div>
+          </details>
+        </div>
 
         <div class="filter-toggles d-grid gap-1 mt-3">
           <label class="filter-checkbox"><input class="form-check-input" id="filter-bollywood" type="checkbox"> Hide Bollywood <small>Approximation: Indian productions whose original language is Hindi.</small></label>
