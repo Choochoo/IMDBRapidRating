@@ -9,8 +9,8 @@
   ],
   "summary": {
     "total": 26,
-    "captured": 0,
-    "needed": 26
+    "captured": 3,
+    "needed": 23
   },
   "screenshots": [
     {
@@ -139,7 +139,7 @@
       "file": "src/assets/setup/connect-openai/03-find-openai-models.webp",
       "imageSrc": "/src/assets/setup/connect-openai/03-find-openai-models.webp",
       "alt": "Rapid Rater AI settings ready to find OpenAI models",
-      "capture": "Rapid Rater AI settings with the OpenAI base URL filled in and Find models highlighted.",
+      "capture": "Rapid Rater Choose AI page with ChatGPT / OpenAI selected and Find my models highlighted.",
       "redact": [
         "API key field",
         "Signed-in email"
@@ -243,7 +243,7 @@
         "Account email"
       ],
       "lastVerified": null,
-      "status": "needed"
+      "status": "captured"
     },
     {
       "flowId": "import-letterboxd",
@@ -260,7 +260,7 @@
         "Account email"
       ],
       "lastVerified": null,
-      "status": "needed"
+      "status": "captured"
     },
     {
       "flowId": "import-letterboxd",
@@ -339,7 +339,7 @@
         "Profile image"
       ],
       "lastVerified": null,
-      "status": "needed"
+      "status": "captured"
     },
     {
       "flowId": "rapid-rater-to-letterboxd",

@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { RecommendationSortFields } from "../src/app/app-constants.js";
 import { FormatRelativeDate, MissingStreamingAvailability, RenderCard, RenderRecommendationCard, RenderRecommendationDetails, RenderRecommendationEmpty, RenderRecommendationSkeletons, RenderRecommendationWatch, UpdateActors, UpdateStreamingAvailability, UpdateSynopsis, UpdateTrailerLink } from "../src/app/rendering.js";
 
+const TextEncoding = "utf8";
+const WorkspaceCssPath = "src/styles/workspace.css";
 const CrimeGenre = "Crime";
 const DramaGenre = "Drama";
 const HeatData = { ttId: "tt0113277", title: "Heat", year: 1995, genres: [CrimeGenre] };
@@ -33,6 +36,7 @@ test("recommendation tiles display the active sort value", VerifyRecommendationS
 test("empty recommendation queue explains how to add picks", VerifyRecommendationEmpty);
 test("only the active rating card offers the watchlist action", VerifyActiveWatchlistAction);
 test("the watchlist popup shows categorized streaming logos and attribution", VerifyStreamingPopup);
+test("the watchlist popup trigger stays visible on touch and uses hover reveal on fine pointers", VerifyStreamingPopupTriggerVisibility);
 test("streaming metadata updates an active card after its API response arrives", VerifyStreamingUpdate);
 test("missing streaming metadata shows an explicit watching-options box", VerifyMissingStreamingUpdate);
 test("missing synopsis metadata shows explicit empty-state copy", VerifyMissingSynopsisUpdate);
@@ -130,6 +134,13 @@ function VerifyStreamingPopup() {
   assert.match(html, new RegExp(`class="streaming-provider" role="img" aria-label="${NetflixName}" title="${NetflixName}"`));
   assert.match(html, new RegExp(`class="streaming-provider-name">${NetflixName}`));
   assert.match(RenderRecommendationWatch(Heat), /Checking streaming, rental, and purchase options/);
+}
+
+async function VerifyStreamingPopupTriggerVisibility() {
+  const css = await readFile(WorkspaceCssPath, TextEncoding);
+  assert.match(css, /\.recommendation-watch-button \{[\s\S]*?display: block;/);
+  assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{[\s\S]*?\.recommendation-watch-button \{[\s\S]*?pointer-events: none;[\s\S]*?opacity: 0;/);
+  assert.match(css, /\.recommendation-poster-stack:hover \.recommendation-watch-button,[\s\S]*?opacity: 1;/);
 }
 
 function VerifyStreamingUpdate() {

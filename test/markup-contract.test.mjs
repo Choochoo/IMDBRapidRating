@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { AnalyticsConsentMarkup } from "../src/app/analytics-consent-markup.js";
 
 const TextEncoding = "utf8";
 const HtmlPath = "index.html";
@@ -10,8 +11,10 @@ const ResponsiveCssPath = "src/styles/responsive.css";
 test("every browser element lookup exists in the HTML shell", VerifyElementLookups);
 test("rating controls start hidden without competing display utilities", VerifyHiddenRatingControls);
 test("quick rating and connection controls expose their accessible contracts", VerifyHeaderControlContracts);
+test("primary navigation is concise and friends is a header icon action", VerifyNavigationContract);
 test("signed-in header controls compact before they can overlap", VerifyResponsiveHeaderContract);
 test("data credits retain required attribution and the rating footer is desktop-only", VerifyDataCredits);
+test("mobile movie metadata follows the synopsis without a flex spacer", VerifyMobileCardSpacing);
 test("watchlist filters and sync directions use compact expandable contracts", VerifyCompactWorkflowContracts);
 test("desktop rating actions are visible and keyboard shortcuts are explained", VerifyDesktopRatingContracts);
 test("settings provide dynamic keyboard and connection sections", VerifySettingsContract);
@@ -19,6 +22,7 @@ test("viewing region replaces per-user TMDB credentials", VerifyViewingRegionCon
 test("AI setup is a dedicated provider-neutral model-discovery page", VerifyAiSetupContract);
 test("signup and legacy accounts expose a permanent one-time username choice", VerifyUsernameContract);
 test("startup loading prevents the sign-in screen from flashing during session restoration", VerifyStartupLoadingContract);
+test("analytics consent offers balanced choices and persistent management controls", VerifyAnalyticsConsentContract);
 
 async function VerifyElementLookups() {
   const [source, html] = await Promise.all([readFile("src/app/elements.js", TextEncoding), readFile(HtmlPath, TextEncoding)]);
@@ -58,11 +62,29 @@ async function VerifyHeaderControlContracts() {
   assert.doesNotMatch(html, /mobile-header-toggle|Show progress/);
 }
 
+async function VerifyNavigationContract() {
+  const [html, foundationCss, responsiveCss] = await Promise.all([readFile(HtmlPath, TextEncoding), readFile(FoundationCssPath, TextEncoding), readFile(ResponsiveCssPath, TextEncoding)]);
+  const navigation = html.match(/<nav class="view-tabs[\s\S]*?<\/nav>/)?.[0] || "";
+  assert.match(navigation, />Rate<\/a>[\s\S]*>Watchlist<\/a>[\s\S]*>Sync<\/a>/);
+  assert.equal((navigation.match(/class="view-tab /g) || []).length, 3);
+  assert.doesNotMatch(navigation, /Movies|Shows|Friends/);
+  assert.match(html, /id="tab-friends"[^>]*aria-label="Friends"[\s\S]*?data-lucide="users"[\s\S]*?id="friend-request-count"/);
+  assert.ok(html.indexOf('id="tab-friends"') > html.indexOf('class="header-actions"'));
+  assert.doesNotMatch(foundationCss, /body\.tv-mode #tab-sync/);
+  assert.doesNotMatch(responsiveCss, /body\.tv-mode \.view-tabs/);
+}
+
 async function VerifyResponsiveHeaderContract() {
   const [foundationCss, responsiveCss] = await Promise.all([readFile(FoundationCssPath, TextEncoding), readFile(ResponsiveCssPath, TextEncoding)]);
   assert.match(foundationCss, /#account-badge \{[\s\S]*?max-width: clamp\(96px, 12vw, 180px\);[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/);
   assert.match(responsiveCss, /@media \(max-width: 2180px\) \{[\s\S]*?\.header-action-label,[\s\S]*?display: none;/);
+  assert.match(responsiveCss, /#open-help,[\s\S]*?\.friend-action,[\s\S]*?#open-settings,[\s\S]*?width: 38px;/);
   assert.match(responsiveCss, /#configure-filters,[\s\S]*?\.logout-action \{[\s\S]*?width: 38px;[\s\S]*?min-width: 38px;/);
+}
+
+async function VerifyMobileCardSpacing() {
+  const responsiveCss = await readFile(ResponsiveCssPath, TextEncoding);
+  assert.match(responsiveCss, /@media \(max-width: 720px\)[\s\S]*?\.movie-card \.meta \{\s*margin-top: 0;/);
 }
 
 async function VerifyCompactWorkflowContracts() {
@@ -119,13 +141,27 @@ async function VerifyViewingRegionContract() {
 
 async function VerifyAiSetupContract() {
   const html = await readFile(HtmlPath, TextEncoding);
+  VerifyAiSetupShell(html);
+  VerifyAiSetupControls(html);
+}
+
+function VerifyAiSetupShell(html) {
   assert.match(html, /id="settings-view"[^>]*aria-labelledby="settings-title"/);
+  assert.match(html, /<h2>Choose AI<\/h2>/);
+  assert.match(html, /id="ai-provider"/);
+  assert.match(html, /id="ai-key-panel"[^>]*hidden/);
+  assert.match(html, /id="ai-key-tutorial"[\s\S]*Show me where to find it/);
+  assert.match(html, /id="ai-connections-list"/);
+}
+
+function VerifyAiSetupControls(html) {
   assert.match(html, /id="ai-base-url"[^>]*type="url"/);
   assert.match(html, /id="ai-api-key"[^>]*type="password"/);
-  assert.match(html, /id="ai-find-models"[^>]*>Find models/);
+  assert.match(html, /id="ai-find-models"[^>]*>Find my models/);
   assert.match(html, /id="ai-model-select"[^>]*size="7"/);
   assert.match(html, /id="ai-save"[^>]*disabled>Test and save/);
-  assert.doesNotMatch(html, /id="ai-dialog"|Add OpenAI API Key|Set OpenAI Key|value="gpt-/);
+  assert.match(html, /id="recommendation-ai-connection"/);
+  assert.doesNotMatch(html, /id="ai-dialog"|Add OpenAI API Key|Set OpenAI Key|value="gpt-|api\.openai\.com/);
 }
 
 async function VerifyUsernameContract() {
@@ -141,6 +177,17 @@ async function VerifyStartupLoadingContract() {
   assert.match(html, /id="startup-loading"[^>]*role="status"[^>]*aria-live="polite"/);
   assert.match(html, /id="auth-landing"[^>]*aria-labelledby="auth-title"[^>]*hidden/);
   assert.ok(html.indexOf('id="startup-loading"') < html.indexOf('id="auth-landing"'));
+}
+
+async function VerifyAnalyticsConsentContract() {
+  const html = await readFile(HtmlPath, TextEncoding);
+  assert.match(html, /id="analytics-consent-root"/);
+  assert.match(html, /id="auth-analytics-settings"[^>]*hidden/);
+  assert.match(html, /id="settings-analytics-card"[^>]*hidden/);
+  assert.match(AnalyticsConsentMarkup, /role="dialog" aria-modal="false"/);
+  assert.match(AnalyticsConsentMarkup, /id="analytics-consent-decline">Use necessary only/);
+  assert.match(AnalyticsConsentMarkup, /id="analytics-consent-accept">Allow analytics/);
+  assert.equal((AnalyticsConsentMarkup.match(/class="btn btn-outline-primary"/g) || []).length, 2);
 }
 
 function VerifySyncContracts(html, responsiveCss) {

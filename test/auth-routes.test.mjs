@@ -14,6 +14,10 @@ const CsrfHeader = "x-csrf-token";
 const TestAiBaseUrl = "https://ai.example.test/v1";
 const TestAiModel = "test-model";
 const TestAiKey = "ai-key";
+const AlternateAiConnectionId = "d95fe15c-f604-4f38-be88-b65c6202a910";
+const AlternateAiBaseUrl = "https://alternate-ai.example.test/v1";
+const AlternateAiModel = "alternate-model";
+const AlternateAiKey = "alternate-key";
 const AccountStatePath = "/api/account/state";
 const AuthRegisterPath = "/api/auth/register";
 const CrimeGenre = "Crime";
@@ -55,6 +59,7 @@ test("email login establishes an authenticated session and CSRF protects account
 test("logout destroys the authenticated session", VerifyLogout);
 test("public registration validates input, creates account data, and signs the user in", VerifyRegistration);
 test("registration reports an unavailable username separately from email", VerifyRegistrationUsernameConflict);
+test("session bootstrap exposes optional public analytics configuration", VerifyAnalyticsBootstrap);
 
 async function VerifyEmailLogin() {
   const user = await BuildTestUser("8133d1c3-2620-42fa-85e6-6b6ec6204301");
@@ -66,6 +71,12 @@ async function VerifyEmailLogin() {
   await session.agent.put(AccountStatePath).send({ payload: {}, ratingsCsv: "", revision: 0 }).expect(403);
   await session.agent.put(AccountStatePath).set(CsrfHeader, login.body.csrfToken).send({ payload: { ratings: {} }, ratingsCsv: "", revision: 0 }).expect(200);
   assert.deepEqual(state.saved.payload, { ratings: {} });
+}
+
+async function VerifyAnalyticsBootstrap() {
+  const analyticsConfig = { enabled: true, token: "phc_public_project_token", host: "https://us.i.posthog.com" };
+  const response = await request(BuildTestApp({}, { analyticsConfig })).get(AuthSessionPath).expect(200);
+  assert.deepEqual(response.body.analytics, analyticsConfig);
 }
 
 function BuildStateStore(user, state) {
@@ -413,7 +424,7 @@ async function VerifyGeneratedPicks() {
   const state = { queue: [existing], received: null };
   const dependencies = BuildGeneratedDependencies(generated, state);
   const authenticated = await LoginTestUser(BuildGeneratedStore(user, state), user, dependencies);
-  const body = { count: 9, profile: { ratings: [{ title: "Collateral", year: 2004, genres: [CrimeGenre], rating: 9 }], exclusions: [] } };
+  const body = { count: 9, aiConnectionId: AlternateAiConnectionId, profile: { ratings: [{ title: "Collateral", year: 2004, genres: [CrimeGenre], rating: 9 }], exclusions: [] } };
   const response = await authenticated.agent.post("/api/ai/recommendations").set(CsrfHeader, authenticated.csrfToken).send(body).expect(200);
   AssertGeneratedPicks(state.received, response.body, existing, generated);
 }
@@ -422,7 +433,8 @@ function BuildGeneratedStore(user, state) {
   return {
     findUserByEmail: async () => user,
     getBundle: async () => BuildConfiguredAiBundle(),
-    getSecret: async (_userId, type) => type === "ai" ? TestAiKey : "",
+    ListAiConnections: async () => [BuildConfiguredAiConnection(user.id), BuildAlternateAiConnection()],
+    ReadAiConnectionSecret: async (_userId, id) => id === AlternateAiConnectionId ? AlternateAiKey : TestAiKey,
     listRecommendationQueue: async () => [...state.queue],
     appendRecommendationQueue: async (_userId, items) => {
       state.queue.push(...items);
@@ -433,11 +445,22 @@ function BuildGeneratedStore(user, state) {
 
 function BuildConfiguredAiBundle() {
   return {
-    preferences: {
-      aiBaseUrl: TestAiBaseUrl,
-      aiModel: TestAiModel,
-      aiConfigured: true
-    }
+    preferences: {},
+    state: { payload: {} }
+  };
+}
+
+function BuildConfiguredAiConnection(id) {
+  return {
+    id, providerId: "custom", name: "Test AI", baseUrl: TestAiBaseUrl,
+    model: TestAiModel, isDefault: true, hasKey: true, testStatus: "tested"
+  };
+}
+
+function BuildAlternateAiConnection() {
+  return {
+    id: AlternateAiConnectionId, providerId: "custom", name: "Alternate AI", baseUrl: AlternateAiBaseUrl,
+    model: AlternateAiModel, isDefault: false, hasKey: true, testStatus: "tested"
   };
 }
 
@@ -463,9 +486,9 @@ function BuildGeneratedPayload(generated) {
 
 function AssertGeneratedPicks(received, response, existing, generated) {
   assert.equal(received.count, 9);
-  assert.equal(received.baseUrl, TestAiBaseUrl);
-  assert.equal(received.model, TestAiModel);
-  assert.equal(received.apiKey, TestAiKey);
+  assert.equal(received.baseUrl, AlternateAiBaseUrl);
+  assert.equal(received.model, AlternateAiModel);
+  assert.equal(received.apiKey, AlternateAiKey);
   assert.deepEqual(received.queue, [existing]);
   assert.equal(response.addedCount, 1);
   assert.equal(response.requestedCount, 9);

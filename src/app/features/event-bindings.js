@@ -21,6 +21,7 @@ export class EventBindingsFeature {
   }
 
   BindPrimaryEvents() {
+    this.BindAnalyticsEvents();
     this.BindViewEvents();
     this.BindRaterEvents();
     this.BindQuickRateEvents();
@@ -83,11 +84,12 @@ export class EventBindingsFeature {
   NavigateToView(view) {
     if (!this.CanLeaveShortcutSettings(view))
       return;
-    const safeView = this.State.mediaType === TvMediaType && view === SyncView ? RaterView : view;
-    const path = PathForView(safeView, this.State.mediaType);
+    if (this.State.mediaType === TvMediaType && view === SyncView)
+      return this.OpenMovieSyncView();
+    const path = PathForView(view, this.State.mediaType);
     if (window.location.pathname !== path)
-      window.history.pushState({ view: safeView, mediaType: this.State.mediaType }, "", path);
-    this.ShowView(safeView);
+      window.history.pushState({ view, mediaType: this.State.mediaType }, "", path);
+    this.ShowView(view);
   }
 
   NavigateToMedia(mediaType) {
@@ -229,9 +231,12 @@ export class EventBindingsFeature {
   BindAiConfigurationEvents() {
     this.Elements.configureAi.addEventListener(ClickEvent, () => this.OpenAiSettings());
     this.BindHeaderAction("configure-ai-service", () => this.OpenAiSettings());
+    this.Elements.aiAdd.addEventListener(ClickEvent, () => this.BeginNewAiConnection());
+    this.Elements.aiCancel.addEventListener(ClickEvent, () => this.HideAiConnectionEditor());
+    this.Elements.aiConnectionsList.addEventListener(ClickEvent, (event) => this.HandleAiConnectionListClick(event));
+    this.Elements.aiProvider.addEventListener(ChangeEvent, () => this.HandleAiProviderChange());
     this.Elements.aiFindModels.addEventListener(ClickEvent, () => this.HandleFindAiModels());
     this.Elements.aiSave.addEventListener(ClickEvent, () => this.HandleAiSaveClick());
-    this.Elements.aiDelete.addEventListener(ClickEvent, () => this.HandleRemoveAiSettings());
     this.Elements.aiBaseUrl.addEventListener(InputEvent, () => this.HandleAiConnectionInput());
     this.Elements.aiApiKey.addEventListener(InputEvent, () => this.HandleAiConnectionInput());
     this.Elements.aiModelSearch.addEventListener(InputEvent, () => this.FilterAiModels());
@@ -267,10 +272,6 @@ export class EventBindingsFeature {
 
   HandleFindAiModels() {
     this.FindAiModels().catch((error) => this.ShowAiSettingsError(error.message));
-  }
-
-  HandleRemoveAiSettings() {
-    this.RemoveAiSettings().catch((error) => this.ShowAiSettingsError(error.message));
   }
 
   HandleRecommendationClick() {

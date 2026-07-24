@@ -210,6 +210,7 @@ export class StatusUiFeature {
   }
 
   UpdateAiControls() {
+    this.UpdateRecommendationAiChoices();
     this.Elements.configureAi.textContent = this.State.ai.configured ? "AI connected" : "Connect AI";
     this.UpdateSettingsButtons();
     this.UpdateConnectionSummary();

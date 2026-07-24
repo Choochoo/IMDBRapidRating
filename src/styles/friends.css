@@ -188,14 +188,26 @@
   font-weight: 850;
 }
 
-.friend-tab {
-  gap: 6px;
+.friend-action {
+  position: relative;
+  text-decoration: none;
+}
+
+.friend-action.active {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-text);
 }
 
 .friend-request-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
   min-width: 18px;
   min-height: 18px;
   padding: 0 5px;
+  border: 2px solid #101418;
+  font-size: 8px;
 }
 
 .recommendation-friend-options,

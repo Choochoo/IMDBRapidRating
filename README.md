@@ -6,7 +6,7 @@ Visitors can create their own account from the landing page. Public registration
 
 This project uses an unsupported IMDb website endpoint for write-back. IMDb does not provide a public user-rating write API or CSV import. The write path can break, can be rate limited, and may violate IMDb terms. Use it only for your own account and titles you actually want to rate.
 
-New here? Start with the [illustrated setup guides](docs/setup/README.md) for IMDb, OpenAI-compatible services, Letterboxd imports, and two-way rating transfers.
+New here? Start with the [illustrated setup guides](docs/setup/README.md) for IMDb, AI services, Letterboxd imports, and two-way rating transfers.
 
 ## What It Does
 
@@ -23,7 +23,7 @@ New here? Start with the [illustrated setup guides](docs/setup/README.md) for IM
 - Saves separate movie and TV “Don’t recommend again” lists and excludes those titles from future picks in the matching section.
 - Synchronizes ratings, queue progress, imports, and preferences through PostgreSQL.
 - Reconciles IMDb ratings with a Letterboxd export and builds a non-destructive union sync plan.
-- Connects any service that exposes OpenAI-compatible `/models` and `/chat/completions` endpoints; models are discovered live instead of maintained in the app.
+- Connects OpenAI, Claude, Gemini, Grok, OpenRouter, or an OpenAI-compatible home/custom service; models are discovered live instead of maintained in the app.
 - Encrypts IMDb connection data and AI API keys with AES-256-GCM before storing them.
 - Queues ratings `1` through `10` for controlled background write-back when live mode is configured.
 - Tracks queued, sent, and failed live IMDb writes in account state without rewriting the imported ratings CSV.
@@ -60,14 +60,13 @@ Configure these Octopus project variables before the first account-backed deploy
 - `RapidRater.DataEncryptionKey`
 - `RapidRater.TmdbApiKey`
 - `RapidRater.AppOrigin`
-- `RapidRater.AllowedOrigins` (optional comma-separated origins)
 - `RapidRater.AiAllowedPrivateOrigins` (optional comma-separated exact origins)
 
 Use a dedicated PostgreSQL database/user with access only to the `imdb_rapid_rater` schema. The deployment writes the runtime values to an ACL-restricted file, installs production dependencies, and applies migrations before starting the scheduled task.
 
 For build-time origin enrichment, configure the `POSTGRES_CONNECTION_STRING` Actions repository secret with a dedicated PostgreSQL account that can access the `imdb_rapid_rater` schema. The deployment workflow automatically grants the established runtime table owner access to objects created by this build account and establishes matching default privileges for future migrations. Set the non-sensitive `POSTGRES_RUNTIME_ROLE` Actions repository variable only for a fresh database or when the runtime role does not own the existing `users` table.
 
-`RapidRater.AppOrigin` is the primary browser origin. Same-origin requests are accepted from the host serving the current request, while additional trusted browser origins can be supplied through `RapidRater.AllowedOrigins`; the deployment writes them to the `APP_ALLOWED_ORIGINS` runtime setting. The repository contains no deployment-specific hostnames or addresses.
+Production browser CORS and write-origin checks allow only the exact `https://rapidrater.io` and `https://www.rapidrater.io` origins. HTTP, other subdomains, lookalike domains, request-host aliases, and `APP_ALLOWED_ORIGINS` values are rejected in production. `RapidRater.AppOrigin` still controls secure session-cookie behavior and should be set to the canonical browser origin. Non-production environments may use `APP_ORIGIN` and `APP_ALLOWED_ORIGINS` for local development.
 
 AI setup accepts public HTTPS base URLs by default. To connect a private-network or plain-HTTP service, such as `http://localhost:11434`, an administrator must add its exact origin to `RapidRater.AiAllowedPrivateOrigins` (or `AI_ALLOWED_PRIVATE_ORIGINS` outside Octopus). `localhost` means the machine running the Rapid Rater server, not the viewer's browser.
 
@@ -248,13 +247,15 @@ Open **Movie Watchlist** or **TV Watchlist** to generate picks from the active s
 - Titles and years you marked **Don't recommend again**
 - The active year range and origin exclusions
 
-No IMDb cookie, `tt` IDs, submit history, or raw CSV file is sent. An optional AI API key is used only as the Bearer credential for the service you chose.
+No IMDb cookie, `tt` IDs, submit history, or raw CSV file is sent. An AI access key is used only to authenticate requests to the service you chose.
 
-Click **Connect AI**, paste an OpenAI-compatible base URL, and optionally paste its API key. Select **Find models**, choose one of the models returned by that server, then select **Test and save**. Rapid Rater encrypts the key in your account and never returns it to browser JavaScript. Returned recommendations include title, year, genres, and a structured explanation of why each pick fits.
+Open **Choose AI**, select the service name, paste its private access key, and choose **Find my models**. Rapid Rater loads that service's current model list, lets you choose one, tests the connection, and encrypts the key before saving. Known services never ask for a server URL; home and custom AI services reveal that field only when needed. Saved keys are never returned to browser JavaScript.
+
+Each account can save several AI choices, give them friendly names, and select one default. The recommendations page can temporarily use another saved choice without changing that default. Returned recommendations include title, year, genres, and a structured explanation of why each pick fits.
 
 Recommendations are matched against the active section's catalog (`data/movies.json` or `data/shows.json`) by title and year. When a match is found, the card includes rating buttons; rating one writes through the same IMDb proxy and account sync path. **Don't recommend again** saves that title and year only in the active section.
 
-Rapid Rater does not maintain or guess model names. It loads the current list from `GET {baseUrl}/models`, requires a choice from that response, and verifies the choice with `POST {baseUrl}/chat/completions`. The tested URL and model follow your account.
+Rapid Rater does not maintain or guess model names. Provider adapters contain request rules and official URLs, not model names. Every saved model must come from its provider's live authenticated model list and pass a small test request before it can be saved.
 
 ## Generate Movie And TV Data
 

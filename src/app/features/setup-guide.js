@@ -1,6 +1,7 @@
 import { FindSetupGuideFlow, SetupGuideFlows } from "../setup-guide-definitions.js";
 import { BuildSetupGuidePosition, MoveSetupGuidePosition, NextSetupGuideDirection, PreviousSetupGuideDirection } from "../setup-guide-state.js";
 import { ClickEvent, KeydownEvent } from "../app-constants.js";
+import { AnalyticsEvents } from "../analytics-events.js";
 
 const EscapeKey = "Escape";
 const EnterKey = "Enter";
@@ -83,6 +84,7 @@ export class SetupGuideFeature {
     this.RememberSetupGuideTrigger(trigger);
     this.Elements.setupGuideDialog.hidden = false;
     this.RenderSetupGuideRoute(flowId, stepId);
+    this.TrackProductEvent?.(AnalyticsEvents.SetupGuideOpened, { flow_id: flowId || "library" });
     FocusLater(this.Elements.setupGuideClose);
   }
 

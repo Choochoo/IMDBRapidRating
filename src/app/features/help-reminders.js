@@ -47,7 +47,7 @@ export class HelpRemindersFeature {
 
   BindSetupGuideEntryEvents() {
     this.Elements.imdbShowSteps.addEventListener(ClickEvent, () => this.OpenImdbSetupGuide());
-    this.Elements.aiShowSteps.addEventListener(ClickEvent, () => this.OpenManualSetupGuide(SetupGuideFlowIds.connectOpenAi));
+    this.Elements.aiShowSteps.addEventListener(ClickEvent, () => this.OpenManualSetupGuide());
     this.Elements.syncImdbGuide.addEventListener(ClickEvent, () => this.OpenManualSetupGuide(SetupGuideFlowIds.importImdbRatings));
     this.Elements.syncLetterboxdGuide.addEventListener(ClickEvent, () => this.OpenManualSetupGuide(SetupGuideFlowIds.importLetterboxd));
     this.Elements.syncToLetterboxdGuide.addEventListener(ClickEvent, () => this.OpenManualSetupGuide(SetupGuideFlowIds.rapidRaterToLetterboxd));
@@ -90,7 +90,7 @@ export class HelpRemindersFeature {
 
   OpenAiSetupSettings() {
     this.NavigateToSettings(AiSettingsView);
-    window.setTimeout(() => this.Elements.aiBaseUrl.focus(), 0);
+    window.setTimeout(() => this.Elements.aiProvider.focus(), 0);
   }
 
   OpenMovieSyncView() {

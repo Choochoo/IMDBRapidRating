@@ -2,6 +2,7 @@ import { Config } from "./config.js";
 import { ActiveClass, AiSettingsView, AiView, AriaPressedAttribute, BackspaceKey, DeleteKey, FriendsView, ImdbSecretType, MovieDisplayName, MovieMediaType, NoStoreCache, NotSeenLabel, NotWatchedLabel, PostMethod, PressedClass, PutMethod, RaterView, SavingLabel, SettingsView, ShowClass, SyncView, TvDisplayName, TvMediaType, TvShowName, UndoShortcutAction } from "./app-constants.js";
 import { InstallFeatureMethods } from "./feature-methods.js";
 import { AccountSyncFeature } from "./features/account-sync.js";
+import { AnalyticsFeature } from "./features/analytics.js";
 import { AiSettingsFeature } from "./features/ai-settings.js";
 import { ApplicationLifecycleFeature } from "./features/application-lifecycle.js";
 import { CatalogViewFeature } from "./features/catalog-view.js";
@@ -48,6 +49,7 @@ const TvWatchlistLabel = "TV Watchlist";
 export class RapidRaterApp {
   constructor() {
     this.InitializeBrowserState();
+    this.InitializeAnalyticsState();
     this.InitializeSetupGuideState();
     this.InitializeHelpReminderState();
     this.InitializeAccountState();
@@ -62,6 +64,7 @@ export class RapidRaterApp {
     try {
       this.StopAccountServices();
       await this.RequestSignOut();
+      this.ResetAnalyticsAccount();
       window.location.replace(LoginPath);
     } catch (error) {
       this.Elements.signOut.disabled = false;
@@ -166,8 +169,9 @@ export class RapidRaterApp {
 
   UpdateMediaNavigation(isTv) {
     this.Elements.viewTabs.setAttribute("aria-label", isTv ? "TV show views" : "Movie views");
-    this.Elements.tabRater.textContent = isTv ? "Rate Shows" : "Rate Movies";
-    this.Elements.tabAi.textContent = isTv ? TvWatchlistLabel : MovieWatchlistLabel;
+    this.Elements.tabRater.textContent = "Rate";
+    this.Elements.tabAi.textContent = "Watchlist";
+    this.Elements.tabSync.textContent = "Sync";
     this.Elements.tabRater.href = PathForView(RaterView, this.State.mediaType);
     this.Elements.tabAi.href = PathForView(AiView, this.State.mediaType);
     this.Elements.tabSync.href = PathForView(SyncView, MovieMediaType);
@@ -501,11 +505,18 @@ export class RapidRaterApp {
   }
 
   async ImportLegacySecrets() {
-    const secrets = [[ImdbSecretType, this.LegacySettings.imdbCookie], ["openai", this.LegacySettings.openAiApiKey]];
-    for (const [type, value] of secrets) {
-      if (value)
-        await this.SaveAccountSecret(type, value);
-    }
+    if (this.LegacySettings.imdbCookie)
+      await this.SaveAccountSecret(ImdbSecretType, this.LegacySettings.imdbCookie);
+    await this.ImportLegacyAiConnection();
+  }
+
+  async ImportLegacyAiConnection() {
+    const apiKey = this.LegacySettings.openAiApiKey;
+    const model = this.LegacySettings.openAiModel;
+    if (!apiKey || !model)
+      return;
+    const request = { providerId: "openai", apiKey, model, name: "ChatGPT / OpenAI", isDefault: true };
+    await this.RequestJson(Config.aiConnectionsUrl, PostMethod, request);
   }
 
   async LoadSavedRatingsCsv() {
@@ -747,6 +758,7 @@ export class RapidRaterApp {
     this.Elements.generateRecommendations.disabled = disabled;
     this.Elements.recommendationCount.disabled = disabled;
     this.Elements.recommendationBasis.disabled = Boolean(value);
+    this.Elements.recommendationAiConnection.disabled = Boolean(value);
   }
 
   ShowImdbError(message) {
@@ -815,4 +827,4 @@ export class RapidRaterApp {
 
 }
 
-InstallFeatureMethods(RapidRaterApp, AccountSyncFeature.prototype, AiSettingsFeature.prototype, ApplicationLifecycleFeature.prototype, CatalogViewFeature.prototype, CollectionSyncFeature.prototype, DataTransferFeature.prototype, EventBindingsFeature.prototype, FriendsFeature.prototype, HelpRemindersFeature.prototype, QuickRateFeature.prototype, RatingWorkflowFeature.prototype, RecommendationFeature.prototype, SettingsFeature.prototype, SetupGuideFeature.prototype, SocialContextFeature.prototype, StatusUiFeature.prototype);
+InstallFeatureMethods(RapidRaterApp, AccountSyncFeature.prototype, AnalyticsFeature.prototype, AiSettingsFeature.prototype, ApplicationLifecycleFeature.prototype, CatalogViewFeature.prototype, CollectionSyncFeature.prototype, DataTransferFeature.prototype, EventBindingsFeature.prototype, FriendsFeature.prototype, HelpRemindersFeature.prototype, QuickRateFeature.prototype, RatingWorkflowFeature.prototype, RecommendationFeature.prototype, SettingsFeature.prototype, SetupGuideFeature.prototype, SocialContextFeature.prototype, StatusUiFeature.prototype);

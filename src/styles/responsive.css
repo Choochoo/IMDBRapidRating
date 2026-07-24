@@ -3,6 +3,7 @@
   .quick-rate-menu > summary,
   .data-menu > summary,
   #open-help,
+  .friend-action,
   #open-settings,
   .logout-action {
     position: relative;
@@ -233,13 +234,9 @@
     grid-column: 1;
     grid-row: 2;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
     gap: 2px;
-  }
-
-  body.tv-mode .view-tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .view-tab {
@@ -381,6 +378,10 @@
 
   .movie-card.active .movie-body {
     overflow: visible;
+  }
+
+  .movie-card .meta {
+    margin-top: 0;
   }
 
   .title {

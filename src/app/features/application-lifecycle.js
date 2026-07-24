@@ -6,6 +6,8 @@ import { BuildState } from "../state.js";
 import { IsCanonicalViewPath, IsLoginPath, LoginPath, PathForView, RouteFromPathname } from "../view-routes.js";
 
 const DefaultRecommendationCount = 9;
+const LoginPanel = "login";
+const SignupPanel = "signup";
 
 export class ApplicationLifecycleFeature {
   InitializeBrowserState() {
@@ -105,6 +107,7 @@ export class ApplicationLifecycleFeature {
   async BeginSession() {
     const session = await this.FetchJson("/api/auth/session");
     this.CsrfToken = session.csrfToken || "";
+    this.ConfigureAnalytics(session.analytics, session.user);
     if (!session.authenticated)
       return this.CompleteAnonymousSession(session);
     this.EnterAuthenticatedApp(session.user);
@@ -143,6 +146,7 @@ export class ApplicationLifecycleFeature {
     const request = { email: this.Elements.loginEmail.value, password: this.Elements.loginPassword.value };
     const payload = await this.RequestJson("/api/auth/login", PostMethod, request);
     this.ApplyAuthenticatedPayload(payload);
+    await this.TrackAuthentication?.(LoginPanel);
     this.Elements.authLanding.hidden = true;
     this.Elements.loginPassword.value = "";
     await this.Initialize();
@@ -179,6 +183,7 @@ export class ApplicationLifecycleFeature {
     const request = { handle: this.Elements.signupUsername.value, email: this.Elements.signupEmail.value, password };
     const payload = await this.RequestJson("/api/auth/register", PostMethod, request);
     this.ApplyAuthenticatedPayload(payload);
+    await this.TrackAuthentication?.(SignupPanel);
     this.Elements.signupUsername.value = "";
     this.Elements.signupPassword.value = "";
     this.Elements.signupConfirmation.value = "";
@@ -198,12 +203,12 @@ export class ApplicationLifecycleFeature {
     this.Elements.authLanding.hidden = false;
     this.Elements.signOut.hidden = true;
     this.Elements.showSignup.hidden = !registrationEnabled;
-    this.ShowAuthPanel("login");
+    this.ShowAuthPanel(LoginPanel);
     window.setTimeout(() => this.Elements.loginEmail.focus(), 0);
   }
 
   ShowAuthPanel(panel) {
-    const signup = panel === "signup";
+    const signup = panel === SignupPanel;
     this.Elements.loginPanel.hidden = signup;
     this.Elements.signupPanel.hidden = !signup;
     this.Elements.showLogin.classList.toggle(ActiveClass, !signup);

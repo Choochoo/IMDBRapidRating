@@ -4,6 +4,7 @@ import { BuildStoragePayload } from "../state.js";
 import { CountRatings } from "../stats.js";
 import { EscapeHtml, FormatCount } from "../util.js";
 import { NormalizeAccountPayload, ReadMediaPayload, WriteMediaPayload } from "../../../shared/media.js";
+import { AnalyticsEvents } from "../analytics-events.js";
 
 const ImdbSaveFormat = "imdb-rapid-rater-save";
 const MovieMediaType = "movie";
@@ -175,6 +176,7 @@ export class DataTransferFeature {
     this.Render();
     this.UpdateSyncView();
     this.ShowToast(this.BuildCsvSyncToast(results));
+    this.TrackProductEvent?.(AnalyticsEvents.RatingsImportCompleted, { movie_count: Number(results.movie?.count) || 0, source: "imdb", tv_count: Number(results.tv?.count) || 0 });
   }
 
   async ImportAccountBackup(value, fileName) {
@@ -184,6 +186,7 @@ export class DataTransferFeature {
     await this.FlushStateSync();
     await this.RefreshRaterQueue();
     this.ShowAccountBackupRestoreToast(fileName);
+    this.TrackProductEvent?.(AnalyticsEvents.RatingsImportCompleted, { source: "rapid_rater_backup" });
   }
 
   ShowAccountBackupRestoreToast(fileName) {

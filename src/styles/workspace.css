@@ -642,6 +642,7 @@
   bottom: 10px;
   left: 10px;
   z-index: 4;
+  display: block;
   min-height: 36px;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.44);
   transition: opacity 160ms ease, transform 160ms ease;

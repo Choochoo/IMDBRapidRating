@@ -1,16 +1,16 @@
 {
   "cache_hit": false,
-  "changed_files": 0,
+  "changed_files": 63,
   "confirmed": 0,
   "conflicted": 0,
   "incremental": true,
-  "index_fingerprint": "10ea770f06504cad9e0558d78891f5d50323c272630e42f18a7c12c80ae14f15",
+  "index_fingerprint": "ef323ced5656fe8756b0a4af58af14db23448d66700355a87fd2420caa17ebd1",
   "inferred": 0,
-  "knowledge_records": 12,
+  "knowledge_records": 13,
   "projects": 1,
   "removed_files": 0,
-  "reused_files": 68,
+  "reused_files": 9,
   "semantic_edges": 0,
   "state": "C:\\Users\\Jared\\source\\repos\\MovieRatingProject\\.codex\\project-intelligence",
-  "symbols": 2207
+  "symbols": 2331
 }

@@ -2,7 +2,7 @@
 
 # Connect OpenAI
 
-Use OpenAI here, or the matching key and URL from another OpenAI-compatible provider.
+Choose OpenAI, add your private access key, and select one of its current models.
 
 > Security: Use disposable test accounts and non-personal sample data. Cover cookies, API keys, emails, names, and identifiers with solid opaque blocks before saving. Never blur a secret and never place an unredacted source image in the repository. Inspect the final image at full resolution and remove metadata before adding it.
 
@@ -30,11 +30,11 @@ Last verified: Pending screenshot capture.
 
 ## 3. Find available models
 
-In AI settings, enter https://api.openai.com/v1, paste the key, then choose Find models.
+In Choose AI, select ChatGPT / OpenAI, paste the key, then choose Find my models.
 
 In Rapid Rater: **Open AI settings**
 
-> **Screenshot needed:** Rapid Rater AI settings with the OpenAI base URL filled in and Find models highlighted.
+> **Screenshot needed:** Rapid Rater Choose AI page with ChatGPT / OpenAI selected and Find my models highlighted.
 >
 > **Solid-redact:** API key field, Signed-in email
 

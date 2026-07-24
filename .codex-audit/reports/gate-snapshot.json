@@ -1,10 +1,10 @@
 {
-  "gate_state_signature": "6c35650f5ec0eb7fa7e213ce4396a3827a8a999726e861d8fd2bceb936d315a6",
-  "generated_at": "2026-07-23T22:58:55Z",
-  "integrity_generation": 187679,
+  "gate_state_signature": "4fe8f9dc68d0e138c5f3b36752c4a8b9a2508ac37e3b50a624b471e0e69385f1",
+  "generated_at": "2026-07-24T01:15:51Z",
+  "integrity_generation": 218102,
   "passed": true,
-  "proof_root": "73e4228a14e42b8c5e1ae4b66f30027a37ce98bc58aed54ff16fbbf4795bab60",
-  "repository_signature": "87d25ff33aed627c2034ec8cad1327d952434c345b7463c1e5deefa9a671d2d7",
+  "proof_root": "987b8de2789ad3a69f6a3d6f920bb3dd5b1bc4ded9a405d2800d83ec7b8d7e6f",
+  "repository_signature": "524d3349107509f36d784c622701d5e6a5b96f8775dfaf905b78e66c191c3a5d",
   "summary": {
     "checks": {
       "all_applicable_pairs_represented": true,
@@ -50,16 +50,16 @@
       "hard_blockers": [],
       "hash_stale": 0,
       "independent_work_remaining": false,
-      "inventory_files": 209,
+      "inventory_files": 226,
       "ledger_seal_valid": true,
       "not_applicable": 0,
       "only_same_user_decision_remaining": false,
-      "pass": 4773,
-      "passed": 4773,
+      "pass": 5523,
+      "passed": 5523,
       "pending": 0,
       "remediation_strategy": "rule_order",
-      "repo_hash_signature": "2ebd5653bd5e721f34401c9b2f18488d788cda0f462dc310ad514d335ce8226a",
-      "skipped": 1874,
+      "repo_hash_signature": "ca93b299f3a0eb58e294c6bfd8f6ffb92ef97d220e0df06f765ae2ee00c4c54f",
+      "skipped": 1665,
       "stale": 0,
       "state": "active",
       "strategy_phase": {
@@ -67,9 +67,9 @@
         "number": 0,
         "strategy": "rule_order"
       },
-      "terminal": 6647,
-      "total_checks": 6647,
-      "total_tracked_files": 177,
+      "terminal": 7188,
+      "total_checks": 7188,
+      "total_tracked_files": 249,
       "unable_to_verify": 0,
       "unresolved_high_medium_findings": 0,
       "unreviewed": 0,
@@ -117,5 +117,5 @@
     "validation_results": []
   },
   "version": 1,
-  "worktree_fast_signature": "91fffe5734a5a6ac77729f8e7be0f479e7489aa9bd38f65816ae2dcd6ca14599"
+  "worktree_fast_signature": "71c375b88cb4e9e888b4b8ed5067c607010d259fd3b4c2c215aa99963365defa"
 }

@@ -72,6 +72,28 @@ const UserPreferencesColumns = {
 
 export const UserPreferences = AppSchema.table("user_preferences", UserPreferencesColumns);
 
+const AiConnectionsColumns = {
+  id: uuid(IdColumn).primaryKey(),
+  userId: uuid(UserIdColumn).notNull().references(() => Users.id, { onDelete: CascadeDeleteAction }),
+  providerId: varchar("provider_id", { length: 32 }).notNull(),
+  name: varchar("name", { length: 80 }).notNull(),
+  baseUrl: text("base_url").notNull().default(""),
+  modelId: varchar("model_id", { length: 512 }).notNull().default(""),
+  isDefault: boolean("is_default").notNull().default(false),
+  testStatus: varchar("test_status", { length: 24 }).notNull().default("tested"),
+  lastTestedAt: timestamp("last_tested_at", { withTimezone: true }),
+  createdAt: timestamp(CreatedAtColumn, { withTimezone: true }).notNull(),
+  updatedAt: timestamp(UpdatedAtColumn, { withTimezone: true }).notNull()
+};
+
+function BuildAiConnectionIndexes(table) {
+  return {
+    oneDefault: uniqueIndex("ai_connections_one_default").on(table.userId).where(sql`${table.isDefault}`)
+  };
+}
+
+export const AiConnections = AppSchema.table("ai_connections", AiConnectionsColumns, BuildAiConnectionIndexes);
+
 const UserStatesColumns = {
   userId: uuid(UserIdColumn).primaryKey().references(() => Users.id, { onDelete: CascadeDeleteAction }),
   payload: jsonb(PayloadColumn).notNull().default({}),
@@ -211,7 +233,7 @@ export const TitleMetadataCache = AppSchema.table("title_metadata_cache", TitleM
 
 const UserSecretsColumns = {
   userId: uuid(UserIdColumn).notNull().references(() => Users.id, { onDelete: CascadeDeleteAction }),
-  secretType: varchar("secret_type", { length: 32 }).notNull(),
+  secretType: varchar("secret_type", { length: 80 }).notNull(),
   ciphertext: text("ciphertext").notNull(),
   iv: text("iv").notNull(),
   authTag: text("auth_tag").notNull(),

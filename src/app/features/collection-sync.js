@@ -2,9 +2,11 @@ import { BuildLetterboxdCsvFiles, ImportLetterboxdCsvFiles, ReconcileCollections
 import { BuildLetterboxdDownload, ReadLetterboxdUpload } from "../letterboxd-zip.js";
 import { BuildRatingRecord } from "../rating-records.js";
 import { EscapeHtml, FormatCount } from "../util.js";
+import { AnalyticsEvents } from "../analytics-events.js";
 
 const SyncPreviewLimit = 12;
 const TvMediaType = "tv";
+const LetterboxdSource = "letterboxd";
 
 export class CollectionSyncFeature {
   ReadSyncPlan() {
@@ -134,6 +136,7 @@ export class CollectionSyncFeature {
     this.PersistStateNow();
     await this.FlushStateSync();
     this.UpdateSyncView();
+    this.TrackProductEvent?.(AnalyticsEvents.RatingsImportCompleted, { item_count: this.State.letterboxd.items.length, source: LetterboxdSource });
     this.ShowToast(`Imported <strong>${FormatCount(this.State.letterboxd.items.length)}</strong> Letterboxd movies into this account`);
   }
 
@@ -143,6 +146,7 @@ export class CollectionSyncFeature {
     const plan = this.ReadSyncPlan();
     const queued = this.QueueMissingRatings(plan.toImdb);
     await this.SaveQueuedSyncRatings();
+    this.TrackProductEvent?.(AnalyticsEvents.SyncCompleted, { direction: "to_imdb", item_count: queued });
     this.ShowToast(`Queued <strong>${FormatCount(queued)}</strong> Letterboxd ratings for IMDb`);
   }
 
@@ -183,7 +187,7 @@ export class CollectionSyncFeature {
     const movie = this.State.movieById.get(item.ttId) || item;
     const record = BuildRatingRecord(movie, item.rating, "rated", this.State.live.configured);
     record.at = item.ratedAt || item.watchedAt || record.at;
-    record.syncSource = "letterboxd";
+    record.syncSource = LetterboxdSource;
     return record;
   }
 
@@ -214,6 +218,7 @@ export class CollectionSyncFeature {
     const download = await BuildLetterboxdDownload(files);
     this.Download(download.name, download.content, download.type);
     this.Elements.syncStatus.textContent = this.BuildLetterboxdDownloadStatus(files.length, download.name);
+    this.TrackProductEvent?.(AnalyticsEvents.SyncCompleted, { direction: "to_letterboxd", file_count: files.length });
   }
 
   BuildLetterboxdDownloadStatus(fileCount, downloadName) {

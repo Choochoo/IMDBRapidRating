@@ -36,9 +36,12 @@ export function BuildCheckedAiState(status) {
   return {
     checked: true,
     configured: Boolean(status.configured),
-    baseUrl: String(status.baseUrl || ""),
     model: status.model || "",
-    hasApiKey: Boolean(status.hasApiKey),
+    hasKey: Boolean(status.hasKey),
+    defaultConnectionId: String(status.defaultConnectionId || ""),
+    connections: Array.isArray(status.connections) ? status.connections : [],
+    providers: Array.isArray(status.providers) ? status.providers : [],
+    editingConnectionId: "",
     models: [],
     loading: false
   };
@@ -103,9 +106,12 @@ function BuildAiState() {
   return {
     checked: false,
     configured: false,
-    baseUrl: "",
     model: "",
-    hasApiKey: false,
+    hasKey: false,
+    defaultConnectionId: "",
+    connections: [],
+    providers: [],
+    editingConnectionId: "",
     models: [],
     loading: false
   };

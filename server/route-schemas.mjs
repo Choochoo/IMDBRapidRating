@@ -2,6 +2,7 @@ import { z } from "zod";
 import { MediaTypes } from "../shared/media.js";
 import { NormalizeKeyboardShortcuts, ValidateKeyboardShortcuts } from "../shared/keyboard-shortcuts.js";
 import { NormalizeHelpPreferences, ValidateHelpPreferences } from "../shared/help-preferences.js";
+import { AiProviderIds } from "./ai-providers.mjs";
 
 export const MovieMediaType = "movie";
 export const MineTasteAudience = "mine";
@@ -152,15 +153,21 @@ const PreferencesFields = {
 
 export const PreferencesSchema = z.object(PreferencesFields);
 
+const AiDraftFields = {
+  providerId: z.enum(AiProviderIds),
+  baseUrl: z.string().trim().max(2048).default(""),
+  apiKey: z.string().trim().max(64 * 1024).default(""),
+  connectionId: z.string().uuid().optional()
+};
+
+export const AiModelDiscoverySchema = z.object(AiDraftFields);
+
 const AiConnectionFields = {
-  baseUrl: z.string().trim().min(1).max(2048),
-  apiKey: z.string().trim().max(64 * 1024).default("")
+  ...AiDraftFields,
+  name: z.string().trim().max(80).default(""),
+  model: z.string().trim().min(1).max(512),
+  isDefault: z.boolean().default(false)
 };
 
 export const AiConnectionSchema = z.object(AiConnectionFields);
-
-const AiSettingsFields = {
-  model: z.string().trim().min(1).max(512)
-};
-
-export const AiSettingsSchema = AiConnectionSchema.extend(AiSettingsFields);
+export const AiConnectionIdSchema = z.string().uuid();

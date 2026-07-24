@@ -11,7 +11,7 @@ const SmallAvatarClass = "avatar-small";
 
 export function RenderAvatar(profile, className = "") {
   const name = EscapeHtml(profile?.displayName || profile?.handle || RapidRaterUserLabel);
-  const initial = EscapeHtml(ReadInitial(profile));
+  const initial = EscapeHtml(ReadAvatarInitial(profile));
   const image = profile?.avatarUrl ? ` style="background-image:url('${EscapeCssUrl(profile.avatarUrl)}')"` : "";
   return `<span class="avatar ${className}"${image} role="img" aria-label="${name}">${initial}</span>`;
 }
@@ -19,7 +19,7 @@ export function RenderAvatar(profile, className = "") {
 export function ApplyAvatar(element, profile) {
   if (!element)
     return;
-  element.textContent = ReadInitial(profile);
+  element.textContent = ReadAvatarInitial(profile);
   element.setAttribute("aria-label", profile?.displayName || profile?.handle || RapidRaterUserLabel);
   element.style.backgroundImage = profile?.avatarUrl ? `url("${EscapeCssUrl(profile.avatarUrl)}")` : "";
 }
@@ -138,6 +138,10 @@ function RenderSocialSignal(signal) {
 function ReadInitial(profile) {
   const value = String(profile?.displayName || profile?.handle || DefaultUserInitial).trim();
   return value.charAt(0).toUpperCase() || DefaultUserInitial;
+}
+
+function ReadAvatarInitial(profile) {
+  return profile?.avatarUrl ? "" : ReadInitial(profile);
 }
 
 function EscapeCssUrl(value) {

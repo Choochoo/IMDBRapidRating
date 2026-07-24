@@ -24,6 +24,7 @@ function BuildSecondaryElements() {
     ...BuildAccountElements(),
     ...BuildFriendElements(),
     ...BuildSettingsElements(),
+    ...BuildAnalyticsElements(),
     ...BuildSetupGuideElements(),
     ...BuildHelpReminderElements(),
     ...BuildDesktopRatingElements(),
@@ -403,8 +404,32 @@ function BuildAiConnectionElements() {
     configureAi: Element("configure-ai"),
     configureAiService: Element("configure-ai-service"),
     aiShowSteps: Element("ai-show-steps"),
+    ...BuildAiConnectionManagerElements(),
+    ...BuildAiConnectionCredentialElements()
+  };
+}
+
+function BuildAiConnectionManagerElements() {
+  return {
+    aiConnectionsOverview: Element("ai-connections-overview"),
+    aiConnectionsList: Element("ai-connections-list"),
+    aiAdd: Element("ai-add"),
+    aiConnectionEditor: Element("ai-connection-editor"),
+    aiProvider: Element("ai-provider"),
+    aiProviderDescription: Element("ai-provider-description")
+  };
+}
+
+function BuildAiConnectionCredentialElements() {
+  return {
+    aiKeyPanel: Element("ai-key-panel"),
+    aiServerUrlPanel: Element("ai-server-url-panel"),
     aiBaseUrl: Element("ai-base-url"),
-    aiApiKey: Element("ai-api-key")
+    aiApiKey: Element("ai-api-key"),
+    aiKeyOptional: Element("ai-key-optional"),
+    aiKeyHint: Element("ai-key-hint"),
+    aiKeyTutorialSteps: Element("ai-key-tutorial-steps"),
+    aiKeyHelpLink: Element("ai-key-help-link")
   };
 }
 
@@ -420,10 +445,12 @@ function BuildAiModelElements() {
 
 function BuildAiSettingsActionElements() {
   return {
+    aiConnectionName: Element("ai-connection-name"),
+    aiUseDefault: Element("ai-use-default"),
     aiSettingsStatus: Element("ai-settings-status"),
     aiSettingsError: Element("ai-settings-error"),
     aiSave: Element("ai-save"),
-    aiDelete: Element("ai-delete")
+    aiCancel: Element("ai-cancel")
   };
 }
 
@@ -466,6 +493,16 @@ function BuildConnectionSettingsElements() {
     helpSettings: Element("help-settings"),
     helpRemindersEnabled: Element("help-reminders-enabled"),
     helpRemindersStatus: Element("help-reminders-status")
+  };
+}
+
+function BuildAnalyticsElements() {
+  return {
+    analyticsConsentRoot: Element("analytics-consent-root"),
+    authAnalyticsSettings: Element("auth-analytics-settings"),
+    settingsAnalyticsCard: Element("settings-analytics-card"),
+    settingsAnalyticsManage: Element("settings-analytics-manage"),
+    settingsAnalyticsStatus: Element("settings-analytics-status")
   };
 }
 
@@ -548,7 +585,9 @@ function BuildRecommendationRequestElements() {
     recommendationCount: Element("recommendation-count"),
     recommendationBasis: Element("recommendation-basis"),
     recommendationBasisLabel: Element("recommendation-basis-label"),
-    recommendationBasisDetail: Element("recommendation-basis-detail")
+    recommendationBasisDetail: Element("recommendation-basis-detail"),
+    recommendationAiControl: Element("recommendation-ai-control"),
+    recommendationAiConnection: Element("recommendation-ai-connection")
   };
 }
 

@@ -9,10 +9,10 @@ Short, visual walkthroughs for the connections and imports that make Rapid Rater
 | Guide | Why use it? | Screenshots |
 | --- | --- | --- |
 | [Connect IMDb](connect-imdb.md) | Connect once so ratings made here can also reach IMDb. | 0/5 captured |
-| [Connect OpenAI](connect-openai.md) | Use OpenAI here, or the matching key and URL from another OpenAI-compatible provider. | 0/4 captured |
+| [Connect OpenAI](connect-openai.md) | Choose OpenAI, add your private access key, and select one of its current models. | 0/4 captured |
 | [Import IMDb ratings](import-imdb-ratings.md) | Bring in ratings you already made so Rapid Rater skips repeats and gives you better picks. | 0/4 captured |
-| [Import Letterboxd](import-letterboxd.md) | Compare your Letterboxd history with Rapid Rater without sharing a Letterboxd password. | 0/4 captured |
-| [Send Rapid Rater ratings to Letterboxd](rapid-rater-to-letterboxd.md) | Create a Letterboxd-ready file, then review it on Letterboxd before anything changes. | 0/5 captured |
+| [Import Letterboxd](import-letterboxd.md) | Compare your Letterboxd history with Rapid Rater without sharing a Letterboxd password. | 2/4 captured |
+| [Send Rapid Rater ratings to Letterboxd](rapid-rater-to-letterboxd.md) | Create a Letterboxd-ready file, then review it on Letterboxd before anything changes. | 1/5 captured |
 | [Send Letterboxd ratings to IMDb](letterboxd-to-imdb.md) | Queue ratings missing from IMDb through your existing encrypted IMDb connection. | 0/4 captured |
 
 Administrator: [Migrate production secrets to Azure Key Vault](azure-key-vault-migration.md).

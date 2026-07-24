@@ -10,6 +10,7 @@ import { DefaultStreamingCountry } from "../shared/streaming-country.js";
 import { CreateSocialStore } from "./social-store.mjs";
 import { DefaultKeyboardShortcuts } from "../shared/keyboard-shortcuts.js";
 import { BuildDefaultHelpPreferences } from "../shared/help-preferences.js";
+import { CreateAiConnectionStore } from "./ai-connection-store.mjs";
 
 const RecommendationQueueTable = "recommendation_queue";
 const UserStatesTable = "user_states";
@@ -20,6 +21,7 @@ export function CreateAccountStore({ db, pool, secretProtector = CreateSecretPro
     ...CreateRaterQueueStore(pool),
     ...CreateImdbRatingJobStore(pool),
     ...CreateSocialStore(pool),
+    ...CreateAiConnectionStore(pool, secretProtector),
     ...CreateUserMethods(db),
     ...CreateStateMethods(pool),
     ...CreateRecommendationMethods(pool),

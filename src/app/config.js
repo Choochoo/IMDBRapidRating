@@ -10,7 +10,7 @@ export const Config = {
   liveStatusUrl: "/api/imdb/status",
   aiStatusUrl: "/api/ai/status",
   aiModelsUrl: "/api/ai/models",
-  aiSettingsUrl: "/api/ai/settings",
+  aiConnectionsUrl: "/api/ai/connections",
   recommendationsUrl: "/api/ai/recommendations",
   recommendationQueueUrl: "/api/ai/recommendations/queue",
   recommendationExclusionsUrl: "/api/account/recommendation-exclusions",

@@ -20,8 +20,6 @@ export function ApplyAccountSettings(settings, remote) {
   const accountSettings = {
     imdbConfigured: Boolean(remote?.imdbConfigured),
     aiConfigured: Boolean(remote?.aiConfigured),
-    aiBaseUrl: String(remote?.aiBaseUrl || ""),
-    aiModel: String(remote?.aiModel || ""),
     streamingCountry: ReadStreamingCountry(remote?.streamingCountry),
     keyboardShortcuts: NormalizeKeyboardShortcuts(remote?.keyboardShortcuts),
     helpPreferences: NormalizeHelpPreferences(remote?.helpPreferences)

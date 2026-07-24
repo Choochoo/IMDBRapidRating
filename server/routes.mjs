@@ -1,4 +1,4 @@
-import { GenerateAiRecommendations, GetAiStatus } from "./ai-recommendations.mjs";
+import { GenerateAiRecommendations } from "./ai-recommendations.mjs";
 import { Authenticate, EnsureCsrfToken, HashPassword, LoginLimiter, RegenerateSession, RegistrationLimiter, RegistrationSchema, RequireAuth, RequireCsrf } from "./auth.mjs";
 import { DiscoverAiModels, TestAiConnection } from "./ai-client.mjs";
 import { GetImdbStatus } from "./imdb-ratings.mjs";
@@ -13,20 +13,21 @@ import { ReadStreamingCountry } from "../shared/streaming-country.js";
 import { NormalizeKeyboardShortcuts } from "../shared/keyboard-shortcuts.js";
 import { NormalizeHelpPreferences } from "../shared/help-preferences.js";
 import { RegisterSocialRoutes } from "./social-routes.mjs";
-import { AiConnectionSchema, AiSettingsSchema, CombinedTasteValue, DeleteRateSchema, MediaTypeSchema, MineTasteAudience, MovieMediaType, NotSeenDecisionKind, NotSeenSchema, PendingSubmitStatus, PreferencesSchema, QuickRatingSchema, RateSchema, RatedDecisionKind, RaterDecisionSchema, RaterQueueRestoreSchema, RaterUndoSchema, RecommendationExclusionSchema, RecommendationQueueItemSchema, SecretSchema, SkippedSubmitStatus, SocialTasteSchema, StateSchema, WishlistDecisionKind } from "./route-schemas.mjs";
+import { AiConnectionIdSchema, AiConnectionSchema, AiModelDiscoverySchema, CombinedTasteValue, DeleteRateSchema, MediaTypeSchema, MineTasteAudience, MovieMediaType, NotSeenDecisionKind, NotSeenSchema, PendingSubmitStatus, PreferencesSchema, QuickRatingSchema, RateSchema, RatedDecisionKind, RaterDecisionSchema, RaterQueueRestoreSchema, RaterUndoSchema, RecommendationExclusionSchema, RecommendationQueueItemSchema, SecretSchema, SkippedSubmitStatus, SocialTasteSchema, StateSchema, WishlistDecisionKind } from "./route-schemas.mjs";
+import { IsCustomAiProvider, ListAiProviders, ReadProviderName, ResolveAiBaseUrl } from "./ai-providers.mjs";
 
 const TelevisionMediaType = "tv";
 const RaterConflictError = "The rating queue changed on another device.";
 const RatingSystemSource = "rating-system";
 const RatingQueueTasteMatch = "Added from the rating queue.";
-const AiSecretType = "ai";
+const DisabledAnalyticsConfig = Object.freeze({ enabled: false, token: "", host: "" });
 const ImdbSecretType = "imdb";
-const LegacyOpenAiSecretType = "openai";
-const SecretTypes = new Set([ImdbSecretType, LegacyOpenAiSecretType]);
+const SecretTypes = new Set([ImdbSecretType]);
 const AccountStatePath = "/api/account/state";
 const AccountSecretPath = "/api/account/secrets/:type";
 const AiRecommendationQueuePath = "/api/ai/recommendations/queue";
-const AiSettingsPath = "/api/ai/settings";
+const AiRecommendationsPath = "/api/ai/recommendations";
+const AiConnectionsPath = "/api/ai/connections";
 const HandleUniqueConstraint = "user_profiles_handle_unique";
 const FunctionType = "function";
 const RatePath = "/api/rate";
@@ -47,8 +48,9 @@ export function RegisterApiRoutes(app, options) {
 function NormalizeRouteDependencies(options) {
   const { tmdbApiKey = "", generateAiRecommendations = GenerateAiRecommendations, discoverAiModels = DiscoverAiModels, testAiConnection = TestAiConnection } = options;
   const { readMoviePool = ReadMoviePool, readTitlePool = ReadTitlePool, raterEvents = CreateRaterEvents() } = options;
+  const analyticsConfig = options.analyticsConfig || DisabledAnalyticsConfig;
   return {
-    ...options, tmdbApiKey, generateAiRecommendations, discoverAiModels, testAiConnection, readMoviePool, readTitlePool, raterEvents,
+    ...options, tmdbApiKey, analyticsConfig, generateAiRecommendations, discoverAiModels, testAiConnection, readMoviePool, readTitlePool, raterEvents,
     metadataStore: options.titleMetadataStore || CreateTitleMetadataStore(options.pool)
   };
 }
@@ -63,7 +65,7 @@ function BuildSocialDependencies(dependencies) {
 
 function RegisterPublicRoutes(app, dependencies) {
   app.get("/health", async (_request, response) => await HandleHealth(response, dependencies));
-  app.get("/api/auth/session", async (request, response) => HandleSession(request, response));
+  app.get("/api/auth/session", async (request, response) => HandleSession(request, response, dependencies.analyticsConfig));
   app.post("/api/auth/login", LoginLimiter, RequireCsrf, async (request, response) => await HandleLogin(request, response, dependencies));
   app.post("/api/auth/register", RegistrationLimiter, RequireCsrf, async (request, response) => await HandleRegistration(request, response, dependencies));
   app.post("/api/auth/logout", RequireAuth, RequireCsrf, async (request, response) => await HandleLogout(request, response));
@@ -97,12 +99,15 @@ function RegisterImdbRoutes(app, dependencies) {
 
 function RegisterAiRoutes(app, dependencies) {
   app.get("/api/ai/status", async (request, response) => await HandleAiStatus(request, response, dependencies));
+  app.get(AiConnectionsPath, async (request, response) => await HandleAiStatus(request, response, dependencies));
   app.post("/api/ai/models", RequireCsrf, async (request, response) => await HandleAiModels(request, response, dependencies));
-  app.put(AiSettingsPath, RequireCsrf, async (request, response) => await HandlePutAiSettings(request, response, dependencies));
-  app.delete(AiSettingsPath, RequireCsrf, async (request, response) => await HandleDeleteAiSettings(request, response, dependencies));
+  app.post(AiConnectionsPath, RequireCsrf, async (request, response) => await HandleCreateAiConnection(request, response, dependencies));
+  app.put(`${AiConnectionsPath}/:id`, RequireCsrf, async (request, response) => await HandleUpdateAiConnection(request, response, dependencies));
+  app.delete(`${AiConnectionsPath}/:id`, RequireCsrf, async (request, response) => await HandleDeleteAiConnection(request, response, dependencies));
+  app.put(`${AiConnectionsPath}/:id/default`, RequireCsrf, async (request, response) => await HandleDefaultAiConnection(request, response, dependencies));
   app.get(AiRecommendationQueuePath, async (request, response) => await HandleGetRecommendationQueue(request, response, dependencies));
   app.put(AiRecommendationQueuePath, RequireCsrf, async (request, response) => await HandlePutRecommendationQueue(request, response, dependencies));
-  app.post("/api/ai/recommendations", RequireCsrf, async (request, response) => await HandleGenerateRecommendations(request, response, dependencies));
+  app.post(AiRecommendationsPath, RequireCsrf, async (request, response) => await HandleGenerateRecommendations(request, response, dependencies));
 }
 
 function RegisterTitleRoutes(app, dependencies) {
@@ -114,11 +119,12 @@ async function HandleHealth(response, dependencies) {
   response.json({ ok: true, database: "connected", encryptionConfigured: HasSecretProtectionConfiguration() });
 }
 
-function HandleSession(request, response) {
+function HandleSession(request, response, analyticsConfig) {
   const csrfToken = EnsureCsrfToken(request);
+  const payload = { ok: true, csrfToken, analytics: analyticsConfig, registrationEnabled: IsRegistrationEnabled() };
   if (!request.session.userId)
-    return response.json({ ok: true, authenticated: false, csrfToken, registrationEnabled: IsRegistrationEnabled() });
-  response.json({ ok: true, authenticated: true, csrfToken, registrationEnabled: IsRegistrationEnabled(), user: SessionUser(request) });
+    return response.json({ ...payload, authenticated: false });
+  response.json({ ...payload, authenticated: true, user: SessionUser(request) });
 }
 
 async function HandleLogin(request, response, dependencies) {
@@ -163,8 +169,9 @@ async function HandleLogout(request, response) {
 
 async function HandleGetAccountState(request, response, dependencies) {
   const userId = request.session.userId;
-  const [bundle, imdbQueue] = await Promise.all([dependencies.store.getBundle(userId), ReadImdbQueueStatus(dependencies.store, userId)]);
-  response.json({ ok: true, user: SessionUser(request), ...BuildBundle(bundle), imdbQueue });
+  const pending = [dependencies.store.getBundle(userId), ReadImdbQueueStatus(dependencies.store, userId), ReadAiConnections(dependencies.store, userId)];
+  const [bundle, imdbQueue, aiConnections] = await Promise.all(pending);
+  response.json({ ok: true, user: SessionUser(request), ...BuildBundle(bundle, aiConnections), imdbQueue });
 }
 
 async function HandlePutAccountState(request, response, dependencies) {
@@ -338,33 +345,75 @@ async function HandleDeleteRating(request, response, dependencies) {
 }
 
 async function HandleAiStatus(request, response, dependencies) {
-  const options = await BuildAiOptions(dependencies.store, request.session.userId);
-  response.json({ ok: true, ...GetAiStatus(), configured: options.configured, baseUrl: options.baseUrl, model: options.model, hasApiKey: Boolean(options.apiKey) });
+  response.json(await BuildAiConnectionState(dependencies.store, request.session.userId));
 }
 
 async function HandleAiModels(request, response, dependencies) {
+  const parsed = AiModelDiscoverySchema.safeParse(request.body);
+  if (!parsed.success)
+    return Invalid(response);
+  const options = await BuildAiDraftOptions(dependencies.store, request.session.userId, parsed.data);
+  if (!options)
+    return AiConnectionNotFound(response);
+  SendAiModelsResult(response, await dependencies.discoverAiModels(options));
+}
+
+async function HandleCreateAiConnection(request, response, dependencies) {
   const parsed = AiConnectionSchema.safeParse(request.body);
   if (!parsed.success)
     return Invalid(response);
-  const options = await BuildAiDraftOptions(dependencies.store, request.session.userId, parsed.data);
-  SendResult(response, await dependencies.discoverAiModels(options));
-}
-
-async function HandlePutAiSettings(request, response, dependencies) {
-  const parsed = AiSettingsSchema.safeParse(request.body);
-  if (!parsed.success)
-    return Invalid(response);
-  const options = await BuildAiDraftOptions(dependencies.store, request.session.userId, parsed.data);
+  const input = { ...parsed.data, connectionId: undefined };
+  const options = await BuildAiDraftOptions(dependencies.store, request.session.userId, input);
   const tested = await dependencies.testAiConnection({ ...options, model: parsed.data.model });
   if (!tested.payload.ok)
     return SendResult(response, tested);
-  await SaveAiConnection(dependencies.store, request.session.userId, options, tested.payload);
-  response.json(BuildSavedAiResponse(options, tested.payload));
+  const connection = BuildTestedAiConnection(input, tested.payload);
+  await dependencies.store.CreateAiConnection(request.session.userId, connection, options.apiKey);
+  await SendAiConnectionState(response, dependencies.store, request.session.userId, 201);
 }
 
-async function HandleDeleteAiSettings(request, response, dependencies) {
-  await RemoveAiConnection(dependencies.store, request.session.userId);
-  response.json({ ok: true, configured: false, baseUrl: "", model: "", hasApiKey: false });
+async function HandleUpdateAiConnection(request, response, dependencies) {
+  const connectionId = ReadAiConnectionId(request, response);
+  if (!connectionId)
+    return;
+  const parsed = AiConnectionSchema.safeParse({ ...request.body, connectionId });
+  if (!parsed.success)
+    return Invalid(response);
+  const options = await BuildAiDraftOptions(dependencies.store, request.session.userId, parsed.data);
+  if (!options)
+    return AiConnectionNotFound(response);
+  await TestAndUpdateAiConnection(request, response, dependencies, parsed.data, options);
+}
+
+async function TestAndUpdateAiConnection(request, response, dependencies, input, options) {
+  const tested = await dependencies.testAiConnection({ ...options, model: input.model });
+  if (!tested.payload.ok)
+    return SendResult(response, tested);
+  const connection = BuildTestedAiConnection(input, tested.payload);
+  const saved = await dependencies.store.UpdateAiConnection(request.session.userId, input.connectionId, connection, options.keyMutation);
+  if (!saved)
+    return AiConnectionNotFound(response);
+  await SendAiConnectionState(response, dependencies.store, request.session.userId);
+}
+
+async function HandleDeleteAiConnection(request, response, dependencies) {
+  const connectionId = ReadAiConnectionId(request, response);
+  if (!connectionId)
+    return;
+  const removed = await dependencies.store.DeleteAiConnection(request.session.userId, connectionId);
+  if (!removed)
+    return AiConnectionNotFound(response);
+  await SendAiConnectionState(response, dependencies.store, request.session.userId);
+}
+
+async function HandleDefaultAiConnection(request, response, dependencies) {
+  const connectionId = ReadAiConnectionId(request, response);
+  if (!connectionId)
+    return;
+  const changed = await dependencies.store.SetDefaultAiConnection(request.session.userId, connectionId);
+  if (!changed)
+    return AiConnectionNotFound(response);
+  await SendAiConnectionState(response, dependencies.store, request.session.userId);
 }
 
 async function HandleGetRecommendationQueue(request, response, dependencies) {
@@ -481,21 +530,20 @@ function ReadCatalogTitle(pool, titleId) {
   return titles.find((title) => title.ttId === titleId) || null;
 }
 
-function BuildBundle(bundle) {
+function BuildBundle(bundle, aiConnections = []) {
   return {
-    settings: BuildBundleSettings(bundle),
+    settings: BuildBundleSettings(bundle, aiConnections),
     payload: bundle.state.payload || {},
     ratingsCsv: bundle.state.ratingsCsv || "",
     revision: Number(bundle.state.revision) || 0
   };
 }
 
-function BuildBundleSettings(bundle) {
+function BuildBundleSettings(bundle, aiConnections) {
+  const configured = aiConnections.some((connection) => Boolean(connection.model));
   return {
     imdbConfigured: bundle.configured.has(ImdbSecretType),
-    aiConfigured: Boolean(bundle.preferences.aiConfigured),
-    aiBaseUrl: bundle.preferences.aiBaseUrl || "",
-    aiModel: bundle.preferences.aiModel || "",
+    aiConfigured: configured,
     streamingCountry: ReadStreamingCountry(bundle.preferences.streamingCountry),
     keyboardShortcuts: NormalizeKeyboardShortcuts(bundle.preferences.keyboardShortcuts),
     helpPreferences: NormalizeHelpPreferences(bundle.preferences.helpPreferences)
@@ -598,14 +646,15 @@ function ReadTimestamp(value, fallback) {
   return Number.isFinite(Date.parse(timestamp)) ? timestamp : fallback;
 }
 
-async function BuildAiOptions(store, userId, mediaType = MovieMediaType) {
-  const bundle = await store.getBundle(userId);
+async function BuildAiOptions(store, userId, mediaType = MovieMediaType, connectionId = "") {
+  const [bundle, connections] = await Promise.all([store.getBundle(userId), ReadAiConnections(store, userId)]);
+  const connection = SelectAiConnection(connections, connectionId);
+  if (connectionId && !connection)
+    return null;
   const media = ReadMediaPayload(bundle.state?.payload, mediaType);
+  const selected = await BuildSelectedAiOptions(store, userId, connection);
   return {
-    apiKey: await ReadAiApiKey(store, userId),
-    baseUrl: bundle.preferences.aiBaseUrl || "",
-    model: bundle.preferences.aiModel || "",
-    configured: Boolean(bundle.preferences.aiConfigured),
+    ...selected,
     filters: media.filters,
     targetRatings: Object.values(media.ratings || {}),
     targetExclusions: Array.isArray(media.recommendationExclusions) ? media.recommendationExclusions : []
@@ -616,7 +665,12 @@ async function BuildSocialAiOptions(store, userId, mediaType, request) {
   const socialTaste = SocialTasteSchema.safeParse(request.socialTaste || {});
   if (!socialTaste.success)
     return null;
-  const options = await BuildAiOptions(store, userId, mediaType);
+  const connectionId = ReadRequestedAiConnectionId(request.aiConnectionId);
+  if (request.aiConnectionId && !connectionId)
+    return null;
+  const options = await BuildAiOptions(store, userId, mediaType, connectionId);
+  if (!options)
+    return null;
   const friendRatings = await ReadFriendTasteRatings(store, userId, mediaType, request.profile, socialTaste.data);
   return { ...options, friendRatings, tasteAudience: socialTaste.data.audience };
 }
@@ -637,56 +691,111 @@ function ReadTasteMediaTypes(mediaType, tasteBasis) {
 }
 
 async function BuildAiDraftOptions(store, userId, input) {
-  const saved = await BuildAiOptions(store, userId);
-  const submittedKey = NormalizeSecret(AiSecretType, input.apiKey);
-  const sameBaseUrl = NormalizeUrlKey(input.baseUrl) === NormalizeUrlKey(saved.baseUrl);
-  const apiKey = submittedKey || (sameBaseUrl ? saved.apiKey : "");
-  return { ...saved, baseUrl: input.baseUrl, apiKey };
+  const existing = input.connectionId ? await store.GetAiConnection(userId, input.connectionId) : null;
+  if (input.connectionId && !existing)
+    return null;
+  const baseUrl = ResolveAiBaseUrl(input.providerId, input.baseUrl);
+  const submittedKey = NormalizeAiKey(input.apiKey);
+  const sameConnection = IsSameAiConnection(existing, input.providerId, baseUrl);
+  const savedKey = sameConnection ? await store.ReadAiConnectionSecret(userId, existing.id) : "";
+  const keyMutation = submittedKey || (sameConnection ? undefined : "");
+  return { providerId: input.providerId, baseUrl, apiKey: submittedKey || savedKey, keyMutation };
 }
 
-async function ReadAiApiKey(store, userId) {
-  if (typeof store.getSecret !== FunctionType)
-    return "";
-  const current = await store.getSecret(userId, AiSecretType);
-  return current || await store.getSecret(userId, LegacyOpenAiSecretType);
+function SelectAiConnection(connections, connectionId) {
+  if (connectionId)
+    return connections.find((connection) => connection.id === connectionId) || null;
+  return connections.find((connection) => connection.isDefault) || null;
 }
 
-async function SaveAiConnection(store, userId, options, tested) {
-  const preferences = {
-    aiBaseUrl: tested.baseUrl,
-    aiModel: tested.model,
-    aiConfigured: true
-  };
-  await store.savePreferences(userId, preferences);
-  await SaveAiSecret(store, userId, options.apiKey);
-}
-
-async function SaveAiSecret(store, userId, apiKey) {
-  if (apiKey)
-    await store.putSecret(userId, AiSecretType, apiKey);
-  else
-    await store.deleteSecret(userId, AiSecretType);
-  await store.deleteSecret(userId, LegacyOpenAiSecretType);
-}
-
-async function RemoveAiConnection(store, userId) {
-  await store.savePreferences(userId, { aiBaseUrl: "", aiModel: "", aiConfigured: false });
-  await store.deleteSecret(userId, AiSecretType);
-  await store.deleteSecret(userId, LegacyOpenAiSecretType);
-}
-
-function BuildSavedAiResponse(options, tested) {
+async function BuildSelectedAiOptions(store, userId, connection) {
+  if (!connection)
+    return { providerId: "", apiKey: "", baseUrl: "", model: "", configured: false };
+  const apiKey = await store.ReadAiConnectionSecret(userId, connection.id);
   return {
-    ok: true,
-    configured: true,
+    providerId: connection.providerId, apiKey, baseUrl: connection.baseUrl,
+    model: connection.model, configured: Boolean(connection.model)
+  };
+}
+
+function ReadRequestedAiConnectionId(value) {
+  if (!value)
+    return "";
+  const parsed = AiConnectionIdSchema.safeParse(value);
+  return parsed.success ? parsed.data : "";
+}
+
+function IsSameAiConnection(existing, providerId, baseUrl) {
+  if (!existing || existing.providerId !== providerId)
+    return false;
+  return NormalizeUrlKey(existing.baseUrl) === NormalizeUrlKey(baseUrl);
+}
+
+function BuildTestedAiConnection(input, tested) {
+  return {
+    providerId: input.providerId,
+    name: input.name || ReadProviderName(input.providerId),
     baseUrl: tested.baseUrl,
     model: tested.model,
-    hasApiKey: Boolean(options.apiKey)
+    isDefault: Boolean(input.isDefault)
   };
 }
 
 function NormalizeUrlKey(value) {
   return String(value || "").trim().replace(/\/+$/, "").toLowerCase();
+}
+
+function NormalizeAiKey(value) {
+  return String(value || "").replace(/[\r\n]+/g, " ").trim().replace(/^authorization:\s*/i, "").replace(/^bearer\s+/i, "");
+}
+
+async function BuildAiConnectionState(store, userId) {
+  const connections = (await ReadAiConnections(store, userId)).map(ToPublicAiConnection);
+  const defaultConnection = connections.find((connection) => connection.isDefault) || null;
+  return {
+    ok: true, configured: Boolean(defaultConnection?.model), endpoint: AiRecommendationsPath,
+    defaultConnectionId: defaultConnection?.id || "", model: defaultConnection?.model || "",
+    hasKey: Boolean(defaultConnection?.hasKey), providers: ListAiProviders(), connections
+  };
+}
+
+async function ReadAiConnections(store, userId) {
+  if (typeof store.ListAiConnections !== FunctionType)
+    return [];
+  return await store.ListAiConnections(userId);
+}
+
+function ToPublicAiConnection(connection) {
+  const value = {
+    id: connection.id, providerId: connection.providerId, providerName: ReadProviderName(connection.providerId),
+    name: connection.name, model: connection.model, isDefault: connection.isDefault,
+    hasKey: connection.hasKey, testStatus: connection.testStatus, lastTestedAt: connection.lastTestedAt
+  };
+  if (IsCustomAiProvider(connection.providerId))
+    value.baseUrl = connection.baseUrl;
+  return value;
+}
+
+async function SendAiConnectionState(response, store, userId, status = 200) {
+  response.status(status).json(await BuildAiConnectionState(store, userId));
+}
+
+function SendAiModelsResult(response, result) {
+  if (!result.payload?.ok)
+    return SendResult(response, result);
+  response.status(result.status).json({ ok: true, models: result.payload.models });
+}
+
+function ReadAiConnectionId(request, response) {
+  const parsed = AiConnectionIdSchema.safeParse(request.params.id);
+  if (parsed.success)
+    return parsed.data;
+  Invalid(response);
+  return "";
+}
+
+function AiConnectionNotFound(response) {
+  response.status(404).json({ ok: false, code: "AI_CONNECTION_NOT_FOUND", error: "That AI choice was not found." });
 }
 
 function NormalizeSecret(type, value) {

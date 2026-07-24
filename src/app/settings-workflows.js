@@ -1,6 +1,8 @@
 import { ValidateImdbCookie } from "./browser-settings.js";
 import { EscapeHtml, FormatCount } from "./util.js";
 import { NormalizeStreamingCountry } from "../../shared/streaming-country.js";
+import { AnalyticsEvents } from "./analytics-events.js";
+import { ImdbSecretType } from "./app-constants.js";
 
 export async function SaveImdbConnectionFromDialog(app) {
   const result = ValidateImdbCookie(app.Elements.imdbInput.value);
@@ -9,7 +11,7 @@ export async function SaveImdbConnectionFromDialog(app) {
   app.SetImdbSaving(true);
   let saved;
   try {
-    saved = await app.SaveAccountSecret("imdb", result.value);
+    saved = await app.SaveAccountSecret(ImdbSecretType, result.value);
   } finally {
     app.SetImdbSaving(false);
   }
@@ -33,6 +35,7 @@ async function ApplySavedImdbConnection(app, result) {
   await app.RefreshLiveStatus();
   await app.RefreshRemoteState();
   app.HideImdbDialog();
+  app.TrackProductEvent?.(AnalyticsEvents.ConnectionStatusChanged, { connected: true, service: ImdbSecretType });
   const queued = Number(result?.resumedJobs) || 0;
   if (queued > 0)
     return app.ShowToast(`IMDb connected. Queued <strong>${FormatCount(queued)}</strong> writes`);

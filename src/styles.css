@@ -5,7 +5,7 @@
  * 3. Page styles only contain product-specific layout and presentation.
  * 4. Responsive rules are last so viewport adaptations stay predictable.
  */
-@layer framework, theme, foundation, workspace, rater, settings, friends, dialogs, setup, responsive;
+@layer framework, theme, foundation, workspace, rater, settings, friends, dialogs, analytics, setup, responsive;
 
 @import url("/vendor/bootstrap.min.css") layer(framework);
 @import "./styles/theme.css" layer(theme);
@@ -15,5 +15,6 @@
 @import "./styles/settings.css" layer(settings);
 @import "./styles/friends.css" layer(friends);
 @import "./styles/dialogs.css" layer(dialogs);
+@import "./styles/analytics.css" layer(analytics);
 @import "./styles/setup-guide.css" layer(setup);
 @import "./styles/responsive.css" layer(responsive);

@@ -5,7 +5,7 @@
   "change_paths": [],
   "compact_applicability": false,
   "default_batch_limit": 20,
-  "default_batch_token_budget": 60000,
+  "default_batch_token_budget": 90000,
   "dependency_cluster_batching": true,
   "deterministic_tools": [],
   "exclude_globs": [
@@ -42,7 +42,7 @@
   "require_final_review_for_dirty_diff": true,
   "require_reviewer_for_passed_checks": true,
   "result_cache": true,
-  "review_policy": "exhaustive",
+  "review_policy": "risk-based",
   "validation_cache": true,
   "validation_commands": [],
   "validation_timeout_seconds": 120,

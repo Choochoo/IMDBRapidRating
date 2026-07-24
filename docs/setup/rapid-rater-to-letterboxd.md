@@ -36,9 +36,7 @@ Open Letterboxd's importer after the Rapid Rater download finishes.
 
 [Open Letterboxd import](https://letterboxd.com/import/)
 
-> **Screenshot needed:** Letterboxd import page before a file is chosen, using a disposable test account.
->
-> **Solid-redact:** Member name, Profile image
+![Letterboxd import page](../../src/assets/setup/rapid-rater-to-letterboxd/03-open-letterboxd-import.webp)
 
 Last verified: Pending screenshot capture.
 

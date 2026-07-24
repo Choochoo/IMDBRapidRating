@@ -1,0 +1,125 @@
+.analytics-consent {
+  position: fixed;
+  z-index: 25;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  left: 18px;
+  display: grid;
+  width: min(860px, calc(100% - 36px));
+  max-height: calc(100dvh - 36px);
+  margin: 0 auto;
+  overflow: auto;
+  gap: 12px;
+  padding: 18px;
+  border-color: rgba(var(--accent-rgb), 0.42);
+  background: var(--surface);
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.48);
+}
+
+.analytics-consent[hidden] {
+  display: none;
+}
+
+.analytics-consent-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.analytics-consent-heading span {
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-consent h2 {
+  margin: 3px 0 0;
+  font-size: 23px;
+}
+
+.analytics-consent > p,
+.analytics-consent-details p,
+.analytics-settings-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.analytics-consent-details {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.analytics-consent-details summary {
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.analytics-consent-details p {
+  margin-top: 8px;
+}
+
+.analytics-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.analytics-consent-actions .btn {
+  min-width: 170px;
+}
+
+.auth-analytics-settings {
+  display: block;
+  margin: 12px auto 0;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.analytics-settings-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+}
+
+.analytics-settings-card h2 {
+  margin: 3px 0 5px;
+  font-size: 20px;
+}
+
+.analytics-settings-card[hidden] {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .analytics-consent {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: 14px 14px 0 0;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .analytics-consent-actions,
+  .analytics-settings-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analytics-consent-actions .btn {
+    width: 100%;
+  }
+}

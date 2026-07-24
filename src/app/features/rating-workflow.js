@@ -1,6 +1,7 @@
 import { Config } from "../config.js";
 import { BuildRateRequest } from "../rating-records.js";
 import { EscapeHtml, FormatCount } from "../util.js";
+import { AnalyticsEvents } from "../analytics-events.js";
 
 const RatedStatus = "rated";
 const SavingClass = "saving";
@@ -24,6 +25,7 @@ export class RatingWorkflowFeature {
     const payload = await this.RequestJson(Config.raterDecisionUrl, PutMethod, request);
     this.ApplyCommittedDecision(payload, movie);
     this.FinishActiveDecision(movie, rating, status);
+    this.TrackProductEvent?.(AnalyticsEvents.RatingDecisionCompleted, { decision: status, media_type: this.State.mediaType });
   }
 
   BuildActiveDecisionRequest(movie, rating, status) {
@@ -142,6 +144,7 @@ export class RatingWorkflowFeature {
     this.Render();
     const message = payload.duplicate ? "is already in your watchlist" : "added to your watchlist";
     this.ShowToast(`<strong>${EscapeHtml(movie.title)}</strong> ${message}`);
+    this.TrackProductEvent?.(AnalyticsEvents.WatchlistItemAdded, { duplicate: Boolean(payload.duplicate), media_type: this.State.mediaType });
     return true;
   }
 

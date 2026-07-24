@@ -12,9 +12,7 @@ Sign in to Letterboxd and open its data settings page.
 
 [Open Letterboxd data settings](https://letterboxd.com/settings/data/)
 
-> **Screenshot needed:** Letterboxd data settings page in desktop Chrome using a disposable test account.
->
-> **Solid-redact:** Member name, Profile image, Account email
+![Letterboxd data settings page](../../src/assets/setup/import-letterboxd/01-open-letterboxd-data.webp)
 
 Last verified: Pending screenshot capture.
 
@@ -22,9 +20,7 @@ Last verified: Pending screenshot capture.
 
 Choose Export your data and save the ZIP file when Letterboxd finishes preparing it.
 
-> **Screenshot needed:** Letterboxd data settings with the Export your data control and ready download clearly visible.
->
-> **Solid-redact:** Member name, Export identifiers, Account email
+![Export your data control in Letterboxd settings](../../src/assets/setup/import-letterboxd/02-download-letterboxd-export.webp)
 
 Last verified: Pending screenshot capture.
 

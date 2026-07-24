@@ -108,7 +108,7 @@ const SetupGuideFlowDefinitions = [
   {
     id: SetupGuideFlowIds.connectOpenAi,
     title: "Connect OpenAI",
-    summary: "Use OpenAI here, or the matching key and URL from another OpenAI-compatible provider.",
+    summary: "Choose OpenAI, add your private access key, and select one of its current models.",
     steps: [
       {
         id: "create-openai-key",
@@ -132,10 +132,10 @@ const SetupGuideFlowDefinitions = [
       {
         id: "find-openai-models",
         title: "Find available models",
-        body: "In AI settings, enter https://api.openai.com/v1, paste the key, then choose Find models.",
+        body: "In Choose AI, select ChatGPT / OpenAI, paste the key, then choose Find my models.",
         imageSrc: "/src/assets/setup/connect-openai/03-find-openai-models.webp",
         imageAlt: "Rapid Rater AI settings ready to find OpenAI models",
-        capture: "Rapid Rater AI settings with the OpenAI base URL filled in and Find models highlighted.",
+        capture: "Rapid Rater Choose AI page with ChatGPT / OpenAI selected and Find my models highlighted.",
         redact: [ApiKeyFieldRedaction, SignedInEmailRedaction],
         action: { id: SetupGuideActionIds.openAiSettings, label: "Open AI settings", kind: LocalActionKind }
       },

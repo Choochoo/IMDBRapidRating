@@ -5,11 +5,11 @@
     "compiler-analyzer": 2,
     "formatter-linter": 2
   },
-  "generated_at": "2026-07-23T20:47:33Z",
-  "plan_hash": "fd31d977a590ba5e9ba0b55ef9615b477b2b379b0197c87bc9587fd9f4ff861d",
+  "generated_at": "2026-07-24T00:39:46Z",
+  "plan_hash": "c9054ea1605220290ee80c9b6dcbdb68313dc246dcd1abddfc46764027ee2332",
   "rules": [
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -39,7 +39,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "2e12ecff9416b5b96236ede324e73b1185fbc1a8f73fd6bf9c63812b0ec88317",
+      "ir_hash": "eed68b3f1daa76968c00a24f9080a599368a3aaa73b55354d266a223a6bc7aba",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -74,7 +74,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -118,7 +118,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -142,7 +142,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "7e190a26d0228e9b703b5bc0d326a769c62507ab21493174deb6157bb3d0dc7c",
+      "ir_hash": "9dcb127d80eeedccc81ae24a469f35833b5c85356c1c1886bec726f12189aa9a",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -177,7 +177,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -215,7 +215,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -236,7 +236,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "c9353d0ec879a7a2fe4b7c926b9c16137cb0b379d0142224535826880c3ddefb",
+      "ir_hash": "e3526cc31dcd617c7957220496ef9ed05ed934015644a6302de88c8e6f75b018",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -271,7 +271,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -306,7 +306,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -324,7 +324,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "6ff7b34025a091d781c3108e9b8b1e918410a4f303044392f6a651117cd09956",
+      "ir_hash": "7e64fd63d31e4a101fa9d63cfa781cfb02bc9ab84b368386cbc92ec6b986744c",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -359,7 +359,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -391,7 +391,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -409,7 +409,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "26e80b494a198d562488b4110c2f91e229f7ca2db2f647ab4f7ccb47853bd332",
+      "ir_hash": "6dbcf03274775797c9b9c05674a5806d532f50fcca75bb80ad077fde245b3583",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -444,7 +444,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -476,7 +476,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -500,7 +500,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "56b356db36164b4446356ee01826abb826ca77ab3f5ed2f82774a07df0d9de1f",
+      "ir_hash": "23c62363ad9f994db7e85af950230342ae00f4679926f7194bb0c08b40c53e38",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -535,7 +535,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -573,7 +573,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -592,7 +592,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "758a661fa463d37d3048c7ff79e06da90f354ad956fb971785a24ba14026d1f5",
+      "ir_hash": "004e90f5278ec1832ce61b9d090bc77199d6bcc6ba1c4711d99438c326d92d74",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -627,7 +627,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -660,7 +660,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -681,7 +681,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "422204d2ccdee5e07b943f834f79c82ba3315ff22f88485b68f1e977ba3ce62d",
+      "ir_hash": "503ac57adcd399a61debf507178264cf9c0232d708da81124581000952277721",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -716,7 +716,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -751,7 +751,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -775,7 +775,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "11b8c1707ac3e86b73a8ab1233a5c16a939e1986a0fc93e2ff05e46d35cb9434",
+      "ir_hash": "94b31e90ca12c017bc2335cfdacb1fdadad96091ea2e05ee015b4c3467063d02",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -810,7 +810,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -848,7 +848,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -871,7 +871,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "96b5b10c1826d78c4d34dbed137d148f5bd958281b597d02cbb9338478d21a4b",
+      "ir_hash": "0a2e1a56466c71337f962c1d4dec71058cc6112e7cea5902d65749e62351a397",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -906,7 +906,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -943,7 +943,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -967,7 +967,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "6d775557c4e12b242ff959e188f123fedcbf2cd64ed8ddd1949dd2c926a0c172",
+      "ir_hash": "59c22531b240a37f7abde8013e53637c2a4b729cb83fc33b48b3d9d30b9d9a9c",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -1002,7 +1002,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1040,7 +1040,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -1061,7 +1061,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "4ea398e796e98772c551921f9344d9d2035ccb22825e863e91bc77a1d0dcca79",
+      "ir_hash": "c23b7959fe7ed8ede35b590d7abfabbcca6a73cfb2798990a5727383c632f574",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -1096,7 +1096,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1131,7 +1131,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -1154,7 +1154,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "46b69f4fe07bb51addbdbadbcc4cb352132afb3b26442c32e02253deae4b565f",
+      "ir_hash": "9076da1657e1f40f78741c08c12df1eedd1f1f8ea0b8c342213338ae158041f2",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -1189,7 +1189,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1226,13 +1226,13 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "engine": "compiler-analyzer",
         "kind": "tool-route"
       },
       "engine": "compiler-analyzer",
-      "ir_hash": "e39ba0f3cde632efde4b6fd30a6d77bff37e2885bb9c7b56586da9202735d7f1",
+      "ir_hash": "86315df28ded1be1e56ebf971034bc9c3e790711b4944e5fa526b0e40c85671f",
       "proof_contract": {
         "checker": "deterministic-certificate",
         "closure_required": false,
@@ -1267,7 +1267,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1316,7 +1316,7 @@
       "tier": "deterministic"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -1335,7 +1335,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "7f36a4996c854b03404956fd0ef62ada26a13ccb777ca4fde8be6512ceb9bbb4",
+      "ir_hash": "d5db1c4aaac3068a2ddbc8a204a4ca516b74df594ea0e4a60a400709f1169f43",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -1370,7 +1370,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1403,7 +1403,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -1429,7 +1429,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "c07888e12fe1818ac113289b8e371f3e23d5aeed51e4894bf2b64a0b50dfaae3",
+      "ir_hash": "12664da48986be64f1b7cfdb5d1b1683b232286f8469ec7eac1bb41e0904d3c4",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -1464,7 +1464,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1504,7 +1504,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "46f6ead7f3892983652563cc712d16aa657c818001d686f309b2bfc106a04d79",
+      "applicability_predicate_hash": "0365c3b55ceae346742e83b1150893863baae39bcf2d89f11e398b9eeaa74ac6",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -1525,7 +1525,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "ea99b4b5d9a777f5b5d579e246978f944ba1fb7d5864193ca1ff75a3e9223f72",
+      "ir_hash": "70c1f197c437a64cd726fe51e348c0119cca5663b5624447b2bcd3cc2805de5d",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -1562,7 +1562,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1597,7 +1597,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -1621,7 +1621,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "41ab5f7723b6f91f81824340aeb3f3b67c4242830c67e2aedeab68f35652b3eb",
+      "ir_hash": "aa1a21c163f46e6722929b51805f7b92dc54c0d82ec71d06f7d5d804cda71e49",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -1656,7 +1656,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1694,7 +1694,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -1716,7 +1716,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "2e753e1ac0aa1e88c2b8424937b2faa171c2f980e01c0b5d74c362684158ddb7",
+      "ir_hash": "8ffba9e95827f47918fa82ee03dbe673a62ee92179dcd0d3530f98d88665e07c",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -1751,7 +1751,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1787,7 +1787,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -1806,7 +1806,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "cd8fbc4a6fa897da45869d5566423e33e1aef146ee1657b508bccdc508e36a4c",
+      "ir_hash": "d138896d342a7fe5818b098107ff20ea7e1790124c5ea839e8281c6a62a9f633",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -1841,7 +1841,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1874,13 +1874,13 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "1e3c2f79e0feedd720ab5c28d2ee7f7dd3e5e7cefe4eb938acde4873de601419",
+      "applicability_predicate_hash": "17f3122e335edbc7b862bc7f316f181f8686dd86ab675b2b5144977c560ebecc",
       "detector_spec": {
         "engine": "formatter-linter",
         "kind": "tool-route"
       },
       "engine": "formatter-linter",
-      "ir_hash": "5da557810ddf2d760de289a2e7d48d89d467ec685cd7d5529cc40460e8c31959",
+      "ir_hash": "da26657eccd519c26a6ac88098fa9cdb2aceff2179bfbd1ef40ee409c64a7b27",
       "proof_contract": {
         "checker": "deterministic-certificate",
         "closure_required": false,
@@ -1917,7 +1917,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -1968,7 +1968,7 @@
       "tier": "deterministic"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -1987,7 +1987,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "eaa5b9c2de0d3b733696e6a6356b5f2db72e48b26d319b2f8557db6202b17712",
+      "ir_hash": "0cb9c8fa16d19fad521352e013116c4532ac8d3b6f889a9f9ef3b365c4d647f9",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -2022,7 +2022,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -2055,13 +2055,13 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "engine": "compiler-analyzer",
         "kind": "tool-route"
       },
       "engine": "compiler-analyzer",
-      "ir_hash": "ece840bba73dcdfe709eb5134c3f4af71eca08a37073dec411a4a1357e10da8c",
+      "ir_hash": "5ea14f0328ec863c066cf2187059521a1718b658d9e4e2962c7ffcc133af3586",
       "proof_contract": {
         "checker": "deterministic-certificate",
         "closure_required": false,
@@ -2096,7 +2096,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -2142,13 +2142,13 @@
       "tier": "deterministic"
     },
     {
-      "applicability_predicate_hash": "1e3c2f79e0feedd720ab5c28d2ee7f7dd3e5e7cefe4eb938acde4873de601419",
+      "applicability_predicate_hash": "17f3122e335edbc7b862bc7f316f181f8686dd86ab675b2b5144977c560ebecc",
       "detector_spec": {
         "engine": "formatter-linter",
         "kind": "tool-route"
       },
       "engine": "formatter-linter",
-      "ir_hash": "d6ec5874f227f135e1be07ed7b2428a00c4f35f2a0ba743a451958ba8f21d952",
+      "ir_hash": "cb7bec14aaa9b836def30d7ef0b2a43608950613fb7d2ef0c0a8fc20c7353937",
       "proof_contract": {
         "checker": "deterministic-certificate",
         "closure_required": false,
@@ -2185,7 +2185,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -2230,7 +2230,7 @@
       "tier": "deterministic"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -2249,7 +2249,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "5de820da1369bbfdfe291b2a73802d397df4d410dc489ea28560fe68b323ff93",
+      "ir_hash": "d62b1ddd703570d7436ca6cf75cefe08a52d18895e743d7080d911b7cdf5da38",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -2284,7 +2284,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -2317,7 +2317,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "1e3c2f79e0feedd720ab5c28d2ee7f7dd3e5e7cefe4eb938acde4873de601419",
+      "applicability_predicate_hash": "17f3122e335edbc7b862bc7f316f181f8686dd86ab675b2b5144977c560ebecc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -2337,7 +2337,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "f9fd215ad490def20a3c6e02a7699060ca7b7e2e93124c29293e04140a15c82a",
+      "ir_hash": "9573d620d0405b6661f14532075235bcf874acae617d764e5ddac20ac332ed62",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -2374,7 +2374,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -2408,7 +2408,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -2433,7 +2433,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "83345f80b603b4335d996615f562491cf584dc28436b7df00a97e0c821eccbc9",
+      "ir_hash": "9dadc8c963894ad6ceded5a9c7a0f538c190620784a16372019bacfe9d32fd84",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -2468,7 +2468,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -2507,7 +2507,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -2539,7 +2539,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "61bc71c767e5086f5bbc454ead1fb78607ee34624226464072856ffd511938a5",
+      "ir_hash": "2829b544484e3a6ca59e87c5905c70238547f0b178fbd5b46d4d547e9af287fd",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -2574,7 +2574,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -2620,7 +2620,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -2665,7 +2665,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "ff0ede90f6166f112eef4249bc4f3d28603ccf8bd33652fe990acef6a5b4b410",
+      "ir_hash": "cecec7bbcf027201d54e1c3a92144f89bcb50d778162dfc1e4229b4aeaf5ff97",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -2700,7 +2700,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -2759,7 +2759,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "shared-symbol-index",
         "requires": {
@@ -2794,7 +2794,7 @@
         ]
       },
       "engine": "ast-symbol-query",
-      "ir_hash": "ade9d99fbdbce061d88a7651092d9d5b5ba5a44806892624eb0a51c334942cc8",
+      "ir_hash": "d6c039bf5b3cb436ded703675dd67fea87aa8546c10e1db94663b852bab82a1b",
       "proof_contract": {
         "checker": "deterministic-certificate",
         "closure_required": true,
@@ -2829,7 +2829,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -2878,7 +2878,7 @@
       "tier": "deterministic"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -2906,7 +2906,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "4fddf472b9e52df2b347ec1d33c3cfabe5e4b7438a7a6abe47edaa0b26a7e416",
+      "ir_hash": "d936d443266502371a3161cdb09e78ac1bee2b7779530e4f2b9f4fdf2a26861b",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -2941,7 +2941,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -2983,7 +2983,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -3012,7 +3012,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "5d59b996af01de102c45485b26e74934d4ea8f4f2fa3cac53ea6973c69896232",
+      "ir_hash": "f4da28d710c0d65199d65c8b73bd96d15c4de92308bcf2d79cede43d339eaa8d",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -3047,7 +3047,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -3090,7 +3090,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -3115,7 +3115,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "5a0be32942aba1d48dc75e68634dda7bc83635a635443b715f9d6b131451e26f",
+      "ir_hash": "4384269b8e7e2fda812ddd8fd125e7f958b0de90ae5c2db4412a5a07b15ca845",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -3150,7 +3150,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -3189,7 +3189,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -3208,7 +3208,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "008abc8da82a4e4e979f660b54be264d436deef9d45a9156b5594ba183c040f4",
+      "ir_hash": "16458c2c3c0dd934b50921c2a9a4115ddca9f8dd43dc247a36cf23b27d74690d",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -3243,7 +3243,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -3276,7 +3276,7 @@
       "tier": "local-triage"
     },
     {
-      "applicability_predicate_hash": "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd",
+      "applicability_predicate_hash": "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc",
       "detector_spec": {
         "kind": "semantic-frontier",
         "requires": {
@@ -3302,7 +3302,7 @@
         ]
       },
       "engine": "ai-semantic",
-      "ir_hash": "259b8250004b97f7f0138c187ed2c4b00e90d44b3487d438abd77fc5db77cb72",
+      "ir_hash": "41085b64b7756ee3a9643bf5d828383007117958356b402baa24a29ab26d6dfb",
       "proof_contract": {
         "checker": "independent-semantic-review",
         "closure_required": false,
@@ -3337,7 +3337,7 @@
           ".codex/project-intelligence/**",
           ".codex/agents/project-knowledge-reviewer.toml",
           "docs/project-knowledge/**",
-          ".git/*",
+          ".git/**",
           "node_modules/**",
           "vendor/**",
           "vendors/**",
@@ -4238,7 +4238,19 @@
   "shared_query_count": 33,
   "shared_scope_count": 3,
   "shared_scopes": {
-    "0a126104a25ffb17a387622d4a31af6f333e43b8f9bc2c6269f0b132dc9672cd": {
+    "0365c3b55ceae346742e83b1150893863baae39bcf2d89f11e398b9eeaa74ac6": {
+      "rule_ids": [
+        "CONTROLLER-01"
+      ]
+    },
+    "17f3122e335edbc7b862bc7f316f181f8686dd86ab675b2b5144977c560ebecc": {
+      "rule_ids": [
+        "FORMAT-01",
+        "FORMAT-02",
+        "DATABASE-01"
+      ]
+    },
+    "200c6600dc4b9532b6fe985f189daf74547f534be3910c1b67841fbd0f66c8fc": {
       "rule_ids": [
         "AUDIT-01",
         "GIT-01",
@@ -4271,18 +4283,6 @@
         "DESIGN-01",
         "FILE-01",
         "SCOPE-01"
-      ]
-    },
-    "1e3c2f79e0feedd720ab5c28d2ee7f7dd3e5e7cefe4eb938acde4873de601419": {
-      "rule_ids": [
-        "FORMAT-01",
-        "FORMAT-02",
-        "DATABASE-01"
-      ]
-    },
-    "46f6ead7f3892983652563cc712d16aa657c818001d686f309b2bfc106a04d79": {
-      "rule_ids": [
-        "CONTROLLER-01"
       ]
     }
   },

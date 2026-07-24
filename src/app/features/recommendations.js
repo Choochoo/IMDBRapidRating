@@ -6,6 +6,7 @@ import { EscapeHtml, FormatCount } from "../util.js";
 import { ReadMediaPayload } from "../../../shared/media.js";
 import { NormalizeRecommendationBasis } from "../../../shared/recommendation-basis.js";
 import { IsTitleAllowed } from "../../../shared/title-filters.js";
+import { AnalyticsEvents } from "../analytics-events.js";
 
 const CurrentRecommendationBasis = "current";
 const AiLoadingClass = "is-loading";
@@ -31,6 +32,7 @@ export class RecommendationFeature {
     if (mediaType !== this.State.mediaType)
       return;
     this.RenderRecommendations(payload);
+    this.TrackProductEvent?.(AnalyticsEvents.RecommendationsGenerated, { added_count: Number(payload.addedCount) || 0, media_type: mediaType, requested_count: count });
   }
 
   ReadRecommendationCount() {
@@ -56,6 +58,7 @@ export class RecommendationFeature {
     return {
       count,
       mediaType,
+      aiConnectionId: this.Elements?.recommendationAiConnection?.value || undefined,
       profile,
       socialTaste
     };

@@ -182,10 +182,6 @@ body.friends-active .app-header {
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
 }
 
-body.tv-mode #tab-sync {
-  display: none;
-}
-
 .header-actions {
   display: flex;
   justify-self: end;

@@ -48,10 +48,9 @@
         </div>
 
         <nav class="view-tabs nav nav-pills" id="view-tabs" aria-label="Movie views">
-          <a class="view-tab nav-link active" id="tab-rater" href="/movies/rate">Rate Movies</a>
-          <a class="view-tab nav-link" id="tab-ai" href="/movies/wishlist">Movie Watchlist</a>
-          <a class="view-tab nav-link" id="tab-sync" href="/movies/sync">Sync Movies</a>
-          <a class="view-tab nav-link friend-tab" id="tab-friends" href="/movies/friends">Friends<span class="friend-request-count" id="friend-request-count" hidden>0</span></a>
+          <a class="view-tab nav-link active" id="tab-rater" href="/movies/rate">Rate</a>
+          <a class="view-tab nav-link" id="tab-ai" href="/movies/wishlist">Watchlist</a>
+          <a class="view-tab nav-link" id="tab-sync" href="/movies/sync">Sync</a>
         </nav>
 
         <div class="header-actions" aria-label="Account and data controls">
@@ -151,6 +150,12 @@
             <i class="button-icon" data-lucide="circle-help" aria-hidden="true"></i>
             <span class="header-action-label">Help</span>
           </button>
+
+          <a class="header-action friend-action btn btn-sm btn-outline-secondary" id="tab-friends" href="/movies/friends" title="Open friends" aria-label="Friends">
+            <i class="button-icon" data-lucide="users" aria-hidden="true"></i>
+            <span class="header-action-label">Friends</span>
+            <span class="friend-request-count" id="friend-request-count" hidden>0</span>
+          </a>
 
           <button type="button" class="header-action btn btn-sm btn-outline-secondary" id="open-settings" title="Open account settings">
             <i class="button-icon" data-lucide="settings" aria-hidden="true"></i>
@@ -264,6 +269,10 @@
                   <option value="friends">Selected friends</option>
                   <option value="both">My ratings + friends</option>
                 </select>
+              </label>
+              <label class="recommendation-source-control" id="recommendation-ai-control" for="recommendation-ai-connection" hidden>
+                <span>Using</span>
+                <select class="form-select form-select-sm" id="recommendation-ai-connection"></select>
               </label>
               <div class="recommendation-friend-options" id="recommendation-friend-options" aria-label="Friends used for recommendations" hidden></div>
             </section>
@@ -464,50 +473,94 @@
           <div class="settings-section-heading">
             <div>
               <span class="recommendation-kicker">AI recommendations</span>
-              <h2>Connect a compatible service</h2>
-              <p>Paste the address your AI service gives you. Rapid Rater will find its models, then you choose one.</p>
+              <h2>Choose AI</h2>
+              <p>Connect the AI service you already use. We will guide you one step at a time.</p>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="ai-show-steps">Show illustrated steps</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="ai-show-steps">Open tutorial library</button>
           </div>
-          <div class="ai-settings-step">
-            <span class="ai-settings-step-number" aria-hidden="true">1</span>
-            <div>
-              <label for="ai-base-url">AI server URL</label>
-              <p class="form-text">Use an OpenAI-compatible base URL, usually ending in <code>/v1</code>.</p>
-            </div>
-          </div>
-          <input class="form-control" id="ai-base-url" type="url" autocomplete="url" spellcheck="false" placeholder="https://your-ai-server.example/v1">
 
-          <label for="ai-api-key">API key <span class="text-secondary">(optional)</span></label>
-          <input class="form-control" id="ai-api-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="Paste a key only if needed">
-          <p class="form-text">A saved key is never shown here. Leave this blank to keep it, or for a keyless server.</p>
-
-          <button type="button" class="btn btn-outline-primary" id="ai-find-models">Find models</button>
-
-          <div class="ai-model-picker" id="ai-model-panel" hidden>
-            <div class="ai-settings-step">
-              <span class="ai-settings-step-number" aria-hidden="true">2</span>
+          <section class="ai-connections-overview" id="ai-connections-overview" aria-labelledby="ai-connections-title">
+            <div class="ai-connections-heading">
               <div>
-                <label for="ai-model-select">Choose a model</label>
-                <p class="form-text" id="ai-model-count">Models found on this server</p>
+                <h3 id="ai-connections-title">Your AI choices</h3>
+                <p class="form-text">Your default is used automatically. You can switch when making picks.</p>
+              </div>
+              <button type="button" class="btn btn-outline-primary" id="ai-add">+ Add another AI</button>
+            </div>
+            <div class="ai-connections-list" id="ai-connections-list"></div>
+          </section>
+
+          <section class="ai-connection-editor" id="ai-connection-editor" aria-labelledby="ai-editor-title">
+            <div class="ai-settings-step">
+              <span class="ai-settings-step-number" aria-hidden="true">1</span>
+              <div>
+                <label for="ai-provider">Choose your AI service</label>
+                <p class="form-text" id="ai-editor-title">Pick the name you recognize.</p>
               </div>
             </div>
-            <input class="form-control" id="ai-model-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search models">
-            <select class="form-select" id="ai-model-select" size="7" aria-describedby="ai-model-count"></select>
-          </div>
+            <select class="form-select" id="ai-provider">
+              <option value="">Choose an AI service</option>
+            </select>
+            <p class="ai-provider-description form-text" id="ai-provider-description"></p>
 
-          <p class="ai-settings-status" id="ai-settings-status" role="status" aria-live="polite"></p>
-          <p class="invalid-feedback d-block" id="ai-settings-error" role="alert"></p>
+            <div class="ai-key-panel" id="ai-key-panel" hidden>
+              <div class="ai-settings-step">
+                <span class="ai-settings-step-number" aria-hidden="true">2</span>
+                <div>
+                  <label for="ai-api-key">Connect your account</label>
+                  <p class="form-text">Your private access key works like a password that lets Rapid Rater use your AI account.</p>
+                </div>
+              </div>
 
-          <div class="ai-settings-actions">
-            <button type="button" class="btn btn-outline-danger" id="ai-delete">Remove connection</button>
-            <button type="button" class="btn btn-primary" id="ai-save" disabled>Test and save</button>
-          </div>
+              <div class="ai-server-url" id="ai-server-url-panel" hidden>
+                <label for="ai-base-url">AI server address</label>
+                <input class="form-control" id="ai-base-url" type="url" autocomplete="url" spellcheck="false" placeholder="https://your-ai-server.example/v1">
+              </div>
+
+              <label for="ai-api-key">Private access key <span class="text-secondary" id="ai-key-optional" hidden>(optional)</span></label>
+              <input class="form-control" id="ai-api-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="Paste your private access key">
+              <p class="form-text" id="ai-key-hint">Your saved key is never shown again.</p>
+
+              <details class="ai-key-tutorial" id="ai-key-tutorial">
+                <summary>Show me where to find it</summary>
+                <ol id="ai-key-tutorial-steps"></ol>
+                <a id="ai-key-help-link" target="_blank" rel="noopener noreferrer" hidden>Open the key page</a>
+              </details>
+
+              <button type="button" class="btn btn-outline-primary" id="ai-find-models">Find my models</button>
+            </div>
+
+            <div class="ai-model-picker" id="ai-model-panel" hidden>
+              <div class="ai-settings-step">
+                <span class="ai-settings-step-number" aria-hidden="true">3</span>
+                <div>
+                  <label for="ai-model-select">Choose a model</label>
+                  <p class="form-text" id="ai-model-count">Models available to this account</p>
+                </div>
+              </div>
+              <input class="form-control" id="ai-model-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search models">
+              <select class="form-select" id="ai-model-select" size="7" aria-describedby="ai-model-count"></select>
+              <label for="ai-connection-name">Friendly name</label>
+              <input class="form-control" id="ai-connection-name" type="text" maxlength="80" autocomplete="off" placeholder="For example: My movie AI">
+              <label class="ai-default-toggle" for="ai-use-default">
+                <input class="form-check-input" id="ai-use-default" type="checkbox">
+                <span>Use this AI automatically</span>
+              </label>
+            </div>
+
+            <p class="ai-settings-status" id="ai-settings-status" role="status" aria-live="polite"></p>
+            <p class="invalid-feedback d-block" id="ai-settings-error" role="alert"></p>
+
+            <div class="ai-settings-actions">
+              <button type="button" class="btn btn-outline-secondary" id="ai-cancel">Cancel</button>
+              <button type="button" class="btn btn-primary" id="ai-save" disabled>Test and save</button>
+            </div>
+          </section>
         </div>
 
         <aside class="ai-settings-note">
-          <strong>Your key stays private.</strong>
-          <span>Rapid Rater encrypts it in your account and sends AI requests from the server. A local URL such as <code>localhost</code> refers to the machine running Rapid Rater.</span>
+          <strong>Encrypted and kept safe.</strong>
+          <span>Your API key is encrypted before it is saved and used only for your selected AI connection.</span>
         </aside>
 
         <section class="help-settings-card card" id="help-settings" aria-labelledby="help-settings-title">
@@ -525,6 +578,7 @@
             <p id="help-reminders-status" role="status" aria-live="polite"></p>
           </div>
         </section>
+        <section class="analytics-settings-card card" id="settings-analytics-card" aria-labelledby="settings-analytics-title" hidden><div><span class="recommendation-kicker">Privacy</span><h2 id="settings-analytics-title">Analytics preferences</h2><p id="settings-analytics-status" role="status" aria-live="polite"></p></div><button type="button" class="btn btn-outline-primary" id="settings-analytics-manage">Manage analytics</button></section>
             </section>
           </div>
         </div>
@@ -737,6 +791,7 @@
               <button class="auth-submit btn btn-primary" type="submit" id="signup-submit">Create account</button>
             </form>
           </div>
+          <button type="button" class="auth-analytics-settings btn btn-sm btn-link" id="auth-analytics-settings" hidden>Privacy &amp; analytics</button>
         </div>
       </div>
     </section>
@@ -940,7 +995,6 @@
       <button type="button" class="help-reminder-hide btn btn-sm btn-link" id="help-reminder-hide">Hide helpful tips</button>
       <button type="button" class="help-reminder-settings" id="help-reminder-settings">Reminder settings</button>
     </aside>
-
-    <script type="module" src="/src/app.js"></script>
+    <div id="analytics-consent-root"></div><script type="module" src="/src/app.js"></script>
   </body>
 </html>

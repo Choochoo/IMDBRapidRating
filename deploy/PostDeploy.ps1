@@ -100,7 +100,8 @@ $defaultSettingsLines = @(
     "IMDB_DRY_RUN=false",
     "IMDB_MAX_REQUESTS_PER_SECOND=10",
     "IMDB_WORKER_CONCURRENCY=4",
-    "PUBLIC_REGISTRATION_ENABLED=true"
+    "PUBLIC_REGISTRATION_ENABLED=true",
+    "POSTHOG_ENABLED=false"
 )
 $settingsLines = $defaultSettingsLines
 $usePreservedSettings = $false
@@ -125,15 +126,28 @@ $managedIdentityClientId = Get-RapidRaterParameter -Name "RapidRater.AzureManage
 if (-not [string]::IsNullOrWhiteSpace($managedIdentityClientId)) {
     $settingsLines += "AZURE_MANAGED_IDENTITY_CLIENT_ID=$managedIdentityClientId"
 }
-$allowedOrigins = Get-RapidRaterParameter -Name "RapidRater.AllowedOrigins"
-if (-not [string]::IsNullOrWhiteSpace($allowedOrigins)) {
-    $settingsLines = @($settingsLines | Where-Object { $_ -notmatch '^APP_ALLOWED_ORIGINS=' })
-    $settingsLines += "APP_ALLOWED_ORIGINS=$allowedOrigins"
-}
+$settingsLines = @($settingsLines | Where-Object { $_ -notmatch '^APP_ALLOWED_ORIGINS=' })
 $privateAiOrigins = Get-RapidRaterParameter -Name "RapidRater.AiAllowedPrivateOrigins"
 if (-not [string]::IsNullOrWhiteSpace($privateAiOrigins)) {
     $settingsLines = @($settingsLines | Where-Object { $_ -notmatch '^AI_ALLOWED_PRIVATE_ORIGINS=' })
     $settingsLines += "AI_ALLOWED_PRIVATE_ORIGINS=$privateAiOrigins"
+}
+$postHogEnabled = (Get-RapidRaterParameter -Name "RapidRater.PostHogEnabled").Trim().ToLowerInvariant()
+if (-not [string]::IsNullOrWhiteSpace($postHogEnabled)) {
+    if ($postHogEnabled -notin @("true", "false")) {
+        throw "RapidRater.PostHogEnabled must be true or false."
+    }
+    $settingsLines = @($settingsLines | Where-Object { $_ -notmatch '^POSTHOG_' })
+    $settingsLines += "POSTHOG_ENABLED=$postHogEnabled"
+    if ($postHogEnabled -eq "true") {
+        $postHogToken = Get-RapidRaterParameter -Name "RapidRater.PostHogProjectToken"
+        $postHogHost = Get-RapidRaterParameter -Name "RapidRater.PostHogHost"
+        if ([string]::IsNullOrWhiteSpace($postHogToken) -or [string]::IsNullOrWhiteSpace($postHogHost)) {
+            throw "Enabled PostHog analytics require RapidRater.PostHogProjectToken and RapidRater.PostHogHost."
+        }
+        $settingsLines += "POSTHOG_PROJECT_TOKEN=$postHogToken"
+        $settingsLines += "POSTHOG_HOST=$postHogHost"
+    }
 }
 $settingsLines | Set-Content -LiteralPath $RuntimeSettingsPath -Encoding UTF8
 icacls $InstallDir /grant:r $ReadExecuteAcl /Q | Out-Null

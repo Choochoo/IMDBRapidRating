@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { RapidRaterApp } from "../src/app/rapid-rater-app.js";
-import { RenderSocialBadges } from "../src/app/social-rendering.js";
+import { ApplyAvatar, RenderAvatar, RenderSocialBadges } from "../src/app/social-rendering.js";
 
 const FriendId = "friend-1";
 const FriendHandle = "sam";
@@ -16,6 +16,8 @@ const Friend = {
 
 test("poster social badges combine sharing and friend ratings without exposing account identity", VerifySocialBadges);
 test("watchlist social filters can select shared, rated, or highly-rated friend titles", VerifySocialFilters);
+test("profile images replace avatar initials", VerifyProfileImageReplacesInitial);
+test("avatars retain initials when no profile image exists", VerifyAvatarInitialFallback);
 
 function VerifySocialBadges() {
   const html = RenderSocialBadges({ ratings: [{ profile: Friend, rating: 9 }], sharedBy: [Friend], sharedWith: [] }, true);
@@ -33,6 +35,31 @@ function VerifySocialFilters() {
   assert.equal(app.IsSocialRecommendationVisible({ ttId: SharedTitleId }), false);
   app.Social.filterMode = "shared";
   assert.equal(app.IsSocialRecommendationVisible({ ttId: SharedTitleId }), true);
+}
+
+function VerifyProfileImageReplacesInitial() {
+  const element = BuildAvatarElement();
+  ApplyAvatar(element, Friend);
+  assert.equal(element.textContent, "");
+  assert.equal(element.style.backgroundImage, `url("${Friend.avatarUrl}")`);
+  assert.match(RenderAvatar(Friend), /aria-label="Sam"><\/span>$/);
+}
+
+function VerifyAvatarInitialFallback() {
+  const profile = { ...Friend, avatarUrl: "" };
+  const element = BuildAvatarElement();
+  ApplyAvatar(element, profile);
+  assert.equal(element.textContent, "S");
+  assert.equal(element.style.backgroundImage, "");
+  assert.match(RenderAvatar(profile), /aria-label="Sam">S<\/span>$/);
+}
+
+function BuildAvatarElement() {
+  return {
+    textContent: "",
+    style: { backgroundImage: "" },
+    setAttribute: () => null
+  };
 }
 
 function BuildSocialFilterState() {
