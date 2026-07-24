@@ -32,6 +32,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Use declared npm version
+        run: npm install --global (node -p "require('./package.json').packageManager")
+        shell: powershell
+
       - name: Validate deployment credentials
         env:
           POSTGRES_CONNECTION_STRING: ${{ secrets.POSTGRES_CONNECTION_STRING }}
